@@ -8,11 +8,11 @@ A clean-architecture, enterprise-ready Backend API for NFC card management and s
 
 The solution uses a layered architecture to ensure separation of concerns:
 
-- **NFC.Platform.API**: Entry point, Controllers, Middlewares, and API versioning.
+- **NFC.Platform.API**: Entry point and Controllers.
 - **NFC.Platform.Application**: Business services (e.g., `CardService`, `AuthService`), DTOs, FluentValidation, and AutoMapper profiles.
 - **NFC.Platform.Infrastructure**: EF Core `DbContext`, generic repositories, Unit of Work, SaveChanges interceptors, database seeders, and migrations.
 - **NFC.Platform.Domain**: Core domain entities (`Card`, `User`, `Role`, `UserRole`, `RefreshToken`).
-- **NFC.Platform.BuildingBlocks**: Shared cross-cutting concerns (localization resource files, unified `ServiceResult` wrapper, PBKDF2 `PasswordHasher`).
+- **NFC.Platform.BuildingBlocks**: Shared cross-cutting concerns including service extension methods (`JwtServiceExtensions`, `SwaggerServiceExtensions`, `CorsServiceExtensions`, `ValidationServiceExtensions`, `MapperServiceExtensions`, `LocalizationServiceExtensions`, `MiddlewareExtensions`, `DatabaseExtensions`), global exception middleware (`GlobalExceptionMiddleware`), localization resource files, unified `ServiceResult` wrapper, and PBKDF2 `PasswordHasher`.
 
 ---
 
