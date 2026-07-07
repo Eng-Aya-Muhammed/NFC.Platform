@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Builder;
-using NFC.Platform.API.Middlewares;
+using NFC.Platform.BuildingBlocks.Middlewares;
 
-namespace NFC.Platform.API.Extensions
+namespace NFC.Platform.BuildingBlocks.Extensions
 {
     /// <summary>
     /// Middleware registration extension methods for configuring the request pipeline.

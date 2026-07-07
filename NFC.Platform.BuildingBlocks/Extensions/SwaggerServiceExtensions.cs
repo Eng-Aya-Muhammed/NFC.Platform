@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi.Models;
 
-namespace NFC.Platform.API.Extensions
+namespace NFC.Platform.BuildingBlocks.Extensions
 {
     /// <summary>
     /// Service registration extension methods for configuring Swagger/OpenAPI documentation with JWT Bearer support.

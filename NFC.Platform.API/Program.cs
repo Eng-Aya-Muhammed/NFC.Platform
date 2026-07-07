@@ -2,6 +2,7 @@ using NFC.Platform.Application.Extensions;
 using NFC.Platform.API.Extensions;
 using NFC.Platform.API.Services;
 using NFC.Platform.BuildingBlocks.Common.Helpers;
+using NFC.Platform.BuildingBlocks.Extensions;
 using NFC.Platform.Infrastructure.Extensions;
 using Serilog;
 

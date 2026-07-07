@@ -1,7 +1,7 @@
 using System;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace NFC.Platform.API.Extensions
+namespace NFC.Platform.BuildingBlocks.Extensions
 {
     /// <summary>
     /// Service registration extension methods for configuring AutoMapper mapping services.

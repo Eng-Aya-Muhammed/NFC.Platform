@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using NFC.Platform.BuildingBlocks.Results;
 
-namespace NFC.Platform.API.Extensions
+namespace NFC.Platform.BuildingBlocks.Extensions
 {
     /// <summary>
     /// Service registration extension methods for configuring FluentValidation validator services.

@@ -7,7 +7,7 @@ using Microsoft.IdentityModel.Tokens;
 using NFC.Platform.BuildingBlocks.Common.Constants;
 using NFC.Platform.Domain.Enums;
 
-namespace NFC.Platform.API.Extensions
+namespace NFC.Platform.BuildingBlocks.Extensions
 {
     public static class JwtServiceExtensions
     {

@@ -9,7 +9,7 @@ using NFC.Platform.BuildingBlocks.Common.Exceptions;
 using NFC.Platform.BuildingBlocks.Localization;
 using NFC.Platform.BuildingBlocks.Results;
 
-namespace NFC.Platform.API.Middlewares
+namespace NFC.Platform.BuildingBlocks.Middlewares
 {
     public class GlobalExceptionMiddleware
     {

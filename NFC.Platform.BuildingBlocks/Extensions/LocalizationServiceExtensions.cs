@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Localization;
 using Microsoft.Extensions.DependencyInjection;
 using NFC.Platform.BuildingBlocks.Localization;
 
-namespace NFC.Platform.API.Extensions
+namespace NFC.Platform.BuildingBlocks.Extensions
 {
     /// <summary>
     /// Service registration and request pipeline configuration extensions for application localization.
