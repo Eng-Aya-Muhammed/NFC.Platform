@@ -1,0 +1,8 @@
+<Solution>
+  <Project Path="NFC.Platform.API/NFC.Platform.API.csproj" />
+  <Project Path="NFC.Platform.Application/NFC.Platform.Application.csproj" />
+  <Project Path="NFC.Platform.BuildingBlocks/NFC.Platform.BuildingBlocks.csproj" />
+  <Project Path="NFC.Platform.Domain/NFC.Platform.Domain.csproj" />
+  <Project Path="NFC.Platform.Infrastructure/NFC.Platform.Infrastructure.csproj" />
+  <Project Path="NFC.Platform.Tests/NFC.Platform.Tests.csproj" />
+</Solution>

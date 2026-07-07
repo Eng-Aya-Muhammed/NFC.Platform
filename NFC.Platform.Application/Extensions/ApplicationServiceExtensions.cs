@@ -1,0 +1,21 @@
+using Microsoft.Extensions.DependencyInjection;
+using NFC.Platform.Application.Interfaces.Services;
+using NFC.Platform.Application.Services;
+
+namespace NFC.Platform.Application.Extensions
+{
+    /// <summary>
+    /// Service registration extension methods for the Application layer dependencies.
+    /// </summary>
+    public static class ApplicationServiceExtensions
+    {
+        
+        public static IServiceCollection AddApplicationServices(this IServiceCollection services)
+        {
+            services.AddScoped<ICardService, CardService>();
+            services.AddScoped<IAuthService, AuthService>();
+
+            return services;
+        }
+    }
+}

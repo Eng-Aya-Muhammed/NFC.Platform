@@ -1,0 +1,9 @@
+<Project>
+  <PropertyGroup>
+    <!-- Enable Code Analyzers by default in .NET SDK -->
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <!-- Configure Analysis Level to latest and strictness to recommended -->
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+  </PropertyGroup>
+</Project>

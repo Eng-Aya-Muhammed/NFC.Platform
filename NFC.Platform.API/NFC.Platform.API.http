@@ -1,0 +1,6 @@
+@NFC.Platform.API_HostAddress = http://localhost:5161
+
+GET {{NFC.Platform.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

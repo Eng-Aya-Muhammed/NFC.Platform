@@ -1,0 +1,101 @@
+# Remove the line below if you want to inherit settings from upper directory
+root = true
+
+# All files
+[*]
+indent_style = space
+indent_size = 4
+insert_final_newline = true
+trim_trailing_whitespace = true
+charset = utf-8
+
+# XML project files
+[*.csproj]
+indent_size = 2
+
+# JSON files
+[*.json]
+indent_size = 2
+
+# C# files
+[*.cs]
+# Newline settings
+csharp_new_line_before_open_brace = all
+csharp_new_line_before_else = true
+csharp_new_line_before_catch = true
+csharp_new_line_before_finally = true
+csharp_new_line_before_members_in_object_initializers = true
+csharp_new_line_before_members_in_anonymous_types = true
+csharp_new_line_between_query_expression_clauses = true
+
+# Indentation settings
+csharp_indent_case_contents = true
+csharp_indent_switch_labels = true
+csharp_indent_labels = flush_left
+
+# Organize Usings
+dotnet_separate_import_directive_groups = false
+dotnet_sort_system_directives_first = true
+
+# Style Rules (naming conventions)
+# Private fields must start with _ and be camelCase
+dotnet_naming_rule.private_fields_with_underscore.symbols = private_fields
+dotnet_naming_rule.private_fields_with_underscore.style = camel_case_with_underscore
+dotnet_naming_rule.private_fields_with_underscore.severity = warning
+
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+
+dotnet_naming_style.camel_case_with_underscore.required_prefix = _
+dotnet_naming_style.camel_case_with_underscore.capitalization = camel_case
+
+# Interfaces must start with I
+dotnet_naming_rule.interfaces_must_start_with_i.symbols = interface_symbols
+dotnet_naming_rule.interfaces_must_start_with_i.style = pascal_case_with_i
+dotnet_naming_rule.interfaces_must_start_with_i.severity = warning
+
+dotnet_naming_symbols.interface_symbols.applicable_kinds = interface
+dotnet_naming_symbols.interface_symbols.applicable_accessibilities = *
+
+dotnet_naming_style.pascal_case_with_i.required_prefix = I
+dotnet_naming_style.pascal_case_with_i.capitalization = pascal_case
+
+# Classes, structs, methods, properties, namespaces must be PascalCase
+dotnet_naming_rule.pascal_case_for_types_and_members.symbols = types_and_members
+dotnet_naming_rule.pascal_case_for_types_and_members.style = pascal_case_style
+dotnet_naming_rule.pascal_case_for_types_and_members.severity = warning
+
+dotnet_naming_symbols.types_and_members.applicable_kinds = class, struct, enum, method, property, namespace, event
+dotnet_naming_symbols.types_and_members.applicable_accessibilities = *
+
+dotnet_naming_style.pascal_case_style.capitalization = pascal_case
+
+# Parameters and variables must be camelCase
+dotnet_naming_rule.camel_case_for_parameters_and_variables.symbols = parameters_and_variables
+dotnet_naming_rule.camel_case_for_parameters_and_variables.style = camel_case_style
+dotnet_naming_rule.camel_case_for_parameters_and_variables.severity = warning
+
+dotnet_naming_symbols.parameters_and_variables.applicable_kinds = parameter, local
+dotnet_naming_symbols.parameters_and_variables.applicable_accessibilities = *
+
+dotnet_naming_style.camel_case_style.capitalization = camel_case
+
+# Additional strict style rules
+dotnet_diagnostic.CS8019.severity = suggestion # Unused using directives
+csharp_style_var_for_built_in_types = true:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_throw_expression = true:warning
+csharp_style_conditional_delegate_call = true:warning
+
+# Code Analyzer Suppressions for mandated design decisions
+dotnet_diagnostic.CA1000.severity = none # Static members on generic types (Mandated by ServiceResult<T> Success/Fail design)
+dotnet_diagnostic.CA1716.severity = none # Reserved keyword Get for IMessageService.Get (Mandated by project requirements)
+dotnet_diagnostic.CA1304.severity = none # Culture-specific ToLower
+dotnet_diagnostic.CA1305.severity = none # Culture-specific parsing/formatting
+dotnet_diagnostic.CA1311.severity = none # Culture-specific methods
+dotnet_diagnostic.CA1848.severity = none # Use LoggerMessage delegates
+dotnet_diagnostic.CA1805.severity = none # Explicit default initialization (e.g. IsDeleted = false)
+dotnet_diagnostic.CA1510.severity = none # Use ArgumentNullException.ThrowIfNull
+dotnet_diagnostic.CA1869.severity = none # Cache JsonSerializerOptions
+dotnet_diagnostic.CA1825.severity = none # Avoid zero-length array allocations
+dotnet_diagnostic.CA2201.severity = none # System.Exception types in test controllers
