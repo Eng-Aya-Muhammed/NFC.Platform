@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NFC.Platform.Infrastructure.Contexts;
 
@@ -11,9 +12,11 @@ using NFC.Platform.Infrastructure.Contexts;
 namespace NFC.Platform.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260708112829_AddCardDesignTypeToCardOrder")]
+    partial class AddCardDesignTypeToCardOrder
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -28,16 +31,15 @@ namespace NFC.Platform.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<DateTime?>("ActivatedAt")
-                        .HasColumnType("datetime2");
-
                     b.Property<string>("ActivationCode")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<Guid?>("CardOrderId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<string>("CardNumber")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -51,6 +53,14 @@ namespace NFC.Platform.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
 
@@ -61,11 +71,6 @@ namespace NFC.Platform.Infrastructure.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("ActivationCode")
-                        .IsUnique();
-
-                    b.HasIndex("CardOrderId");
 
                     b.HasIndex("UserProfileId");
 
@@ -147,63 +152,6 @@ namespace NFC.Platform.Infrastructure.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("CardOrders", (string)null);
-                });
-
-            modelBuilder.Entity("NFC.Platform.Domain.Entities.CardOrderItem", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("CardOrderId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid?>("CreatedBy")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Department")
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
-
-                    b.Property<string>("Email")
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
-
-                    b.Property<string>("EmployeeName")
-                        .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("JobTitle")
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
-
-                    b.Property<Guid?>("LinkedCardId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Phone")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid?>("UpdatedBy")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CardOrderId");
-
-                    b.HasIndex("LinkedCardId");
-
-                    b.ToTable("CardOrderItems", (string)null);
                 });
 
             modelBuilder.Entity("NFC.Platform.Domain.Entities.CardTemplate", b =>
@@ -304,8 +252,6 @@ namespace NFC.Platform.Infrastructure.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("AdminUserId");
 
                     b.ToTable("Companies", (string)null);
                 });
@@ -437,8 +383,6 @@ namespace NFC.Platform.Infrastructure.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("UserId");
 
                     b.ToTable("RefreshTokens", (string)null);
                 });
@@ -575,12 +519,6 @@ namespace NFC.Platform.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CompanyId");
-
-                    b.HasIndex("Email")
-                        .IsUnique();
-
-                    b.HasIndex("Username")
-                        .IsUnique();
 
                     b.ToTable("Users", (string)null);
                 });
@@ -753,17 +691,10 @@ namespace NFC.Platform.Infrastructure.Migrations
 
             modelBuilder.Entity("NFC.Platform.Domain.Entities.Card", b =>
                 {
-                    b.HasOne("NFC.Platform.Domain.Entities.CardOrder", "CardOrder")
-                        .WithMany("GeneratedCards")
-                        .HasForeignKey("CardOrderId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
                     b.HasOne("NFC.Platform.Domain.Entities.UserProfile", "UserProfile")
                         .WithMany("ActivatedCards")
                         .HasForeignKey("UserProfileId")
                         .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("CardOrder");
 
                     b.Navigation("UserProfile");
                 });
@@ -793,35 +724,6 @@ namespace NFC.Platform.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("NFC.Platform.Domain.Entities.CardOrderItem", b =>
-                {
-                    b.HasOne("NFC.Platform.Domain.Entities.CardOrder", "CardOrder")
-                        .WithMany("Items")
-                        .HasForeignKey("CardOrderId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("NFC.Platform.Domain.Entities.Card", "LinkedCard")
-                        .WithMany()
-                        .HasForeignKey("LinkedCardId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("CardOrder");
-
-                    b.Navigation("LinkedCard");
-                });
-
-            modelBuilder.Entity("NFC.Platform.Domain.Entities.Company", b =>
-                {
-                    b.HasOne("NFC.Platform.Domain.Entities.User", "AdminUser")
-                        .WithMany()
-                        .HasForeignKey("AdminUserId")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
-
-                    b.Navigation("AdminUser");
-                });
-
             modelBuilder.Entity("NFC.Platform.Domain.Entities.ProfileLink", b =>
                 {
                     b.HasOne("NFC.Platform.Domain.Entities.UserProfile", "UserProfile")
@@ -849,17 +751,6 @@ namespace NFC.Platform.Infrastructure.Migrations
                     b.Navigation("ProfileLink");
 
                     b.Navigation("UserProfile");
-                });
-
-            modelBuilder.Entity("NFC.Platform.Domain.Entities.RefreshToken", b =>
-                {
-                    b.HasOne("NFC.Platform.Domain.Entities.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("NFC.Platform.Domain.Entities.User", b =>
@@ -914,13 +805,6 @@ namespace NFC.Platform.Infrastructure.Migrations
                     b.Navigation("SubscriptionPlan");
 
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("NFC.Platform.Domain.Entities.CardOrder", b =>
-                {
-                    b.Navigation("GeneratedCards");
-
-                    b.Navigation("Items");
                 });
 
             modelBuilder.Entity("NFC.Platform.Domain.Entities.Company", b =>

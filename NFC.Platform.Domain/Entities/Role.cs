@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using NFC.Platform.Domain.Common;
 
 namespace NFC.Platform.Domain.Entities

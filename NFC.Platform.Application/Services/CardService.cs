@@ -56,7 +56,7 @@ namespace NFC.Platform.Application.Services
         {
             var repo = _unitOfWork.Repository<Card>();
 
-            var existingCards = await repo.FindAsync(c => c.CardNumber == request.CardNumber);
+            var existingCards = await repo.FindAsync(c => c.ActivationCode == request.ActivationCode);
             if (existingCards.Any())
             {
                 throw new BusinessException("CardAlreadyAssigned");

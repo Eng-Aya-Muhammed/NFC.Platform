@@ -1,4 +1,4 @@
-using NFC.Platform.Domain.Enums;
+﻿using NFC.Platform.Domain.Enums;
 
 namespace NFC.Platform.Application.DTOs
 {

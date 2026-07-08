@@ -1,4 +1,4 @@
-using FluentValidation;
+﻿using FluentValidation;
 using NFC.Platform.Application.DTOs;
 using NFC.Platform.BuildingBlocks.Localization;
 

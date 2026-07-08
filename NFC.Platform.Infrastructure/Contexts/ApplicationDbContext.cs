@@ -23,6 +23,15 @@ namespace NFC.Platform.Infrastructure.Contexts
         public DbSet<User> Users { get; set; }
         public DbSet<Role> Roles { get; set; }
         public DbSet<UserRole> UserRoles { get; set; }
+        public DbSet<Company> Companies { get; set; }
+        public DbSet<UserProfile> UserProfiles { get; set; }
+        public DbSet<ProfileLink> ProfileLinks { get; set; }
+        public DbSet<CardTemplate> CardTemplates { get; set; }
+        public DbSet<CardOrder> CardOrders { get; set; }
+        public DbSet<CardOrderItem> CardOrderItems { get; set; }
+        public DbSet<SubscriptionPlan> SubscriptionPlans { get; set; }
+        public DbSet<UserSubscription> UserSubscriptions { get; set; }
+        public DbSet<ProfileMetric> ProfileMetrics { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {

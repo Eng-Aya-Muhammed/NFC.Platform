@@ -1,0 +1,40 @@
+﻿using System;
+using NFC.Platform.Domain.Common;
+using NFC.Platform.Domain.Enums;
+
+namespace NFC.Platform.Domain.Entities
+{
+    public class CardOrder : BaseEntity
+    {
+        public Guid UserId { get; set; }
+        public User User { get; set; } = null!;
+
+        public Guid? CompanyId { get; set; }
+        public Company? Company { get; set; }
+
+        public string CardName { get; set; } = string.Empty;
+
+        public CardType CardType { get; set; }
+
+        public CardDesignType CardDesignType { get; set; }
+
+        public Guid? PrintTemplateId { get; set; }
+        public CardTemplate? PrintTemplate { get; set; }
+
+        public int Quantity { get; set; }
+
+        public string? ExcelDataUrl { get; set; }
+
+        public string? FrontDesignUrl { get; set; }
+
+        public string? BackDesignUrl { get; set; }
+
+        public string? Notes { get; set; }
+        public OrderStatus Status { get; set; } = OrderStatus.Pending;
+        public decimal TotalPrice { get; set; }
+
+        public ICollection<CardOrderItem> Items { get; set; } = new List<CardOrderItem>();
+
+        public ICollection<Card> GeneratedCards { get; set; } = new List<Card>();
+    }
+}

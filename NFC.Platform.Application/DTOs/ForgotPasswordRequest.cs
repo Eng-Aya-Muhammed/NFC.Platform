@@ -1,4 +1,4 @@
-namespace NFC.Platform.Application.DTOs
+﻿namespace NFC.Platform.Application.DTOs
 {
     public class ForgotPasswordRequest
     {
