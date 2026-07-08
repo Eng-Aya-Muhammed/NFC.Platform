@@ -6,5 +6,8 @@ namespace NFC.Platform.BuildingBlocks.Common.Constants
         public const string Email = "email";
         public const string Name = "name";
         public const string Role = "role";
+        public const string CompanyId = "cid";
+        public const string AccountType = "act";
     }
 }
+

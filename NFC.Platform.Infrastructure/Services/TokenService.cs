@@ -7,12 +7,10 @@ using System.Text;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using NFC.Platform.Application.Interfaces.Services;
+using NFC.Platform.BuildingBlocks.Common.Constants;
 
 namespace NFC.Platform.Infrastructure.Services
 {
-    /// <summary>
-    /// Implementation of <see cref="ITokenService"/> signing JWTs using HS256 algorithm and application settings.
-    /// </summary>
     public class TokenService : ITokenService
     {
         private readonly IConfiguration _configuration;
@@ -22,8 +20,7 @@ namespace NFC.Platform.Infrastructure.Services
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         }
 
-        /// <inheritdoc />
-        public string GenerateToken(Guid userId, string email, IEnumerable<string> roles)
+        public string GenerateToken(Guid userId, string email, IEnumerable<string> roles, Guid? companyId = null, string? accountType = null)
         {
             var keyStr = _configuration["JwtSettings:Key"] 
                 ?? throw new InvalidOperationException("JWT Secret Key 'JwtSettings:Key' is not configured.");
@@ -37,16 +34,24 @@ namespace NFC.Platform.Infrastructure.Services
 
             var claims = new List<Claim>
             {
-                new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
-                new Claim(ClaimTypes.Email, email),
-                // Add standard JTI for token uniqueness tracing
+                new Claim(AppClaims.UserId, userId.ToString()),
+                new Claim(AppClaims.Email, email),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };
 
-            // Add role claims dynamically (supports multiple roles per user)
             if (roles != null)
             {
-                claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
+                claims.AddRange(roles.Select(role => new Claim(AppClaims.Role, role)));
+            }
+
+            if (companyId.HasValue)
+            {
+                claims.Add(new Claim(AppClaims.CompanyId, companyId.Value.ToString()));
+            }
+
+            if (!string.IsNullOrEmpty(accountType))
+            {
+                claims.Add(new Claim(AppClaims.AccountType, accountType));
             }
 
             var token = new JwtSecurityToken(
@@ -60,3 +65,4 @@ namespace NFC.Platform.Infrastructure.Services
         }
     }
 }
+

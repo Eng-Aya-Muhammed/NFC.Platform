@@ -1,4 +1,6 @@
-﻿namespace NFC.Platform.Application.DTOs
+using NFC.Platform.Domain.Enums;
+
+namespace NFC.Platform.Application.DTOs
 {
     public class RegisterRequest
     {
@@ -6,5 +8,8 @@
         public string Email { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
         public string ConfirmPassword { get; set; } = string.Empty;
+        public AccountType AccountType { get; set; } = AccountType.Individual;
+        public string? CompanyName { get; set; }
     }
 }
+

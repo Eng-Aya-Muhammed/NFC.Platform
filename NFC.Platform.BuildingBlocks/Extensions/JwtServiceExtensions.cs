@@ -36,7 +36,9 @@ namespace NFC.Platform.BuildingBlocks.Extensions
                     ValidateAudience = true,
                     ValidAudience = configuration["JwtSettings:Audience"],
                     ValidateLifetime = true,
-                    ClockSkew = TimeSpan.Zero
+                    ClockSkew = TimeSpan.Zero,
+                    NameClaimType = AppClaims.UserId,
+                    RoleClaimType = AppClaims.Role
                 };
             });
 
@@ -44,7 +46,10 @@ namespace NFC.Platform.BuildingBlocks.Extensions
             {
                 options.AddPolicy(AppPolicies.AdminOnly, policy => policy.RequireRole(AppRole.Admin.ToString()));
                 options.AddPolicy(AppPolicies.CustomerOnly, policy => policy.RequireRole(AppRole.Customer.ToString()));
+                options.AddPolicy(AppPolicies.CompanyAdminOnly, policy => policy.RequireRole(AppRole.CompanyAdmin.ToString()));
+                options.AddPolicy(AppPolicies.EmployeeOnly, policy => policy.RequireRole(AppRole.Employee.ToString()));
             });
+
 
             return services;
         }
