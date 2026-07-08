@@ -83,7 +83,7 @@ namespace NFC.Platform.Tests.Services
             _roleRepo.FindAsync(Arg.Any<Expression<Func<Role, bool>>>())
                 .Returns(new List<Role>());
 
-            _tokenService.GenerateToken(user.Id, user.Email, Arg.Any<IEnumerable<string>>(), Arg.Any<Guid?>(), Arg.Any<string>())
+            _tokenService.GenerateToken(user.Id, user.Email, Arg.Any<IEnumerable<string>>(), Arg.Any<Guid>(), Arg.Any<Guid?>(), Arg.Any<string>())
                 .Returns("mock-access-token");
             _messageService.Get("LoginSuccess").Returns("Logged in successfully.");
 
@@ -218,7 +218,7 @@ namespace NFC.Platform.Tests.Services
             _userRoleRepo.FindAsync(Arg.Any<Expression<Func<UserRole, bool>>>())
                 .Returns(new List<UserRole>());
 
-            _tokenService.GenerateToken(Arg.Any<Guid>(), request.Email, Arg.Any<IEnumerable<string>>(), Arg.Any<Guid?>(), Arg.Any<string>())
+            _tokenService.GenerateToken(Arg.Any<Guid>(), request.Email, Arg.Any<IEnumerable<string>>(), Arg.Any<Guid>(), Arg.Any<Guid?>(), Arg.Any<string>())
                 .Returns("mock-access-token");
 
             // Act
@@ -230,7 +230,7 @@ namespace NFC.Platform.Tests.Services
             Assert.Equal("mock-access-token", result.Data.Token);
             await _userRepo.Received(1).AddAsync(Arg.Any<User>());
             await _userRoleRepo.Received(1).AddAsync(Arg.Any<UserRole>());
-            await _unitOfWork.Received(3).SaveChangesAsync(); // Saved three times: User added, UserRole added, and RefreshToken added
+            await _unitOfWork.Received(4).SaveChangesAsync(); // Saved four times: Tenant added, User added, UserRole added, and RefreshToken added
         }
 
         [Fact]
@@ -258,7 +258,7 @@ namespace NFC.Platform.Tests.Services
             _userRoleRepo.FindAsync(Arg.Any<Expression<Func<UserRole, bool>>>())
                 .Returns(new List<UserRole>());
 
-            _tokenService.GenerateToken(Arg.Any<Guid>(), request.Email, Arg.Any<IEnumerable<string>>(), Arg.Any<Guid?>(), Arg.Any<string>())
+            _tokenService.GenerateToken(Arg.Any<Guid>(), request.Email, Arg.Any<IEnumerable<string>>(), Arg.Any<Guid>(), Arg.Any<Guid?>(), Arg.Any<string>())
                 .Returns("mock-access-token");
 
             // Act
@@ -272,7 +272,7 @@ namespace NFC.Platform.Tests.Services
             await companyRepo.Received(1).AddAsync(Arg.Any<Company>());
             await _userRoleRepo.Received(1).AddAsync(Arg.Any<UserRole>());
             _userRepo.Received(1).Update(Arg.Is<User>(u => u.CompanyId != null));
-            await _unitOfWork.Received(5).SaveChangesAsync(); // Saved five times: User added, Company added, User updated with CompanyId, UserRole added, RefreshToken added
+            await _unitOfWork.Received(6).SaveChangesAsync(); // Saved six times: Tenant added, User added, Company added, User updated with CompanyId, UserRole added, RefreshToken added
         }
 
         [Fact]
@@ -300,7 +300,7 @@ namespace NFC.Platform.Tests.Services
             _roleRepo.FindAsync(Arg.Any<Expression<Func<Role, bool>>>())
                 .Returns(new List<Role>());
 
-            _tokenService.GenerateToken(userId, user.Email, Arg.Any<IEnumerable<string>>(), Arg.Any<Guid?>(), Arg.Any<string>())
+            _tokenService.GenerateToken(userId, user.Email, Arg.Any<IEnumerable<string>>(), Arg.Any<Guid>(), Arg.Any<Guid?>(), Arg.Any<string>())
                 .Returns("new-access-token");
             _messageService.Get("TokenRefreshed").Returns("Token refreshed successfully.");
 

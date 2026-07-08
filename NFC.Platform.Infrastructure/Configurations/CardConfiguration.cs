@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using NFC.Platform.Domain.Entities;
 
@@ -11,11 +11,18 @@ namespace NFC.Platform.Infrastructure.Configurations
             builder.ToTable("Cards");
             builder.HasKey(c => c.Id);
 
+            builder.Property(c => c.TenantId).IsRequired();
+
             builder.Property(c => c.ActivationCode)
                 .IsRequired()
                 .HasMaxLength(100);
 
-            builder.HasIndex(c => c.ActivationCode).IsUnique();
+            builder.HasIndex(c => new { c.TenantId, c.ActivationCode }).IsUnique();
+
+            builder.HasOne(c => c.Tenant)
+                .WithMany()
+                .HasForeignKey(c => c.TenantId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             builder.HasOne(c => c.UserProfile)
                 .WithMany(p => p.ActivatedCards)

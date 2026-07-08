@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using NFC.Platform.Domain.Common;
 
@@ -12,10 +12,12 @@ namespace NFC.Platform.Domain.Entities
         public string Size { get; set; } = string.Empty;
         public string Address { get; set; } = string.Empty;
 
+        public Guid TenantId { get; set; }
+        public Tenant Tenant { get; set; } = null!;
+
         public Guid AdminUserId { get; set; }
         public User AdminUser { get; set; } = null!;
 
         public ICollection<User> Employees { get; set; } = new List<User>();
-        public ICollection<CardOrder> CardOrders { get; set; } = new List<CardOrder>();
     }
 }

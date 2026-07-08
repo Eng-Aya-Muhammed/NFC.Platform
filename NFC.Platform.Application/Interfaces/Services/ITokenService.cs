@@ -14,8 +14,9 @@ namespace NFC.Platform.Application.Interfaces.Services
         /// <param name="userId">The unique identifier of the user.</param>
         /// <param name="email">The email address of the user.</param>
         /// <param name="roles">The list of roles assigned to the user.</param>
+        /// <param name="tenantId">The unique identifier of the tenant.</param>
         /// <returns>A signed JWT token string.</returns>
-        string GenerateToken(Guid userId, string email, IEnumerable<string> roles, Guid? companyId = null, string? accountType = null);
+        string GenerateToken(Guid userId, string email, IEnumerable<string> roles, Guid tenantId, Guid? companyId = null, string? accountType = null);
 
     }
 }

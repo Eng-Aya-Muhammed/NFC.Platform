@@ -20,7 +20,7 @@ namespace NFC.Platform.Infrastructure.Services
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         }
 
-        public string GenerateToken(Guid userId, string email, IEnumerable<string> roles, Guid? companyId = null, string? accountType = null)
+        public string GenerateToken(Guid userId, string email, IEnumerable<string> roles, Guid tenantId, Guid? companyId = null, string? accountType = null)
         {
             var keyStr = _configuration["JwtSettings:Key"] 
                 ?? throw new InvalidOperationException("JWT Secret Key 'JwtSettings:Key' is not configured.");
@@ -36,6 +36,7 @@ namespace NFC.Platform.Infrastructure.Services
             {
                 new Claim(AppClaims.UserId, userId.ToString()),
                 new Claim(AppClaims.Email, email),
+                new Claim(AppClaims.TenantId, tenantId.ToString()),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };
 

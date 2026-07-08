@@ -1,11 +1,14 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using NFC.Platform.Domain.Common;
 
 namespace NFC.Platform.Domain.Entities
 {
-    public class UserProfile : BaseEntity
+    public class UserProfile : BaseEntity, ITenantEntity
     {
+        public Guid TenantId { get; set; }
+        public Tenant Tenant { get; set; } = null!;
+
         public Guid UserId { get; set; }
         public User User { get; set; } = null!;
 

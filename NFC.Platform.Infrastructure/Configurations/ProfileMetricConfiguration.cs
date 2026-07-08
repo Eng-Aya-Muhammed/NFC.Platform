@@ -15,10 +15,18 @@ namespace NFC.Platform.Infrastructure.Configurations
             builder.Property(m => m.IpAddress).HasMaxLength(45);
             builder.Property(m => m.UserAgent).HasMaxLength(500);
 
+            builder.Property(m => m.TenantId).IsRequired();
+            builder.HasIndex(m => m.TenantId);
+
+            builder.HasOne(m => m.Tenant)
+                .WithMany()
+                .HasForeignKey(m => m.TenantId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             builder.HasOne(m => m.UserProfile)
                 .WithMany()
                 .HasForeignKey(m => m.UserProfileId)
-                .OnDelete(DeleteBehavior.NoAction);
+                .OnDelete(DeleteBehavior.Cascade);
 
             builder.HasOne(m => m.ProfileLink)
                 .WithMany()

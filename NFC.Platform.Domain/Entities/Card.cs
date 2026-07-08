@@ -1,10 +1,13 @@
-﻿using System;
+using System;
 using NFC.Platform.Domain.Common;
 
 namespace NFC.Platform.Domain.Entities
 {
-    public class Card : BaseEntity
+    public class Card : BaseEntity, ITenantEntity
     {
+        public Guid TenantId { get; set; }
+        public Tenant Tenant { get; set; } = null!;
+
         public string ActivationCode { get; set; } = string.Empty;
 
         public bool IsActive { get; set; } = false;

@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using NFC.Platform.Domain.Entities;
 
@@ -24,14 +24,17 @@ namespace NFC.Platform.Infrastructure.Configurations
             builder.Property(o => o.Status).IsRequired();
             builder.Property(o => o.TotalPrice).HasColumnType("decimal(18,2)").IsRequired();
 
+            builder.Property(o => o.TenantId).IsRequired();
+            builder.HasIndex(o => o.TenantId);
+
+            builder.HasOne(o => o.Tenant)
+                .WithMany()
+                .HasForeignKey(o => o.TenantId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             builder.HasOne(o => o.User)
                 .WithMany()
                 .HasForeignKey(o => o.UserId)
-                .OnDelete(DeleteBehavior.Restrict);
-
-            builder.HasOne(o => o.Company)
-                .WithMany(c => c.CardOrders)
-                .HasForeignKey(o => o.CompanyId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             builder.HasOne(o => o.PrintTemplate)

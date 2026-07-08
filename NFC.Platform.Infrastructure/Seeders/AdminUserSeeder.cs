@@ -36,12 +36,23 @@ namespace NFC.Platform.Infrastructure.Seeders
             var adminExists = await _context.Users.AnyAsync(u => u.Email == email);
             if (!adminExists)
             {
+                // Create a system/admin Tenant
+                var tenant = new Tenant
+                {
+                    Name = "System",
+                    IsActive = true
+                };
+
+                _context.Tenants.Add(tenant);
+                await _context.SaveChangesAsync();
+
                 var passwordHash = PasswordHasher.HashPassword(password);
                 var adminUser = new User
                 {
                     Username = username ?? "admin",
                     Email = email,
-                    PasswordHash = passwordHash
+                    PasswordHash = passwordHash,
+                    TenantId = tenant.Id
                 };
 
                 _context.Users.Add(adminUser);

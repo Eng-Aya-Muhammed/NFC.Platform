@@ -46,6 +46,7 @@ namespace NFC.Platform.Application.Services
 
         public async Task<ServiceResult<AuthDto>> RegisterAsync(RegisterRequest request)
         {
+            var tenantRepo = _unitOfWork.Repository<Tenant>();
             var userRepo = _unitOfWork.Repository<User>();
             var roleRepo = _unitOfWork.Repository<Role>();
             var userRoleRepo = _unitOfWork.Repository<UserRole>();
@@ -58,52 +59,81 @@ namespace NFC.Platform.Application.Services
                 return ServiceResult<AuthDto>.Fail(_messageService.Get("UserAlreadyExists"), 400);
             }
 
-            // Create new user entity
-            var user = new User
-            {
-                Username = request.Username,
-                Email = request.Email,
-                PasswordHash = PasswordHasher.HashPassword(request.Password),
-                AccountType = request.AccountType
-            };
+            await _unitOfWork.BeginTransactionAsync();
 
-            await userRepo.AddAsync(user);
-            await _unitOfWork.SaveChangesAsync();
-
-            if (request.AccountType == AccountType.CompanyAdmin)
+            try
             {
-                var company = new Company
+                // 1. Create Tenant
+                var tenantName = request.AccountType == AccountType.CompanyAdmin
+                    ? (request.CompanyName ?? "Company Tenant")
+                    : $"{request.Username}'s Tenant";
+
+                var tenant = new Tenant
                 {
-                    Name = request.CompanyName ?? "Company",
-                    AdminUserId = user.Id
+                    Name = tenantName,
+                    IsActive = true
                 };
-                await companyRepo.AddAsync(company);
+
+                await tenantRepo.AddAsync(tenant);
                 await _unitOfWork.SaveChangesAsync();
 
-                user.CompanyId = company.Id;
-                userRepo.Update(user);
-                await _unitOfWork.SaveChangesAsync();
-            }
-
-            // Assign role based on AccountType
-            var targetRole = request.AccountType == AccountType.CompanyAdmin
-                ? AppRole.CompanyAdmin
-                : AppRole.Customer;
-
-            var roles = await roleRepo.FindAsync(r => r.Name == targetRole.ToString());
-            var matchingRole = roles.Count > 0 ? roles[0] : null;
-
-            if (matchingRole != null)
-            {
-                await userRoleRepo.AddAsync(new UserRole
+                // 2. Create User
+                var user = new User
                 {
-                    UserId = user.Id,
-                    RoleId = matchingRole.Id
-                });
-                await _unitOfWork.SaveChangesAsync();
-            }
+                    Username = request.Username,
+                    Email = request.Email,
+                    PasswordHash = PasswordHasher.HashPassword(request.Password),
+                    AccountType = request.AccountType,
+                    TenantId = tenant.Id
+                };
 
-            return await GenerateAuthResponseAsync(user, _messageService.Get("RegisterSuccess"));
+                await userRepo.AddAsync(user);
+                await _unitOfWork.SaveChangesAsync();
+
+                // 3. Create Company if CompanyAdmin
+                if (request.AccountType == AccountType.CompanyAdmin)
+                {
+                    var company = new Company
+                    {
+                        Name = request.CompanyName ?? "Company",
+                        TenantId = tenant.Id,
+                        AdminUserId = user.Id
+                    };
+                    await companyRepo.AddAsync(company);
+                    await _unitOfWork.SaveChangesAsync();
+
+                    user.CompanyId = company.Id;
+                    userRepo.Update(user);
+                    await _unitOfWork.SaveChangesAsync();
+                }
+
+                // 4. Assign Role
+                var targetRole = request.AccountType == AccountType.CompanyAdmin
+                    ? AppRole.CompanyAdmin
+                    : AppRole.Customer;
+
+                var roles = await roleRepo.FindAsync(r => r.Name == targetRole.ToString());
+                var matchingRole = roles.Count > 0 ? roles[0] : null;
+
+                if (matchingRole != null)
+                {
+                    await userRoleRepo.AddAsync(new UserRole
+                    {
+                        UserId = user.Id,
+                        RoleId = matchingRole.Id
+                    });
+                    await _unitOfWork.SaveChangesAsync();
+                }
+
+                await _unitOfWork.CommitTransactionAsync();
+
+                return await GenerateAuthResponseAsync(user, _messageService.Get("RegisterSuccess"));
+            }
+            catch (Exception)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                throw;
+            }
         }
 
 
@@ -263,7 +293,7 @@ namespace NFC.Platform.Application.Services
             var roleNames = roles.Select(r => r.Name).ToList();
 
             // Generate tokens
-            var accessToken = _tokenService.GenerateToken(user.Id, user.Email, roleNames, user.CompanyId, user.AccountType.ToString());
+            var accessToken = _tokenService.GenerateToken(user.Id, user.Email, roleNames, user.TenantId, user.CompanyId, user.AccountType.ToString());
             var refreshTokenString = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
 
 
@@ -271,6 +301,7 @@ namespace NFC.Platform.Application.Services
             {
                 Token = refreshTokenString,
                 UserId = user.Id,
+                TenantId = user.TenantId,
                 ExpiresOn = DateTime.UtcNow.AddDays(7),
                 IsRevoked = false
             };

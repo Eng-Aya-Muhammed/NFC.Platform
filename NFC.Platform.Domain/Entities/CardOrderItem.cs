@@ -1,10 +1,13 @@
-﻿using System;
+using System;
 using NFC.Platform.Domain.Common;
 
 namespace NFC.Platform.Domain.Entities
 {
-    public class CardOrderItem : BaseEntity
+    public class CardOrderItem : BaseEntity, ITenantEntity
     {
+        public Guid TenantId { get; set; }
+        public Tenant Tenant { get; set; } = null!;
+
         public Guid CardOrderId { get; set; }
         public CardOrder CardOrder { get; set; } = null!;
 

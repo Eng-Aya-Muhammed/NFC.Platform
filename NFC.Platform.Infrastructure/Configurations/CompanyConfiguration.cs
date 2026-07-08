@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using NFC.Platform.Domain.Entities;
 
@@ -16,6 +16,9 @@ namespace NFC.Platform.Infrastructure.Configurations
             builder.Property(c => c.CommercialRegistry).HasMaxLength(100);
             builder.Property(c => c.Size).HasMaxLength(50);
             builder.Property(c => c.Address).HasMaxLength(500);
+
+            builder.Property(c => c.TenantId).IsRequired();
+            builder.HasIndex(c => c.TenantId).IsUnique();
 
             builder.HasOne(c => c.AdminUser)
                 .WithMany()

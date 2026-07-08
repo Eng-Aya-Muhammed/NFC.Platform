@@ -1,16 +1,16 @@
-﻿using System;
+using System;
 using NFC.Platform.Domain.Common;
 using NFC.Platform.Domain.Enums;
 
 namespace NFC.Platform.Domain.Entities
 {
-    public class CardOrder : BaseEntity
+    public class CardOrder : BaseEntity, ITenantEntity
     {
+        public Guid TenantId { get; set; }
+        public Tenant Tenant { get; set; } = null!;
+
         public Guid UserId { get; set; }
         public User User { get; set; } = null!;
-
-        public Guid? CompanyId { get; set; }
-        public Company? Company { get; set; }
 
         public string CardName { get; set; } = string.Empty;
 

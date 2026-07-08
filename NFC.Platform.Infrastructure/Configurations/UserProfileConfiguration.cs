@@ -25,10 +25,18 @@ namespace NFC.Platform.Infrastructure.Configurations
             builder.Property(p => p.LinkedInUrl).HasMaxLength(1000);
             builder.Property(p => p.WebsiteUrl).HasMaxLength(1000);
 
+            builder.Property(p => p.TenantId).IsRequired();
+            builder.HasIndex(p => p.TenantId);
+
+            builder.HasOne(p => p.Tenant)
+                .WithMany()
+                .HasForeignKey(p => p.TenantId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             builder.HasOne(p => p.CardTemplate)
                 .WithMany()
                 .HasForeignKey(p => p.CardTemplateId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.SetNull);
         }
     }
 }

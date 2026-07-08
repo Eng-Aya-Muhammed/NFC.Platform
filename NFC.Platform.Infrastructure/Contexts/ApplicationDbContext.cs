@@ -1,6 +1,9 @@
 using System;
 using System.Linq.Expressions;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using NFC.Platform.BuildingBlocks.Common.Helpers;
 using NFC.Platform.Domain.Common;
 using NFC.Platform.Domain.Entities;
 using NFC.Platform.Infrastructure.Interceptors;
@@ -10,14 +13,18 @@ namespace NFC.Platform.Infrastructure.Contexts
     public class ApplicationDbContext : DbContext
     {
         private readonly AuditableEntitySaveChangesInterceptor _auditableInterceptor;
+        private readonly ICurrentTenant _currentTenant;
 
         public ApplicationDbContext(
             DbContextOptions<ApplicationDbContext> options,
-            AuditableEntitySaveChangesInterceptor auditableInterceptor) : base(options)
+            AuditableEntitySaveChangesInterceptor auditableInterceptor,
+            ICurrentTenant currentTenant) : base(options)
         {
             _auditableInterceptor = auditableInterceptor ?? throw new ArgumentNullException(nameof(auditableInterceptor));
+            _currentTenant = currentTenant ?? throw new ArgumentNullException(nameof(currentTenant));
         }
 
+        public DbSet<Tenant> Tenants { get; set; }
         public DbSet<Card> Cards { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
         public DbSet<User> Users { get; set; }
@@ -47,20 +54,132 @@ namespace NFC.Platform.Infrastructure.Contexts
 
             foreach (var entityType in modelBuilder.Model.GetEntityTypes())
             {
-                if (typeof(BaseEntity).IsAssignableFrom(entityType.ClrType))
+                var clrType = entityType.ClrType;
+                var isSoftDelete = typeof(ISoftDelete).IsAssignableFrom(clrType);
+                var isTenantEntity = typeof(ITenantEntity).IsAssignableFrom(clrType);
+
+                if (isSoftDelete || isTenantEntity)
                 {
-                    modelBuilder.Entity(entityType.ClrType).HasQueryFilter(CreateSoftDeleteFilter(entityType.ClrType));
+                    var parameter = Expression.Parameter(clrType, "e");
+                    Expression? combinedBody = null;
+
+                    // 1. Build Soft Delete Filter (IsDeleted == false)
+                    if (isSoftDelete)
+                    {
+                        var isDeletedProp = Expression.Property(parameter, nameof(ISoftDelete.IsDeleted));
+                        var falseConst = Expression.Constant(false);
+                        combinedBody = Expression.Equal(isDeletedProp, falseConst);
+                    }
+
+                    // 2. Build Tenant Filter
+                    if (isTenantEntity)
+                    {
+                        var tenantIdPropInfo = clrType.GetProperty("TenantId")
+                            ?? throw new InvalidOperationException($"ITenantEntity {clrType.Name} does not have TenantId property.");
+
+                        var tenantIdProp = Expression.Property(parameter, tenantIdPropInfo);
+                        var currentTenantExpr = Expression.Constant(_currentTenant);
+                        
+                        var isSuperAdminExpr = Expression.Property(currentTenantExpr, nameof(ICurrentTenant.IsSuperAdmin));
+                        var currentTenantIdExpr = Expression.Property(currentTenantExpr, nameof(ICurrentTenant.TenantId));
+
+                        Expression tenantIdComparison;
+                        if (tenantIdPropInfo.PropertyType == typeof(Guid?))
+                        {
+                            // Nullable Guid comparison (e.g. CardTemplate):
+                            // _currentTenant.IsSuperAdmin || e.TenantId == null || e.TenantId == _currentTenant.TenantId
+                            var nullConst = Expression.Constant(null, typeof(Guid?));
+                            var isNullExpr = Expression.Equal(tenantIdProp, nullConst);
+                            var isMatchExpr = Expression.Equal(tenantIdProp, currentTenantIdExpr);
+                            
+                            var tenantMatchOrNull = Expression.OrElse(isNullExpr, isMatchExpr);
+                            tenantIdComparison = Expression.OrElse(isSuperAdminExpr, tenantMatchOrNull);
+                        }
+                        else
+                        {
+                            // Non-nullable Guid comparison:
+                            // _currentTenant.IsSuperAdmin || e.TenantId == (_currentTenant.TenantId ?? Guid.Empty)
+                            var guidEmpty = Expression.Constant(Guid.Empty, typeof(Guid));
+                            var resolvedTenantIdExpr = Expression.Coalesce(currentTenantIdExpr, guidEmpty);
+                            var isMatchExpr = Expression.Equal(tenantIdProp, resolvedTenantIdExpr);
+
+                            tenantIdComparison = Expression.OrElse(isSuperAdminExpr, isMatchExpr);
+                        }
+
+                        if (combinedBody == null)
+                        {
+                            combinedBody = tenantIdComparison;
+                        }
+                        else
+                        {
+                            combinedBody = Expression.AndAlso(combinedBody, tenantIdComparison);
+                        }
+                    }
+
+                    if (combinedBody != null)
+                    {
+                        var lambda = Expression.Lambda(combinedBody, parameter);
+                        modelBuilder.Entity(clrType).HasQueryFilter(lambda);
+                    }
                 }
             }
         }
 
-        private static LambdaExpression CreateSoftDeleteFilter(Type entityType)
+        public override int SaveChanges()
         {
-            var parameter = Expression.Parameter(entityType, "e");
-            var property = Expression.Property(parameter, nameof(BaseEntity.IsDeleted));
-            var falseValue = Expression.Constant(false);
-            var body = Expression.Equal(property, falseValue);
-            return Expression.Lambda(body, parameter);
+            ApplyTenantRules();
+            return base.SaveChanges();
+        }
+
+        public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        {
+            ApplyTenantRules();
+            return base.SaveChangesAsync(cancellationToken);
+        }
+
+        private void ApplyTenantRules()
+        {
+            var tenantId = _currentTenant.TenantId;
+
+            foreach (var entry in ChangeTracker.Entries())
+            {
+                if (entry.Entity is ITenantEntity tenantEntity)
+                {
+                    if (entry.State == EntityState.Added)
+                    {
+                        if (tenantEntity.TenantId == Guid.Empty)
+                        {
+                            if (!tenantId.HasValue)
+                            {
+                                throw new InvalidOperationException("Cannot save tenant-scoped entity: current TenantId is not set.");
+                            }
+                            tenantEntity.TenantId = tenantId.Value;
+                        }
+                    }
+                    else if (entry.State == EntityState.Modified)
+                    {
+                        var originalTenantId = entry.Property("TenantId").OriginalValue;
+                        var currentTenantId = entry.Property("TenantId").CurrentValue;
+
+                        if (!Equals(originalTenantId, currentTenantId))
+                        {
+                            throw new InvalidOperationException("Tenant ownership is immutable and cannot be changed after creation.");
+                        }
+                    }
+                }
+
+                if (entry.Entity is RefreshToken refreshToken)
+                {
+                    if (entry.State == EntityState.Added && refreshToken.TenantId == Guid.Empty)
+                    {
+                        if (!tenantId.HasValue)
+                        {
+                            throw new InvalidOperationException("Cannot save refresh token: current TenantId is not set.");
+                        }
+                        refreshToken.TenantId = tenantId.Value;
+                    }
+                }
+            }
         }
     }
 }

@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using NFC.Platform.Application.Interfaces.Repositories;
 using NFC.Platform.Application.Interfaces.Services;
 using NFC.Platform.BuildingBlocks.Common.Seeders;
+using NFC.Platform.BuildingBlocks.Common.Helpers;
 using NFC.Platform.Infrastructure.Contexts;
 using NFC.Platform.Infrastructure.Interceptors;
 using NFC.Platform.Infrastructure.Repositories;
@@ -36,8 +37,9 @@ namespace NFC.Platform.Infrastructure.Extensions
             services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
             services.AddScoped<IUnitOfWork, UnitOfWork>();
 
-            // 4. Register Token Service
+            // 4. Register Token Service and Current Tenant Service
             services.AddScoped<ITokenService, TokenService>();
+            services.AddScoped<ICurrentTenant, CurrentTenantService>();
 
             // 5. Register Seeders
             services.AddScoped<IRoleSeeder, RoleSeeder>();
