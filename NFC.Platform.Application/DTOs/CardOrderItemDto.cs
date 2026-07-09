@@ -1,25 +1,20 @@
 using System;
-using NFC.Platform.Domain.Common;
 
-namespace NFC.Platform.Domain.Entities
+namespace NFC.Platform.Application.DTOs
 {
-    public class CardOrderItem : BaseEntity, ITenantEntity
+    /// <summary>
+    /// Data transfer object representing a single CardOrderItem.
+    /// </summary>
+    public class CardOrderItemDto
     {
-        public Guid TenantId { get; set; }
-        public Tenant Tenant { get; set; } = null!;
-
+        public Guid Id { get; set; }
         public Guid CardOrderId { get; set; }
-        public CardOrder CardOrder { get; set; } = null!;
-
         public string EmployeeName { get; set; } = string.Empty;
         public string? JobTitle { get; set; }
         public string? Email { get; set; }
         public string? Phone { get; set; }
         public string? Department { get; set; }
-
         public string? ActivationCode { get; set; }
-
         public Guid? LinkedCardId { get; set; }
-        public Card? LinkedCard { get; set; }
     }
 }

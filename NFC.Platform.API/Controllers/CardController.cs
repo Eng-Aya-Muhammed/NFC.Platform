@@ -49,6 +49,18 @@ namespace NFC.Platform.API.Controllers
             return StatusCode(result.StatusCode, result);
         }
 
+        [HttpPost("activate")]
+        public async Task<IActionResult> Activate([FromBody] ActivateCardRequest request)
+        {
+            var result = await _cardService.ActivateCardAsync(request);
+            if (!result.IsSuccess)
+            {
+                return StatusCode(result.StatusCode, result);
+            }
+
+            return Ok(result);
+        }
+
         [HttpDelete("{id:guid}")]
         public async Task<IActionResult> Delete([FromRoute] Guid id)
         {

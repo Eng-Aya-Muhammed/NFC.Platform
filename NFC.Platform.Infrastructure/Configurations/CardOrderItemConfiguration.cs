@@ -19,9 +19,11 @@ namespace NFC.Platform.Infrastructure.Configurations
             builder.Property(i => i.Email).HasMaxLength(256);
             builder.Property(i => i.Phone).HasMaxLength(50);
             builder.Property(i => i.Department).HasMaxLength(100);
+            builder.Property(i => i.ActivationCode).HasMaxLength(100);
 
             builder.Property(i => i.TenantId).IsRequired();
             builder.HasIndex(i => i.TenantId);
+            builder.HasIndex(i => i.ActivationCode);
 
             builder.HasOne(i => i.Tenant)
                 .WithMany()

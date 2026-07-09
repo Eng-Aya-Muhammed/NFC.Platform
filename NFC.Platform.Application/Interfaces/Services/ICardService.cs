@@ -32,6 +32,13 @@ namespace NFC.Platform.Application.Interfaces.Services
         Task<ServiceResult<CardDto>> CreateCardAsync(CreateCardRequest request);
 
         /// <summary>
+        /// Activates a Card in the system.
+        /// </summary>
+        /// <param name="request">The activation details payload.</param>
+        /// <returns>A service result representing the status of the activation operation.</returns>
+        Task<ServiceResult> ActivateCardAsync(ActivateCardRequest request);
+
+        /// <summary>
         /// Soft deletes a Card from the system by its identifier.
         /// </summary>
         /// <param name="id">The unique identifier of the Card to delete.</param>
