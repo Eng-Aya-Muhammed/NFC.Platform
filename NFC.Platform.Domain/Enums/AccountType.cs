@@ -1,4 +1,4 @@
-﻿namespace NFC.Platform.Domain.Enums
+namespace NFC.Platform.Domain.Enums
 {
     public enum AccountType
     {

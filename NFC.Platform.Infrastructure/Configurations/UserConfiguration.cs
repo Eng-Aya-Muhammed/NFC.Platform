@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using NFC.Platform.Domain.Entities;
+using NFC.Platform.Domain.Enums;
 
 namespace NFC.Platform.Infrastructure.Configurations
 {
@@ -15,6 +16,7 @@ namespace NFC.Platform.Infrastructure.Configurations
             builder.Property(u => u.Email).IsRequired().HasMaxLength(256);
             builder.Property(u => u.PasswordHash).IsRequired().HasMaxLength(500);
             builder.Property(u => u.PhoneNumber).HasMaxLength(50);
+            builder.Property(u => u.Status).HasDefaultValue(UserStatus.Active);
 
             builder.Property(u => u.TenantId).IsRequired();
 

@@ -4,7 +4,7 @@ using NFC.Platform.Domain.Common;
 
 namespace NFC.Platform.Domain.Entities
 {
-    public class Company : BaseEntity
+    public class Company : BaseEntity, ITenantEntity
     {
         public string Name { get; set; } = string.Empty;
         public string Activity { get; set; } = string.Empty;

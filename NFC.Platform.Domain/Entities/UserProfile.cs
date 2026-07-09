@@ -14,8 +14,10 @@ namespace NFC.Platform.Domain.Entities
 
         public string FullName { get; set; } = string.Empty;
         public string JobTitle { get; set; } = string.Empty;
+        public string? Department { get; set; }
         public string CompanyName { get; set; } = string.Empty;
         public string? ProfilePictureUrl { get; set; }
+        public string? Bio { get; set; }
 
         public string? ContactEmail { get; set; }
         public string? Phone { get; set; }

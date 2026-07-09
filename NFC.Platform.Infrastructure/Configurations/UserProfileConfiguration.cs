@@ -13,8 +13,10 @@ namespace NFC.Platform.Infrastructure.Configurations
 
             builder.Property(p => p.FullName).IsRequired().HasMaxLength(256);
             builder.Property(p => p.JobTitle).HasMaxLength(256);
+            builder.Property(p => p.Department).HasMaxLength(150);
             builder.Property(p => p.CompanyName).HasMaxLength(256);
             builder.Property(p => p.ProfilePictureUrl).HasMaxLength(1000);
+            builder.Property(p => p.Bio).HasMaxLength(500);
 
             builder.Property(p => p.ContactEmail).HasMaxLength(256);
             builder.Property(p => p.Phone).HasMaxLength(50);

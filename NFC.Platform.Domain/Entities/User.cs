@@ -14,6 +14,7 @@ namespace NFC.Platform.Domain.Entities
         public DateTime? PasswordResetTokenExpires { get; set; }
 
         public AccountType AccountType { get; set; } = AccountType.Individual;
+        public UserStatus Status { get; set; } = UserStatus.Active;
         
         public Guid TenantId { get; set; }
         public Tenant Tenant { get; set; } = null!;
