@@ -39,6 +39,7 @@ namespace NFC.Platform.Infrastructure.Contexts
         public DbSet<SubscriptionPlan> SubscriptionPlans { get; set; }
         public DbSet<UserSubscription> UserSubscriptions { get; set; }
         public DbSet<ProfileMetric> ProfileMetrics { get; set; }
+        public DbSet<TemplateRequest> TemplateRequests { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {

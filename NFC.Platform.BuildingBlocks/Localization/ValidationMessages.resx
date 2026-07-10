@@ -82,4 +82,79 @@
   <data name="InvalidValue" xml:space="preserve">
     <value>The field '{0}' has an invalid value.</value>
   </data>
+  <data name="TemplateId" xml:space="preserve">
+    <value>Template</value>
+  </data>
+  <data name="TemplateName" xml:space="preserve">
+    <value>Template Name</value>
+  </data>
+  <data name="LogoUrl" xml:space="preserve">
+    <value>Logo Image</value>
+  </data>
+  <data name="ReferenceImageUrl" xml:space="preserve">
+    <value>Reference Image</value>
+  </data>
+  <data name="Notes" xml:space="preserve">
+    <value>Notes</value>
+  </data>
+  <data name="Username" xml:space="preserve">
+    <value>Username</value>
+  </data>
+  <data name="Email" xml:space="preserve">
+    <value>Email</value>
+  </data>
+  <data name="FullName" xml:space="preserve">
+    <value>Full Name</value>
+  </data>
+  <data name="JobTitle" xml:space="preserve">
+    <value>Job Title</value>
+  </data>
+  <data name="Department" xml:space="preserve">
+    <value>Department</value>
+  </data>
+  <data name="Status" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="Name" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="Activity" xml:space="preserve">
+    <value>Activity</value>
+  </data>
+  <data name="CommercialRegistry" xml:space="preserve">
+    <value>Commercial Registry</value>
+  </data>
+  <data name="Size" xml:space="preserve">
+    <value>Company Size</value>
+  </data>
+  <data name="Address" xml:space="preserve">
+    <value>Address</value>
+  </data>
+  <data name="Bio" xml:space="preserve">
+    <value>Bio</value>
+  </data>
+  <data name="ProfilePictureUrl" xml:space="preserve">
+    <value>Profile Picture</value>
+  </data>
+  <data name="ContactEmail" xml:space="preserve">
+    <value>Contact Email</value>
+  </data>
+  <data name="Phone" xml:space="preserve">
+    <value>Phone Number</value>
+  </data>
+  <data name="WhatsApp" xml:space="preserve">
+    <value>WhatsApp</value>
+  </data>
+  <data name="InstagramUrl" xml:space="preserve">
+    <value>Instagram Link</value>
+  </data>
+  <data name="FacebookUrl" xml:space="preserve">
+    <value>Facebook Link</value>
+  </data>
+  <data name="LinkedInUrl" xml:space="preserve">
+    <value>LinkedIn Link</value>
+  </data>
+  <data name="WebsiteUrl" xml:space="preserve">
+    <value>Website Link</value>
+  </data>
 </root>

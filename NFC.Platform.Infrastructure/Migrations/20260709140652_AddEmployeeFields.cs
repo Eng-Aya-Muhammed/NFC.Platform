@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -340,7 +340,7 @@ namespace NFC.Platform.Infrastructure.Migrations
                 column: "UserProfileId",
                 principalTable: "UserProfiles",
                 principalColumn: "Id",
-                onDelete: ReferentialAction.Cascade);
+                onDelete: ReferentialAction.NoAction);
 
             migrationBuilder.AddForeignKey(
                 name: "FK_UserProfiles_CardTemplates_CardTemplateId",

@@ -10,15 +10,15 @@ namespace NFC.Platform.Application.Validators
         {
             RuleFor(x => x.JobTitle)
                 .MaximumLength(256)
-                .WithMessage(x => messageService.Get("MaxLength", "JobTitle", 256));
+                .WithMessage(x => messageService.Get("MaxLength", messageService.Get("JobTitle"), 256));
 
             RuleFor(x => x.Department)
                 .MaximumLength(150)
-                .WithMessage(x => messageService.Get("MaxLength", "Department", 150));
+                .WithMessage(x => messageService.Get("MaxLength", messageService.Get("Department"), 150));
 
             RuleFor(x => x.Status)
                 .IsInEnum()
-                .WithMessage(x => messageService.Get("InvalidValue", "Status"));
+                .WithMessage(x => messageService.Get("InvalidValue", messageService.Get("Status")));
         }
     }
 }

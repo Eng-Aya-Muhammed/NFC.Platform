@@ -1,0 +1,16 @@
+using AutoMapper;
+using NFC.Platform.Application.DTOs;
+using NFC.Platform.Domain.Entities;
+
+namespace NFC.Platform.Application.Mapping
+{
+    public class TemplateRequestMappingProfile : Profile
+    {
+        public TemplateRequestMappingProfile()
+        {
+            CreateMap<TemplateRequest, TemplateRequestDto>()
+                .ForMember(dest => dest.RequestedByUsername, opt => opt.MapFrom(src => src.RequestedByUser != null ? src.RequestedByUser.Username : string.Empty))
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()));
+        }
+    }
+}

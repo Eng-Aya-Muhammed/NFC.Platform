@@ -18,5 +18,6 @@ namespace NFC.Platform.Domain.Entities
         public string ThumbnailUrl { get; set; } = string.Empty;
         public string StyleConfigJson { get; set; } = string.Empty;
         public bool IsActive { get; set; } = true;
+        public int DisplayOrder { get; set; } = 0;
     }
 }

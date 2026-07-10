@@ -82,4 +82,79 @@
   <data name="InvalidValue" xml:space="preserve">
     <value>الحقل '{0}' يحتوي على قيمة غير صالحة.</value>
   </data>
+  <data name="TemplateId" xml:space="preserve">
+    <value>قالب التصميم</value>
+  </data>
+  <data name="TemplateName" xml:space="preserve">
+    <value>اسم التصميم</value>
+  </data>
+  <data name="LogoUrl" xml:space="preserve">
+    <value>شعار التصميم</value>
+  </data>
+  <data name="ReferenceImageUrl" xml:space="preserve">
+    <value>الصورة المرجعية</value>
+  </data>
+  <data name="Notes" xml:space="preserve">
+    <value>الملاحظات</value>
+  </data>
+  <data name="Username" xml:space="preserve">
+    <value>اسم المستخدم</value>
+  </data>
+  <data name="Email" xml:space="preserve">
+    <value>البريد الإلكتروني</value>
+  </data>
+  <data name="FullName" xml:space="preserve">
+    <value>الاسم الكامل</value>
+  </data>
+  <data name="JobTitle" xml:space="preserve">
+    <value>المسمى الوظيفي</value>
+  </data>
+  <data name="Department" xml:space="preserve">
+    <value>القسم</value>
+  </data>
+  <data name="Status" xml:space="preserve">
+    <value>الحالة</value>
+  </data>
+  <data name="Name" xml:space="preserve">
+    <value>اسم الشركة</value>
+  </data>
+  <data name="Activity" xml:space="preserve">
+    <value>النشاط</value>
+  </data>
+  <data name="CommercialRegistry" xml:space="preserve">
+    <value>السجل التجاري</value>
+  </data>
+  <data name="Size" xml:space="preserve">
+    <value>حجم الشركة</value>
+  </data>
+  <data name="Address" xml:space="preserve">
+    <value>العنوان</value>
+  </data>
+  <data name="Bio" xml:space="preserve">
+    <value>النص التعريفي</value>
+  </data>
+  <data name="ProfilePictureUrl" xml:space="preserve">
+    <value>الصورة الشخصية</value>
+  </data>
+  <data name="ContactEmail" xml:space="preserve">
+    <value>بريد التواصل</value>
+  </data>
+  <data name="Phone" xml:space="preserve">
+    <value>رقم الهاتف</value>
+  </data>
+  <data name="WhatsApp" xml:space="preserve">
+    <value>رقم الواتساب</value>
+  </data>
+  <data name="InstagramUrl" xml:space="preserve">
+    <value>رابط إنستجرام</value>
+  </data>
+  <data name="FacebookUrl" xml:space="preserve">
+    <value>رابط فيسبوك</value>
+  </data>
+  <data name="LinkedInUrl" xml:space="preserve">
+    <value>رابط لينكد إن</value>
+  </data>
+  <data name="WebsiteUrl" xml:space="preserve">
+    <value>رابط الموقع الإلكتروني</value>
+  </data>
 </root>

@@ -97,4 +97,7 @@
   <data name="InvalidRole" xml:space="preserve">
     <value>الدور المحدد غير صالح.</value>
   </data>
+  <data name="TemplateInactive" xml:space="preserve">
+    <value>القالب المختار معطل وغير متاح للاستخدام.</value>
+  </data>
 </root>

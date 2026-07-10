@@ -10,29 +10,29 @@ namespace NFC.Platform.Application.Validators
         {
             RuleFor(x => x.Username)
                 .NotEmpty()
-                .WithMessage(x => messageService.Get("RequiredField", "Username"))
+                .WithMessage(x => messageService.Get("RequiredField", messageService.Get("Username")))
                 .MaximumLength(150)
-                .WithMessage(x => messageService.Get("MaxLength", "Username", 150));
+                .WithMessage(x => messageService.Get("MaxLength", messageService.Get("Username"), 150));
 
             RuleFor(x => x.Email)
                 .NotEmpty()
-                .WithMessage(x => messageService.Get("RequiredField", "Email"))
+                .WithMessage(x => messageService.Get("RequiredField", messageService.Get("Email")))
                 .EmailAddress()
-                .WithMessage(x => messageService.Get("InvalidEmail", "Email"));
+                .WithMessage(x => messageService.Get("InvalidEmail", messageService.Get("Email")));
 
             RuleFor(x => x.FullName)
                 .NotEmpty()
-                .WithMessage(x => messageService.Get("RequiredField", "FullName"))
+                .WithMessage(x => messageService.Get("RequiredField", messageService.Get("FullName")))
                 .MaximumLength(256)
-                .WithMessage(x => messageService.Get("MaxLength", "FullName", 256));
+                .WithMessage(x => messageService.Get("MaxLength", messageService.Get("FullName"), 256));
 
             RuleFor(x => x.JobTitle)
                 .MaximumLength(256)
-                .WithMessage(x => messageService.Get("MaxLength", "JobTitle", 256));
+                .WithMessage(x => messageService.Get("MaxLength", messageService.Get("JobTitle"), 256));
 
             RuleFor(x => x.Department)
                 .MaximumLength(150)
-                .WithMessage(x => messageService.Get("MaxLength", "Department", 150));
+                .WithMessage(x => messageService.Get("MaxLength", messageService.Get("Department"), 150));
         }
     }
 }

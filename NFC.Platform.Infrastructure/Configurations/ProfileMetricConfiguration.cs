@@ -26,7 +26,7 @@ namespace NFC.Platform.Infrastructure.Configurations
             builder.HasOne(m => m.UserProfile)
                 .WithMany()
                 .HasForeignKey(m => m.UserProfileId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.NoAction);
 
             builder.HasOne(m => m.ProfileLink)
                 .WithMany()

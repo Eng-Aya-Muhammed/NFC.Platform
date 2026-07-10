@@ -25,6 +25,7 @@ namespace NFC.Platform.Infrastructure.Configurations
             builder.Property(t => t.Category).IsRequired().HasMaxLength(100);
             builder.Property(t => t.ThumbnailUrl).HasMaxLength(1000);
             builder.Property(t => t.StyleConfigJson).IsRequired().HasColumnType("nvarchar(max)");
+            builder.Property(t => t.DisplayOrder).HasDefaultValue(0);
         }
     }
 }
