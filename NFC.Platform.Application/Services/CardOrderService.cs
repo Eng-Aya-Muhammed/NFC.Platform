@@ -10,6 +10,7 @@ using NFC.Platform.BuildingBlocks.Common.Helpers;
 using NFC.Platform.BuildingBlocks.Localization;
 using NFC.Platform.BuildingBlocks.Results;
 using NFC.Platform.Domain.Entities;
+using NFC.Platform.Domain.Enums;
 
 namespace NFC.Platform.Application.Services
 {
@@ -65,6 +66,21 @@ namespace NFC.Platform.Application.Services
 
             var order = _mapper.Map<CardOrder>(request);
             order.UserId = userId.Value;
+
+            // Apply defaults for fields not supplied by the simple UI modal
+            if (string.IsNullOrWhiteSpace(order.CardName))
+            {
+                order.CardName = $"طلب كروت - {order.Quantity}";
+            }
+            if (order.CardType == 0)
+            {
+                order.CardType = CardType.Plastic;
+            }
+            if (order.CardDesignType == 0)
+            {
+                order.CardDesignType = CardDesignType.BuiltInTemplate;
+            }
+
             // TenantId is auto-assigned by DbContext.ApplyTenantRules() on SaveChanges
             // for all ITenantEntity entries with TenantId == Guid.Empty
 

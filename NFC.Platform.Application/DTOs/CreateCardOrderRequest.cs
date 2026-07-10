@@ -10,15 +10,12 @@ namespace NFC.Platform.Application.DTOs
     /// </summary>
     public class CreateCardOrderRequest
     {
-        [Required]
-        [StringLength(200, MinimumLength = 1)]
-        public string CardName { get; set; } = string.Empty;
+        [StringLength(200)]
+        public string? CardName { get; set; }
 
-        [Required]
-        public CardType CardType { get; set; }
+        public CardType? CardType { get; set; }
 
-        [Required]
-        public CardDesignType CardDesignType { get; set; }
+        public CardDesignType? CardDesignType { get; set; }
 
         public Guid? PrintTemplateId { get; set; }
 
