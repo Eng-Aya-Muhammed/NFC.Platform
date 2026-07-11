@@ -1,24 +1,12 @@
-using System;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using NFC.Platform.Application.DTOs;
-using NFC.Platform.Application.Interfaces.Services;
-using NFC.Platform.BuildingBlocks.Common.Constants;
-using NFC.Platform.BuildingBlocks.Results;
+
 
 namespace NFC.Platform.API.Controllers
 {
     [ApiController]
     [Route("api/auth")]
-    public class AuthController : ControllerBase
+    public class AuthController(IAuthService authService) : ControllerBase
     {
-        private readonly IAuthService _authService;
-
-        public AuthController(IAuthService authService)
-        {
-            _authService = authService ?? throw new ArgumentNullException(nameof(authService));
-        }
+        private readonly IAuthService _authService = authService ?? throw new ArgumentNullException(nameof(authService));
 
         [HttpPost("login")]
         [AllowAnonymous]

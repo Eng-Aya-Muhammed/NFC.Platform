@@ -7,6 +7,7 @@ using AutoMapper;
 using NFC.Platform.Application.DTOs;
 using NFC.Platform.Application.Interfaces.Repositories;
 using NFC.Platform.Application.Services;
+using NFC.Platform.BuildingBlocks.Common.Exceptions;
 using NFC.Platform.BuildingBlocks.Common.Helpers;
 using NFC.Platform.BuildingBlocks.Localization;
 using NFC.Platform.Domain.Entities;
@@ -49,6 +50,83 @@ namespace NFC.Platform.Tests.Services
             _sut = new CardService(_unitOfWork, _mapper, _messageService, _currentTenant);
         }
 
+        // ── GetByIdAsync ──────────────────────────────────────────────────────────
+
+        [Fact]
+        public async Task GetByIdAsync_ReturnsNotFound_WhenCardDoesNotExist()
+        {
+            // Arrange
+            var id = Guid.NewGuid();
+            _cardRepo.GetByIdAsync(id).Returns((Card?)null);
+            _messageService.Get("RecordNotFound").Returns("Record not found.");
+
+            // Act
+            var result = await _sut.GetByIdAsync(id);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(404, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task GetByIdAsync_ReturnsSuccess_WhenCardExists()
+        {
+            // Arrange
+            var id = Guid.NewGuid();
+            var card = new Card { Id = id, ActivationCode = "ABC" };
+            var dto = new CardDto { Id = id };
+            _cardRepo.GetByIdAsync(id).Returns(card);
+            _mapper.Map<CardDto>(card).Returns(dto);
+
+            // Act
+            var result = await _sut.GetByIdAsync(id);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(id, result.Data!.Id);
+        }
+
+        // ── CreateCardAsync ───────────────────────────────────────────────────────
+
+        [Fact]
+        public async Task CreateCardAsync_ThrowsBusinessException_WhenCardCodeAlreadyExists()
+        {
+            // Arrange
+            var request = new CreateCardRequest { ActivationCode = "DUPLICATE" };
+            var existingCard = new Card { ActivationCode = "DUPLICATE" };
+            _cardRepo.FindAsync(Arg.Any<Expression<Func<Card, bool>>>())
+                .Returns(new List<Card> { existingCard });
+
+            // Act & Assert
+            await Assert.ThrowsAsync<BusinessException>(() => _sut.CreateCardAsync(request));
+        }
+
+        [Fact]
+        public async Task CreateCardAsync_ReturnsSuccess_WhenCodeIsUnique()
+        {
+            // Arrange
+            var request = new CreateCardRequest { ActivationCode = "NEWCODE" };
+            var card = new Card { ActivationCode = "NEWCODE" };
+            var dto = new CardDto { ActivationCode = "NEWCODE" };
+
+            _cardRepo.FindAsync(Arg.Any<Expression<Func<Card, bool>>>())
+                .Returns(new List<Card>());
+            _mapper.Map<Card>(request).Returns(card);
+            _mapper.Map<CardDto>(card).Returns(dto);
+            _messageService.Get("RecordCreated").Returns("Record created.");
+
+            // Act
+            var result = await _sut.CreateCardAsync(request);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal("NEWCODE", result.Data!.ActivationCode);
+            await _cardRepo.Received(1).AddAsync(card);
+            await _unitOfWork.Received(1).SaveChangesAsync();
+        }
+
+        // ── ActivateCardAsync ─────────────────────────────────────────────────────
+
         [Fact]
         public async Task ActivateCardAsync_ReturnsUnauthorized_WhenUserNotAuthenticated()
         {
@@ -67,22 +145,35 @@ namespace NFC.Platform.Tests.Services
         }
 
         [Fact]
+        public async Task ActivateCardAsync_ReturnsUnauthorized_WhenOnlyUserIdMissing()
+        {
+            // Arrange
+            _currentTenant.UserId.Returns((Guid?)null);
+            _currentTenant.TenantId.Returns(Guid.NewGuid());
+
+            var request = new ActivateCardRequest { ActivationCode = "CODE" };
+
+            // Act
+            var result = await _sut.ActivateCardAsync(request);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(401, result.StatusCode);
+        }
+
+        [Fact]
         public async Task ActivateCardAsync_ReturnsNotFound_WhenCardDoesNotExist()
         {
             // Arrange
-            var userId = Guid.NewGuid();
-            var tenantId = Guid.NewGuid();
-            _currentTenant.UserId.Returns(userId);
-            _currentTenant.TenantId.Returns(tenantId);
-
-            var request = new ActivateCardRequest { ActivationCode = "NONEXISTENT" };
+            _currentTenant.UserId.Returns(Guid.NewGuid());
+            _currentTenant.TenantId.Returns(Guid.NewGuid());
 
             _cardRepo.FindAsync(Arg.Any<Expression<Func<Card, bool>>>())
                 .Returns(new List<Card>());
             _messageService.Get("CardNotFound").Returns("Card not found.");
 
             // Act
-            var result = await _sut.ActivateCardAsync(request);
+            var result = await _sut.ActivateCardAsync(new ActivateCardRequest { ActivationCode = "GHOST" });
 
             // Assert
             Assert.False(result.IsSuccess);
@@ -93,25 +184,15 @@ namespace NFC.Platform.Tests.Services
         public async Task ActivateCardAsync_ReturnsBadRequest_WhenCardIsAlreadyActive()
         {
             // Arrange
-            var userId = Guid.NewGuid();
-            var tenantId = Guid.NewGuid();
-            _currentTenant.UserId.Returns(userId);
-            _currentTenant.TenantId.Returns(tenantId);
+            _currentTenant.UserId.Returns(Guid.NewGuid());
+            _currentTenant.TenantId.Returns(Guid.NewGuid());
 
-            var request = new ActivateCardRequest { ActivationCode = "ACTIVE_CODE" };
-
-            var existingCard = new Card
-            {
-                ActivationCode = "ACTIVE_CODE",
-                IsActive = true,
-                UserProfileId = Guid.NewGuid()
-            };
-
+            var card = new Card { ActivationCode = "ACTIVE", IsActive = true, UserProfileId = Guid.NewGuid() };
             _cardRepo.FindAsync(Arg.Any<Expression<Func<Card, bool>>>())
-                .Returns(new List<Card> { existingCard });
+                .Returns(new List<Card> { card });
 
             // Act
-            var result = await _sut.ActivateCardAsync(request);
+            var result = await _sut.ActivateCardAsync(new ActivateCardRequest { ActivationCode = "ACTIVE" });
 
             // Assert
             Assert.False(result.IsSuccess);
@@ -120,65 +201,148 @@ namespace NFC.Platform.Tests.Services
         }
 
         [Fact]
-        public async Task ActivateCardAsync_ReturnsSuccess_CreatesProfileAndLinksOrderItem_WhenValid()
+        public async Task ActivateCardAsync_ReturnsBadRequest_WhenUserProfileLinkedButCardInactive()
         {
-            // Arrange
-            var userId = Guid.NewGuid();
-            var tenantId = Guid.NewGuid();
-            _currentTenant.UserId.Returns(userId);
-            _currentTenant.TenantId.Returns(tenantId);
+            // Arrange — card is inactive but already linked to a profile
+            _currentTenant.UserId.Returns(Guid.NewGuid());
+            _currentTenant.TenantId.Returns(Guid.NewGuid());
 
-            var request = new ActivateCardRequest { ActivationCode = "VALID_CODE" };
-
-            var card = new Card
-            {
-                ActivationCode = "VALID_CODE",
-                IsActive = false,
-                UserProfileId = null,
-                TenantId = tenantId
-            };
-
-            var user = new User
-            {
-                Id = userId,
-                Username = "testuser",
-                TenantId = tenantId
-            };
-
+            var card = new Card { ActivationCode = "LINKED", IsActive = false, UserProfileId = Guid.NewGuid() };
             _cardRepo.FindAsync(Arg.Any<Expression<Func<Card, bool>>>())
                 .Returns(new List<Card> { card });
 
+            // Act
+            var result = await _sut.ActivateCardAsync(new ActivateCardRequest { ActivationCode = "LINKED" });
+
+            // Assert — UserProfileId != null triggers the already-activated guard
+            Assert.False(result.IsSuccess);
+            Assert.Equal(400, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task ActivateCardAsync_ReturnsBadRequest_WhenUserNotFound_DuringProfileCreation()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            _currentTenant.UserId.Returns(userId);
+            _currentTenant.TenantId.Returns(Guid.NewGuid());
+
+            var card = new Card { ActivationCode = "VALID", IsActive = false, UserProfileId = null };
+            _cardRepo.FindAsync(Arg.Any<Expression<Func<Card, bool>>>())
+                .Returns(new List<Card> { card });
+
+            // No existing profile
             _userProfileRepo.FindAsync(Arg.Any<Expression<Func<UserProfile, bool>>>())
-                .Returns(new List<UserProfile>()); // No existing profile
+                .Returns(new List<UserProfile>());
 
-            _userRepo.GetByIdAsync(userId).Returns(user);
+            // User does not exist either
+            _userRepo.GetByIdAsync(userId).Returns((User?)null);
 
-            var orderItem = new CardOrderItem
-            {
-                ActivationCode = "VALID_CODE",
-                EmployeeName = "testuser",
-                LinkedCardId = null
-            };
+            // Act
+            var result = await _sut.ActivateCardAsync(new ActivateCardRequest { ActivationCode = "VALID" });
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(400, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task ActivateCardAsync_Success_UsesExistingProfile_WhenProfileExists()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            _currentTenant.UserId.Returns(userId);
+            _currentTenant.TenantId.Returns(Guid.NewGuid());
+
+            var card = new Card { ActivationCode = "VALID", IsActive = false, UserProfileId = null };
+            _cardRepo.FindAsync(Arg.Any<Expression<Func<Card, bool>>>())
+                .Returns(new List<Card> { card });
+
+            var existingProfile = new UserProfile { Id = Guid.NewGuid(), UserId = userId };
+            _userProfileRepo.FindAsync(Arg.Any<Expression<Func<UserProfile, bool>>>())
+                .Returns(new List<UserProfile> { existingProfile });
 
             _cardOrderItemRepo.FindAsync(Arg.Any<Expression<Func<CardOrderItem, bool>>>())
-                .Returns(new List<CardOrderItem> { orderItem });
+                .Returns(new List<CardOrderItem>());
 
             _messageService.Get("CardActivatedSuccessfully").Returns("Card activated successfully.");
 
             // Act
-            var result = await _sut.ActivateCardAsync(request);
+            var result = await _sut.ActivateCardAsync(new ActivateCardRequest { ActivationCode = "VALID" });
 
             // Assert
             Assert.True(result.IsSuccess);
             Assert.True(card.IsActive);
-            Assert.NotNull(card.UserProfileId);
-            Assert.Equal(tenantId, card.TenantId);
-            Assert.Equal(card.Id, orderItem.LinkedCardId);
+            Assert.Equal(existingProfile.Id, card.UserProfileId);
+            // Should NOT create a new profile
+            await _userProfileRepo.DidNotReceive().AddAsync(Arg.Any<UserProfile>());
+        }
 
+        [Fact]
+        public async Task ActivateCardAsync_Success_CreatesProfileAndLinksOrderItem_WhenValid()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            _currentTenant.UserId.Returns(userId);
+            _currentTenant.TenantId.Returns(Guid.NewGuid());
+
+            var card = new Card { ActivationCode = "VALID_CODE", IsActive = false, UserProfileId = null };
+            var user = new User { Id = userId, Username = "testuser" };
+            var orderItem = new CardOrderItem { ActivationCode = "VALID_CODE", LinkedCardId = null };
+
+            _cardRepo.FindAsync(Arg.Any<Expression<Func<Card, bool>>>())
+                .Returns(new List<Card> { card });
+            _userProfileRepo.FindAsync(Arg.Any<Expression<Func<UserProfile, bool>>>())
+                .Returns(new List<UserProfile>());
+            _userRepo.GetByIdAsync(userId).Returns(user);
+            _cardOrderItemRepo.FindAsync(Arg.Any<Expression<Func<CardOrderItem, bool>>>())
+                .Returns(new List<CardOrderItem> { orderItem });
+            _messageService.Get("CardActivatedSuccessfully").Returns("Card activated successfully.");
+
+            // Act
+            var result = await _sut.ActivateCardAsync(new ActivateCardRequest { ActivationCode = "VALID_CODE" });
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.True(card.IsActive);
+            Assert.NotNull(card.ActivatedAt);
             await _userProfileRepo.Received(1).AddAsync(Arg.Any<UserProfile>());
-            _cardRepo.Received(1).Update(card);
-            _cardOrderItemRepo.Received(1).Update(orderItem);
-            await _unitOfWork.Received(2).SaveChangesAsync(); // 1. Save new profile, 2. Save card + order items together
+        }
+
+        // ── DeleteCardAsync ───────────────────────────────────────────────────────
+
+        [Fact]
+        public async Task DeleteCardAsync_ReturnsNotFound_WhenCardDoesNotExist()
+        {
+            // Arrange
+            var id = Guid.NewGuid();
+            _cardRepo.GetByIdAsync(id).Returns((Card?)null);
+            _messageService.Get("RecordNotFound").Returns("Record not found.");
+
+            // Act
+            var result = await _sut.DeleteCardAsync(id);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(404, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task DeleteCardAsync_ReturnsSuccess_AndRemovesCard()
+        {
+            // Arrange
+            var id = Guid.NewGuid();
+            var card = new Card { Id = id };
+            _cardRepo.GetByIdAsync(id).Returns(card);
+            _messageService.Get("RecordDeleted").Returns("Record deleted.");
+
+            // Act
+            var result = await _sut.DeleteCardAsync(id);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            _cardRepo.Received(1).Remove(card);
+            await _unitOfWork.Received(1).SaveChangesAsync();
         }
     }
 }

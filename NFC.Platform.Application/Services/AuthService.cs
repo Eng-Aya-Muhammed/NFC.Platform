@@ -14,21 +14,14 @@ using NFC.Platform.Domain.Enums;
 
 namespace NFC.Platform.Application.Services
 {
-    public class AuthService : IAuthService
+    public class AuthService(
+        IUnitOfWork unitOfWork,
+        ITokenService tokenService,
+        IMessageService messageService) : IAuthService
     {
-        private readonly IUnitOfWork _unitOfWork;
-        private readonly ITokenService _tokenService;
-        private readonly IMessageService _messageService;
-
-        public AuthService(
-            IUnitOfWork unitOfWork,
-            ITokenService tokenService,
-            IMessageService messageService)
-        {
-            _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
-            _tokenService = tokenService ?? throw new ArgumentNullException(nameof(tokenService));
-            _messageService = messageService ?? throw new ArgumentNullException(nameof(messageService));
-        }
+        private readonly IUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+        private readonly ITokenService _tokenService = tokenService ?? throw new ArgumentNullException(nameof(tokenService));
+        private readonly IMessageService _messageService = messageService ?? throw new ArgumentNullException(nameof(messageService));
 
         public async Task<ServiceResult<AuthDto>> LoginAsync(LoginRequest request)
         {

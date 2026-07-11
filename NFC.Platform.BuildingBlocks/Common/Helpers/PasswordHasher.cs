@@ -28,8 +28,8 @@ namespace NFC.Platform.BuildingBlocks.Common.Helpers
                 throw new ArgumentException("Password cannot be null or empty.", nameof(password));
             }
 
-            byte[] salt = RandomNumberGenerator.GetBytes(SaltSize);
-            byte[] hash = Rfc2898DeriveBytes.Pbkdf2(
+            var salt = RandomNumberGenerator.GetBytes(SaltSize);
+            var hash = Rfc2898DeriveBytes.Pbkdf2(
                 password,
                 salt,
                 Iterations,
@@ -64,14 +64,14 @@ namespace NFC.Platform.BuildingBlocks.Common.Helpers
                 throw new ArgumentException("Hashed password cannot be null or empty.", nameof(hashedPassword));
             }
 
-            string[] segments = hashedPassword.Split(SegmentDelimiter);
+            var segments = hashedPassword.Split(SegmentDelimiter);
 
             if (segments.Length != 3)
             {
                 return false;
             }
 
-            if (!int.TryParse(segments[0], out int iterations))
+            if (!int.TryParse(segments[0], out var iterations))
             {
                 return false;
             }
@@ -88,7 +88,7 @@ namespace NFC.Platform.BuildingBlocks.Common.Helpers
                 return false;
             }
 
-            byte[] inputHash = Rfc2898DeriveBytes.Pbkdf2(
+            var inputHash = Rfc2898DeriveBytes.Pbkdf2(
                 password,
                 salt,
                 iterations,

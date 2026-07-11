@@ -16,24 +16,18 @@ using NFC.Platform.Domain.Enums;
 
 namespace NFC.Platform.Application.Services
 {
-    public class EmployeeService : IEmployeeService
+    public class EmployeeService(
+        IUnitOfWork unitOfWork,
+        IMapper mapper,
+        IMessageService messageService,
+        ICurrentTenant currentTenant) : IEmployeeService
     {
-        private readonly IUnitOfWork _unitOfWork;
-        private readonly IMapper _mapper;
-        private readonly IMessageService _messageService;
-        private readonly ICurrentTenant _currentTenant;
+        private static readonly string[] LineSeparators = ["\r\n", "\r", "\n"];
 
-        public EmployeeService(
-            IUnitOfWork unitOfWork,
-            IMapper mapper,
-            IMessageService messageService,
-            ICurrentTenant currentTenant)
-        {
-            _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
-            _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
-            _messageService = messageService ?? throw new ArgumentNullException(nameof(messageService));
-            _currentTenant = currentTenant ?? throw new ArgumentNullException(nameof(currentTenant));
-        }
+        private readonly IUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+        private readonly IMapper _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
+        private readonly IMessageService _messageService = messageService ?? throw new ArgumentNullException(nameof(messageService));
+        private readonly ICurrentTenant _currentTenant = currentTenant ?? throw new ArgumentNullException(nameof(currentTenant));
 
         public async Task<ServiceResult<PagedResult<EmployeeDto>>> GetPagedEmployeesAsync(PaginationRequest request, string? search)
         {
@@ -132,7 +126,7 @@ namespace NFC.Platform.Application.Services
 
             if (!string.IsNullOrWhiteSpace(request.CustomLinks))
             {
-                var lines = request.CustomLinks.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries);
+                var lines = request.CustomLinks.Split(LineSeparators, StringSplitOptions.RemoveEmptyEntries);
                 var displayOrder = 1;
                 foreach (var line in lines)
                 {

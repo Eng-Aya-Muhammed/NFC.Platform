@@ -24,6 +24,7 @@ namespace NFC.Platform.Tests.Services
         private readonly ICurrentTenant _currentTenant;
 
         private readonly IGenericRepository<TemplateRequest> _templateRequestRepo;
+
         private readonly TemplateRequestService _sut;
 
         public TemplateRequestServiceTests()
@@ -39,14 +40,19 @@ namespace NFC.Platform.Tests.Services
             _sut = new TemplateRequestService(_unitOfWork, _mapper, _messageService, _currentTenant);
         }
 
+        // ── CreateRequestAsync ────────────────────────────────────────────────────
+
         [Fact]
         public async Task CreateRequestAsync_ReturnsUnauthorized_WhenTenantNotAuthenticated()
         {
             // Arrange
             _currentTenant.TenantId.Returns((Guid?)null);
+            _messageService.Get("Unauthorized").Returns("Unauthorized.");
+
+            var request = new CreateTemplateRequest { TemplateName = "Premium Blue" };
 
             // Act
-            var result = await _sut.CreateRequestAsync(Guid.NewGuid(), new CreateTemplateRequest { TemplateName = "Sales Template", Notes = "Black and gold style" });
+            var result = await _sut.CreateRequestAsync(Guid.NewGuid(), request);
 
             // Assert
             Assert.False(result.IsSuccess);
@@ -54,39 +60,47 @@ namespace NFC.Platform.Tests.Services
         }
 
         [Fact]
-        public async Task CreateRequestAsync_Success_SavesPendingRequest()
+        public async Task CreateRequestAsync_ReturnsUnauthorized_WithFallbackMessage_WhenMessageIsEmpty()
         {
             // Arrange
-            var tenantId = Guid.NewGuid();
+            _currentTenant.TenantId.Returns((Guid?)null);
+            _messageService.Get("Unauthorized").Returns(string.Empty);
+
+            // Act
+            var result = await _sut.CreateRequestAsync(Guid.NewGuid(), new CreateTemplateRequest());
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(401, result.StatusCode);
+            Assert.NotEmpty(result.Message!);
+        }
+
+        [Fact]
+        public async Task CreateRequestAsync_ReturnsSuccess_AndSetsStatusToPending()
+        {
+            // Arrange
             var userId = Guid.NewGuid();
+            var tenantId = Guid.NewGuid();
             _currentTenant.TenantId.Returns(tenantId);
 
-            var request = new CreateTemplateRequest { TemplateName = "Sales Template", Notes = "Premium dark theme" };
-            
-            var savedRequest = new TemplateRequest
+            var request = new CreateTemplateRequest
             {
-                Id = Guid.NewGuid(),
-                TenantId = tenantId,
-                RequestedByUserId = userId,
-                TemplateName = request.TemplateName,
-                Notes = request.Notes,
-                Status = TemplateRequestStatus.Pending
+                TemplateName = "Premium Blue",
+                LogoUrl = "https://logo.png",
+                ReferenceImageUrl = "https://ref.png",
+                Notes = "Make it pop"
             };
 
-            var queryable = new List<TemplateRequest> { savedRequest }.BuildMock();
-            _templateRequestRepo.GetQueryable().Returns(queryable);
+            var dto = new TemplateRequestDto { TemplateName = "Premium Blue", Status = "Pending" };
 
-            var dto = new TemplateRequestDto
+            var createdQueryable = new List<TemplateRequest>
             {
-                Id = savedRequest.Id,
-                RequestedByUserId = userId,
-                TemplateName = request.TemplateName,
-                Notes = request.Notes,
-                Status = "Pending"
-            };
+                new() { Id = Guid.NewGuid(), Status = TemplateRequestStatus.Pending, RequestedByUser = new User() }
+            }.AsQueryable().BuildMock();
 
+            _templateRequestRepo.GetQueryable().Returns(createdQueryable);
             _mapper.Map<TemplateRequestDto>(Arg.Any<TemplateRequest>()).Returns(dto);
-            _messageService.Get("RecordCreated").Returns("Request submitted.");
+            _messageService.Get("RecordCreated").Returns("Record created.");
 
             // Act
             var result = await _sut.CreateRequestAsync(userId, request);
@@ -94,21 +108,73 @@ namespace NFC.Platform.Tests.Services
             // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(200, result.StatusCode);
-            Assert.Equal("Pending", result.Data.Status);
-            await _templateRequestRepo.Received(1).AddAsync(Arg.Any<TemplateRequest>());
+            Assert.Equal("Pending", result.Data!.Status);
+            await _templateRequestRepo.Received(1).AddAsync(Arg.Is<TemplateRequest>(r =>
+                r.TenantId == tenantId &&
+                r.RequestedByUserId == userId &&
+                r.Status == TemplateRequestStatus.Pending &&
+                r.TemplateName == "Premium Blue"));
             await _unitOfWork.Received(1).SaveChangesAsync();
         }
+
+        // ── GetTenantRequestsAsync ────────────────────────────────────────────────
+
+        [Fact]
+        public async Task GetTenantRequestsAsync_ReturnsEmptyList_WhenNoRequestsExist()
+        {
+            // Arrange
+            var emptyQueryable = new List<TemplateRequest>().AsQueryable().BuildMock();
+            _templateRequestRepo.GetQueryable().Returns(emptyQueryable);
+            _mapper.Map<IReadOnlyList<TemplateRequestDto>>(Arg.Any<object>())
+                .Returns(new List<TemplateRequestDto>());
+
+            // Act
+            var result = await _sut.GetTenantRequestsAsync();
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Empty(result.Data!);
+        }
+
+        [Fact]
+        public async Task GetTenantRequestsAsync_ReturnsRequestsOrderedByDateDescending()
+        {
+            // Arrange
+            var older = new TemplateRequest { Id = Guid.NewGuid(), TemplateName = "First", CreatedAt = DateTime.UtcNow.AddDays(-2), RequestedByUser = new User() };
+            var newer = new TemplateRequest { Id = Guid.NewGuid(), TemplateName = "Second", CreatedAt = DateTime.UtcNow,            RequestedByUser = new User() };
+
+            var queryable = new List<TemplateRequest> { older, newer }.AsQueryable().BuildMock();
+            _templateRequestRepo.GetQueryable().Returns(queryable);
+
+            var dtos = new List<TemplateRequestDto>
+            {
+                new() { TemplateName = "Second" },
+                new() { TemplateName = "First" }
+            };
+            _mapper.Map<IReadOnlyList<TemplateRequestDto>>(Arg.Any<object>()).Returns(dtos);
+
+            // Act
+            var result = await _sut.GetTenantRequestsAsync();
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(2, result.Data!.Count);
+            Assert.Equal("Second", result.Data![0].TemplateName);
+        }
+
+        // ── UpdateRequestStatusAsync ──────────────────────────────────────────────
 
         [Fact]
         public async Task UpdateRequestStatusAsync_ReturnsNotFound_WhenRequestDoesNotExist()
         {
             // Arrange
-            var queryable = new List<TemplateRequest>().BuildMock();
-            _templateRequestRepo.GetQueryable().Returns(queryable);
-            _messageService.Get("RecordNotFound").Returns("Request not found.");
+            var id = Guid.NewGuid();
+            var emptyQueryable = new List<TemplateRequest>().AsQueryable().BuildMock();
+            _templateRequestRepo.GetQueryable().Returns(emptyQueryable);
+            _messageService.Get("RecordNotFound").Returns("Not found.");
 
             // Act
-            var result = await _sut.UpdateRequestStatusAsync(Guid.NewGuid(), TemplateRequestStatus.Completed);
+            var result = await _sut.UpdateRequestStatusAsync(id, TemplateRequestStatus.Completed);
 
             // Assert
             Assert.False(result.IsSuccess);
@@ -116,58 +182,60 @@ namespace NFC.Platform.Tests.Services
         }
 
         [Fact]
-        public async Task UpdateRequestStatusAsync_Success_UpdatesStatus()
+        public async Task UpdateRequestStatusAsync_ReturnsSuccess_AndUpdatesStatus()
         {
             // Arrange
-            var requestId = Guid.NewGuid();
-            var request = new TemplateRequest { Id = requestId, Status = TemplateRequestStatus.Pending };
+            var id = Guid.NewGuid();
+            var templateRequest = new TemplateRequest
+            {
+                Id = id,
+                Status = TemplateRequestStatus.Pending,
+                RequestedByUser = new User()
+            };
 
-            var queryable = new List<TemplateRequest> { request }.BuildMock();
+            var queryable = new List<TemplateRequest> { templateRequest }.AsQueryable().BuildMock();
             _templateRequestRepo.GetQueryable().Returns(queryable);
 
-            var dto = new TemplateRequestDto { Id = requestId, Status = "Completed" };
-            _mapper.Map<TemplateRequestDto>(request).Returns(dto);
-            _messageService.Get("RecordUpdated").Returns("Status updated.");
+            var dto = new TemplateRequestDto { Status = "Completed" };
+            _mapper.Map<TemplateRequestDto>(templateRequest).Returns(dto);
+            _messageService.Get("RecordUpdated").Returns("Updated.");
 
             // Act
-            var result = await _sut.UpdateRequestStatusAsync(requestId, TemplateRequestStatus.Completed);
+            var result = await _sut.UpdateRequestStatusAsync(id, TemplateRequestStatus.Completed);
 
             // Assert
             Assert.True(result.IsSuccess);
-            Assert.Equal(TemplateRequestStatus.Completed, request.Status);
-            _templateRequestRepo.Received(1).Update(request);
+            Assert.Equal(TemplateRequestStatus.Completed, templateRequest.Status);
+            _templateRequestRepo.Received(1).Update(templateRequest);
             await _unitOfWork.Received(1).SaveChangesAsync();
+            Assert.Equal("Completed", result.Data!.Status);
         }
 
         [Fact]
-        public async Task GetTenantRequestsAsync_ReturnsMappedRequests()
+        public async Task UpdateRequestStatusAsync_CanSetStatusToRejected()
         {
             // Arrange
-            var requests = new List<TemplateRequest>
+            var id = Guid.NewGuid();
+            var templateRequest = new TemplateRequest
             {
-                new TemplateRequest { Id = Guid.NewGuid(), TemplateName = "First", CreatedAt = DateTime.UtcNow.AddMinutes(-10) },
-                new TemplateRequest { Id = Guid.NewGuid(), TemplateName = "Second", CreatedAt = DateTime.UtcNow }
+                Id = id,
+                Status = TemplateRequestStatus.Pending,
+                RequestedByUser = new User()
             };
 
-            var mock = requests.BuildMock();
-            _templateRequestRepo.GetQueryable().Returns(mock);
+            var queryable = new List<TemplateRequest> { templateRequest }.AsQueryable().BuildMock();
+            _templateRequestRepo.GetQueryable().Returns(queryable);
 
-            var dtos = new List<TemplateRequestDto>
-            {
-                new TemplateRequestDto { TemplateName = "Second" },
-                new TemplateRequestDto { TemplateName = "First" }
-            };
-
-            _mapper.Map<IReadOnlyList<TemplateRequestDto>>(Arg.Any<List<TemplateRequest>>())
-                .Returns(dtos);
+            var dto = new TemplateRequestDto { Status = "Rejected" };
+            _mapper.Map<TemplateRequestDto>(templateRequest).Returns(dto);
+            _messageService.Get("RecordUpdated").Returns("Updated.");
 
             // Act
-            var result = await _sut.GetTenantRequestsAsync();
+            var result = await _sut.UpdateRequestStatusAsync(id, TemplateRequestStatus.Rejected);
 
             // Assert
             Assert.True(result.IsSuccess);
-            Assert.Equal(2, result.Data.Count);
-            Assert.Equal("Second", result.Data[0].TemplateName);
+            Assert.Equal(TemplateRequestStatus.Rejected, templateRequest.Status);
         }
     }
 }

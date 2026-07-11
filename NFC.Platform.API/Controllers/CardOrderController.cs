@@ -1,25 +1,13 @@
-using System;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using NFC.Platform.Application.DTOs;
-using NFC.Platform.Application.Interfaces.Services;
-using NFC.Platform.BuildingBlocks.Results;
-using NFC.Platform.BuildingBlocks.Common.Constants;
+
 
 namespace NFC.Platform.API.Controllers
 {
     [ApiController]
     [Route("api/card-orders")]
     [Authorize]
-    public class CardOrderController : ControllerBase
+    public class CardOrderController(ICardOrderService cardOrderService) : ControllerBase
     {
-        private readonly ICardOrderService _cardOrderService;
-
-        public CardOrderController(ICardOrderService cardOrderService)
-        {
-            _cardOrderService = cardOrderService ?? throw new ArgumentNullException(nameof(cardOrderService));
-        }
+        private readonly ICardOrderService _cardOrderService = cardOrderService ?? throw new ArgumentNullException(nameof(cardOrderService));
 
         /// <summary>
         /// Returns a paged list of card orders for the current tenant.

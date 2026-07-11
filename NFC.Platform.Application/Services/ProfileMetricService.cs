@@ -13,18 +13,11 @@ using NFC.Platform.Domain.Enums;
 
 namespace NFC.Platform.Application.Services;
 
-public class ProfileMetricService : IProfileMetricService
+public class ProfileMetricService(IUnitOfWork unitOfWork, IMessageService messageService, IMapper mapper) : IProfileMetricService
 {
-    private readonly IUnitOfWork _unitOfWork;
-    private readonly IMessageService _messageService;
-    private readonly IMapper _mapper;
-
-    public ProfileMetricService(IUnitOfWork unitOfWork, IMessageService messageService, IMapper mapper)
-    {
-        _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
-        _messageService = messageService ?? throw new ArgumentNullException(nameof(messageService));
-        _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
-    }
+    private readonly IUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+    private readonly IMessageService _messageService = messageService ?? throw new ArgumentNullException(nameof(messageService));
+    private readonly IMapper _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
 
     public async Task<ServiceResult<EmployeeDetailsDto>> ResolvePublicProfileAsync(string activationCode)
     {

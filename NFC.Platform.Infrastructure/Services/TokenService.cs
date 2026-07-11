@@ -11,14 +11,9 @@ using NFC.Platform.BuildingBlocks.Common.Constants;
 
 namespace NFC.Platform.Infrastructure.Services
 {
-    public class TokenService : ITokenService
+    public class TokenService(IConfiguration configuration) : ITokenService
     {
-        private readonly IConfiguration _configuration;
-
-        public TokenService(IConfiguration configuration)
-        {
-            _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
-        }
+        private readonly IConfiguration _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
 
         public string GenerateToken(Guid userId, string email, IEnumerable<string> roles, Guid tenantId, Guid? companyId = null, string? accountType = null)
         {
@@ -34,10 +29,10 @@ namespace NFC.Platform.Infrastructure.Services
 
             var claims = new List<Claim>
             {
-                new Claim(AppClaims.UserId, userId.ToString()),
-                new Claim(AppClaims.Email, email),
-                new Claim(AppClaims.TenantId, tenantId.ToString()),
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+                new(AppClaims.UserId, userId.ToString()),
+                new(AppClaims.Email, email),
+                new(AppClaims.TenantId, tenantId.ToString()),
+                new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };
 
             if (roles != null)

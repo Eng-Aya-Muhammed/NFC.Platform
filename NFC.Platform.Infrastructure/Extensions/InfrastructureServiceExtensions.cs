@@ -3,13 +3,13 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using NFC.Platform.Application.Interfaces.Repositories;
 using NFC.Platform.Application.Interfaces.Services;
-using NFC.Platform.BuildingBlocks.Common.Seeders;
 using NFC.Platform.BuildingBlocks.Common.Helpers;
+using NFC.Platform.BuildingBlocks.Common.Seeders;
 using NFC.Platform.Infrastructure.Contexts;
 using NFC.Platform.Infrastructure.Interceptors;
 using NFC.Platform.Infrastructure.Repositories;
-using NFC.Platform.Infrastructure.Services;
 using NFC.Platform.Infrastructure.Seeders;
+using NFC.Platform.Infrastructure.Services;
 
 namespace NFC.Platform.Infrastructure.Extensions
 {

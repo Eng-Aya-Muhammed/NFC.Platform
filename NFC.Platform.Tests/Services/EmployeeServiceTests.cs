@@ -260,8 +260,8 @@ namespace NFC.Platform.Tests.Services
             var tenantId = Guid.NewGuid();
             var employeeList = new List<Employee>
             {
-                new Employee { Id = Guid.NewGuid(), FullName = "Emp 1", Email = "emp1@test.com", CreatedAt = DateTime.UtcNow },
-                new Employee { Id = Guid.NewGuid(), FullName = "Emp 2", Email = "emp2@test.com", CreatedAt = DateTime.UtcNow }
+                new() { Id = Guid.NewGuid(), FullName = "Emp 1", Email = "emp1@test.com", CreatedAt = DateTime.UtcNow },
+                new() { Id = Guid.NewGuid(), FullName = "Emp 2", Email = "emp2@test.com", CreatedAt = DateTime.UtcNow }
             };
 
             var queryable = employeeList.AsQueryable().BuildMock();

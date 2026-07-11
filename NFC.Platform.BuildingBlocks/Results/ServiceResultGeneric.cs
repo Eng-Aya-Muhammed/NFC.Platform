@@ -45,7 +45,7 @@ namespace NFC.Platform.BuildingBlocks.Results
             {
                 IsSuccess = false,
                 Message = message,
-                Errors = new List<string> { message },
+                Errors = [message],
                 StatusCode = statusCode
             };
         }
@@ -61,7 +61,7 @@ namespace NFC.Platform.BuildingBlocks.Results
             return new ServiceResult<T>
             {
                 IsSuccess = false,
-                Errors = errors ?? new List<string>(),
+                Errors = errors ?? [],
                 StatusCode = statusCode
             };
         }
@@ -77,7 +77,7 @@ namespace NFC.Platform.BuildingBlocks.Results
             {
                 IsSuccess = false,
                 Message = message,
-                Errors = new List<string> { message },
+                Errors = [message],
                 StatusCode = 404
             };
         }
@@ -93,7 +93,7 @@ namespace NFC.Platform.BuildingBlocks.Results
             {
                 IsSuccess = false,
                 Message = message,
-                Errors = new List<string> { message },
+                Errors = [message],
                 StatusCode = 401
             };
         }
@@ -109,7 +109,7 @@ namespace NFC.Platform.BuildingBlocks.Results
             {
                 IsSuccess = false,
                 Message = message,
-                Errors = new List<string> { message },
+                Errors = [message],
                 StatusCode = 403
             };
         }

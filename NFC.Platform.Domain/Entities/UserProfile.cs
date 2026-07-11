@@ -31,11 +31,11 @@ namespace NFC.Platform.Domain.Entities
         public string? LinkedInUrl { get; set; }
         public string? WebsiteUrl { get; set; }
 
-        public ICollection<ProfileLink> CustomLinks { get; set; } = new List<ProfileLink>();
+        public ICollection<ProfileLink> CustomLinks { get; set; } = [];
 
         public Guid? CardTemplateId { get; set; }
         public CardTemplate? CardTemplate { get; set; }
 
-        public ICollection<Card> ActivatedCards { get; set; } = new List<Card>();
+        public ICollection<Card> ActivatedCards { get; set; } = [];
     }
 }

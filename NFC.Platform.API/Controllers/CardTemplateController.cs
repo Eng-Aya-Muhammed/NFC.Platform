@@ -1,28 +1,16 @@
-using System;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using NFC.Platform.Application.DTOs;
-using NFC.Platform.Application.Interfaces.Services;
-using NFC.Platform.BuildingBlocks.Common.Helpers;
+
 
 namespace NFC.Platform.API.Controllers
 {
     [ApiController]
     [Route("api/templates")]
     [Authorize]
-    public class CardTemplateController : ControllerBase
+    public class CardTemplateController(
+        ICardTemplateService cardTemplateService,
+        ICurrentTenant currentTenant) : ControllerBase
     {
-        private readonly ICardTemplateService _cardTemplateService;
-        private readonly ICurrentTenant _currentTenant;
-
-        public CardTemplateController(
-            ICardTemplateService cardTemplateService,
-            ICurrentTenant currentTenant)
-        {
-            _cardTemplateService = cardTemplateService ?? throw new ArgumentNullException(nameof(cardTemplateService));
-            _currentTenant = currentTenant ?? throw new ArgumentNullException(nameof(currentTenant));
-        }
+        private readonly ICardTemplateService _cardTemplateService = cardTemplateService ?? throw new ArgumentNullException(nameof(cardTemplateService));
+        private readonly ICurrentTenant _currentTenant = currentTenant ?? throw new ArgumentNullException(nameof(currentTenant));
 
         [HttpGet]
         public async Task<IActionResult> GetActiveTemplates()

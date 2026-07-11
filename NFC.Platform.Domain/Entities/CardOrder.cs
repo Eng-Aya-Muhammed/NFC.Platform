@@ -33,8 +33,8 @@ namespace NFC.Platform.Domain.Entities
         public OrderStatus Status { get; set; } = OrderStatus.Pending;
         public decimal TotalPrice { get; set; }
 
-        public ICollection<CardOrderItem> Items { get; set; } = new List<CardOrderItem>();
+        public ICollection<CardOrderItem> Items { get; set; } = [];
 
-        public ICollection<Card> GeneratedCards { get; set; } = new List<Card>();
+        public ICollection<Card> GeneratedCards { get; set; } = [];
     }
 }

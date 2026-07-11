@@ -21,7 +21,7 @@ namespace NFC.Platform.BuildingBlocks.Results
         /// <summary>
         /// Gets the list of error messages if the operation failed.
         /// </summary>
-        public List<string> Errors { get; init; } = new();
+        public List<string> Errors { get; init; } = [];
 
         /// <summary>
         /// Gets the HTTP status code representing the result outcome.
@@ -57,7 +57,7 @@ namespace NFC.Platform.BuildingBlocks.Results
             {
                 IsSuccess = false,
                 Message = message,
-                Errors = new List<string> { message },
+                Errors = [message],
                 StatusCode = statusCode
             };
         }
@@ -73,7 +73,7 @@ namespace NFC.Platform.BuildingBlocks.Results
             return new ServiceResult
             {
                 IsSuccess = false,
-                Errors = errors ?? new List<string>(),
+                Errors = errors ?? [],
                 StatusCode = statusCode
             };
         }
@@ -89,7 +89,7 @@ namespace NFC.Platform.BuildingBlocks.Results
             {
                 IsSuccess = false,
                 Message = message,
-                Errors = new List<string> { message },
+                Errors = [message],
                 StatusCode = 404
             };
         }
@@ -105,7 +105,7 @@ namespace NFC.Platform.BuildingBlocks.Results
             {
                 IsSuccess = false,
                 Message = message,
-                Errors = new List<string> { message },
+                Errors = [message],
                 StatusCode = 401
             };
         }
@@ -121,7 +121,7 @@ namespace NFC.Platform.BuildingBlocks.Results
             {
                 IsSuccess = false,
                 Message = message,
-                Errors = new List<string> { message },
+                Errors = [message],
                 StatusCode = 403
             };
         }

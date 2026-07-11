@@ -1,10 +1,10 @@
-using NFC.Platform.Application.Extensions;
 using NFC.Platform.API.Extensions;
+using NFC.Platform.API.Middlewares;
 using NFC.Platform.API.Services;
+using NFC.Platform.Application.Extensions;
 using NFC.Platform.BuildingBlocks.Common.Helpers;
 using NFC.Platform.BuildingBlocks.Extensions;
 using NFC.Platform.Infrastructure.Extensions;
-using NFC.Platform.API.Middlewares;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);

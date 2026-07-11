@@ -12,17 +12,17 @@ namespace NFC.Platform.Tests.Localization
     {
 
         private static LocalizedString Found(string key, string value)
-            => new LocalizedString(key, value, resourceNotFound: false);
+            => new(key, value, resourceNotFound: false);
 
         private static LocalizedString NotFound(string key)
-            => new LocalizedString(key, key, resourceNotFound: true);
+            => new(key, key, resourceNotFound: true);
 
         private static MessageService BuildService(
             IStringLocalizer<SuccessMessages>    success,
             IStringLocalizer<ErrorMessages>      error,
             IStringLocalizer<ValidationMessages> validation,
             IStringLocalizer<BusinessMessages>   business)
-            => new MessageService(success, error, validation, business);
+            => new(success, error, validation, business);
 
 
         [Fact]

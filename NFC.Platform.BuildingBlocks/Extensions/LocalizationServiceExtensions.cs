@@ -34,8 +34,8 @@ namespace NFC.Platform.BuildingBlocks.Extensions
         {
             var supportedCultures = new List<CultureInfo>
             {
-                new CultureInfo("ar"),
-                new CultureInfo("en")
+                new("ar"),
+                new("en")
             };
 
             var options = new RequestLocalizationOptions

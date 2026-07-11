@@ -13,21 +13,14 @@ using NFC.Platform.Domain.Entities;
 
 namespace NFC.Platform.Application.Services
 {
-    public class CardTemplateService : ICardTemplateService
+    public class CardTemplateService(
+        IUnitOfWork unitOfWork,
+        IMapper mapper,
+        IMessageService messageService) : ICardTemplateService
     {
-        private readonly IUnitOfWork _unitOfWork;
-        private readonly IMapper _mapper;
-        private readonly IMessageService _messageService;
-
-        public CardTemplateService(
-            IUnitOfWork unitOfWork,
-            IMapper mapper,
-            IMessageService messageService)
-        {
-            _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
-            _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
-            _messageService = messageService ?? throw new ArgumentNullException(nameof(messageService));
-        }
+        private readonly IUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+        private readonly IMapper _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
+        private readonly IMessageService _messageService = messageService ?? throw new ArgumentNullException(nameof(messageService));
 
         public async Task<ServiceResult<IReadOnlyList<CardTemplateDto>>> GetActiveTemplatesAsync()
         {

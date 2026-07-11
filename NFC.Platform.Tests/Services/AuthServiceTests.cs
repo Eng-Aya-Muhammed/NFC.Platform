@@ -8,10 +8,10 @@ using NFC.Platform.Application.Interfaces.Repositories;
 using NFC.Platform.Application.Interfaces.Services;
 using NFC.Platform.Application.Services;
 using NFC.Platform.BuildingBlocks.Common.Constants;
-using NFC.Platform.Domain.Enums;
 using NFC.Platform.BuildingBlocks.Common.Helpers;
 using NFC.Platform.BuildingBlocks.Localization;
 using NFC.Platform.Domain.Entities;
+using NFC.Platform.Domain.Enums;
 using NSubstitute;
 using Xunit;
 
@@ -213,7 +213,7 @@ namespace NFC.Platform.Tests.Services
                 .Returns(new List<User>()); // User does not exist
 
             _roleRepo.FindAsync(Arg.Any<Expression<Func<Role, bool>>>())
-                .Returns(new List<Role> { new Role { Id = Guid.NewGuid(), Name = AppRole.Customer.ToString() } });
+                .Returns(new List<Role> { new() { Id = Guid.NewGuid(), Name = AppRole.Customer.ToString() } });
 
             _userRoleRepo.FindAsync(Arg.Any<Expression<Func<UserRole, bool>>>())
                 .Returns(new List<UserRole>());
@@ -253,7 +253,7 @@ namespace NFC.Platform.Tests.Services
                 .Returns(new List<User>());
 
             _roleRepo.FindAsync(Arg.Any<Expression<Func<Role, bool>>>())
-                .Returns(new List<Role> { new Role { Id = Guid.NewGuid(), Name = AppRole.CompanyAdmin.ToString() } });
+                .Returns(new List<Role> { new() { Id = Guid.NewGuid(), Name = AppRole.CompanyAdmin.ToString() } });
 
             _userRoleRepo.FindAsync(Arg.Any<Expression<Func<UserRole, bool>>>())
                 .Returns(new List<UserRole>());
@@ -408,7 +408,7 @@ namespace NFC.Platform.Tests.Services
                 .Returns(new List<User>()); // User does not exist
 
             _roleRepo.FindAsync(Arg.Any<Expression<Func<Role, bool>>>())
-                .Returns(new List<Role> { new Role { Id = Guid.NewGuid(), Name = AppRole.Admin.ToString() } });
+                .Returns(new List<Role> { new() { Id = Guid.NewGuid(), Name = AppRole.Admin.ToString() } });
 
             _userRoleRepo.FindAsync(Arg.Any<Expression<Func<UserRole, bool>>>())
                 .Returns(new List<UserRole>());

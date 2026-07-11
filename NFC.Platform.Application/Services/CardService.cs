@@ -14,24 +14,16 @@ using NFC.Platform.Domain.Entities;
 
 namespace NFC.Platform.Application.Services
 {
-    public class CardService : ICardService
+    public class CardService(
+        IUnitOfWork unitOfWork,
+        IMapper mapper,
+        IMessageService messageService,
+        ICurrentTenant currentTenant) : ICardService
     {
-        private readonly IUnitOfWork _unitOfWork;
-        private readonly IMapper _mapper;
-        private readonly IMessageService _messageService;
-        private readonly ICurrentTenant _currentTenant;
-
-        public CardService(
-            IUnitOfWork unitOfWork,
-            IMapper mapper,
-            IMessageService messageService,
-            ICurrentTenant currentTenant)
-        {
-            _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
-            _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
-            _messageService = messageService ?? throw new ArgumentNullException(nameof(messageService));
-            _currentTenant = currentTenant ?? throw new ArgumentNullException(nameof(currentTenant));
-        }
+        private readonly IUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+        private readonly IMapper _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
+        private readonly IMessageService _messageService = messageService ?? throw new ArgumentNullException(nameof(messageService));
+        private readonly ICurrentTenant _currentTenant = currentTenant ?? throw new ArgumentNullException(nameof(currentTenant));
 
         public async Task<ServiceResult<CardDto>> GetByIdAsync(Guid id)
         {

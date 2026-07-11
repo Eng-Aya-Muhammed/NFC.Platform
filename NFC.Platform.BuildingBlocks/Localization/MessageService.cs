@@ -19,25 +19,16 @@ namespace NFC.Platform.BuildingBlocks.Localization
     /// this class performs no file reading or string formatting of its own.
     /// </para>
     /// </summary>
-    public class MessageService : IMessageService
+    public class MessageService(
+        IStringLocalizer<SuccessMessages> successLocalizer,
+        IStringLocalizer<ErrorMessages> errorLocalizer,
+        IStringLocalizer<ValidationMessages> validationLocalizer,
+        IStringLocalizer<BusinessMessages> businessLocalizer) : IMessageService
     {
-        private readonly IStringLocalizer<SuccessMessages> _successLocalizer;
-        private readonly IStringLocalizer<ErrorMessages> _errorLocalizer;
-        private readonly IStringLocalizer<ValidationMessages> _validationLocalizer;
-        private readonly IStringLocalizer<BusinessMessages> _businessLocalizer;
-
-        public MessageService(
-            IStringLocalizer<SuccessMessages> successLocalizer,
-            IStringLocalizer<ErrorMessages> errorLocalizer,
-            IStringLocalizer<ValidationMessages> validationLocalizer,
-            IStringLocalizer<BusinessMessages> businessLocalizer)
-        {
-            _successLocalizer = successLocalizer ?? throw new ArgumentNullException(nameof(successLocalizer));
-            _errorLocalizer = errorLocalizer ?? throw new ArgumentNullException(nameof(errorLocalizer));
-            _validationLocalizer = validationLocalizer ?? throw new ArgumentNullException(nameof(validationLocalizer));
-            _businessLocalizer = businessLocalizer ?? throw new ArgumentNullException(nameof(businessLocalizer));
-        }
-
+        private readonly IStringLocalizer<SuccessMessages> _successLocalizer = successLocalizer ?? throw new ArgumentNullException(nameof(successLocalizer));
+        private readonly IStringLocalizer<ErrorMessages> _errorLocalizer = errorLocalizer ?? throw new ArgumentNullException(nameof(errorLocalizer));
+        private readonly IStringLocalizer<ValidationMessages> _validationLocalizer = validationLocalizer ?? throw new ArgumentNullException(nameof(validationLocalizer));
+        private readonly IStringLocalizer<BusinessMessages> _businessLocalizer = businessLocalizer ?? throw new ArgumentNullException(nameof(businessLocalizer));
 
         public string Get(string key, params object[] args)
         {

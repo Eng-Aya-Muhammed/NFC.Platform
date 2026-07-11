@@ -12,14 +12,9 @@ namespace NFC.Platform.API.Services
     /// Implementation of <see cref="ICurrentUserService"/> using <see cref="IHttpContextAccessor"/> 
     /// to extract user identity claims from the active HTTP request context.
     /// </summary>
-    public class CurrentUserService : ICurrentUserService
+    public class CurrentUserService(IHttpContextAccessor httpContextAccessor) : ICurrentUserService
     {
-        private readonly IHttpContextAccessor _httpContextAccessor;
-
-        public CurrentUserService(IHttpContextAccessor httpContextAccessor)
-        {
-            _httpContextAccessor = httpContextAccessor ?? throw new ArgumentNullException(nameof(httpContextAccessor));
-        }
+        private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor ?? throw new ArgumentNullException(nameof(httpContextAccessor));
 
         /// <inheritdoc />
         public Guid? UserId
@@ -58,7 +53,7 @@ namespace NFC.Platform.API.Services
             get
             {
                 var user = _httpContextAccessor.HttpContext?.User;
-                if (user == null) return Enumerable.Empty<string>();
+                if (user == null) return [];
 
                 return user.FindAll(ClaimTypes.Role)
                     .Concat(user.FindAll(AppClaims.Role))

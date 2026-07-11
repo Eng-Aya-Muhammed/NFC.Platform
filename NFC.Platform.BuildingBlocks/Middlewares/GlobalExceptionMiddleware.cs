@@ -11,21 +11,14 @@ using NFC.Platform.BuildingBlocks.Results;
 
 namespace NFC.Platform.BuildingBlocks.Middlewares
 {
-    public class GlobalExceptionMiddleware
+    public class GlobalExceptionMiddleware(
+        RequestDelegate next,
+        ILogger<GlobalExceptionMiddleware> logger,
+        IMessageService messageService)
     {
-        private readonly RequestDelegate _next;
-        private readonly ILogger<GlobalExceptionMiddleware> _logger;
-        private readonly IMessageService _messageService;
-
-        public GlobalExceptionMiddleware(
-            RequestDelegate next,
-            ILogger<GlobalExceptionMiddleware> logger,
-            IMessageService messageService)
-        {
-            _next = next ?? throw new ArgumentNullException(nameof(next));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _messageService = messageService ?? throw new ArgumentNullException(nameof(messageService));
-        }
+        private readonly RequestDelegate _next = next ?? throw new ArgumentNullException(nameof(next));
+        private readonly ILogger<GlobalExceptionMiddleware> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        private readonly IMessageService _messageService = messageService ?? throw new ArgumentNullException(nameof(messageService));
 
         public async Task InvokeAsync(HttpContext context)
         {
@@ -45,10 +38,10 @@ namespace NFC.Platform.BuildingBlocks.Middlewares
         private async Task HandleExceptionAsync(HttpContext context, Exception exception)
         {
             context.Response.ContentType = "application/json";
-
-            int statusCode = (int)HttpStatusCode.InternalServerError;
             string message;
 
+
+            int statusCode;
             switch (exception)
             {
                 case NotFoundException notFoundEx:

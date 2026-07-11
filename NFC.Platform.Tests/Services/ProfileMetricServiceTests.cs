@@ -8,6 +8,7 @@ using MockQueryable.NSubstitute;
 using NFC.Platform.Application.DTOs;
 using NFC.Platform.Application.Interfaces.Repositories;
 using NFC.Platform.Application.Services;
+using NFC.Platform.BuildingBlocks.Common.Helpers;
 using NFC.Platform.BuildingBlocks.Localization;
 using NFC.Platform.Domain.Entities;
 using NFC.Platform.Domain.Enums;
@@ -45,16 +46,16 @@ namespace NFC.Platform.Tests.Services
             _sut = new ProfileMetricService(_unitOfWork, _messageService, _mapper);
         }
 
+        // ── ResolvePublicProfileAsync ─────────────────────────────────────────────
+
         [Fact]
-        public async Task ResolvePublicProfileAsync_ReturnsNotFound_WhenCardDoesNotExistOrInactive()
+        public async Task ResolvePublicProfileAsync_ReturnsNotFound_WhenActivationCodeIsNull()
         {
             // Arrange
-            var emptyQueryable = new List<Card>().AsQueryable().BuildMock();
-            _cardRepo.GetQueryable().Returns(emptyQueryable);
-            _messageService.Get("RecordNotFound").Returns("Profile not found.");
+            _messageService.Get("CardNotFound").Returns("Card not found.");
 
             // Act
-            var result = await _sut.ResolvePublicProfileAsync("NONEXISTENT");
+            var result = await _sut.ResolvePublicProfileAsync(null!);
 
             // Assert
             Assert.False(result.IsSuccess);
@@ -62,47 +63,99 @@ namespace NFC.Platform.Tests.Services
         }
 
         [Fact]
-        public async Task ResolvePublicProfileAsync_Success_ReturnsProfileDetails()
+        public async Task ResolvePublicProfileAsync_ReturnsNotFound_WhenActivationCodeIsWhitespace()
         {
             // Arrange
-            var activationCode = "ACTIVECODE123";
-            var profileId = Guid.NewGuid();
+            _messageService.Get("CardNotFound").Returns("Card not found.");
+
+            // Act
+            var result = await _sut.ResolvePublicProfileAsync("   ");
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(404, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task ResolvePublicProfileAsync_ReturnsNotFound_WhenCardNotFound()
+        {
+            // Arrange
+            var emptyQueryable = new List<Card>().AsQueryable().BuildMock();
+            _cardRepo.GetQueryable().Returns(emptyQueryable);
+            _messageService.Get("CardNotFound").Returns("Card not found.");
+
+            // Act
+            var result = await _sut.ResolvePublicProfileAsync("INVALID_CODE");
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(404, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task ResolvePublicProfileAsync_ReturnsNotFound_WhenCardExistsButProfileIsNull()
+        {
+            // Arrange
+            var card = new Card
+            {
+                ActivationCode = "CODE123",
+                IsActive = true,
+                UserProfile = null  // card has no linked profile
+            };
+            var queryable = new List<Card> { card }.AsQueryable().BuildMock();
+            _cardRepo.GetQueryable().Returns(queryable);
+            _messageService.Get("CardNotFound").Returns("Card not found.");
+
+            // Act
+            var result = await _sut.ResolvePublicProfileAsync("CODE123");
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(404, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task ResolvePublicProfileAsync_ReturnsSuccess_WhenCardAndProfileExist()
+        {
+            // Arrange
             var profile = new UserProfile
             {
-                Id = profileId,
+                Id = Guid.NewGuid(),
                 FullName = "Mohamed Ahmed",
-                JobTitle = "Engineer",
-                CustomLinks = new List<ProfileLink>
-                {
-                    new ProfileLink { Id = Guid.NewGuid(), Title = "LinkedIn", Url = "https://linkedin.com", DisplayOrder = 1 }
-                }
+                CustomLinks =
+                [
+                    new ProfileLink { Id = Guid.NewGuid(), Title = "LinkedIn", Url = "https://linkedin.com/in/m" }
+                ]
             };
-            var card = new Card { ActivationCode = activationCode, IsActive = true, UserProfile = profile };
+            var card = new Card
+            {
+                ActivationCode = "VALID",
+                IsActive = true,
+                UserProfile = profile
+            };
 
             var queryable = new List<Card> { card }.AsQueryable().BuildMock();
             _cardRepo.GetQueryable().Returns(queryable);
 
-            var expectedDto = new EmployeeDetailsDto
+            var dto = new EmployeeDetailsDto
             {
-                Id = profileId,
                 FullName = "Mohamed Ahmed",
-                CustomLinks = new List<ProfileLinkDto>
-                {
-                    new ProfileLinkDto { Title = "LinkedIn", Url = "https://linkedin.com", DisplayOrder = 1 }
-                }
+                CustomLinks = [new ProfileLinkDto { Title = "LinkedIn" }]
             };
-            _mapper.Map<EmployeeDetailsDto>(profile).Returns(expectedDto);
+            _mapper.Map<EmployeeDetailsDto>(profile).Returns(dto);
 
             // Act
-            var result = await _sut.ResolvePublicProfileAsync(activationCode);
+            var result = await _sut.ResolvePublicProfileAsync("VALID");
 
             // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(200, result.StatusCode);
-            Assert.Equal("Mohamed Ahmed", result.Data.FullName);
-            Assert.Single(result.Data.CustomLinks);
-            Assert.Equal("LinkedIn", result.Data.CustomLinks[0].Title);
+            Assert.Equal("Mohamed Ahmed", result.Data!.FullName);
+            Assert.Single(result.Data!.CustomLinks);
+            Assert.Equal("LinkedIn", result.Data!.CustomLinks[0].Title);
         }
+
+        // ── RecordMetricAsync ─────────────────────────────────────────────────────
 
         [Fact]
         public async Task RecordMetricAsync_ReturnsNotFound_WhenProfileDoesNotExist()
@@ -115,7 +168,7 @@ namespace NFC.Platform.Tests.Services
             var request = new RecordMetricRequest { InteractionType = InteractionType.ProfileView };
 
             // Act
-            var result = await _sut.RecordMetricAsync(profileId, request, "127.0.0.1", "Chrome");
+            var result = await _sut.RecordMetricAsync(profileId, request, null, null);
 
             // Assert
             Assert.False(result.IsSuccess);
@@ -123,22 +176,23 @@ namespace NFC.Platform.Tests.Services
         }
 
         [Fact]
-        public async Task RecordMetricAsync_Success_SavesProfileMetricRecordToDatabase()
+        public async Task RecordMetricAsync_ReturnsSuccess_AndSavesMetricWithIpAndUserAgent()
         {
             // Arrange
             var profileId = Guid.NewGuid();
             var tenantId = Guid.NewGuid();
             var profile = new UserProfile { Id = profileId, TenantId = tenantId };
+
             _profileRepo.GetByIdAsync(profileId).Returns(profile);
 
             var request = new RecordMetricRequest
             {
                 InteractionType = InteractionType.ContactSaved,
-                ProfileLinkId = null
+                ProfileLinkId = Guid.NewGuid()
             };
 
             // Act
-            var result = await _sut.RecordMetricAsync(profileId, request, "192.168.1.1", "Safari");
+            var result = await _sut.RecordMetricAsync(profileId, request, "192.168.1.1", "Mozilla/5.0");
 
             // Assert
             Assert.True(result.IsSuccess);
@@ -147,9 +201,51 @@ namespace NFC.Platform.Tests.Services
                 m.TenantId == tenantId &&
                 m.InteractionType == InteractionType.ContactSaved &&
                 m.IpAddress == "192.168.1.1" &&
-                m.UserAgent == "Safari"
-            ));
+                m.UserAgent == "Mozilla/5.0" &&
+                m.ProfileLinkId == request.ProfileLinkId));
             await _unitOfWork.Received(1).SaveChangesAsync();
+        }
+
+        [Fact]
+        public async Task RecordMetricAsync_ReturnsSuccess_WhenIpAndUserAgentAreNull()
+        {
+            // Arrange
+            var profileId = Guid.NewGuid();
+            var profile = new UserProfile { Id = profileId, TenantId = Guid.NewGuid() };
+            _profileRepo.GetByIdAsync(profileId).Returns(profile);
+
+            var request = new RecordMetricRequest { InteractionType = InteractionType.ProfileView };
+
+            // Act
+            var result = await _sut.RecordMetricAsync(profileId, request, null, null);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            await _metricRepo.Received(1).AddAsync(Arg.Is<ProfileMetric>(m =>
+                m.IpAddress == null &&
+                m.UserAgent == null));
+        }
+
+        [Fact]
+        public async Task RecordMetricAsync_ReturnsSuccess_WhenProfileLinkIdIsNull()
+        {
+            // Arrange
+            var profileId = Guid.NewGuid();
+            var profile = new UserProfile { Id = profileId, TenantId = Guid.NewGuid() };
+            _profileRepo.GetByIdAsync(profileId).Returns(profile);
+
+            var request = new RecordMetricRequest
+            {
+                InteractionType = InteractionType.LinkClick,
+                ProfileLinkId = null
+            };
+
+            // Act
+            var result = await _sut.RecordMetricAsync(profileId, request, "10.0.0.1", null);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            await _metricRepo.Received(1).AddAsync(Arg.Is<ProfileMetric>(m => m.ProfileLinkId == null));
         }
     }
 }

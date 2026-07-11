@@ -12,21 +12,16 @@ namespace NFC.Platform.Infrastructure.Repositories
     /// <summary>
     /// EF Core implementation of <see cref="IUnitOfWork"/> managing repositories and transaction boundaries.
     /// </summary>
-    public class UnitOfWork : IUnitOfWork
+    public class UnitOfWork(ApplicationDbContext context) : IUnitOfWork
     {
-        private readonly ApplicationDbContext _context;
+        private readonly ApplicationDbContext _context = context ?? throw new ArgumentNullException(nameof(context));
         private Hashtable? _repositories;
         private IDbContextTransaction? _transaction;
-
-        public UnitOfWork(ApplicationDbContext context)
-        {
-            _context = context ?? throw new ArgumentNullException(nameof(context));
-        }
 
         /// <inheritdoc />
         public IGenericRepository<T> Repository<T>() where T : BaseEntity
         {
-            _repositories ??= new Hashtable();
+            _repositories ??= [];
 
             var type = typeof(T).Name;
 

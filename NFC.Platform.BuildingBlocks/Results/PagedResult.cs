@@ -13,7 +13,7 @@ namespace NFC.Platform.BuildingBlocks.Results
         /// <summary>
         /// Gets the items on the current page.
         /// </summary>
-        public List<T> Items { get; init; } = new();
+        public List<T> Items { get; init; } = [];
 
         /// <summary>
         /// Gets the current page number (1-indexed).
@@ -52,7 +52,7 @@ namespace NFC.Platform.BuildingBlocks.Results
         {
             return new PagedResult<T>
             {
-                Items = items?.ToList() ?? new List<T>(),
+                Items = items?.ToList() ?? [],
                 TotalCount = totalCount,
                 PageNumber = pageNumber < 1 ? 1 : pageNumber,
                 PageSize = pageSize < 1 ? 10 : pageSize

@@ -9,14 +9,9 @@ using NFC.Platform.Infrastructure.Contexts;
 
 namespace NFC.Platform.Infrastructure.Seeders
 {
-    public class RoleSeeder : IRoleSeeder
+    public class RoleSeeder(ApplicationDbContext context) : IRoleSeeder
     {
-        private readonly ApplicationDbContext _context;
-
-        public RoleSeeder(ApplicationDbContext context)
-        {
-            _context = context ?? throw new ArgumentNullException(nameof(context));
-        }
+        private readonly ApplicationDbContext _context = context ?? throw new ArgumentNullException(nameof(context));
 
         public async Task SeedAsync()
         {

@@ -18,20 +18,14 @@ namespace NFC.Platform.Infrastructure.Services
     /// Implementation of <see cref="ICurrentTenant"/> that resolves the active TenantId
     /// from JWT claims and validates its existence and active status in the database.
     /// </summary>
-    public class CurrentTenantService : ICurrentTenant
+    public class CurrentTenantService(IHttpContextAccessor httpContextAccessor, IServiceProvider serviceProvider) : ICurrentTenant
     {
-        private readonly IHttpContextAccessor _httpContextAccessor;
-        private readonly IServiceProvider _serviceProvider;
+        private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor ?? throw new ArgumentNullException(nameof(httpContextAccessor));
+        private readonly IServiceProvider _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
 
         private bool _isTenantValidated;
         private Guid? _cachedTenantId;
         private bool _isSuperAdmin;
-
-        public CurrentTenantService(IHttpContextAccessor httpContextAccessor, IServiceProvider serviceProvider)
-        {
-            _httpContextAccessor = httpContextAccessor ?? throw new ArgumentNullException(nameof(httpContextAccessor));
-            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
-        }
 
         /// <inheritdoc />
         public Guid? TenantId
@@ -117,23 +111,15 @@ namespace NFC.Platform.Infrastructure.Services
                 var options = scope.ServiceProvider.GetRequiredService<DbContextOptions<ApplicationDbContext>>();
                 var interceptor = scope.ServiceProvider.GetRequiredService<AuditableEntitySaveChangesInterceptor>();
 
-                using (var validationContext = new ApplicationDbContext(options, interceptor, new FakeCurrentTenant()))
+                using var validationContext = new ApplicationDbContext(options, interceptor, new FakeCurrentTenant());
+                // IgnoreQueryFilters is used as a best practice to ensure the query isn't intercepted.
+                var tenant = validationContext.Set<Tenant>()
+                    .IgnoreQueryFilters()
+                    .FirstOrDefaultAsync(t => t.Id == tenantId)
+                    .GetAwaiter().GetResult() ?? throw new ForbiddenException("The tenant associated with this account does not exist.");
+                if (!tenant.IsActive)
                 {
-                    // IgnoreQueryFilters is used as a best practice to ensure the query isn't intercepted.
-                    var tenant = validationContext.Set<Tenant>()
-                        .IgnoreQueryFilters()
-                        .FirstOrDefaultAsync(t => t.Id == tenantId)
-                        .GetAwaiter().GetResult();
-
-                    if (tenant == null)
-                    {
-                        throw new ForbiddenException("The tenant associated with this account does not exist.");
-                    }
-
-                    if (!tenant.IsActive)
-                    {
-                        throw new ForbiddenException("The tenant associated with this account is currently inactive.");
-                    }
+                    throw new ForbiddenException("The tenant associated with this account is currently inactive.");
                 }
             }
 

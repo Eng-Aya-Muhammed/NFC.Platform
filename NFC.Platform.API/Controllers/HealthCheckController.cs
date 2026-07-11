@@ -1,20 +1,12 @@
-using System;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
 using NFC.Platform.Infrastructure.Contexts;
 
 namespace NFC.Platform.API.Controllers
 {
     [ApiController]
     [Route("health")]
-    public class HealthCheckController : ControllerBase
+    public class HealthCheckController(ApplicationDbContext context) : ControllerBase
     {
-        private readonly ApplicationDbContext _context;
-
-        public HealthCheckController(ApplicationDbContext context)
-        {
-            _context = context ?? throw new ArgumentNullException(nameof(context));
-        }
+        private readonly ApplicationDbContext _context = context ?? throw new ArgumentNullException(nameof(context));
 
         [HttpGet]
         public async Task<IActionResult> CheckHealth()

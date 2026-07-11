@@ -11,18 +11,12 @@ namespace NFC.Platform.Infrastructure.Interceptors
     /// EF Core Interceptor that intercepts SaveChanges events to automatically populate auditing properties
     /// (CreatedAt, CreatedBy, UpdatedAt, UpdatedBy) for entities inheriting from <see cref="BaseEntity"/>.
     /// </summary>
-    public class AuditableEntitySaveChangesInterceptor : SaveChangesInterceptor
+    public class AuditableEntitySaveChangesInterceptor(
+        ICurrentUserService currentUserService,
+        IDateTimeProvider dateTimeProvider) : SaveChangesInterceptor
     {
-        private readonly ICurrentUserService _currentUserService;
-        private readonly IDateTimeProvider _dateTimeProvider;
-
-        public AuditableEntitySaveChangesInterceptor(
-            ICurrentUserService currentUserService,
-            IDateTimeProvider dateTimeProvider)
-        {
-            _currentUserService = currentUserService;
-            _dateTimeProvider = dateTimeProvider;
-        }
+        private readonly ICurrentUserService _currentUserService = currentUserService;
+        private readonly IDateTimeProvider _dateTimeProvider = dateTimeProvider;
 
         /// <inheritdoc />
         public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)

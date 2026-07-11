@@ -1,25 +1,13 @@
-using System;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using NFC.Platform.Application.DTOs;
-using NFC.Platform.Application.Interfaces.Services;
-using NFC.Platform.BuildingBlocks.Common.Constants;
-using NFC.Platform.BuildingBlocks.Results;
+
 
 namespace NFC.Platform.API.Controllers
 {
     [ApiController]
     [Route("api/company/employees")]
     [Authorize(Policy = AppPolicies.CompanyAdminOnly)]
-    public class EmployeeController : ControllerBase
+    public class EmployeeController(IEmployeeService employeeService) : ControllerBase
     {
-        private readonly IEmployeeService _employeeService;
-
-        public EmployeeController(IEmployeeService employeeService)
-        {
-            _employeeService = employeeService ?? throw new ArgumentNullException(nameof(employeeService));
-        }
+        private readonly IEmployeeService _employeeService = employeeService ?? throw new ArgumentNullException(nameof(employeeService));
 
         [HttpGet]
         public async Task<IActionResult> GetPaged([FromQuery] PaginationRequest request, [FromQuery] string? search)

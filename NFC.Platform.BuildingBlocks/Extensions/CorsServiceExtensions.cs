@@ -16,7 +16,7 @@ namespace NFC.Platform.BuildingBlocks.Extensions
         /// <returns>The modified service collection.</returns>
         public static IServiceCollection AddCorsPolicy(this IServiceCollection services, IConfiguration configuration)
         {
-            var origins = configuration.GetSection("CorsSettings:AllowedOrigins").Get<string[]>() ?? new string[0];
+            var origins = configuration.GetSection("CorsSettings:AllowedOrigins").Get<string[]>() ?? [];
 
             services.AddCors(options =>
             {

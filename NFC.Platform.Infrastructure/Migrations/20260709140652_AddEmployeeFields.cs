@@ -217,13 +217,13 @@ namespace NFC.Platform.Infrastructure.Migrations
             migrationBuilder.CreateIndex(
                 name: "IX_Users_TenantId_Email",
                 table: "Users",
-                columns: new[] { "TenantId", "Email" },
+                columns: ["TenantId", "Email"],
                 unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Users_TenantId_Username",
                 table: "Users",
-                columns: new[] { "TenantId", "Username" },
+                columns: ["TenantId", "Username"],
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -234,7 +234,7 @@ namespace NFC.Platform.Infrastructure.Migrations
             migrationBuilder.CreateIndex(
                 name: "IX_RefreshTokens_TenantId_UserId",
                 table: "RefreshTokens",
-                columns: new[] { "TenantId", "UserId" });
+                columns: ["TenantId", "UserId"]);
 
             migrationBuilder.CreateIndex(
                 name: "IX_ProfileMetrics_TenantId",
@@ -260,7 +260,7 @@ namespace NFC.Platform.Infrastructure.Migrations
             migrationBuilder.CreateIndex(
                 name: "IX_Cards_TenantId_ActivationCode",
                 table: "Cards",
-                columns: new[] { "TenantId", "ActivationCode" },
+                columns: ["TenantId", "ActivationCode"],
                 unique: true);
 
             migrationBuilder.CreateIndex(

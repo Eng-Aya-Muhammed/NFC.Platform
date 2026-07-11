@@ -1,23 +1,13 @@
-using System;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using NFC.Platform.Application.DTOs;
-using NFC.Platform.Application.Interfaces.Services;
+
 
 namespace NFC.Platform.API.Controllers
 {
     [ApiController]
     [Route("api/public")]
     [AllowAnonymous]
-    public class PublicProfileController : ControllerBase
+    public class PublicProfileController(IProfileMetricService profileMetricService) : ControllerBase
     {
-        private readonly IProfileMetricService _profileMetricService;
-
-        public PublicProfileController(IProfileMetricService profileMetricService)
-        {
-            _profileMetricService = profileMetricService ?? throw new ArgumentNullException(nameof(profileMetricService));
-        }
+        private readonly IProfileMetricService _profileMetricService = profileMetricService ?? throw new ArgumentNullException(nameof(profileMetricService));
 
         /// <summary>
         /// Resolves a physical card scan/tap by its activation code and retrieves the public profile.

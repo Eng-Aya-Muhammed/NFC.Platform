@@ -1,24 +1,13 @@
-using System;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using NFC.Platform.Application.DTOs;
-using NFC.Platform.Application.Interfaces.Services;
-using NFC.Platform.BuildingBlocks.Common.Constants;
+
 
 namespace NFC.Platform.API.Controllers
 {
     [ApiController]
     [Route("api/company")]
     [Authorize(Policy = AppPolicies.CompanyAdminOnly)]
-    public class CompanyController : ControllerBase
+    public class CompanyController(ICompanyService companyService) : ControllerBase
     {
-        private readonly ICompanyService _companyService;
-
-        public CompanyController(ICompanyService companyService)
-        {
-            _companyService = companyService ?? throw new ArgumentNullException(nameof(companyService));
-        }
+        private readonly ICompanyService _companyService = companyService ?? throw new ArgumentNullException(nameof(companyService));
 
         [HttpGet("dashboard")]
         public async Task<IActionResult> GetDashboard()

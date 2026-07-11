@@ -8,14 +8,9 @@ namespace NFC.Platform.API.Middlewares
     /// <summary>
     /// Middleware that validates that the active tenant for an authenticated user is active and exists.
     /// </summary>
-    public class TenantMiddleware
+    public class TenantMiddleware(RequestDelegate next)
     {
-        private readonly RequestDelegate _next;
-
-        public TenantMiddleware(RequestDelegate next)
-        {
-            _next = next ?? throw new ArgumentNullException(nameof(next));
-        }
+        private readonly RequestDelegate _next = next ?? throw new ArgumentNullException(nameof(next));
 
         public async Task InvokeAsync(HttpContext context, ICurrentTenant currentTenant)
         {

@@ -121,7 +121,7 @@ namespace NFC.Platform.Tests.Services
             // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(200, result.StatusCode);
-            Assert.Equal(15, result.Data.SubscriptionRemainingDays);
+            Assert.Equal(15, result.Data!.SubscriptionRemainingDays);
         }
 
         [Fact]
@@ -155,7 +155,7 @@ namespace NFC.Platform.Tests.Services
             // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(200, result.StatusCode);
-            Assert.Equal("New OnPoint", result.Data.Name);
+            Assert.Equal("New OnPoint", result.Data!.Name);
             Assert.Equal("9999", adminUser.PhoneNumber);
             _companyRepo.Received(1).Update(company);
             _userRepo.Received(1).Update(adminUser);
@@ -222,9 +222,9 @@ namespace NFC.Platform.Tests.Services
             var profileId2 = Guid.NewGuid();
             var metrics = new List<ProfileMetric>
             {
-                new ProfileMetric { UserProfileId = profileId1, UserProfile = new UserProfile { FullName = "Sara" }, CreatedAt = DateTime.UtcNow },
-                new ProfileMetric { UserProfileId = profileId1, UserProfile = new UserProfile { FullName = "Sara" }, CreatedAt = DateTime.UtcNow },
-                new ProfileMetric { UserProfileId = profileId2, UserProfile = new UserProfile { FullName = "John" }, CreatedAt = DateTime.UtcNow }
+                new() { UserProfileId = profileId1, UserProfile = new UserProfile { FullName = "Sara" }, CreatedAt = DateTime.UtcNow },
+                new() { UserProfileId = profileId1, UserProfile = new UserProfile { FullName = "Sara" }, CreatedAt = DateTime.UtcNow },
+                new() { UserProfileId = profileId2, UserProfile = new UserProfile { FullName = "John" }, CreatedAt = DateTime.UtcNow }
             };
             _metricRepo.GetQueryable().Returns(metrics.AsQueryable().BuildMock());
 
@@ -234,11 +234,177 @@ namespace NFC.Platform.Tests.Services
             // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(200, result.StatusCode);
-            Assert.Equal(10, result.Data.TotalEmployeesCount);
-            Assert.Equal(5, result.Data.CardRequestsCount);
-            Assert.Equal(100, result.Data.ContactSavesCount);
-            Assert.Equal("Sara", result.Data.TopEmployeeName);
-            Assert.Equal(6, result.Data.MonthlyMetrics.Count);
+            Assert.Equal(10, result.Data!.TotalEmployeesCount);
+            Assert.Equal(5, result.Data!.CardRequestsCount);
+            Assert.Equal(100, result.Data!.ContactSavesCount);
+            Assert.Equal("Sara", result.Data!.TopEmployeeName);
+            Assert.Equal(6, result.Data!.MonthlyMetrics.Count);
+        }
+
+        [Fact]
+        public async Task GetMyCompanyProfileAsync_ReturnsZeroRemainingDays_WhenNoActiveSubscription()
+        {
+            // Arrange
+            var tenantId = Guid.NewGuid();
+            _currentTenant.TenantId.Returns(tenantId);
+
+            var company = new Company { Name = "OnPoint", TenantId = tenantId };
+            _companyRepo.GetQueryable().Returns(new List<Company> { company }.BuildMock());
+
+            // No active subscription
+            _subscriptionRepo.GetQueryable().Returns(new List<UserSubscription>().BuildMock());
+
+            var dto = new CompanyProfileDto { Name = "OnPoint" };
+            _mapper.Map<CompanyProfileDto>(company).Returns(dto);
+
+            // Act
+            var result = await _sut.GetMyCompanyProfileAsync();
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(0, result.Data!.SubscriptionRemainingDays);
+        }
+
+        [Fact]
+        public async Task UpdateCompanyProfileAsync_ReturnsUnauthorized_WhenTenantNotAuthenticated()
+        {
+            // Arrange
+            _currentTenant.TenantId.Returns((Guid?)null);
+
+            // Act
+            var result = await _sut.UpdateCompanyProfileAsync(new UpdateCompanyProfileRequest());
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(401, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task UpdateCompanyProfileAsync_ReturnsNotFound_WhenCompanyDoesNotExist()
+        {
+            // Arrange
+            _currentTenant.TenantId.Returns(Guid.NewGuid());
+            _companyRepo.GetQueryable().Returns(new List<Company>().BuildMock());
+            _messageService.Get("RecordNotFound").Returns("Record not found.");
+
+            // Act
+            var result = await _sut.UpdateCompanyProfileAsync(new UpdateCompanyProfileRequest { Name = "X" });
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(404, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task UpdateCompanyProfileAsync_DoesNotUpdatePhone_WhenAdminUserIsNull()
+        {
+            // Arrange
+            var tenantId = Guid.NewGuid();
+            _currentTenant.TenantId.Returns(tenantId);
+
+            var company = new Company { Name = "Old", TenantId = tenantId, AdminUser = null! };
+            _companyRepo.GetQueryable().Returns(new List<Company> { company }.BuildMock());
+            _subscriptionRepo.GetQueryable().Returns(new List<UserSubscription>().BuildMock());
+
+            var request = new UpdateCompanyProfileRequest { Name = "New", Phone = "999" };
+            _mapper.Map(request, company).Returns(_ => company);
+
+            var dto = new CompanyProfileDto { Name = "New" };
+            _mapper.Map<CompanyProfileDto>(company).Returns(dto);
+            _messageService.Get("RecordUpdated").Returns("Updated.");
+
+            // Act
+            var result = await _sut.UpdateCompanyProfileAsync(request);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            _userRepo.DidNotReceive().Update(Arg.Any<User>());
+        }
+
+        [Fact]
+        public async Task ChangeCompanyAdminPasswordAsync_ReturnsUnauthorized_WhenUserIdMissing()
+        {
+            // Arrange
+            _currentTenant.UserId.Returns((Guid?)null);
+
+            // Act
+            var result = await _sut.ChangeCompanyAdminPasswordAsync(new CompanyChangePasswordRequest());
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(401, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task ChangeCompanyAdminPasswordAsync_ReturnsNotFound_WhenUserDoesNotExist()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            _currentTenant.UserId.Returns(userId);
+            _userRepo.GetByIdAsync(userId).Returns((User?)null);
+            _messageService.Get("RecordNotFound").Returns("Not found.");
+
+            // Act
+            var result = await _sut.ChangeCompanyAdminPasswordAsync(new CompanyChangePasswordRequest
+            {
+                OldPassword = "any",
+                NewPassword = "any2"
+            });
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(404, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task ChangeCompanyAdminPasswordAsync_ReturnsSuccess_WhenPasswordIsCorrect()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            _currentTenant.UserId.Returns(userId);
+
+            var user = new User
+            {
+                Id = userId,
+                PasswordHash = NFC.Platform.BuildingBlocks.Common.Helpers.PasswordHasher.HashPassword("OldPass123!")
+            };
+            _userRepo.GetByIdAsync(userId).Returns(user);
+            _messageService.Get("PasswordResetSuccess").Returns("Password changed.");
+
+            // Act
+            var result = await _sut.ChangeCompanyAdminPasswordAsync(new CompanyChangePasswordRequest
+            {
+                OldPassword = "OldPass123!",
+                NewPassword = "NewPass456!"
+            });
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            _userRepo.Received(1).Update(user);
+            await _unitOfWork.Received(1).SaveChangesAsync();
+        }
+
+        [Fact]
+        public async Task GetCompanyDashboardAsync_ReturnsDashboard_WithFallbackTopEmployee_WhenNoMetrics()
+        {
+            // Arrange
+            var tenantId = Guid.NewGuid();
+            _currentTenant.TenantId.Returns(tenantId);
+
+            _employeeRepo.CountAsync().Returns(0);
+            _orderRepo.CountAsync().Returns(0);
+            _metricRepo.CountAsync(Arg.Any<System.Linq.Expressions.Expression<Func<ProfileMetric, bool>>>()).Returns(0);
+
+            // No metrics → top employee = "-"
+            _metricRepo.GetQueryable().Returns(new List<ProfileMetric>().AsQueryable().BuildMock());
+
+            // Act
+            var result = await _sut.GetCompanyDashboardAsync();
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal("-", result.Data!.TopEmployeeName);
+            Assert.Equal(6, result.Data!.MonthlyMetrics.Count);
         }
     }
 }

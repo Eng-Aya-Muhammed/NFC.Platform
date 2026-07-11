@@ -1,22 +1,12 @@
-using System;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using NFC.Platform.Application.DTOs;
-using NFC.Platform.Application.Interfaces.Services;
-using NFC.Platform.BuildingBlocks.Results;
+
 
 namespace NFC.Platform.API.Controllers
 {
     [ApiController]
     [Route("api/cards")]
-    public class CardController : ControllerBase
+    public class CardController(ICardService cardService) : ControllerBase
     {
-        private readonly ICardService _cardService;
-
-        public CardController(ICardService cardService)
-        {
-            _cardService = cardService ?? throw new ArgumentNullException(nameof(cardService));
-        }
+        private readonly ICardService _cardService = cardService ?? throw new ArgumentNullException(nameof(cardService));
 
         [HttpGet("{id:guid}")]
         public async Task<IActionResult> GetById([FromRoute] Guid id)

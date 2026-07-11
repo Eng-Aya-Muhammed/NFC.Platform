@@ -10,19 +10,13 @@ using NFC.Platform.Infrastructure.Interceptors;
 
 namespace NFC.Platform.Infrastructure.Contexts
 {
-    public class ApplicationDbContext : DbContext
+    public class ApplicationDbContext(
+        DbContextOptions<ApplicationDbContext> options,
+        AuditableEntitySaveChangesInterceptor auditableInterceptor,
+        ICurrentTenant currentTenant) : DbContext(options)
     {
-        private readonly AuditableEntitySaveChangesInterceptor _auditableInterceptor;
-        private readonly ICurrentTenant _currentTenant;
-
-        public ApplicationDbContext(
-            DbContextOptions<ApplicationDbContext> options,
-            AuditableEntitySaveChangesInterceptor auditableInterceptor,
-            ICurrentTenant currentTenant) : base(options)
-        {
-            _auditableInterceptor = auditableInterceptor ?? throw new ArgumentNullException(nameof(auditableInterceptor));
-            _currentTenant = currentTenant ?? throw new ArgumentNullException(nameof(currentTenant));
-        }
+        private readonly AuditableEntitySaveChangesInterceptor _auditableInterceptor = auditableInterceptor ?? throw new ArgumentNullException(nameof(auditableInterceptor));
+        private readonly ICurrentTenant _currentTenant = currentTenant ?? throw new ArgumentNullException(nameof(currentTenant));
 
         public DbSet<Tenant> Tenants { get; set; }
         public DbSet<Card> Cards { get; set; }

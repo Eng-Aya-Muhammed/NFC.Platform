@@ -30,7 +30,7 @@ namespace NFC.Platform.Domain.Entities
         /// <summary>
         /// Gets or sets the collection of users belonging to this tenant.
         /// </summary>
-        public ICollection<User> Users { get; set; } = new List<User>();
+        public ICollection<User> Users { get; set; } = [];
 
         // Future extensibility hook:
         // public TenantSettings? Settings { get; set; }

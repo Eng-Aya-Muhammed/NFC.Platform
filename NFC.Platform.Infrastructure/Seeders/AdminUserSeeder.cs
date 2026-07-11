@@ -11,16 +11,10 @@ using NFC.Platform.Infrastructure.Contexts;
 
 namespace NFC.Platform.Infrastructure.Seeders
 {
-    public class AdminUserSeeder : IAdminUserSeeder
+    public class AdminUserSeeder(ApplicationDbContext context, IConfiguration configuration) : IAdminUserSeeder
     {
-        private readonly ApplicationDbContext _context;
-        private readonly IConfiguration _configuration;
-
-        public AdminUserSeeder(ApplicationDbContext context, IConfiguration configuration)
-        {
-            _context = context ?? throw new ArgumentNullException(nameof(context));
-            _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
-        }
+        private readonly ApplicationDbContext _context = context ?? throw new ArgumentNullException(nameof(context));
+        private readonly IConfiguration _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
 
         public async Task SeedAsync()
         {
