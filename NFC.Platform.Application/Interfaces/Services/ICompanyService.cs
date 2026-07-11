@@ -9,5 +9,6 @@ namespace NFC.Platform.Application.Interfaces.Services
         Task<ServiceResult<CompanyProfileDto>> GetMyCompanyProfileAsync();
         Task<ServiceResult<CompanyProfileDto>> UpdateCompanyProfileAsync(UpdateCompanyProfileRequest request);
         Task<ServiceResult> ChangeCompanyAdminPasswordAsync(CompanyChangePasswordRequest request);
+        Task<ServiceResult<CompanyDashboardDto>> GetCompanyDashboardAsync();
     }
 }

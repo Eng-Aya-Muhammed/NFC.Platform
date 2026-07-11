@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
@@ -35,7 +36,7 @@ namespace NFC.Platform.Application.Services
         {
             var tenantId = _currentTenant.TenantId;
             if (!tenantId.HasValue)
-                return ServiceResult<CompanyProfileDto>.Unauthorized("User is not authenticated.");
+                return ServiceResult<CompanyProfileDto>.Unauthorized(_messageService.Get("Unauthorized") ?? "User is not authenticated.");
 
             // Fetch the single company associated with the tenant
             var company = await _unitOfWork.Repository<Company>()
@@ -58,7 +59,7 @@ namespace NFC.Platform.Application.Services
         {
             var tenantId = _currentTenant.TenantId;
             if (!tenantId.HasValue)
-                return ServiceResult<CompanyProfileDto>.Unauthorized("User is not authenticated.");
+                return ServiceResult<CompanyProfileDto>.Unauthorized(_messageService.Get("Unauthorized") ?? "User is not authenticated.");
 
             var company = await _unitOfWork.Repository<Company>()
                 .GetQueryable()
@@ -69,6 +70,11 @@ namespace NFC.Platform.Application.Services
                 return ServiceResult<CompanyProfileDto>.NotFound(_messageService.Get("RecordNotFound"));
 
             _mapper.Map(request, company);
+            if (company.AdminUser != null)
+            {
+                company.AdminUser.PhoneNumber = request.Phone;
+                _unitOfWork.Repository<User>().Update(company.AdminUser);
+            }
             _unitOfWork.Repository<Company>().Update(company);
             await _unitOfWork.SaveChangesAsync();
 
@@ -113,6 +119,78 @@ namespace NFC.Platform.Application.Services
 
             var remaining = (subscription.EndDate - DateTime.UtcNow).Days;
             return remaining < 0 ? 0 : remaining;
+        }
+
+        public async Task<ServiceResult<CompanyDashboardDto>> GetCompanyDashboardAsync()
+        {
+            var tenantId = _currentTenant.TenantId;
+            if (!tenantId.HasValue)
+                return ServiceResult<CompanyDashboardDto>.Unauthorized(_messageService.Get("Unauthorized") ?? "User is not authenticated.");
+
+            // 1. Employee Count
+            var employeesTask = _unitOfWork.Repository<Employee>().CountAsync();
+
+            // 2. Card Orders Count
+            var ordersTask = _unitOfWork.Repository<CardOrder>().CountAsync();
+
+            // 3. Contact Saves Count
+            var contactSavesTask = _unitOfWork.Repository<ProfileMetric>()
+                .CountAsync(m => m.InteractionType == Domain.Enums.InteractionType.ContactSaved);
+
+            await Task.WhenAll(employeesTask, ordersTask, contactSavesTask);
+
+            var totalEmployees = employeesTask.Result;
+            var cardRequests = ordersTask.Result;
+            var contactSaves = contactSavesTask.Result;
+
+            // 4. Top Employee (Most active profile, projection join)
+            var topEmployeeName = await _unitOfWork.Repository<ProfileMetric>()
+                .GetQueryable()
+                .GroupBy(m => new { m.UserProfileId, m.UserProfile.FullName })
+                .OrderByDescending(g => g.Count())
+                .Select(g => g.Key.FullName)
+                .FirstOrDefaultAsync() ?? "-";
+
+            // 5. Monthly Metric statistics for the last 6 months (optimized database aggregation)
+            var sixMonthsAgo = DateTime.UtcNow.AddMonths(-6);
+            var monthlyData = await _unitOfWork.Repository<ProfileMetric>()
+                .GetQueryable()
+                .Where(m => m.CreatedAt >= sixMonthsAgo)
+                .GroupBy(m => new { m.CreatedAt.Year, m.CreatedAt.Month })
+                .Select(g => new
+                {
+                    Year = g.Key.Year,
+                    Month = g.Key.Month,
+                    Count = g.Count()
+                })
+                .ToListAsync();
+
+            var monthlyStats = new List<MonthlyMetricDto>();
+            var arabicMonths = new[] { "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر" };
+
+            for (int i = 5; i >= 0; i--)
+            {
+                var targetMonth = DateTime.UtcNow.AddMonths(-i);
+                var match = monthlyData.FirstOrDefault(d => d.Year == targetMonth.Year && d.Month == targetMonth.Month);
+                var count = match?.Count ?? 0;
+
+                monthlyStats.Add(new MonthlyMetricDto
+                {
+                    MonthName = arabicMonths[targetMonth.Month - 1],
+                    Value = count
+                });
+            }
+
+            var dashboardDto = new CompanyDashboardDto
+            {
+                ContactSavesCount = contactSaves,
+                TotalEmployeesCount = totalEmployees,
+                CardRequestsCount = cardRequests,
+                TopEmployeeName = topEmployeeName,
+                MonthlyMetrics = monthlyStats
+            };
+
+            return ServiceResult<CompanyDashboardDto>.Success(dashboardDto);
         }
     }
 }

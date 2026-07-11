@@ -10,6 +10,7 @@ namespace NFC.Platform.Application.Mapping
         {
             CreateMap<Company, CompanyProfileDto>()
                 .ForMember(dest => dest.AdminUserEmail, opt => opt.MapFrom(src => src.AdminUser != null ? src.AdminUser.Email : string.Empty))
+                .ForMember(dest => dest.Phone, opt => opt.MapFrom(src => src.AdminUser != null ? src.AdminUser.PhoneNumber : string.Empty))
                 .ForMember(dest => dest.SubscriptionRemainingDays, opt => opt.Ignore());
 
             CreateMap<UpdateCompanyProfileRequest, Company>();

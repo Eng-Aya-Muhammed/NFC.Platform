@@ -20,6 +20,17 @@ namespace NFC.Platform.API.Controllers
             _companyService = companyService ?? throw new ArgumentNullException(nameof(companyService));
         }
 
+        [HttpGet("dashboard")]
+        public async Task<IActionResult> GetDashboard()
+        {
+            var result = await _companyService.GetCompanyDashboardAsync();
+            if (!result.IsSuccess)
+            {
+                return StatusCode(result.StatusCode, result);
+            }
+            return Ok(result);
+        }
+
         [HttpGet("profile")]
         public async Task<IActionResult> GetProfile()
         {

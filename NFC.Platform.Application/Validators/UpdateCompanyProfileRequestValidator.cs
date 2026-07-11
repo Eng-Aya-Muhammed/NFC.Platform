@@ -37,6 +37,12 @@ namespace NFC.Platform.Application.Validators
                 .WithMessage(x => messageService.Get("RequiredField", messageService.Get("Address")))
                 .MaximumLength(500)
                 .WithMessage(x => messageService.Get("MaxLength", messageService.Get("Address"), 500));
+
+            RuleFor(x => x.Phone)
+                .NotEmpty()
+                .WithMessage(x => messageService.Get("RequiredField", messageService.Get("Phone")))
+                .MaximumLength(50)
+                .WithMessage(x => messageService.Get("MaxLength", messageService.Get("Phone"), 50));
         }
     }
 }
