@@ -16,5 +16,6 @@ namespace NFC.Platform.Application.DTOs
         public string? Department { get; set; }
         public string? ActivationCode { get; set; }
         public Guid? LinkedCardId { get; set; }
+        public Guid? UserProfileId { get; set; }
     }
 }

@@ -34,5 +34,10 @@ namespace NFC.Platform.Application.Interfaces.Services
         /// Soft-deletes a CardOrder by its identifier.
         /// </summary>
         Task<ServiceResult> DeleteAsync(Guid id);
+
+        /// <summary>
+        /// Assigns printed card activation codes to order items, automatically creating and activating cards.
+        /// </summary>
+        Task<ServiceResult> AssignCardsAsync(Guid orderId, AssignCardsRequest request);
     }
 }

@@ -21,5 +21,8 @@ namespace NFC.Platform.Domain.Entities
 
         public Guid? LinkedCardId { get; set; }
         public Card? LinkedCard { get; set; }
+
+        public Guid? UserProfileId { get; set; }
+        public UserProfile? UserProfile { get; set; }
     }
 }

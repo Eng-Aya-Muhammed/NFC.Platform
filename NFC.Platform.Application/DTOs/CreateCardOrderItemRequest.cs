@@ -23,5 +23,7 @@ namespace NFC.Platform.Application.DTOs
 
         [StringLength(200)]
         public string? Department { get; set; }
+
+        public Guid? UserProfileId { get; set; }
     }
 }

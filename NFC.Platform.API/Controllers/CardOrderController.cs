@@ -87,5 +87,19 @@ namespace NFC.Platform.API.Controllers
 
             return Ok(result);
         }
+
+        /// <summary>
+        /// Assigns printed NFC card activation codes to order items (admin operation).
+        /// </summary>
+        [HttpPost("{id:guid}/assign-cards")]
+        [Authorize(Policy = AppPolicies.AdminOnly)]
+        public async Task<IActionResult> AssignCards([FromRoute] Guid id, [FromBody] AssignCardsRequest request)
+        {
+            var result = await _cardOrderService.AssignCardsAsync(id, request);
+            if (!result.IsSuccess)
+                return StatusCode(result.StatusCode, result);
+
+            return Ok(result);
+        }
     }
 }

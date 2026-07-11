@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
@@ -125,6 +126,74 @@ namespace NFC.Platform.Application.Services
             await _unitOfWork.SaveChangesAsync();
 
             return ServiceResult.Success(_messageService.Get("RecordDeleted"));
+        }
+
+        public async Task<ServiceResult> AssignCardsAsync(Guid orderId, AssignCardsRequest request)
+        {
+            var orderRepo = _unitOfWork.Repository<CardOrder>();
+            var order = await orderRepo.GetQueryable()
+                .Include(o => o.Items)
+                .FirstOrDefaultAsync(o => o.Id == orderId);
+
+            if (order == null)
+                return ServiceResult.NotFound(_messageService.Get("RecordNotFound") ?? "Card order not found.");
+
+            var cardRepo = _unitOfWork.Repository<Card>();
+            var orderItemRepo = _unitOfWork.Repository<CardOrderItem>();
+
+            await _unitOfWork.BeginTransactionAsync();
+            try
+            {
+                foreach (var assignment in request.Assignments)
+                {
+                    var item = order.Items.FirstOrDefault(i => i.Id == assignment.OrderItemId);
+                    if (item == null)
+                        continue;
+
+                    item.ActivationCode = assignment.ActivationCode;
+
+                    // Find or create card with this activation code
+                    var existingCards = await cardRepo.FindAsync(c => c.ActivationCode == assignment.ActivationCode);
+                    var card = existingCards.Count > 0 ? existingCards[0] : null;
+
+                    if (card == null)
+                    {
+                        card = new Card
+                        {
+                            ActivationCode = assignment.ActivationCode,
+                            CardOrderId = order.Id,
+                            TenantId = order.TenantId
+                        };
+                        await cardRepo.AddAsync(card);
+                    }
+                    else
+                    {
+                        card.CardOrderId = order.Id;
+                    }
+
+                    // If order item has UserProfileId, link & activate card immediately
+                    if (item.UserProfileId.HasValue)
+                    {
+                        card.UserProfileId = item.UserProfileId.Value;
+                        card.IsActive = true;
+                        card.ActivatedAt = DateTime.UtcNow;
+                        item.LinkedCardId = card.Id;
+                    }
+
+                    cardRepo.Update(card);
+                    orderItemRepo.Update(item);
+                }
+
+                await _unitOfWork.SaveChangesAsync();
+                await _unitOfWork.CommitTransactionAsync();
+            }
+            catch
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                throw;
+            }
+
+            return ServiceResult.Success(_messageService.Get("RecordUpdated") ?? "Cards assigned successfully.");
         }
     }
 }
