@@ -5,7 +5,6 @@ namespace NFC.Platform.Application.DTOs
     public class EmployeeDetailsDto
     {
         public Guid Id { get; set; }
-        public string Username { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string FullName { get; set; } = string.Empty;
         public string JobTitle { get; set; } = string.Empty;
@@ -21,7 +20,5 @@ namespace NFC.Platform.Application.DTOs
         public string FacebookUrl { get; set; } = string.Empty;
         public string LinkedInUrl { get; set; } = string.Empty;
         public string WebsiteUrl { get; set; } = string.Empty;
-        
-        public string? TemporaryPassword { get; set; }
     }
 }

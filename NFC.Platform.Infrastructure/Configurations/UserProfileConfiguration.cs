@@ -30,6 +30,14 @@ namespace NFC.Platform.Infrastructure.Configurations
             builder.Property(p => p.TenantId).IsRequired();
             builder.HasIndex(p => p.TenantId);
 
+            builder.HasIndex(p => p.UserId)
+                .IsUnique()
+                .HasFilter("[UserId] IS NOT NULL");
+
+            builder.HasIndex(p => p.EmployeeId)
+                .IsUnique()
+                .HasFilter("[EmployeeId] IS NOT NULL");
+
             builder.HasOne(p => p.Tenant)
                 .WithMany()
                 .HasForeignKey(p => p.TenantId)

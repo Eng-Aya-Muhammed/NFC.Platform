@@ -8,11 +8,19 @@ namespace NFC.Platform.Application.Mapping
     {
         public EmployeeMappingProfile()
         {
-            CreateMap<User, EmployeeDto>()
-                .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => src.UserProfile != null ? src.UserProfile.FullName : string.Empty))
-                .ForMember(dest => dest.JobTitle, opt => opt.MapFrom(src => src.UserProfile != null ? src.UserProfile.JobTitle : string.Empty))
-                .ForMember(dest => dest.Department, opt => opt.MapFrom(src => src.UserProfile != null ? src.UserProfile.Department : string.Empty))
+            CreateMap<Employee, EmployeeDto>()
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()));
+
+            CreateMap<Employee, EmployeeDetailsDto>()
+                .ForMember(dest => dest.Bio, opt => opt.MapFrom(src => src.UserProfile != null ? src.UserProfile.Bio : string.Empty))
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
+                .ForMember(dest => dest.ContactEmail, opt => opt.MapFrom(src => src.UserProfile != null ? src.UserProfile.ContactEmail : string.Empty))
+                .ForMember(dest => dest.Phone, opt => opt.MapFrom(src => src.UserProfile != null ? src.UserProfile.Phone : string.Empty))
+                .ForMember(dest => dest.WhatsApp, opt => opt.MapFrom(src => src.UserProfile != null ? src.UserProfile.WhatsApp : string.Empty))
+                .ForMember(dest => dest.InstagramUrl, opt => opt.MapFrom(src => src.UserProfile != null ? src.UserProfile.InstagramUrl : string.Empty))
+                .ForMember(dest => dest.FacebookUrl, opt => opt.MapFrom(src => src.UserProfile != null ? src.UserProfile.FacebookUrl : string.Empty))
+                .ForMember(dest => dest.LinkedInUrl, opt => opt.MapFrom(src => src.UserProfile != null ? src.UserProfile.LinkedInUrl : string.Empty))
+                .ForMember(dest => dest.WebsiteUrl, opt => opt.MapFrom(src => src.UserProfile != null ? src.UserProfile.WebsiteUrl : string.Empty));
 
             CreateMap<User, EmployeeDetailsDto>()
                 .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => src.UserProfile != null ? src.UserProfile.FullName : string.Empty))
@@ -26,8 +34,7 @@ namespace NFC.Platform.Application.Mapping
                 .ForMember(dest => dest.InstagramUrl, opt => opt.MapFrom(src => src.UserProfile != null ? src.UserProfile.InstagramUrl : string.Empty))
                 .ForMember(dest => dest.FacebookUrl, opt => opt.MapFrom(src => src.UserProfile != null ? src.UserProfile.FacebookUrl : string.Empty))
                 .ForMember(dest => dest.LinkedInUrl, opt => opt.MapFrom(src => src.UserProfile != null ? src.UserProfile.LinkedInUrl : string.Empty))
-                .ForMember(dest => dest.WebsiteUrl, opt => opt.MapFrom(src => src.UserProfile != null ? src.UserProfile.WebsiteUrl : string.Empty))
-                .ForMember(dest => dest.TemporaryPassword, opt => opt.Ignore());
+                .ForMember(dest => dest.WebsiteUrl, opt => opt.MapFrom(src => src.UserProfile != null ? src.UserProfile.WebsiteUrl : string.Empty));
 
             CreateMap<UpdateMyProfileRequest, UserProfile>();
         }

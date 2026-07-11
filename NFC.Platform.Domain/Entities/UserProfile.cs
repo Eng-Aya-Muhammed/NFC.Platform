@@ -9,8 +9,11 @@ namespace NFC.Platform.Domain.Entities
         public Guid TenantId { get; set; }
         public Tenant Tenant { get; set; } = null!;
 
-        public Guid UserId { get; set; }
-        public User User { get; set; } = null!;
+        public Guid? UserId { get; set; }
+        public User? User { get; set; }
+
+        public Guid? EmployeeId { get; set; }
+        public Employee? Employee { get; set; }
 
         public string FullName { get; set; } = string.Empty;
         public string JobTitle { get; set; } = string.Empty;

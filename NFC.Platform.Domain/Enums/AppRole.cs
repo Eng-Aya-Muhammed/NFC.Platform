@@ -4,8 +4,7 @@ namespace NFC.Platform.Domain.Enums
     {
         Admin = 1,
         Customer = 2,
-        CompanyAdmin = 3,
-        Employee = 4
+        CompanyAdmin = 3
     }
 }
 

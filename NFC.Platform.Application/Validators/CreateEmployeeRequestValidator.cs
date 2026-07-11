@@ -8,12 +8,6 @@ namespace NFC.Platform.Application.Validators
     {
         public CreateEmployeeRequestValidator(IMessageService messageService)
         {
-            RuleFor(x => x.Username)
-                .NotEmpty()
-                .WithMessage(x => messageService.Get("RequiredField", messageService.Get("Username")))
-                .MaximumLength(150)
-                .WithMessage(x => messageService.Get("MaxLength", messageService.Get("Username"), 150));
-
             RuleFor(x => x.Email)
                 .NotEmpty()
                 .WithMessage(x => messageService.Get("RequiredField", messageService.Get("Email")))
@@ -33,6 +27,34 @@ namespace NFC.Platform.Application.Validators
             RuleFor(x => x.Department)
                 .MaximumLength(150)
                 .WithMessage(x => messageService.Get("MaxLength", messageService.Get("Department"), 150));
+
+            RuleFor(x => x.ProfilePictureUrl)
+                .MaximumLength(1000)
+                .WithMessage(x => messageService.Get("MaxLength", "ProfilePictureUrl", 1000));
+
+            RuleFor(x => x.Phone)
+                .MaximumLength(50)
+                .WithMessage(x => messageService.Get("MaxLength", "Phone", 50));
+
+            RuleFor(x => x.WhatsApp)
+                .MaximumLength(50)
+                .WithMessage(x => messageService.Get("MaxLength", "WhatsApp", 50));
+
+            RuleFor(x => x.InstagramUrl)
+                .MaximumLength(1000)
+                .WithMessage(x => messageService.Get("MaxLength", "InstagramUrl", 1000));
+
+            RuleFor(x => x.FacebookUrl)
+                .MaximumLength(1000)
+                .WithMessage(x => messageService.Get("MaxLength", "FacebookUrl", 1000));
+
+            RuleFor(x => x.LinkedInUrl)
+                .MaximumLength(1000)
+                .WithMessage(x => messageService.Get("MaxLength", "LinkedInUrl", 1000));
+
+            RuleFor(x => x.WebsiteUrl)
+                .MaximumLength(1000)
+                .WithMessage(x => messageService.Get("MaxLength", "WebsiteUrl", 1000));
         }
     }
 }

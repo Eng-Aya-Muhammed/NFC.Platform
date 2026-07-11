@@ -29,6 +29,7 @@
     <ProjectReference Include="..\NFC.Platform.BuildingBlocks\NFC.Platform.BuildingBlocks.csproj" />
     <ProjectReference Include="..\NFC.Platform.Application\NFC.Platform.Application.csproj" />
     <ProjectReference Include="..\NFC.Platform.Domain\NFC.Platform.Domain.csproj" />
+    <ProjectReference Include="..\NFC.Platform.API\NFC.Platform.API.csproj" />
   </ItemGroup>
 
 </Project>

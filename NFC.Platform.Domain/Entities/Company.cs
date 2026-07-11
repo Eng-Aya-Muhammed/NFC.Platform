@@ -18,6 +18,6 @@ namespace NFC.Platform.Domain.Entities
         public Guid AdminUserId { get; set; }
         public User AdminUser { get; set; } = null!;
 
-        public ICollection<User> Employees { get; set; } = new List<User>();
+        public ICollection<Employee> Employees { get; set; } = new List<Employee>();
     }
 }
