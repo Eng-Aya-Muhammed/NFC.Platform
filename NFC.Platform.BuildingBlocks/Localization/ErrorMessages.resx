@@ -100,4 +100,16 @@
   <data name="TemplateInactive" xml:space="preserve">
     <value>Template is inactive and cannot be selected.</value>
   </data>
+  <data name="NoFileUploaded" xml:space="preserve">
+    <value>No file was uploaded.</value>
+  </data>
+  <data name="InvalidImageExtension" xml:space="preserve">
+    <value>Only image files (.jpg, .jpeg, .png, .webp, .gif) are allowed.</value>
+  </data>
+  <data name="InvalidExcelExtension" xml:space="preserve">
+    <value>Only Excel files (.xls, .xlsx) are allowed.</value>
+  </data>
+  <data name="UploadError" xml:space="preserve">
+    <value>An error occurred during upload: {0}</value>
+  </data>
 </root>

@@ -18,3 +18,4 @@ global using NFC.Platform.BuildingBlocks.Localization;
 global using NFC.Platform.BuildingBlocks.Results;
 global using NFC.Platform.Domain.Entities;
 global using NFC.Platform.Domain.Enums;
+global using NFC.Platform.Application.DTOs.Settings;

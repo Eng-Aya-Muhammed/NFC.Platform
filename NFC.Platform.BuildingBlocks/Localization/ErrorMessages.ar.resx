@@ -100,4 +100,16 @@
   <data name="TemplateInactive" xml:space="preserve">
     <value>القالب المختار معطل وغير متاح للاستخدام.</value>
   </data>
+  <data name="NoFileUploaded" xml:space="preserve">
+    <value>لم يتم رفع أي ملف.</value>
+  </data>
+  <data name="InvalidImageExtension" xml:space="preserve">
+    <value>مسموح فقط بملفات الصور (.jpg, .jpeg, .png, .webp, .gif).</value>
+  </data>
+  <data name="InvalidExcelExtension" xml:space="preserve">
+    <value>مسموح فقط بملفات الاكسل (.xls, .xlsx).</value>
+  </data>
+  <data name="UploadError" xml:space="preserve">
+    <value>حدث خطأ أثناء الرفع: {0}</value>
+  </data>
 </root>

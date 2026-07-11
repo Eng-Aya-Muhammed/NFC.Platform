@@ -1,8 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using NFC.Platform.Application.Interfaces.Repositories;
-using NFC.Platform.Application.Interfaces.Services;
 using NFC.Platform.BuildingBlocks.Common.Helpers;
 using NFC.Platform.BuildingBlocks.Common.Seeders;
 using NFC.Platform.Infrastructure.Contexts;
@@ -37,9 +32,13 @@ namespace NFC.Platform.Infrastructure.Extensions
             services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
             services.AddScoped<IUnitOfWork, UnitOfWork>();
 
-            // 4. Register Token Service and Current Tenant Service
+            // 4. Register Token Service, Current Tenant Service, and Storage Service
             services.AddScoped<ITokenService, TokenService>();
             services.AddScoped<ICurrentTenant, CurrentTenantService>();
+            
+            // Cloudinary Registration
+            services.Configure<CloudinarySettings>(configuration.GetSection("CloudinarySettings"));
+            services.AddScoped<IStorageService, CloudinaryService>();
 
             // 5. Register Seeders
             services.AddScoped<IRoleSeeder, RoleSeeder>();

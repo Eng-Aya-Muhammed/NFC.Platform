@@ -254,6 +254,53 @@ namespace NFC.Platform.Tests.Services
         }
 
         [Fact]
+        public async Task CreateEmployeeAsync_WithCloudinaryProfilePicture_MapsUrlCorrectlyToUserProfile()
+        {
+            // Arrange
+            var tenantId = Guid.NewGuid();
+            _currentTenant.TenantId.Returns(tenantId);
+
+            var company = new Company { Id = Guid.NewGuid(), Name = "CloudCompany" };
+            var queryableCompany = new List<Company> { company }.BuildMock();
+            _companyRepo.GetQueryable().Returns(queryableCompany);
+
+            var plan = new SubscriptionPlan { MaxEmployees = 50 };
+            var subscription = new UserSubscription { TenantId = tenantId, IsActive = true, EndDate = DateTime.UtcNow.AddDays(30), SubscriptionPlan = plan };
+            var queryableSub = new List<UserSubscription> { subscription }.BuildMock();
+            _subscriptionRepo.GetQueryable().Returns(queryableSub);
+
+            _employeeRepo.CountAsync(Arg.Any<Expression<Func<Employee, bool>>>()).Returns(0);
+            _employeeRepo.FindAsync(Arg.Any<Expression<Func<Employee, bool>>>()).Returns(new List<Employee>());
+
+            var cloudinaryUrl = "https://res.cloudinary.com/demo/image/upload/v1571218039/nfc-platform/no-tenant/no-user/profile-pics/employee-avatar.png";
+            var request = new CreateEmployeeRequest
+            {
+                Email = "cloudinary.emp@test.com",
+                FullName = "Cloudinary Employee",
+                JobTitle = "Staff",
+                Department = "Operations",
+                ProfilePictureUrl = cloudinaryUrl
+            };
+
+            var mappedDto = new EmployeeDetailsDto { FullName = "Cloudinary Employee" };
+            _mapper.Map<EmployeeDetailsDto>(Arg.Any<Employee>()).Returns(mappedDto);
+            _messageService.Get("RecordCreated").Returns("Employee created.");
+
+            // Act
+            var result = await _sut.CreateEmployeeAsync(request);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(200, result.StatusCode);
+
+            await _userProfileRepo.Received(1).AddAsync(Arg.Is<UserProfile>(p =>
+                p.FullName == request.FullName &&
+                p.ProfilePictureUrl == cloudinaryUrl));
+
+            await _unitOfWork.Received(1).CommitTransactionAsync();
+        }
+
+        [Fact]
         public async Task GetPagedEmployeesAsync_ReturnsSuccess_WithPagedEmployees()
         {
             // Arrange

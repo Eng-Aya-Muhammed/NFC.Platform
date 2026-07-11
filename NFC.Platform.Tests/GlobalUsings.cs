@@ -19,3 +19,6 @@ global using NFC.Platform.Domain.Entities;
 global using NFC.Platform.Domain.Enums;
 global using NSubstitute;
 global using Xunit;
+global using NFC.Platform.Application.DTOs.Settings;
+global using NFC.Platform.Application.Interfaces.Services;
+global using NFC.Platform.Infrastructure.Services;
