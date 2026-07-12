@@ -9,6 +9,5 @@ namespace NFC.Platform.Application.Interfaces.Services
     public interface ICardTemplateService
     {
         Task<ServiceResult<IReadOnlyList<CardTemplateDto>>> GetActiveTemplatesAsync();
-        Task<ServiceResult> SelectTemplateAsync(Guid userId, Guid templateId);
     }
 }

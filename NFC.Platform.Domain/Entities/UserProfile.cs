@@ -26,15 +26,7 @@ namespace NFC.Platform.Domain.Entities
         public string? Phone { get; set; }
         public string? WhatsApp { get; set; }
 
-        public string? InstagramUrl { get; set; }
-        public string? FacebookUrl { get; set; }
-        public string? LinkedInUrl { get; set; }
-        public string? WebsiteUrl { get; set; }
-
         public ICollection<ProfileLink> CustomLinks { get; set; } = [];
-
-        public Guid? CardTemplateId { get; set; }
-        public CardTemplate? CardTemplate { get; set; }
 
         public ICollection<Card> ActivatedCards { get; set; } = [];
     }

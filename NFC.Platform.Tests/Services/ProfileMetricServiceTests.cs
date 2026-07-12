@@ -168,7 +168,7 @@ namespace NFC.Platform.Tests.Services
             var request = new RecordMetricRequest { InteractionType = InteractionType.ProfileView };
 
             // Act
-            var result = await _sut.RecordMetricAsync(profileId, request, null, null);
+            var result = await _sut.RecordMetricAsync(profileId, request);
 
             // Assert
             Assert.False(result.IsSuccess);
@@ -176,7 +176,7 @@ namespace NFC.Platform.Tests.Services
         }
 
         [Fact]
-        public async Task RecordMetricAsync_ReturnsSuccess_AndSavesMetricWithIpAndUserAgent()
+        public async Task RecordMetricAsync_ReturnsSuccess_AndSavesMetric()
         {
             // Arrange
             var profileId = Guid.NewGuid();
@@ -192,7 +192,7 @@ namespace NFC.Platform.Tests.Services
             };
 
             // Act
-            var result = await _sut.RecordMetricAsync(profileId, request, "192.168.1.1", "Mozilla/5.0");
+            var result = await _sut.RecordMetricAsync(profileId, request);
 
             // Assert
             Assert.True(result.IsSuccess);
@@ -200,30 +200,8 @@ namespace NFC.Platform.Tests.Services
                 m.UserProfileId == profileId &&
                 m.TenantId == tenantId &&
                 m.InteractionType == InteractionType.ContactSaved &&
-                m.IpAddress == "192.168.1.1" &&
-                m.UserAgent == "Mozilla/5.0" &&
                 m.ProfileLinkId == request.ProfileLinkId));
             await _unitOfWork.Received(1).SaveChangesAsync();
-        }
-
-        [Fact]
-        public async Task RecordMetricAsync_ReturnsSuccess_WhenIpAndUserAgentAreNull()
-        {
-            // Arrange
-            var profileId = Guid.NewGuid();
-            var profile = new UserProfile { Id = profileId, TenantId = Guid.NewGuid() };
-            _profileRepo.GetByIdAsync(profileId).Returns(profile);
-
-            var request = new RecordMetricRequest { InteractionType = InteractionType.ProfileView };
-
-            // Act
-            var result = await _sut.RecordMetricAsync(profileId, request, null, null);
-
-            // Assert
-            Assert.True(result.IsSuccess);
-            await _metricRepo.Received(1).AddAsync(Arg.Is<ProfileMetric>(m =>
-                m.IpAddress == null &&
-                m.UserAgent == null));
         }
 
         [Fact]
@@ -241,7 +219,7 @@ namespace NFC.Platform.Tests.Services
             };
 
             // Act
-            var result = await _sut.RecordMetricAsync(profileId, request, "10.0.0.1", null);
+            var result = await _sut.RecordMetricAsync(profileId, request);
 
             // Assert
             Assert.True(result.IsSuccess);

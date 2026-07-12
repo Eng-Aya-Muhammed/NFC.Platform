@@ -13,7 +13,7 @@ namespace NFC.Platform.Application.Interfaces.Services
         /// <summary>
         /// Records an interaction metric (view, save, link click) for a profile.
         /// </summary>
-        Task<ServiceResult> RecordMetricAsync(Guid profileId, RecordMetricRequest request, string? ipAddress, string? userAgent);
+        Task<ServiceResult> RecordMetricAsync(Guid profileId, RecordMetricRequest request);
 
         /// <summary>
         /// Resolves and returns a public profile using the physical card's unique activation code.

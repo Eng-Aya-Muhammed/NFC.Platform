@@ -1,6 +1,7 @@
 using AutoMapper;
 using NFC.Platform.Application.DTOs;
 using NFC.Platform.Domain.Entities;
+using NFC.Platform.Domain.Enums;
 
 namespace NFC.Platform.Application.Mapping
 {
@@ -11,6 +12,9 @@ namespace NFC.Platform.Application.Mapping
             CreateMap<TemplateRequest, TemplateRequestDto>()
                 .ForMember(dest => dest.RequestedByUsername, opt => opt.MapFrom(src => src.RequestedByUser != null ? src.RequestedByUser.Username : string.Empty))
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()));
+
+            CreateMap<CreateTemplateRequest, TemplateRequest>()
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => TemplateRequestStatus.Pending));
         }
     }
 }

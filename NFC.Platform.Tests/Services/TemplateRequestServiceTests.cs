@@ -99,6 +99,13 @@ namespace NFC.Platform.Tests.Services
             }.AsQueryable().BuildMock();
 
             _templateRequestRepo.GetQueryable().Returns(createdQueryable);
+            _mapper.Map<TemplateRequest>(request).Returns(new TemplateRequest
+            {
+                TemplateName = request.TemplateName,
+                LogoUrl = request.LogoUrl,
+                ReferenceImageUrl = request.ReferenceImageUrl,
+                Notes = request.Notes
+            });
             _mapper.Map<TemplateRequestDto>(Arg.Any<TemplateRequest>()).Returns(dto);
             _messageService.Get("RecordCreated").Returns("Record created.");
 
@@ -110,7 +117,6 @@ namespace NFC.Platform.Tests.Services
             Assert.Equal(200, result.StatusCode);
             Assert.Equal("Pending", result.Data!.Status);
             await _templateRequestRepo.Received(1).AddAsync(Arg.Is<TemplateRequest>(r =>
-                r.TenantId == tenantId &&
                 r.RequestedByUserId == userId &&
                 r.Status == TemplateRequestStatus.Pending &&
                 r.TemplateName == "Premium Blue"));

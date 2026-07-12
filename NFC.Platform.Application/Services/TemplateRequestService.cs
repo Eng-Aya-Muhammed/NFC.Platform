@@ -35,16 +35,8 @@ namespace NFC.Platform.Application.Services
                 return ServiceResult<TemplateRequestDto>.Unauthorized(string.IsNullOrWhiteSpace(msg) ? "User is not authenticated." : msg);
             }
 
-            var templateRequest = new TemplateRequest
-            {
-                TenantId = tenantId.Value,
-                RequestedByUserId = userId,
-                TemplateName = request.TemplateName,
-                LogoUrl = request.LogoUrl,
-                ReferenceImageUrl = request.ReferenceImageUrl,
-                Notes = request.Notes,
-                Status = TemplateRequestStatus.Pending
-            };
+            var templateRequest = _mapper.Map<TemplateRequest>(request);
+            templateRequest.RequestedByUserId = userId;
 
             await _unitOfWork.Repository<TemplateRequest>().AddAsync(templateRequest);
             await _unitOfWork.SaveChangesAsync();

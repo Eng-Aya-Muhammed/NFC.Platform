@@ -216,6 +216,30 @@ namespace NFC.Platform.Tests.Services
             };
 
             var mappedDto = new EmployeeDetailsDto { FullName = "New Employee" };
+            _mapper.Map<Employee>(request).Returns(new Employee
+            {
+                FullName = request.FullName,
+                Email = request.Email,
+                JobTitle = request.JobTitle,
+                Department = request.Department
+            });
+            _mapper.Map<UserProfile>(request).Returns(new UserProfile
+            {
+                FullName = request.FullName,
+                JobTitle = request.JobTitle,
+                Department = request.Department,
+                ProfilePictureUrl = request.ProfilePictureUrl,
+                Phone = request.Phone,
+                WhatsApp = request.WhatsApp,
+                ContactEmail = request.Email,
+                CustomLinks = new List<ProfileLink>
+                {
+                    new ProfileLink { Title = "LinkedIn", Url = request.LinkedInUrl! },
+                    new ProfileLink { Title = "Facebook", Url = request.FacebookUrl! },
+                    new ProfileLink { Title = "Instagram", Url = request.InstagramUrl! },
+                    new ProfileLink { Title = "Website", Url = request.WebsiteUrl! }
+                }
+            });
             _mapper.Map<EmployeeDetailsDto>(Arg.Any<Employee>()).Returns(mappedDto);
             _messageService.Get("RecordCreated").Returns("Employee created.");
 
@@ -240,15 +264,13 @@ namespace NFC.Platform.Tests.Services
                 p.ProfilePictureUrl == request.ProfilePictureUrl &&
                 p.Phone == request.Phone &&
                 p.WhatsApp == request.WhatsApp &&
-                p.InstagramUrl == request.InstagramUrl &&
-                p.FacebookUrl == request.FacebookUrl &&
-                p.LinkedInUrl == request.LinkedInUrl &&
-                p.WebsiteUrl == request.WebsiteUrl &&
-                p.CustomLinks.Count == 2 &&
-                p.CustomLinks.First().Url == "https://github.com/new" &&
-                p.CustomLinks.First().Title == "https://github.com/new" &&
-                p.CustomLinks.Last().Url == "https://twitter.com/new" &&
-                p.CustomLinks.Last().Title == "https://twitter.com/new"));
+                p.CustomLinks.Count == 6 &&
+                p.CustomLinks.Any(l => l.Title == "LinkedIn" && l.Url == request.LinkedInUrl) &&
+                p.CustomLinks.Any(l => l.Title == "Facebook" && l.Url == request.FacebookUrl) &&
+                p.CustomLinks.Any(l => l.Title == "Instagram" && l.Url == request.InstagramUrl) &&
+                p.CustomLinks.Any(l => l.Title == "Website" && l.Url == request.WebsiteUrl) &&
+                p.CustomLinks.Any(l => l.Title == "https://github.com/new" && l.Url == "https://github.com/new") &&
+                p.CustomLinks.Any(l => l.Title == "https://twitter.com/new" && l.Url == "https://twitter.com/new")));
 
             await _unitOfWork.Received(1).CommitTransactionAsync();
         }
@@ -283,6 +305,21 @@ namespace NFC.Platform.Tests.Services
             };
 
             var mappedDto = new EmployeeDetailsDto { FullName = "Cloudinary Employee" };
+            _mapper.Map<Employee>(request).Returns(new Employee
+            {
+                FullName = request.FullName,
+                Email = request.Email,
+                JobTitle = request.JobTitle,
+                Department = request.Department
+            });
+            _mapper.Map<UserProfile>(request).Returns(new UserProfile
+            {
+                FullName = request.FullName,
+                JobTitle = request.JobTitle,
+                Department = request.Department,
+                ProfilePictureUrl = request.ProfilePictureUrl,
+                ContactEmail = request.Email
+            });
             _mapper.Map<EmployeeDetailsDto>(Arg.Any<Employee>()).Returns(mappedDto);
             _messageService.Get("RecordCreated").Returns("Employee created.");
 
@@ -398,6 +435,7 @@ namespace NFC.Platform.Tests.Services
 
             var request = new UpdateEmployeeRequest
             {
+                FullName = "New Name",
                 JobTitle = "New Title",
                 Department = "New Dept",
                 Status = UserStatus.Active
@@ -411,10 +449,9 @@ namespace NFC.Platform.Tests.Services
 
             // Assert
             Assert.True(result.IsSuccess);
+            Assert.Equal("New Name", employee.FullName);
             Assert.Equal("New Title", employee.JobTitle);
-            Assert.Equal("New Title", employee.UserProfile!.JobTitle);
-            _employeeRepo.Received(1).Update(employee);
-            _userProfileRepo.Received(1).Update(employee.UserProfile!);
+            _mapper.Received(1).Map(request, employee.UserProfile);
             await _unitOfWork.Received(1).SaveChangesAsync();
         }
 

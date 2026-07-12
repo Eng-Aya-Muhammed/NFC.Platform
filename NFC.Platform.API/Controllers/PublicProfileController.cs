@@ -30,10 +30,7 @@ namespace NFC.Platform.API.Controllers
         [HttpPost("profiles/{profileId:guid}/metrics")]
         public async Task<IActionResult> RecordMetric([FromRoute] Guid profileId, [FromBody] RecordMetricRequest request)
         {
-            var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
-            var userAgent = Request.Headers["User-Agent"].ToString();
-
-            var result = await _profileMetricService.RecordMetricAsync(profileId, request, ipAddress, userAgent);
+            var result = await _profileMetricService.RecordMetricAsync(profileId, request);
             if (!result.IsSuccess)
             {
                 return StatusCode(result.StatusCode, result);

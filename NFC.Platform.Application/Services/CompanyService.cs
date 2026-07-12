@@ -127,7 +127,7 @@ namespace NFC.Platform.Application.Services
 
             // 3. Contact Saves Count
             var contactSavesTask = _unitOfWork.Repository<ProfileMetric>()
-                .CountAsync(m => m.InteractionType == Domain.Enums.InteractionType.ContactSaved);
+                .CountAsync(m => m.InteractionType == InteractionType.ContactSaved);
 
             await Task.WhenAll(employeesTask, ordersTask, contactSavesTask);
 
@@ -158,7 +158,6 @@ namespace NFC.Platform.Application.Services
                 .ToListAsync();
 
             var monthlyStats = new List<MonthlyMetricDto>();
-            var arabicMonths = new[] { "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر" };
 
             for (var i = 5; i >= 0; i--)
             {
@@ -168,7 +167,7 @@ namespace NFC.Platform.Application.Services
 
                 monthlyStats.Add(new MonthlyMetricDto
                 {
-                    MonthName = arabicMonths[targetMonth.Month - 1],
+                    MonthName = targetMonth.ToString("MMMM", System.Globalization.CultureInfo.CurrentUICulture),
                     Value = count
                 });
             }

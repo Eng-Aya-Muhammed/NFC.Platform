@@ -13,6 +13,7 @@ using NFC.Platform.BuildingBlocks.Localization;
 using NFC.Platform.BuildingBlocks.Results;
 using NFC.Platform.Domain.Entities;
 using NFC.Platform.Domain.Enums;
+using NFC.Platform.Application.Constants;
 
 namespace NFC.Platform.Application.Services
 {
@@ -56,6 +57,7 @@ namespace NFC.Platform.Application.Services
             var employee = await _unitOfWork.Repository<Employee>()
                 .GetQueryable()
                 .Include(e => e.UserProfile)
+                    .ThenInclude(p => p!.CustomLinks)
                 .FirstOrDefaultAsync(e => e.Id == id);
 
             if (employee == null)
@@ -95,34 +97,12 @@ namespace NFC.Platform.Application.Services
             if (existingEmployees.Count > 0)
                 return ServiceResult<EmployeeDetailsDto>.Fail(_messageService.Get("UserAlreadyExists"), 400);
 
-            var employee = new Employee
-            {
-                FullName = request.FullName,
-                Email = request.Email,
-                JobTitle = request.JobTitle ?? string.Empty,
-                Department = request.Department ?? string.Empty,
-                TenantId = tenantId.Value,
-                CompanyId = company.Id,
-                Status = UserStatus.Active
-            };
+            var employee = _mapper.Map<Employee>(request);
+            employee.CompanyId = company.Id;
 
-            var profile = new UserProfile
-            {
-                EmployeeId = employee.Id,
-                TenantId = tenantId.Value,
-                FullName = request.FullName,
-                JobTitle = request.JobTitle ?? string.Empty,
-                Department = request.Department ?? string.Empty,
-                CompanyName = company.Name,
-                ProfilePictureUrl = request.ProfilePictureUrl,
-                Phone = request.Phone,
-                WhatsApp = request.WhatsApp,
-                InstagramUrl = request.InstagramUrl,
-                FacebookUrl = request.FacebookUrl,
-                LinkedInUrl = request.LinkedInUrl,
-                WebsiteUrl = request.WebsiteUrl,
-                ContactEmail = request.Email
-            };
+            var profile = _mapper.Map<UserProfile>(request);
+            profile.EmployeeId = employee.Id;
+            profile.CompanyName = company.Name;
 
             if (!string.IsNullOrWhiteSpace(request.CustomLinks))
             {
@@ -164,6 +144,7 @@ namespace NFC.Platform.Application.Services
             var employee = await _unitOfWork.Repository<Employee>()
                 .GetQueryable()
                 .Include(e => e.UserProfile)
+                    .ThenInclude(p => p!.CustomLinks)
                 .FirstOrDefaultAsync(e => e.Id == id);
 
             if (employee == null)
@@ -172,15 +153,14 @@ namespace NFC.Platform.Application.Services
             employee.Status = request.Status;
             employee.JobTitle = request.JobTitle ?? string.Empty;
             employee.Department = request.Department ?? string.Empty;
+            employee.FullName = request.FullName ?? employee.FullName;
 
             if (employee.UserProfile != null)
             {
-                employee.UserProfile.JobTitle = request.JobTitle ?? string.Empty;
-                employee.UserProfile.Department = request.Department ?? string.Empty;
-                _unitOfWork.Repository<UserProfile>().Update(employee.UserProfile);
+                _mapper.Map(request, employee.UserProfile);
+                UpdateCustomLinks(employee.UserProfile, request.CustomLinks);
             }
 
-            _unitOfWork.Repository<Employee>().Update(employee);
             await _unitOfWork.SaveChangesAsync();
 
             return ServiceResult<EmployeeDetailsDto>.Success(_mapper.Map<EmployeeDetailsDto>(employee), _messageService.Get("RecordUpdated"));
@@ -203,6 +183,7 @@ namespace NFC.Platform.Application.Services
             var user = await _unitOfWork.Repository<User>()
                 .GetQueryable()
                 .Include(u => u.UserProfile)
+                    .ThenInclude(p => p!.CustomLinks)
                 .FirstOrDefaultAsync(u => u.Id == userId);
 
             if (user == null)
@@ -216,6 +197,7 @@ namespace NFC.Platform.Application.Services
             var user = await _unitOfWork.Repository<User>()
                 .GetQueryable()
                 .Include(u => u.UserProfile)
+                    .ThenInclude(p => p!.CustomLinks)
                 .FirstOrDefaultAsync(u => u.Id == userId);
 
             if (user == null)
@@ -229,10 +211,78 @@ namespace NFC.Platform.Application.Services
             }
 
             _mapper.Map(request, user.UserProfile);
-            _unitOfWork.Repository<UserProfile>().Update(user.UserProfile);
             await _unitOfWork.SaveChangesAsync();
 
             return ServiceResult<EmployeeDetailsDto>.Success(_mapper.Map<EmployeeDetailsDto>(user), _messageService.Get("RecordUpdated"));
+        }
+
+        private static void UpdateCustomLinks(UserProfile profile, string? customLinksText)
+        {
+            // 1. Parse and retrieve unique new URLs while preserving original order
+            var uniqueNewUrls = string.IsNullOrWhiteSpace(customLinksText)
+                ? []
+                : customLinksText.Split(LineSeparators, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(url => url.Trim())
+                    .Where(url => !string.IsNullOrEmpty(url))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+            var newUrlsSet = new HashSet<string>(uniqueNewUrls, StringComparer.OrdinalIgnoreCase);
+
+            var existingLinksLookup = new Dictionary<string, ProfileLink>(StringComparer.OrdinalIgnoreCase);
+            var obsoleteLinks = new List<ProfileLink>();
+
+            var standardPlatforms = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                PlatformConstants.LinkedIn,
+                PlatformConstants.Facebook,
+                PlatformConstants.Instagram,
+                PlatformConstants.Website
+            };
+
+            // 2. Single-pass over the profile links to separate obsolete links from those to update
+            foreach (var link in profile.CustomLinks)
+            {
+                if (standardPlatforms.Contains(link.Title))
+                    continue;
+
+                // Handle case-insensitive lookup safely (duplicate URLs in DB won't throw exceptions)
+                if (newUrlsSet.Contains(link.Url))
+                {
+                    existingLinksLookup[link.Url] = link;
+                }
+                else
+                {
+                    obsoleteLinks.Add(link);
+                }
+            }
+
+            // 3. Remove obsolete links from tracking
+            foreach (var obsolete in obsoleteLinks)
+            {
+                profile.CustomLinks.Remove(obsolete);
+            }
+
+            // 4. Update existing links or add new ones in order
+            var displayOrder = 1;
+            foreach (var url in uniqueNewUrls)
+            {
+                if (existingLinksLookup.TryGetValue(url, out var existing))
+                {
+                    existing.DisplayOrder = displayOrder++;
+                }
+                else
+                {
+                    profile.CustomLinks.Add(new ProfileLink
+                    {
+                        Title = url,
+                        Url = url,
+                        DisplayOrder = displayOrder++,
+                        TenantId = profile.TenantId,
+                        UserProfileId = profile.Id
+                    });
+                }
+            }
         }
     }
 }

@@ -44,7 +44,7 @@ public class ProfileMetricService(IUnitOfWork unitOfWork, IMessageService messag
         return ServiceResult<EmployeeDetailsDto>.Success(dto);
     }
 
-    public async Task<ServiceResult> RecordMetricAsync(Guid profileId, RecordMetricRequest request, string? ipAddress, string? userAgent)
+    public async Task<ServiceResult> RecordMetricAsync(Guid profileId, RecordMetricRequest request)
     {
         var profile = await _unitOfWork.Repository<UserProfile>()
             .GetByIdAsync(profileId);
@@ -57,8 +57,6 @@ public class ProfileMetricService(IUnitOfWork unitOfWork, IMessageService messag
             UserProfileId = profileId,
             TenantId = profile.TenantId,
             InteractionType = request.InteractionType,
-            IpAddress = ipAddress,
-            UserAgent = userAgent,
             ProfileLinkId = request.ProfileLinkId
         };
 

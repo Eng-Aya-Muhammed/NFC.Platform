@@ -12,8 +12,6 @@ namespace NFC.Platform.Infrastructure.Configurations
             builder.HasKey(m => m.Id);
 
             builder.Property(m => m.InteractionType).IsRequired();
-            builder.Property(m => m.IpAddress).HasMaxLength(45);
-            builder.Property(m => m.UserAgent).HasMaxLength(500);
 
             builder.Property(m => m.TenantId).IsRequired();
             builder.HasIndex(m => m.TenantId);

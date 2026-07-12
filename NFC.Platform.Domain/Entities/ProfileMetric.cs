@@ -13,8 +13,6 @@ namespace NFC.Platform.Domain.Entities
         public UserProfile UserProfile { get; set; } = null!;
 
         public InteractionType InteractionType { get; set; }
-        public string? IpAddress { get; set; }
-        public string? UserAgent { get; set; }
 
         public Guid? ProfileLinkId { get; set; }
         public ProfileLink? ProfileLink { get; set; }
