@@ -212,7 +212,6 @@ namespace NFC.Platform.Tests.Services
             // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(TemplateRequestStatus.Completed, templateRequest.Status);
-            _templateRequestRepo.Received(1).Update(templateRequest);
             await _unitOfWork.Received(1).SaveChangesAsync();
             Assert.Equal("Completed", result.Data!.Status);
         }

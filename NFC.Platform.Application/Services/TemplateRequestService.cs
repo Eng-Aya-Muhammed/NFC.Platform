@@ -44,6 +44,7 @@ namespace NFC.Platform.Application.Services
             // Fetch with User details to return username
             var createdRequest = await _unitOfWork.Repository<TemplateRequest>()
                 .GetQueryable()
+                .AsNoTracking()
                 .Include(r => r.RequestedByUser)
                 .FirstOrDefaultAsync(r => r.Id == templateRequest.Id);
 
@@ -55,6 +56,7 @@ namespace NFC.Platform.Application.Services
         {
             var requests = await _unitOfWork.Repository<TemplateRequest>()
                 .GetQueryable()
+                .AsNoTracking()
                 .Include(r => r.RequestedByUser)
                 .OrderByDescending(r => r.CreatedAt)
                 .ToListAsync();
@@ -76,7 +78,6 @@ namespace NFC.Platform.Application.Services
             }
 
             request.Status = status;
-            _unitOfWork.Repository<TemplateRequest>().Update(request);
             await _unitOfWork.SaveChangesAsync();
 
             var dto = _mapper.Map<TemplateRequestDto>(request);

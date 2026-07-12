@@ -157,8 +157,6 @@ namespace NFC.Platform.Tests.Services
             Assert.Equal(200, result.StatusCode);
             Assert.Equal("New OnPoint", result.Data!.Name);
             Assert.Equal("9999", adminUser.PhoneNumber);
-            _companyRepo.Received(1).Update(company);
-            _userRepo.Received(1).Update(adminUser);
             await _unitOfWork.Received(1).SaveChangesAsync();
         }
 
@@ -380,7 +378,6 @@ namespace NFC.Platform.Tests.Services
 
             // Assert
             Assert.True(result.IsSuccess);
-            _userRepo.Received(1).Update(user);
             await _unitOfWork.Received(1).SaveChangesAsync();
         }
 

@@ -162,7 +162,6 @@ namespace NFC.Platform.Tests.Services
             Assert.True(result.IsSuccess);
             Assert.NotNull(user.PasswordResetToken);
             Assert.NotNull(user.PasswordResetTokenExpires);
-            _userRepo.Received(1).Update(user);
             await _unitOfWork.Received().SaveChangesAsync();
         }
 
@@ -194,7 +193,6 @@ namespace NFC.Platform.Tests.Services
             Assert.Null(user.PasswordResetToken);
             Assert.Null(user.PasswordResetTokenExpires);
             Assert.True(PasswordHasher.VerifyPassword("NewSecurePassword123!", user.PasswordHash));
-            _userRepo.Received(1).Update(user);
             await _unitOfWork.Received().SaveChangesAsync();
         }
 
@@ -271,8 +269,7 @@ namespace NFC.Platform.Tests.Services
             await _userRepo.Received(1).AddAsync(Arg.Any<User>());
             await companyRepo.Received(1).AddAsync(Arg.Any<Company>());
             await _userRoleRepo.Received(1).AddAsync(Arg.Any<UserRole>());
-            _userRepo.Received(1).Update(Arg.Is<User>(u => u.CompanyId != null));
-            await _unitOfWork.Received(6).SaveChangesAsync(); // Saved six times: Tenant added, User added, Company added, User updated with CompanyId, UserRole added, RefreshToken added
+            await _unitOfWork.Received(6).SaveChangesAsync(); // Saved six times
         }
 
         [Fact]
@@ -313,7 +310,6 @@ namespace NFC.Platform.Tests.Services
             Assert.Equal("new-access-token", result.Data.Token);
             Assert.Equal("Token refreshed successfully.", result.Message);
             Assert.True(validRefreshToken.IsRevoked); // Old token should be marked revoked
-            _tokenRepo.Received(1).Update(validRefreshToken);
             await _tokenRepo.Received(1).AddAsync(Arg.Any<RefreshToken>()); // New refresh token added
             await _unitOfWork.Received().SaveChangesAsync();
         }
@@ -334,7 +330,6 @@ namespace NFC.Platform.Tests.Services
             // Assert
             Assert.True(result.IsSuccess);
             Assert.True(token.IsRevoked);
-            _tokenRepo.Received(1).Update(token);
             await _unitOfWork.Received(1).SaveChangesAsync();
         }
 

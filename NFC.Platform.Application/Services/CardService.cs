@@ -38,6 +38,7 @@ namespace NFC.Platform.Application.Services
         {
             var pagedResult = await _unitOfWork.Repository<Card>()
                 .GetQueryable()
+                .AsNoTracking()
                 .OrderByDescending(c => c.CreatedAt)
                 .ToPagedResultAsync(request, c => _mapper.Map<CardDto>(c));
 
@@ -89,7 +90,6 @@ namespace NFC.Platform.Application.Services
             card.UserProfileId = userProfile.Id;
             card.IsActive = true;
             card.ActivatedAt = DateTime.UtcNow;
-            cardRepo.Update(card);
 
             // Link any matching CardOrderItems in the same SaveChanges call for efficiency
             var orderItemRepo = _unitOfWork.Repository<CardOrderItem>();
@@ -97,7 +97,6 @@ namespace NFC.Platform.Application.Services
             foreach (var item in orderItems)
             {
                 item.LinkedCardId = card.Id;
-                orderItemRepo.Update(item);
             }
 
             await _unitOfWork.SaveChangesAsync();

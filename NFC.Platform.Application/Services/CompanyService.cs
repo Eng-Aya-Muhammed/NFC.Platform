@@ -33,6 +33,7 @@ namespace NFC.Platform.Application.Services
             // Fetch the single company associated with the tenant
             var company = await _unitOfWork.Repository<Company>()
                 .GetQueryable()
+                .AsNoTracking()
                 .Include(c => c.AdminUser)
                 .FirstOrDefaultAsync();
 
@@ -65,9 +66,7 @@ namespace NFC.Platform.Application.Services
             if (company.AdminUser != null)
             {
                 company.AdminUser.PhoneNumber = request.Phone;
-                _unitOfWork.Repository<User>().Update(company.AdminUser);
             }
-            _unitOfWork.Repository<Company>().Update(company);
             await _unitOfWork.SaveChangesAsync();
 
             var remainingDays = await GetSubscriptionRemainingDaysAsync(tenantId.Value);
@@ -94,7 +93,6 @@ namespace NFC.Platform.Application.Services
             }
 
             user.PasswordHash = PasswordHasher.HashPassword(request.NewPassword);
-            _unitOfWork.Repository<User>().Update(user);
             await _unitOfWork.SaveChangesAsync();
 
             return ServiceResult.Success(_messageService.Get("PasswordResetSuccess"));
@@ -104,6 +102,7 @@ namespace NFC.Platform.Application.Services
         {
             var subscription = await _unitOfWork.Repository<UserSubscription>()
                 .GetQueryable()
+                .AsNoTracking()
                 .FirstOrDefaultAsync(s => s.TenantId == tenantId && s.IsActive && s.EndDate >= DateTime.UtcNow);
 
             if (subscription == null)
@@ -138,6 +137,7 @@ namespace NFC.Platform.Application.Services
             // 4. Top Employee (Most active profile, projection join)
             var topEmployeeName = await _unitOfWork.Repository<ProfileMetric>()
                 .GetQueryable()
+                .AsNoTracking()
                 .GroupBy(m => new { m.UserProfileId, m.UserProfile.FullName })
                 .OrderByDescending(g => g.Count())
                 .Select(g => g.Key.FullName)
@@ -147,6 +147,7 @@ namespace NFC.Platform.Application.Services
             var sixMonthsAgo = DateTime.UtcNow.AddMonths(-6);
             var monthlyData = await _unitOfWork.Repository<ProfileMetric>()
                 .GetQueryable()
+                .AsNoTracking()
                 .Where(m => m.CreatedAt >= sixMonthsAgo)
                 .GroupBy(m => new { m.CreatedAt.Year, m.CreatedAt.Month })
                 .Select(g => new

@@ -27,6 +27,7 @@ public class ProfileMetricService(IUnitOfWork unitOfWork, IMessageService messag
         // Fetch the card and its active linked user profile
         var card = await _unitOfWork.Repository<Card>()
             .GetQueryable()
+            .AsNoTracking()
             .Include(c => c.UserProfile)
                 .ThenInclude(p => p!.CustomLinks)
             .Include(c => c.UserProfile)

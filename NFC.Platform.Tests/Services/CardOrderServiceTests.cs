@@ -168,7 +168,6 @@ namespace NFC.Platform.Tests.Services
             // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(OrderStatus.UnderReview, order.Status);
-            _orderRepo.Received(1).Update(order);
             await _unitOfWork.Received(1).SaveChangesAsync();
         }
 

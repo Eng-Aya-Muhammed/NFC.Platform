@@ -96,7 +96,6 @@ namespace NFC.Platform.Application.Services
                     await _unitOfWork.SaveChangesAsync();
 
                     user.CompanyId = company.Id;
-                    userRepo.Update(user);
                     await _unitOfWork.SaveChangesAsync();
                 }
 
@@ -151,7 +150,6 @@ namespace NFC.Platform.Application.Services
 
             // Revoke the old token
             token.IsRevoked = true;
-            tokenRepo.Update(token);
 
             // Generate and save new access + refresh tokens
             return await GenerateAuthResponseAsync(user, _messageService.Get("TokenRefreshed"));
@@ -166,7 +164,6 @@ namespace NFC.Platform.Application.Services
             if (token != null)
             {
                 token.IsRevoked = true;
-                tokenRepo.Update(token);
                 await _unitOfWork.SaveChangesAsync();
             }
 
@@ -185,7 +182,6 @@ namespace NFC.Platform.Application.Services
                 user.PasswordResetToken = resetToken;
                 user.PasswordResetTokenExpires = DateTime.UtcNow.AddHours(1);
 
-                userRepo.Update(user);
                 await _unitOfWork.SaveChangesAsync();
 
                 // Log the reset token in console/logs so it can be easily copied and tested by the developer
@@ -216,7 +212,6 @@ namespace NFC.Platform.Application.Services
             user.PasswordResetToken = null;
             user.PasswordResetTokenExpires = null;
 
-            userRepo.Update(user);
             await _unitOfWork.SaveChangesAsync();
 
             return ServiceResult.Success(_messageService.Get("PasswordResetSuccess"));

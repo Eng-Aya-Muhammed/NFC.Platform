@@ -30,6 +30,7 @@ namespace NFC.Platform.Application.Services
         {
             var pagedResult = await _unitOfWork.Repository<CardOrder>()
                 .GetQueryable()
+                .AsNoTracking()
                 .Include(o => o.Items)
                 .OrderByDescending(o => o.CreatedAt)
                 .ToPagedResultAsync(request, o => _mapper.Map<CardOrderDto>(o));
@@ -41,6 +42,7 @@ namespace NFC.Platform.Application.Services
         {
             var order = await _unitOfWork.Repository<CardOrder>()
                 .GetQueryable()
+                .AsNoTracking()
                 .Include(o => o.Items)
                 .FirstOrDefaultAsync(o => o.Id == id);
 
@@ -83,6 +85,7 @@ namespace NFC.Platform.Application.Services
             // Reload with items for the response
             var created = await _unitOfWork.Repository<CardOrder>()
                 .GetQueryable()
+                .AsNoTracking()
                 .Include(o => o.Items)
                 .FirstOrDefaultAsync(o => o.Id == order.Id);
 
@@ -100,7 +103,6 @@ namespace NFC.Platform.Application.Services
                 return ServiceResult.NotFound(_messageService.Get("RecordNotFound"));
 
             order.Status = request.Status;
-            repo.Update(order);
             await _unitOfWork.SaveChangesAsync();
 
             return ServiceResult.Success(_messageService.Get("RecordUpdated"));
@@ -131,7 +133,19 @@ namespace NFC.Platform.Application.Services
                 return ServiceResult.NotFound(_messageService.Get("RecordNotFound") ?? "Card order not found.");
 
             var cardRepo = _unitOfWork.Repository<Card>();
-            var orderItemRepo = _unitOfWork.Repository<CardOrderItem>();
+
+            // Bulk retrieve existing cards for the given activation codes to avoid N+1 query loop
+            var activationCodes = request.Assignments
+                .Select(a => a.ActivationCode)
+                .Where(code => !string.IsNullOrWhiteSpace(code))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            var existingCards = await cardRepo.FindAsync(c => activationCodes.Contains(c.ActivationCode));
+
+            var existingCardsLookup = existingCards
+                .GroupBy(c => c.ActivationCode, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
 
             await _unitOfWork.BeginTransactionAsync();
             try
@@ -144,11 +158,7 @@ namespace NFC.Platform.Application.Services
 
                     item.ActivationCode = assignment.ActivationCode;
 
-                    // Find or create card with this activation code
-                    var existingCards = await cardRepo.FindAsync(c => c.ActivationCode == assignment.ActivationCode);
-                    var card = existingCards.Count > 0 ? existingCards[0] : null;
-
-                    if (card == null)
+                    if (!existingCardsLookup.TryGetValue(assignment.ActivationCode, out var card))
                     {
                         card = new Card
                         {
@@ -157,6 +167,7 @@ namespace NFC.Platform.Application.Services
                             TenantId = order.TenantId
                         };
                         await cardRepo.AddAsync(card);
+                        existingCardsLookup[assignment.ActivationCode] = card;
                     }
                     else
                     {
@@ -171,9 +182,6 @@ namespace NFC.Platform.Application.Services
                         card.ActivatedAt = DateTime.UtcNow;
                         item.LinkedCardId = card.Id;
                     }
-
-                    cardRepo.Update(card);
-                    orderItemRepo.Update(item);
                 }
 
                 await _unitOfWork.SaveChangesAsync();

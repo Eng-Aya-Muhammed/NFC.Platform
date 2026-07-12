@@ -34,6 +34,7 @@ namespace NFC.Platform.Application.Services
         {
             var query = _unitOfWork.Repository<Employee>()
                 .GetQueryable()
+                .AsNoTracking()
                 .Include(e => e.UserProfile)
                 .AsQueryable();
 
@@ -56,6 +57,7 @@ namespace NFC.Platform.Application.Services
         {
             var employee = await _unitOfWork.Repository<Employee>()
                 .GetQueryable()
+                .AsNoTracking()
                 .Include(e => e.UserProfile)
                     .ThenInclude(p => p!.CustomLinks)
                 .FirstOrDefaultAsync(e => e.Id == id);
@@ -73,13 +75,14 @@ namespace NFC.Platform.Application.Services
                 return ServiceResult<EmployeeDetailsDto>.Unauthorized("User is not authenticated.");
 
             // 1. Fetch Company
-            var company = await _unitOfWork.Repository<Company>().GetQueryable().FirstOrDefaultAsync();
+            var company = await _unitOfWork.Repository<Company>().GetQueryable().AsNoTracking().FirstOrDefaultAsync();
             if (company == null)
                 return ServiceResult<EmployeeDetailsDto>.Fail("Company not found for this tenant.", 400);
 
             // 2. Validate Subscription Limit
             var activeSub = await _unitOfWork.Repository<UserSubscription>()
                 .GetQueryable()
+                .AsNoTracking()
                 .Include(s => s.SubscriptionPlan)
                 .FirstOrDefaultAsync(s => s.TenantId == tenantId.Value && s.IsActive && s.EndDate >= DateTime.UtcNow);
 
@@ -182,6 +185,7 @@ namespace NFC.Platform.Application.Services
         {
             var user = await _unitOfWork.Repository<User>()
                 .GetQueryable()
+                .AsNoTracking()
                 .Include(u => u.UserProfile)
                     .ThenInclude(p => p!.CustomLinks)
                 .FirstOrDefaultAsync(u => u.Id == userId);
