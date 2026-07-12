@@ -43,6 +43,7 @@ namespace NFC.Platform.Infrastructure.Extensions
             // 5. Register Seeders
             services.AddScoped<IRoleSeeder, RoleSeeder>();
             services.AddScoped<IAdminUserSeeder, AdminUserSeeder>();
+            services.AddScoped<ISubscriptionPlanSeeder, SubscriptionPlanSeeder>();
 
             return services;
         }

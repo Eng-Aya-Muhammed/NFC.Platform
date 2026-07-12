@@ -82,4 +82,22 @@
   <data name="CardExpired" xml:space="preserve">
     <value>The NFC card has expired.</value>
   </data>
+  <data name="PremiumAnnual" xml:space="preserve">
+    <value>Premium - Annual</value>
+  </data>
+  <data name="Premium3Years" xml:space="preserve">
+    <value>Premium - 3 Years</value>
+  </data>
+  <data name="Premium5Years" xml:space="preserve">
+    <value>Premium - 5 Years</value>
+  </data>
+  <data name="PremiumDescription" xml:space="preserve">
+    <value>Choose the best plan for your team and NFC card needs.</value>
+  </data>
+  <data name="HasActiveSubscription" xml:space="preserve">
+    <value>You already have an active subscription. Please use the renew option instead.</value>
+  </data>
+  <data name="NoActiveSubscriptionToRenew" xml:space="preserve">
+    <value>No active subscription found to renew. Please subscribe first.</value>
+  </data>
 </root>

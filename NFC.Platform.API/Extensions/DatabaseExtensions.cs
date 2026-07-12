@@ -49,6 +49,10 @@ namespace NFC.Platform.API.Extensions
                 // 3. Seed Admin User
                 var adminSeeder = services.GetRequiredService<IAdminUserSeeder>();
                 await adminSeeder.SeedAsync();
+
+                // 4. Seed Subscription Plans
+                var planSeeder = services.GetRequiredService<ISubscriptionPlanSeeder>();
+                await planSeeder.SeedAsync();
             }
             catch (Exception ex)
             {

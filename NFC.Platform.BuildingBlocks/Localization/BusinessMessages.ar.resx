@@ -82,4 +82,22 @@
   <data name="CardExpired" xml:space="preserve">
     <value>انتهت صلاحية بطاقة NFC.</value>
   </data>
+  <data name="PremiumAnnual" xml:space="preserve">
+    <value>البريميوم - سنوي</value>
+  </data>
+  <data name="Premium3Years" xml:space="preserve">
+    <value>البريميوم - 3 سنوات</value>
+  </data>
+  <data name="Premium5Years" xml:space="preserve">
+    <value>البريميوم - 5 سنوات</value>
+  </data>
+  <data name="PremiumDescription" xml:space="preserve">
+    <value>اختر الباقة المناسبة لحجم فريقك واحتياجات بطاقات NFC.</value>
+  </data>
+  <data name="HasActiveSubscription" xml:space="preserve">
+    <value>لديك اشتراك نشط بالفعل. يرجى استخدام خيار التجديد بدلاً من ذلك.</value>
+  </data>
+  <data name="NoActiveSubscriptionToRenew" xml:space="preserve">
+    <value>لا يوجد اشتراك نشط لتجديده. يرجى الاشتراك أولاً.</value>
+  </data>
 </root>
