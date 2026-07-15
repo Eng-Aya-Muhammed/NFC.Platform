@@ -2,12 +2,17 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using NFC.Platform.API.Controllers;
+using NFC.Platform.API.Models;
 using NFC.Platform.Application.DTOs;
+using NFC.Platform.Application.DTOs.CardOrder;
 using NFC.Platform.Application.Interfaces.Services;
+using NFC.Platform.Domain.Enums;
 using NFC.Platform.BuildingBlocks.Common.Constants;
 using NFC.Platform.BuildingBlocks.Results;
+using NFC.Platform.BuildingBlocks.Localization;
 using NSubstitute;
 using Xunit;
 
@@ -16,12 +21,16 @@ namespace NFC.Platform.Tests.Controllers
     public class EmployeeControllerTests
     {
         private readonly IEmployeeService _employeeService;
+        private readonly ICardOrderService _cardOrderService;
+        private readonly IMessageService _messageService;
         private readonly EmployeeController _sut;
 
         public EmployeeControllerTests()
         {
             _employeeService = Substitute.For<IEmployeeService>();
-            _sut = new EmployeeController(_employeeService);
+            _cardOrderService = Substitute.For<ICardOrderService>();
+            _messageService = Substitute.For<IMessageService>();
+            _sut = new EmployeeController(_employeeService, _cardOrderService, _messageService);
         }
 
         [Fact]
@@ -146,6 +155,37 @@ namespace NFC.Platform.Tests.Controllers
             Assert.NotNull(result);
             Assert.Equal(200, result.StatusCode);
             await _employeeService.Received(1).SoftDeleteEmployeeAsync(id);
+        }
+
+        [Fact]
+        public async Task PlaceBulkOrderFromExcel_ShouldCallImportEmployeesAndCreateBulkOrderAsync_OnCardOrderService()
+        {
+            // Arrange
+            var file = Substitute.For<IFormFile>();
+            var fileStream = new System.IO.MemoryStream();
+            file.OpenReadStream().Returns(fileStream);
+
+            var request = new ImportEmployeesAndOrderCardsRequest
+            {
+                File = file,
+                CardType = CardType.Plastic,
+                CardDesignType = CardDesignType.BuiltInTemplate
+            };
+
+            var expectedResult = ServiceResult<CardOrderDto>.Success(new CardOrderDto());
+            _cardOrderService.ImportEmployeesAndCreateBulkOrderAsync(Arg.Any<CreateBulkCardOrderFromExcelRequest>()).Returns(expectedResult);
+
+            // Act
+            var result = await _sut.PlaceBulkOrderFromExcel(request) as ObjectResult;
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(200, result.StatusCode);
+            await _cardOrderService.Received(1).ImportEmployeesAndCreateBulkOrderAsync(Arg.Is<CreateBulkCardOrderFromExcelRequest>(r => 
+                r.CardType == CardType.Plastic && 
+                r.CardDesignType == CardDesignType.BuiltInTemplate && 
+                r.ExcelStream == fileStream
+            ));
         }
     }
 }

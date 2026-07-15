@@ -82,6 +82,7 @@ namespace NFC.Platform.Tests.Services
             _companyRepo.GetQueryable().Returns(queryableCompany);
 
             var request = new CreateEmployeeRequest { Email = "test@test.com" };
+            _messageService.Get("CompanyNotFound").Returns("Company not found for this tenant.");
 
             // Act
             var result = await _sut.CreateEmployeeAsync(request);

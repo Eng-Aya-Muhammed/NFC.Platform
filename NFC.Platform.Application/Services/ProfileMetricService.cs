@@ -1,16 +1,3 @@
-using System;
-using System.Linq;
-using System.Threading.Tasks;
-using AutoMapper;
-using Microsoft.EntityFrameworkCore;
-using NFC.Platform.Application.DTOs;
-using NFC.Platform.Application.Interfaces.Repositories;
-using NFC.Platform.Application.Interfaces.Services;
-using NFC.Platform.BuildingBlocks.Localization;
-using NFC.Platform.BuildingBlocks.Results;
-using NFC.Platform.Domain.Entities;
-using NFC.Platform.Domain.Enums;
-
 namespace NFC.Platform.Application.Services;
 
 public class ProfileMetricService(IUnitOfWork unitOfWork, IMessageService messageService, IMapper mapper) : IProfileMetricService
@@ -22,9 +9,8 @@ public class ProfileMetricService(IUnitOfWork unitOfWork, IMessageService messag
     public async Task<ServiceResult<EmployeeDetailsDto>> ResolvePublicProfileAsync(string activationCode)
     {
         if (string.IsNullOrWhiteSpace(activationCode))
-            return ServiceResult<EmployeeDetailsDto>.NotFound(_messageService.Get("CardNotFound") ?? "Card not found.");
+            return ServiceResult<EmployeeDetailsDto>.NotFound(_messageService.Get("CardNotFound"));
 
-        // Fetch the card and its active linked user profile
         var card = await _unitOfWork.Repository<Card>()
             .GetQueryable()
             .AsNoTracking()
@@ -34,15 +20,26 @@ public class ProfileMetricService(IUnitOfWork unitOfWork, IMessageService messag
                 .ThenInclude(p => p!.Employee)
             .Include(c => c.UserProfile)
                 .ThenInclude(p => p!.User)
-            .FirstOrDefaultAsync(c => c.ActivationCode == activationCode && c.IsActive);
+            .FirstOrDefaultAsync(c => c.UniqueCode == activationCode && !c.IsDeleted);
 
-        if (card == null || card.UserProfile == null)
-            return ServiceResult<EmployeeDetailsDto>.NotFound(_messageService.Get("CardNotFound") ?? "Card not found.");
+        if (card == null)
+            return ServiceResult<EmployeeDetailsDto>.NotFound(_messageService.Get("CardNotFound"));
 
-        var profile = card.UserProfile;
-        var dto = _mapper.Map<EmployeeDetailsDto>(profile);
+        // Status-based resolution
+        return card.Status switch
+        {
+            CardStatus.Active when card.UserProfile != null =>
+                ServiceResult<EmployeeDetailsDto>.Success(_mapper.Map<EmployeeDetailsDto>(card.UserProfile)),
 
-        return ServiceResult<EmployeeDetailsDto>.Success(dto);
+            CardStatus.Active =>
+                ServiceResult<EmployeeDetailsDto>.NotFound(_messageService.Get("ProfileNotFound")),
+
+            CardStatus.Deactivated =>
+                ServiceResult<EmployeeDetailsDto>.Fail(_messageService.Get("CardDeactivated"), 410),
+
+            _ => // UnassignedCode, Encoded, PendingGeneration
+                ServiceResult<EmployeeDetailsDto>.Fail(_messageService.Get("CardNotYetActivated"), 403)
+        };
     }
 
     public async Task<ServiceResult> RecordMetricAsync(Guid profileId, RecordMetricRequest request)

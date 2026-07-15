@@ -1,24 +1,11 @@
-using System;
-using System.Linq;
-using System.Threading.Tasks;
-using AutoMapper;
-using Microsoft.EntityFrameworkCore;
-using NFC.Platform.Application.DTOs;
-using NFC.Platform.Application.Interfaces.Repositories;
-using NFC.Platform.Application.Interfaces.Services;
-using NFC.Platform.BuildingBlocks.Common.Helpers;
-using NFC.Platform.BuildingBlocks.Localization;
-using NFC.Platform.BuildingBlocks.Results;
-using NFC.Platform.Domain.Entities;
+namespace NFC.Platform.Application.Services;
 
-namespace NFC.Platform.Application.Services
+public class CompanyService(
+    IUnitOfWork unitOfWork,
+    IMapper mapper,
+    IMessageService messageService,
+    ICurrentTenant currentTenant) : ICompanyService
 {
-    public class CompanyService(
-        IUnitOfWork unitOfWork,
-        IMapper mapper,
-        IMessageService messageService,
-        ICurrentTenant currentTenant) : ICompanyService
-    {
         private readonly IUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
         private readonly IMapper _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         private readonly IMessageService _messageService = messageService ?? throw new ArgumentNullException(nameof(messageService));
@@ -185,4 +172,3 @@ namespace NFC.Platform.Application.Services
             return ServiceResult<CompanyDashboardDto>.Success(dashboardDto);
         }
     }
-}

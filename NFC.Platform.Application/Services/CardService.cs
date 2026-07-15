@@ -1,19 +1,5 @@
-using System;
-using System.Threading.Tasks;
-using AutoMapper;
-using Microsoft.EntityFrameworkCore;
-using NFC.Platform.Application.DTOs;
-using NFC.Platform.Application.Extensions;
-using NFC.Platform.Application.Interfaces.Repositories;
-using NFC.Platform.Application.Interfaces.Services;
-using NFC.Platform.BuildingBlocks.Common.Exceptions;
-using NFC.Platform.BuildingBlocks.Common.Helpers;
-using NFC.Platform.BuildingBlocks.Localization;
-using NFC.Platform.BuildingBlocks.Results;
-using NFC.Platform.Domain.Entities;
+namespace NFC.Platform.Application.Services;
 
-namespace NFC.Platform.Application.Services
-{
     public class CardService(
         IUnitOfWork unitOfWork,
         IMapper mapper,
@@ -24,6 +10,8 @@ namespace NFC.Platform.Application.Services
         private readonly IMapper _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         private readonly IMessageService _messageService = messageService ?? throw new ArgumentNullException(nameof(messageService));
         private readonly ICurrentTenant _currentTenant = currentTenant ?? throw new ArgumentNullException(nameof(currentTenant));
+
+        // ── Query ──────────────────────────────────────────────────────────────
 
         public async Task<ServiceResult<CardDto>> GetByIdAsync(Guid id)
         {
@@ -45,11 +33,29 @@ namespace NFC.Platform.Application.Services
             return ServiceResult<PagedResult<CardDto>>.Success(pagedResult);
         }
 
+        public async Task<ServiceResult<List<CardDto>>> GetCardsForEncodingAsync(Guid orderId, string? statusFilter)
+        {
+            var query = _unitOfWork.Repository<Card>()
+                .GetQueryable()
+                .AsNoTracking()
+                .Where(c => c.CardOrderId == orderId);
+
+            if (!string.IsNullOrWhiteSpace(statusFilter)
+                && Enum.TryParse<CardStatus>(statusFilter, ignoreCase: true, out var parsedStatus))
+            {
+                query = query.Where(c => c.Status == parsedStatus);
+            }
+
+            var cards = await query.OrderBy(c => c.CreatedAt).ToListAsync();
+            return ServiceResult<List<CardDto>>.Success(cards.Select(c => _mapper.Map<CardDto>(c)).ToList());
+        }
+
+        // ── Create ─────────────────────────────────────────────────────────────
+
         public async Task<ServiceResult<CardDto>> CreateCardAsync(CreateCardRequest request)
         {
             var repo = _unitOfWork.Repository<Card>();
-
-            var existing = await repo.FindAsync(c => c.ActivationCode == request.ActivationCode);
+            var existing = await repo.FindAsync(c => c.UniqueCode == request.ActivationCode);
             if (existing.Count > 0)
                 throw new BusinessException("CardAlreadyAssigned");
 
@@ -60,49 +66,119 @@ namespace NFC.Platform.Application.Services
             return ServiceResult<CardDto>.Success(_mapper.Map<CardDto>(card), _messageService.Get("RecordCreated"));
         }
 
+        // ── User self-activation (via activation code / QR) ───────────────────
+
         public async Task<ServiceResult> ActivateCardAsync(ActivateCardRequest request)
         {
             var userId = _currentTenant.UserId;
             var tenantId = _currentTenant.TenantId;
 
             if (!userId.HasValue || !tenantId.HasValue)
-                return ServiceResult.Unauthorized("User is not authenticated.");
+                return ServiceResult.Unauthorized(_messageService.Get("UserNotAuthenticated"));
 
             var cardRepo = _unitOfWork.Repository<Card>();
             var userProfileRepo = _unitOfWork.Repository<UserProfile>();
 
-            // Find card by activation code (global query filters apply — card belongs to same tenant)
-            var cards = await cardRepo.FindAsync(c => c.ActivationCode == request.ActivationCode);
+            var cards = await cardRepo.FindAsync(c => c.UniqueCode == request.ActivationCode);
             var card = cards.Count > 0 ? cards[0] : null;
 
             if (card == null)
-                return ServiceResult.NotFound(_messageService.Get("CardNotFound") ?? "Card not found.");
+                return ServiceResult.NotFound(_messageService.Get("CardNotFound"));
 
-            if (card.IsActive || card.UserProfileId != null)
-                return ServiceResult.Fail("Card already activated", 400);
+            if (card.Status == CardStatus.Active)
+                return ServiceResult.Fail(_messageService.Get("CardAlreadyActivated"), 400);
 
-            // Resolve or create the user's profile
+            if (card.Status == CardStatus.Deactivated)
+                return ServiceResult.Fail(_messageService.Get("CardDeactivated"), 410);
+
             var userProfile = await GetOrCreateUserProfileAsync(userProfileRepo, userId.Value);
             if (userProfile == null)
-                return ServiceResult.Fail("User not found.", 400);
+                return ServiceResult.Fail(_messageService.Get("RecordNotFound"), 400);
 
-            // Activate the card
             card.UserProfileId = userProfile.Id;
-            card.IsActive = true;
+            card.Status = CardStatus.Active;
             card.ActivatedAt = DateTime.UtcNow;
 
-            // Link any matching CardOrderItems in the same SaveChanges call for efficiency
-            var orderItemRepo = _unitOfWork.Repository<CardOrderItem>();
-            var orderItems = await orderItemRepo.FindAsync(oi => oi.ActivationCode == card.ActivationCode);
+            var orderItems = await _unitOfWork.Repository<CardOrderItem>().FindAsync(oi => oi.ActivationCode == card.UniqueCode);
             foreach (var item in orderItems)
-            {
                 item.LinkedCardId = card.Id;
+
+            await _unitOfWork.SaveChangesAsync();
+            return ServiceResult.Success(_messageService.Get("CardActivatedSuccessfully"));
+        }
+
+        // ── Encoding tool integration ──────────────────────────────────────────
+
+        public async Task<ServiceResult> MarkCardEncodedAsync(Guid cardId)
+        {
+            var card = await _unitOfWork.Repository<Card>().GetByIdAsync(cardId);
+            if (card == null)
+                return ServiceResult.NotFound(_messageService.Get("CardNotFound"));
+
+            if (card.Status != CardStatus.UnassignedCode)
+                return ServiceResult.Fail(_messageService.Get("CannotMarkEncoded", card.Status.ToString()), 400);
+
+            card.Status = CardStatus.Encoded;
+            await _unitOfWork.SaveChangesAsync();
+
+            // Auto-transition order to ReadyForDelivery when all cards are encoded
+            if (card.CardOrderId.HasValue)
+                await TryTransitionOrderToReadyForDeliveryAsync(card.CardOrderId.Value);
+
+            return ServiceResult.Success(_messageService.Get("RecordUpdated"));
+        }
+
+        // ── Admin activation ──────────────────────────────────────────────────
+
+        public async Task<ServiceResult> ActivateCardByIdAsync(Guid cardId)
+        {
+            var card = await _unitOfWork.Repository<Card>().GetByIdAsync(cardId);
+            if (card == null)
+                return ServiceResult.NotFound(_messageService.Get("CardNotFound"));
+
+            if (card.Status == CardStatus.Active)
+                return ServiceResult.Fail(_messageService.Get("CardAlreadyActivated"), 400);
+
+            card.Status = CardStatus.Active;
+            card.ActivatedAt = DateTime.UtcNow;
+            await _unitOfWork.SaveChangesAsync();
+
+            return ServiceResult.Success(_messageService.Get("CardActivatedSuccessfully"));
+        }
+
+        public async Task<ServiceResult> ActivateAllCardsForOrderAsync(Guid orderId)
+        {
+            var cards = await _unitOfWork.Repository<Card>()
+                .GetQueryable()
+                .Where(c => c.CardOrderId == orderId && c.Status != CardStatus.Active)
+                .ToListAsync();
+
+            if (cards.Count == 0)
+                return ServiceResult.Success();
+
+            var now = DateTime.UtcNow;
+            foreach (var c in cards)
+            {
+                c.Status = CardStatus.Active;
+                c.ActivatedAt = now;
             }
 
             await _unitOfWork.SaveChangesAsync();
-
-            return ServiceResult.Success(_messageService.Get("CardActivatedSuccessfully") ?? "Card activated successfully.");
+            return ServiceResult.Success(_messageService.Get("RecordUpdated"));
         }
+
+        public async Task<ServiceResult> DeactivateCardAsync(Guid cardId)
+        {
+            var card = await _unitOfWork.Repository<Card>().GetByIdAsync(cardId);
+            if (card == null)
+                return ServiceResult.NotFound(_messageService.Get("CardNotFound"));
+
+            card.Status = CardStatus.Deactivated;
+            await _unitOfWork.SaveChangesAsync();
+            return ServiceResult.Success(_messageService.Get("RecordUpdated"));
+        }
+
+        // ── Delete ─────────────────────────────────────────────────────────────
 
         public async Task<ServiceResult> DeleteCardAsync(Guid id)
         {
@@ -114,17 +190,31 @@ namespace NFC.Platform.Application.Services
 
             repo.Remove(card);
             await _unitOfWork.SaveChangesAsync();
-
             return ServiceResult.Success(_messageService.Get("RecordDeleted"));
         }
 
-        // ---------------------------------------------------------------------------
-        // Helpers
-        // ---------------------------------------------------------------------------
+        // ── Helpers ────────────────────────────────────────────────────────────
+
+        private async Task TryTransitionOrderToReadyForDeliveryAsync(Guid orderId)
+        {
+            var orderRepo = _unitOfWork.Repository<CardOrder>();
+            var order = await orderRepo.GetByIdAsync(orderId);
+            if (order == null || order.Status != OrderStatus.Encoding)
+                return;
+
+            var anyStillUnassigned = await _unitOfWork.Repository<Card>()
+                .GetQueryable()
+                .AnyAsync(c => c.CardOrderId == orderId && c.Status == CardStatus.UnassignedCode);
+
+            if (!anyStillUnassigned)
+            {
+                order.Status = OrderStatus.ReadyForDelivery;
+                await _unitOfWork.SaveChangesAsync();
+            }
+        }
 
         private async Task<UserProfile?> GetOrCreateUserProfileAsync(
-            IGenericRepository<UserProfile> userProfileRepo,
-            Guid userId)
+            IGenericRepository<UserProfile> userProfileRepo, Guid userId)
         {
             var profiles = await userProfileRepo.FindAsync(up => up.UserId == userId);
             if (profiles.Count > 0)
@@ -134,16 +224,9 @@ namespace NFC.Platform.Application.Services
             if (user == null)
                 return null;
 
-            var newProfile = new UserProfile
-            {
-                UserId = userId,
-                FullName = user.Username
-            };
-
+            var newProfile = new UserProfile { UserId = userId, FullName = user.Username };
             await userProfileRepo.AddAsync(newProfile);
             await _unitOfWork.SaveChangesAsync();
-
             return newProfile;
         }
     }
-}

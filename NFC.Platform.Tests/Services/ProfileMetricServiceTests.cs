@@ -99,7 +99,7 @@ namespace NFC.Platform.Tests.Services
             var card = new Card
             {
                 ActivationCode = "CODE123",
-                IsActive = true,
+                Status = CardStatus.Active,
                 UserProfile = null  // card has no linked profile
             };
             var queryable = new List<Card> { card }.AsQueryable().BuildMock();
@@ -130,7 +130,7 @@ namespace NFC.Platform.Tests.Services
             var card = new Card
             {
                 ActivationCode = "VALID",
-                IsActive = true,
+                Status = CardStatus.Active,
                 UserProfile = profile
             };
 

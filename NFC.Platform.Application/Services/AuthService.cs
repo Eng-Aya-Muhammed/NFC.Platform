@@ -1,19 +1,5 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Security.Cryptography;
-using System.Threading.Tasks;
-using NFC.Platform.Application.DTOs;
-using NFC.Platform.Application.Interfaces.Repositories;
-using NFC.Platform.Application.Interfaces.Services;
-using NFC.Platform.BuildingBlocks.Common.Helpers;
-using NFC.Platform.BuildingBlocks.Localization;
-using NFC.Platform.BuildingBlocks.Results;
-using NFC.Platform.Domain.Entities;
-using NFC.Platform.Domain.Enums;
+namespace NFC.Platform.Application.Services;
 
-namespace NFC.Platform.Application.Services
-{
     public class AuthService(
         IUnitOfWork unitOfWork,
         ITokenService tokenService,
@@ -184,8 +170,11 @@ namespace NFC.Platform.Application.Services
 
                 await _unitOfWork.SaveChangesAsync();
 
-                // Log the reset token in console/logs so it can be easily copied and tested by the developer
-                Console.WriteLine($"[TESTING ONLY] Reset password token for {user.Email} is: {resetToken}");
+                // Log the reset token in console/logs so it can be easily copied and tested by the developer (development environment only)
+                if (string.Equals(Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"), "Development", StringComparison.OrdinalIgnoreCase))
+                {
+                    Console.WriteLine($"[TESTING ONLY] Reset password token for {user.Email} is: {resetToken}");
+                }
             }
 
             // Always return success to prevent email enumeration/discovery attacks
@@ -309,4 +298,3 @@ namespace NFC.Platform.Application.Services
             return ServiceResult<AuthDto>.Success(authDto, message);
         }
     }
-}

@@ -11,6 +11,6 @@ namespace NFC.Platform.Application.Interfaces.Services
     {
         Task<ServiceResult<TemplateRequestDto>> CreateRequestAsync(Guid userId, CreateTemplateRequest request);
         Task<ServiceResult<IReadOnlyList<TemplateRequestDto>>> GetTenantRequestsAsync();
-        Task<ServiceResult<TemplateRequestDto>> UpdateRequestStatusAsync(Guid id, TemplateRequestStatus status);
+        Task<ServiceResult<TemplateRequestDto>> GetRequestByIdAsync(Guid id);
     }
 }

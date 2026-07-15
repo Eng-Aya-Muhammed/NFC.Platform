@@ -1,0 +1,30 @@
+using AutoMapper;
+using NFC.Platform.Application.DTOs.Admin;
+using NFC.Platform.Application.DTOs.CardOrder;
+using NFC.Platform.Domain.Entities;
+
+namespace NFC.Platform.Application.Mapping
+{
+    public class AdminMappingProfile : Profile
+    {
+        public AdminMappingProfile()
+        {
+            CreateMap<CardOrder, AdminOrderSummaryDto>()
+                .ForMember(dest => dest.TenantName, opt => opt.MapFrom(src => src.Tenant != null ? src.Tenant.Name : string.Empty))
+                .ForMember(dest => dest.Material, opt => opt.MapFrom(src => src.CardType))
+                .ForMember(dest => dest.DesignType, opt => opt.MapFrom(src => src.CardDesignType));
+
+            CreateMap<CardOrder, AdminOrderDetailDto>()
+                .ForMember(dest => dest.TenantName, opt => opt.MapFrom(src => src.Tenant != null ? src.Tenant.Name : string.Empty))
+                .ForMember(dest => dest.CustomerName, opt => opt.MapFrom(src => src.User != null ? (src.User.UserProfile != null ? src.User.UserProfile.FullName : src.User.Username) : string.Empty))
+                .ForMember(dest => dest.CustomerEmail, opt => opt.MapFrom(src => src.User != null ? src.User.Email : string.Empty))
+                .ForMember(dest => dest.Material, opt => opt.MapFrom(src => src.CardType))
+                .ForMember(dest => dest.DesignType, opt => opt.MapFrom(src => src.CardDesignType))
+                .ForMember(dest => dest.Items, opt => opt.MapFrom(src => src.Items));
+
+            CreateMap<CreateCardTemplateDto, CardTemplate>();
+            CreateMap<UpdateCardTemplateDto, CardTemplate>();
+            CreateMap<Tenant, TenantSummaryDto>();
+        }
+    }
+}

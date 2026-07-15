@@ -1,5 +1,3 @@
-
-
 namespace NFC.Platform.API.Controllers
 {
     [ApiController]
@@ -10,13 +8,25 @@ namespace NFC.Platform.API.Controllers
         private readonly ICardOrderService _cardOrderService = cardOrderService ?? throw new ArgumentNullException(nameof(cardOrderService));
 
         /// <summary>
+        /// Returns the unit and total price for a given card type and quantity.
+        /// Used to preview cost before placing an order.
+        /// </summary>
+        [HttpGet("pricing")]
+        [HttpGet("/api/order-draft/pricing")]
+        public async Task<IActionResult> GetPricing([FromQuery] string cardType = "plastic", [FromQuery] int quantity = 1)
+        {
+            var result = await _cardOrderService.GetOrderPricingAsync(cardType, quantity);
+            return Ok(result);
+        }
+
+        /// <summary>
         /// Returns a paged list of card orders for the current tenant.
+        /// Optional query param: status (e.g. PendingReview, InPrinting).
         /// </summary>
         [HttpGet]
-        [Authorize(Policy = AppPolicies.CompanyAdminOnly)]
-        public async Task<IActionResult> GetPaged([FromQuery] PaginationRequest request)
+        public async Task<IActionResult> GetPaged([FromQuery] PaginationRequest request, [FromQuery] string? status = null)
         {
-            var result = await _cardOrderService.GetPagedAsync(request);
+            var result = await _cardOrderService.GetPagedAsync(request, status);
             return Ok(result);
         }
 
@@ -24,7 +34,6 @@ namespace NFC.Platform.API.Controllers
         /// Returns a single card order with its items.
         /// </summary>
         [HttpGet("{id:guid}")]
-        [Authorize(Policy = AppPolicies.CompanyAdminOnly)]
         public async Task<IActionResult> GetById([FromRoute] Guid id)
         {
             var result = await _cardOrderService.GetByIdAsync(id);
@@ -38,7 +47,6 @@ namespace NFC.Platform.API.Controllers
         /// Creates a new card order for the authenticated tenant user.
         /// </summary>
         [HttpPost]
-        [Authorize(Policy = AppPolicies.CompanyAdminOnly)]
         public async Task<IActionResult> Create([FromBody] CreateCardOrderRequest request)
         {
             var result = await _cardOrderService.CreateAsync(request);
@@ -49,24 +57,23 @@ namespace NFC.Platform.API.Controllers
         }
 
         /// <summary>
-        /// Updates the status of a card order (admin operation).
+        /// Creates a reorder: new order that reuses the design/template from the parent order.
         /// </summary>
-        [HttpPatch("{id:guid}/status")]
-        [Authorize(Policy = AppPolicies.AdminOnly)]
-        public async Task<IActionResult> UpdateStatus([FromRoute] Guid id, [FromBody] UpdateCardOrderStatusRequest request)
+        [HttpPost("{id:guid}/reorder")]
+        public async Task<IActionResult> Reorder([FromRoute] Guid id, [FromBody] ReorderRequest request)
         {
-            var result = await _cardOrderService.UpdateStatusAsync(id, request);
+            var result = await _cardOrderService.CreateReorderAsync(id, request);
             if (!result.IsSuccess)
                 return StatusCode(result.StatusCode, result);
 
-            return Ok(result);
+            return StatusCode(result.StatusCode, result);
         }
 
+
         /// <summary>
-        /// Soft-deletes a card order.
+        /// Soft-deletes a card order. Only allowed while Status = PendingReview.
         /// </summary>
         [HttpDelete("{id:guid}")]
-        [Authorize(Policy = AppPolicies.CompanyAdminOnly)]
         public async Task<IActionResult> Delete([FromRoute] Guid id)
         {
             var result = await _cardOrderService.DeleteAsync(id);
@@ -76,14 +83,14 @@ namespace NFC.Platform.API.Controllers
             return Ok(result);
         }
 
+
         /// <summary>
-        /// Assigns printed NFC card activation codes to order items (admin operation).
+        /// Retrieves the Excel ingestion status for a bulk order.
         /// </summary>
-        [HttpPost("{id:guid}/assign-cards")]
-        [Authorize(Policy = AppPolicies.AdminOnly)]
-        public async Task<IActionResult> AssignCards([FromRoute] Guid id, [FromBody] AssignCardsRequest request)
+        [HttpGet("/api/orders/{id:guid}/employees-import-status")]
+        public async Task<IActionResult> GetEmployeesImportStatus([FromRoute] Guid id)
         {
-            var result = await _cardOrderService.AssignCardsAsync(id, request);
+            var result = await _cardOrderService.GetEmployeesImportStatusAsync(id);
             if (!result.IsSuccess)
                 return StatusCode(result.StatusCode, result);
 

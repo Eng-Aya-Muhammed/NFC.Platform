@@ -35,16 +35,16 @@ namespace NFC.Platform.API.Controllers
             return Ok(result);
         }
 
-        [HttpPatch("api/admin/templates/requests/{id:guid}/status")]
-        [Authorize(Policy = AppPolicies.AdminOnly)]
-        public async Task<IActionResult> UpdateRequestStatus([FromRoute] Guid id, [FromBody] TemplateRequestStatus status)
+        [HttpGet("api/custom-design-requests/{id:guid}")]
+        public async Task<IActionResult> GetRequestById([FromRoute] Guid id)
         {
-            var result = await _templateRequestService.UpdateRequestStatusAsync(id, status);
+            var result = await _templateRequestService.GetRequestByIdAsync(id);
             if (!result.IsSuccess)
             {
                 return StatusCode(result.StatusCode, result);
             }
             return Ok(result);
         }
+
     }
 }

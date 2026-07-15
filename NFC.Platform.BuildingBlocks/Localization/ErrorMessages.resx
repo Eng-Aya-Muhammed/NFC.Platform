@@ -112,4 +112,70 @@
   <data name="UploadError" xml:space="preserve">
     <value>An error occurred during upload: {0}</value>
   </data>
+  <data name="FailedToParseExcel" xml:space="preserve">
+    <value>Failed to parse Excel file: {0}</value>
+  </data>
+  <data name="NoValidEmployeeRows" xml:space="preserve">
+    <value>No valid employee rows found in the uploaded file.</value>
+  </data>
+  <data name="CardAlreadyAssigned" xml:space="preserve">
+    <value>Card is already assigned.</value>
+  </data>
+  <data name="CardAlreadyActivated" xml:space="preserve">
+    <value>Card is already activated.</value>
+  </data>
+  <data name="CardDeactivated" xml:space="preserve">
+    <value>Card has been deactivated.</value>
+  </data>
+  <data name="CardNotYetActivated" xml:space="preserve">
+    <value>Card is not yet activated.</value>
+  </data>
+  <data name="RejectionReasonRequired" xml:space="preserve">
+    <value>A rejection reason is required.</value>
+  </data>
+  <data name="OrderCannotBeCancelled" xml:space="preserve">
+    <value>Order cannot be cancelled once processing has started.</value>
+  </data>
+  <data name="EmployeeCountMismatch" xml:space="preserve">
+    <value>EmployeeIds count ({0}) must equal Quantity ({1}).</value>
+  </data>
+  <data name="InvalidStatusTransition" xml:space="preserve">
+    <value>Cannot transition order from {0} to {1}.</value>
+  </data>
+  <data name="UserNotAuthenticated" xml:space="preserve">
+    <value>User is not authenticated.</value>
+  </data>
+  <data name="ProfileNotFound" xml:space="preserve">
+    <value>Profile not found.</value>
+  </data>
+  <data name="CustomCategory" xml:space="preserve">
+    <value>Custom</value>
+  </data>
+  <data name="CannotMarkEncoded" xml:space="preserve">
+    <value>Cannot mark as encoded from status '{0}'.</value>
+  </data>
+  <data name="CardActivatedSuccessfully" xml:space="preserve">
+    <value>Card activated successfully.</value>
+  </data>
+  <data name="DefaultCardOrderName" xml:space="preserve">
+    <value>Card Order - {0}</value>
+  </data>
+  <data name="DefaultBulkOrderName" xml:space="preserve">
+    <value>Bulk Order - {0}</value>
+  </data>
+  <data name="CompanyNotFound" xml:space="preserve">
+    <value>Company not found for this tenant.</value>
+  </data>
+  <data name="TrackingNumberRequired" xml:space="preserve">
+    <value>Tracking number is required for courier delivery.</value>
+  </data>
+  <data name="ImportCompleted" xml:space="preserve">
+    <value>Completed</value>
+  </data>
+  <data name="SubscriptionExpiredOrMissing" xml:space="preserve">
+    <value>No active subscription found. Please subscribe to continue.</value>
+  </data>
+  <data name="MaxEmployeesLimitReached" xml:space="preserve">
+    <value>Employee limit reached for your current subscription plan.</value>
+  </data>
 </root>

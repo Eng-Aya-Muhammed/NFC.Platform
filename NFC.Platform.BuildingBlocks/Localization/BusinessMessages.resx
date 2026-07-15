@@ -100,4 +100,7 @@
   <data name="NoActiveSubscriptionToRenew" xml:space="preserve">
     <value>No active subscription found to renew. Please subscribe first.</value>
   </data>
+  <data name="CustomCategory" xml:space="preserve">
+    <value>Custom</value>
+  </data>
 </root>

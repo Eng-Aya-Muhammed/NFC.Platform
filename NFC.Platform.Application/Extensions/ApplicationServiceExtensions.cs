@@ -21,6 +21,9 @@ namespace NFC.Platform.Application.Extensions
             services.AddScoped<ITemplateRequestService, TemplateRequestService>();
             services.AddScoped<IProfileMetricService, ProfileMetricService>();
             services.AddScoped<ISubscriptionService, SubscriptionService>();
+            services.AddScoped<IAdminService, AdminService>();
+            services.AddScoped<IProfileService, ProfileService>();
+            services.AddScoped<IAnalyticsService, AnalyticsService>();
 
             return services;
         }

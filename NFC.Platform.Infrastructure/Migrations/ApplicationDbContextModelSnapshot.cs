@@ -45,14 +45,22 @@ namespace NFC.Platform.Infrastructure.Migrations
                     b.Property<Guid?>("CreatedBy")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
+                    b.Property<string>("ProfileUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("UniqueCode")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -102,6 +110,9 @@ namespace NFC.Platform.Infrastructure.Migrations
                     b.Property<Guid?>("CreatedBy")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<int>("DeliveryMethod")
+                        .HasColumnType("int");
+
                     b.Property<string>("ExcelDataUrl")
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
@@ -117,11 +128,17 @@ namespace NFC.Platform.Infrastructure.Migrations
                         .HasMaxLength(2000)
                         .HasColumnType("nvarchar(2000)");
 
+                    b.Property<Guid?>("ParentOrderId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<Guid?>("PrintTemplateId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<int>("Quantity")
                         .HasColumnType("int");
+
+                    b.Property<string>("RejectionReason")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
@@ -131,6 +148,10 @@ namespace NFC.Platform.Infrastructure.Migrations
 
                     b.Property<decimal>("TotalPrice")
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("TrackingNumber")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -142,6 +163,8 @@ namespace NFC.Platform.Infrastructure.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ParentOrderId");
 
                     b.HasIndex("PrintTemplateId");
 
@@ -231,6 +254,9 @@ namespace NFC.Platform.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("BackPreviewUrl")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Category")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -242,10 +268,16 @@ namespace NFC.Platform.Infrastructure.Migrations
                     b.Property<Guid?>("CreatedBy")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int>("DisplayOrder")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
                         .HasDefaultValue(0);
+
+                    b.Property<string>("FrontPreviewUrl")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
@@ -637,6 +669,9 @@ namespace NFC.Platform.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
+                    b.Property<Guid?>("LinkedOrderId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("LogoUrl")
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
@@ -644,6 +679,9 @@ namespace NFC.Platform.Infrastructure.Migrations
                     b.Property<string>("Notes")
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
+
+                    b.Property<Guid?>("ProducedTemplateId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("ReferenceImageUrl")
                         .HasMaxLength(1000)
@@ -670,6 +708,10 @@ namespace NFC.Platform.Infrastructure.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("LinkedOrderId");
+
+                    b.HasIndex("ProducedTemplateId");
 
                     b.HasIndex("RequestedByUserId");
 
@@ -981,6 +1023,10 @@ namespace NFC.Platform.Infrastructure.Migrations
 
             modelBuilder.Entity("NFC.Platform.Domain.Entities.CardOrder", b =>
                 {
+                    b.HasOne("NFC.Platform.Domain.Entities.CardOrder", "ParentOrder")
+                        .WithMany()
+                        .HasForeignKey("ParentOrderId");
+
                     b.HasOne("NFC.Platform.Domain.Entities.CardTemplate", "PrintTemplate")
                         .WithMany()
                         .HasForeignKey("PrintTemplateId")
@@ -997,6 +1043,8 @@ namespace NFC.Platform.Infrastructure.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("ParentOrder");
 
                     b.Navigation("PrintTemplate");
 
@@ -1144,6 +1192,14 @@ namespace NFC.Platform.Infrastructure.Migrations
 
             modelBuilder.Entity("NFC.Platform.Domain.Entities.TemplateRequest", b =>
                 {
+                    b.HasOne("NFC.Platform.Domain.Entities.CardOrder", "LinkedOrder")
+                        .WithMany()
+                        .HasForeignKey("LinkedOrderId");
+
+                    b.HasOne("NFC.Platform.Domain.Entities.CardTemplate", "ProducedTemplate")
+                        .WithMany()
+                        .HasForeignKey("ProducedTemplateId");
+
                     b.HasOne("NFC.Platform.Domain.Entities.User", "RequestedByUser")
                         .WithMany()
                         .HasForeignKey("RequestedByUserId")
@@ -1155,6 +1211,10 @@ namespace NFC.Platform.Infrastructure.Migrations
                         .HasForeignKey("TenantId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("LinkedOrder");
+
+                    b.Navigation("ProducedTemplate");
 
                     b.Navigation("RequestedByUser");
 

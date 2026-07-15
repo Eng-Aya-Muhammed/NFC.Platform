@@ -34,9 +34,9 @@ namespace NFC.Platform.BuildingBlocks.Extensions
                         .Select(e => e.ErrorMessage)
                         .ToList();
 
-                    var result = ServiceResult.Fail(errors, 400);
+                    var result = ServiceResult.Fail(errors, 422);
 
-                    return new BadRequestObjectResult(result);
+                    return new UnprocessableEntityObjectResult(result);
                 };
             });
 

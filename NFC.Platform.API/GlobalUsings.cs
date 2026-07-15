@@ -1,3 +1,7 @@
+global using System;
+global using System.Threading.Tasks;
+global using NFC.Platform.Application.DTOs;
+global using NFC.Platform.Application.DTOs.Admin;
 global using Microsoft.AspNetCore.Authorization;
 global using Microsoft.AspNetCore.Mvc;
 global using NFC.Platform.Application.DTOs.Auth;

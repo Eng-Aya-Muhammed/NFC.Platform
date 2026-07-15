@@ -12,8 +12,5 @@ namespace NFC.Platform.Application.Interfaces.Services
         Task<ServiceResult<EmployeeDetailsDto>> CreateEmployeeAsync(CreateEmployeeRequest request);
         Task<ServiceResult<EmployeeDetailsDto>> UpdateEmployeeJobDetailsAsync(Guid id, UpdateEmployeeRequest request);
         Task<ServiceResult> SoftDeleteEmployeeAsync(Guid id);
-        
-        Task<ServiceResult<EmployeeDetailsDto>> GetMyProfileAsync(Guid userId);
-        Task<ServiceResult<EmployeeDetailsDto>> UpdateMyProfileAsync(Guid userId, UpdateMyProfileRequest request);
     }
 }

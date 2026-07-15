@@ -17,5 +17,18 @@ namespace NFC.Platform.Domain.Entities
         public string? ReferenceImageUrl { get; set; }
         public string? Notes { get; set; }
         public TemplateRequestStatus Status { get; set; } = TemplateRequestStatus.Pending;
+
+        /// <summary>
+        /// Filled when the design team delivers: the template produced for this request.
+        /// </summary>
+        public Guid? ProducedTemplateId { get; set; }
+        public CardTemplate? ProducedTemplate { get; set; }
+
+        /// <summary>
+        /// The card order created automatically when this request is submitted,
+        /// so the user can track it from My Orders from day one.
+        /// </summary>
+        public Guid? LinkedOrderId { get; set; }
+        public CardOrder? LinkedOrder { get; set; }
     }
 }

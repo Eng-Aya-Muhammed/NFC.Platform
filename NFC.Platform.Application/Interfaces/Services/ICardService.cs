@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using NFC.Platform.Application.DTOs;
 using NFC.Platform.BuildingBlocks.Results;
@@ -10,39 +11,40 @@ namespace NFC.Platform.Application.Interfaces.Services
     /// </summary>
     public interface ICardService
     {
-        /// <summary>
-        /// Retrieves a Card by its identifier.
-        /// </summary>
-        /// <param name="id">The unique identifier of the Card.</param>
-        /// <returns>A service result wrapping the mapped CardDto if found, otherwise an error result.</returns>
         Task<ServiceResult<CardDto>> GetByIdAsync(Guid id);
 
-        /// <summary>
-        /// Retrieves a paged list of Cards based on the request settings.
-        /// </summary>
-        /// <param name="request">The pagination configuration request.</param>
-        /// <returns>A service result wrapping a paged result of CardDtos.</returns>
         Task<ServiceResult<PagedResult<CardDto>>> GetPagedCardsAsync(PaginationRequest request);
 
-        /// <summary>
-        /// Creates and registers a new Card in the system.
-        /// </summary>
-        /// <param name="request">The card details payload.</param>
-        /// <returns>A service result wrapping the created CardDto.</returns>
         Task<ServiceResult<CardDto>> CreateCardAsync(CreateCardRequest request);
 
-        /// <summary>
-        /// Activates a Card in the system.
-        /// </summary>
-        /// <param name="request">The activation details payload.</param>
-        /// <returns>A service result representing the status of the activation operation.</returns>
         Task<ServiceResult> ActivateCardAsync(ActivateCardRequest request);
 
         /// <summary>
-        /// Soft deletes a Card from the system by its identifier.
+        /// Marks a single card as Encoded after the NFC chip has been physically written.
+        /// If all cards in the linked order are now encoded, auto-transitions order to ReadyForDelivery.
         /// </summary>
-        /// <param name="id">The unique identifier of the Card to delete.</param>
-        /// <returns>A service result representing the status of the delete operation.</returns>
+        Task<ServiceResult> MarkCardEncodedAsync(Guid cardId);
+
+        /// <summary>
+        /// Admin-explicit card activation (manual policy).
+        /// </summary>
+        Task<ServiceResult> ActivateCardByIdAsync(Guid cardId);
+
+        /// <summary>
+        /// Bulk-activates all cards belonging to an order (delivery time activation).
+        /// </summary>
+        Task<ServiceResult> ActivateAllCardsForOrderAsync(Guid orderId);
+
+        /// <summary>
+        /// Deactivates a card (lost/revoked). Public profile link stops resolving.
+        /// </summary>
+        Task<ServiceResult> DeactivateCardAsync(Guid cardId);
+
+        /// <summary>
+        /// Returns cards for a given order filtered by status — used by the NFC encoding tool.
+        /// </summary>
+        Task<ServiceResult<List<CardDto>>> GetCardsForEncodingAsync(Guid orderId, string? statusFilter);
+
         Task<ServiceResult> DeleteCardAsync(Guid id);
     }
 }

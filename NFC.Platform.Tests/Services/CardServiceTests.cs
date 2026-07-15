@@ -187,9 +187,10 @@ namespace NFC.Platform.Tests.Services
             _currentTenant.UserId.Returns(Guid.NewGuid());
             _currentTenant.TenantId.Returns(Guid.NewGuid());
 
-            var card = new Card { ActivationCode = "ACTIVE", IsActive = true, UserProfileId = Guid.NewGuid() };
+            var card = new Card { ActivationCode = "ACTIVE", Status = CardStatus.Active, UserProfileId = Guid.NewGuid() };
             _cardRepo.FindAsync(Arg.Any<Expression<Func<Card, bool>>>())
                 .Returns(new List<Card> { card });
+            _messageService.Get("CardAlreadyActivated").Returns("Card already activated");
 
             // Act
             var result = await _sut.ActivateCardAsync(new ActivateCardRequest { ActivationCode = "ACTIVE" });
@@ -207,7 +208,7 @@ namespace NFC.Platform.Tests.Services
             _currentTenant.UserId.Returns(Guid.NewGuid());
             _currentTenant.TenantId.Returns(Guid.NewGuid());
 
-            var card = new Card { ActivationCode = "LINKED", IsActive = false, UserProfileId = Guid.NewGuid() };
+            var card = new Card { ActivationCode = "LINKED", Status = CardStatus.PendingGeneration, UserProfileId = Guid.NewGuid() };
             _cardRepo.FindAsync(Arg.Any<Expression<Func<Card, bool>>>())
                 .Returns(new List<Card> { card });
 
@@ -227,7 +228,7 @@ namespace NFC.Platform.Tests.Services
             _currentTenant.UserId.Returns(userId);
             _currentTenant.TenantId.Returns(Guid.NewGuid());
 
-            var card = new Card { ActivationCode = "VALID", IsActive = false, UserProfileId = null };
+            var card = new Card { ActivationCode = "VALID", Status = CardStatus.PendingGeneration, UserProfileId = null };
             _cardRepo.FindAsync(Arg.Any<Expression<Func<Card, bool>>>())
                 .Returns(new List<Card> { card });
 
@@ -254,7 +255,7 @@ namespace NFC.Platform.Tests.Services
             _currentTenant.UserId.Returns(userId);
             _currentTenant.TenantId.Returns(Guid.NewGuid());
 
-            var card = new Card { ActivationCode = "VALID", IsActive = false, UserProfileId = null };
+            var card = new Card { ActivationCode = "VALID", Status = CardStatus.PendingGeneration, UserProfileId = null };
             _cardRepo.FindAsync(Arg.Any<Expression<Func<Card, bool>>>())
                 .Returns(new List<Card> { card });
 
@@ -286,7 +287,7 @@ namespace NFC.Platform.Tests.Services
             _currentTenant.UserId.Returns(userId);
             _currentTenant.TenantId.Returns(Guid.NewGuid());
 
-            var card = new Card { ActivationCode = "VALID_CODE", IsActive = false, UserProfileId = null };
+            var card = new Card { ActivationCode = "VALID_CODE", Status = CardStatus.PendingGeneration, UserProfileId = null };
             var user = new User { Id = userId, Username = "testuser" };
             var orderItem = new CardOrderItem { ActivationCode = "VALID_CODE", LinkedCardId = null };
 

@@ -1,20 +1,5 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using AutoMapper;
-using Microsoft.EntityFrameworkCore;
-using NFC.Platform.Application.DTOs;
-using NFC.Platform.Application.Interfaces.Repositories;
-using NFC.Platform.Application.Interfaces.Services;
-using NFC.Platform.BuildingBlocks.Common.Helpers;
-using NFC.Platform.BuildingBlocks.Localization;
-using NFC.Platform.BuildingBlocks.Results;
-using NFC.Platform.Domain.Entities;
-using NFC.Platform.Domain.Enums;
+namespace NFC.Platform.Application.Services;
 
-namespace NFC.Platform.Application.Services
-{
     public class TemplateRequestService(
         IUnitOfWork unitOfWork,
         IMapper mapper,
@@ -65,10 +50,12 @@ namespace NFC.Platform.Application.Services
             return ServiceResult<IReadOnlyList<TemplateRequestDto>>.Success(dtos);
         }
 
-        public async Task<ServiceResult<TemplateRequestDto>> UpdateRequestStatusAsync(Guid id, TemplateRequestStatus status)
+
+        public async Task<ServiceResult<TemplateRequestDto>> GetRequestByIdAsync(Guid id)
         {
             var request = await _unitOfWork.Repository<TemplateRequest>()
                 .GetQueryable()
+                .AsNoTracking()
                 .Include(r => r.RequestedByUser)
                 .FirstOrDefaultAsync(r => r.Id == id);
 
@@ -77,11 +64,7 @@ namespace NFC.Platform.Application.Services
                 return ServiceResult<TemplateRequestDto>.NotFound(_messageService.Get("RecordNotFound") ?? "Template request not found.");
             }
 
-            request.Status = status;
-            await _unitOfWork.SaveChangesAsync();
-
             var dto = _mapper.Map<TemplateRequestDto>(request);
-            return ServiceResult<TemplateRequestDto>.Success(dto, _messageService.Get("RecordUpdated") ?? "Request status updated successfully.");
+            return ServiceResult<TemplateRequestDto>.Success(dto);
         }
     }
-}

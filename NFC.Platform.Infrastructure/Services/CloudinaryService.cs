@@ -1,10 +1,12 @@
 using CloudinaryDotNet;
 using CloudinaryDotNet.Actions;
+using NFC.Platform.Application.DTOs.Upload;
 
 namespace NFC.Platform.Infrastructure.Services;
 
 /// <summary>
 /// Infrastructure service implementation for Cloudinary file uploads.
+/// Returns both SecureUrl and PublicId so callers can later delete or replace assets.
 /// </summary>
 public class CloudinaryService : IStorageService
 {
@@ -13,7 +15,7 @@ public class CloudinaryService : IStorageService
     public CloudinaryService(IOptions<CloudinarySettings> config)
     {
         ArgumentNullException.ThrowIfNull(config);
-        
+
         var settings = config.Value;
         if (string.IsNullOrWhiteSpace(settings.CloudName) ||
             string.IsNullOrWhiteSpace(settings.ApiKey) ||
@@ -26,12 +28,10 @@ public class CloudinaryService : IStorageService
         _cloudinary = new Cloudinary(account);
     }
 
-    public async Task<string> UploadImageAsync(IFormFile file, string folderName)
+    public async Task<UploadResultDto> UploadImageAsync(IFormFile file, string folderName)
     {
         if (file == null || file.Length == 0)
-        {
-            return string.Empty;
-        }
+            return new UploadResultDto();
 
         using var stream = file.OpenReadStream();
         var uploadParams = new ImageUploadParams
@@ -44,19 +44,22 @@ public class CloudinaryService : IStorageService
         var uploadResult = await _cloudinary.UploadAsync(uploadParams);
 
         if (uploadResult.Error != null)
-        {
             throw new Exception($"Cloudinary Image Upload failed: {uploadResult.Error.Message}");
-        }
 
-        return uploadResult.SecureUrl?.ToString() ?? string.Empty;
+        return new UploadResultDto
+        {
+            SecureUrl = uploadResult.SecureUrl?.ToString() ?? string.Empty,
+            PublicId = uploadResult.PublicId ?? string.Empty,
+            ResourceType = "image",
+            Format = uploadResult.Format ?? string.Empty,
+            Bytes = uploadResult.Bytes
+        };
     }
 
-    public async Task<string> UploadRawFileAsync(IFormFile file, string folderName)
+    public async Task<UploadResultDto> UploadRawFileAsync(IFormFile file, string folderName)
     {
         if (file == null || file.Length == 0)
-        {
-            return string.Empty;
-        }
+            return new UploadResultDto();
 
         using var stream = file.OpenReadStream();
         var uploadParams = new RawUploadParams
@@ -68,36 +71,44 @@ public class CloudinaryService : IStorageService
         var uploadResult = await _cloudinary.UploadAsync(uploadParams);
 
         if (uploadResult.Error != null)
-        {
             throw new Exception($"Cloudinary Raw File Upload failed: {uploadResult.Error.Message}");
-        }
 
-        return uploadResult.SecureUrl?.ToString() ?? string.Empty;
+        return new UploadResultDto
+        {
+            SecureUrl = uploadResult.SecureUrl?.ToString() ?? string.Empty,
+            PublicId = uploadResult.PublicId ?? string.Empty,
+            ResourceType = "raw",
+            Format = uploadResult.Format ?? string.Empty,
+            Bytes = uploadResult.Bytes
+        };
+    }
+
+    public async Task<bool> DeleteFileByPublicIdAsync(string publicId)
+    {
+        if (string.IsNullOrWhiteSpace(publicId))
+            return false;
+
+        try
+        {
+            var deletionResult = await _cloudinary.DestroyAsync(new DeletionParams(publicId));
+            return deletionResult.Result == "ok";
+        }
+        catch { return false; }
     }
 
     public async Task<bool> DeleteFileAsync(string fileUrl)
     {
         if (string.IsNullOrWhiteSpace(fileUrl))
-        {
             return false;
-        }
 
         try
         {
             var (publicId, resourceType) = ParseCloudinaryUrl(fileUrl);
-            var deletionParams = new DeletionParams(publicId)
-            {
-                ResourceType = resourceType
-            };
-
+            var deletionParams = new DeletionParams(publicId) { ResourceType = resourceType };
             var deletionResult = await _cloudinary.DestroyAsync(deletionParams);
             return deletionResult.Result == "ok";
         }
-        catch
-        {
-            // Log deletion failure or return false
-            return false;
-        }
+        catch { return false; }
     }
 
     /// <summary>
@@ -119,51 +130,34 @@ public class CloudinaryService : IStorageService
         }
 
         if (uploadIndex == -1 || uploadIndex >= segments.Length - 1)
-        {
             throw new ArgumentException("Invalid Cloudinary URL format.");
-        }
 
-        // Determine resource type from the segment preceding "upload" (e.g. image, raw, video)
         string typeStr = segments[uploadIndex - 1].Trim('/');
         var resourceType = ResourceType.Image;
         if (typeStr.Equals("raw", StringComparison.OrdinalIgnoreCase))
-        {
             resourceType = ResourceType.Raw;
-        }
         else if (typeStr.Equals("video", StringComparison.OrdinalIgnoreCase))
-        {
             resourceType = ResourceType.Video;
-        }
 
-        // Identify starting segment of the public ID path
         int startIndex = uploadIndex + 1;
         if (startIndex < segments.Length)
         {
             string nextSeg = segments[startIndex].Trim('/');
-            // Skip the version segment (e.g., "v1571218039")
             if (nextSeg.StartsWith('v') && long.TryParse(nextSeg.AsSpan(1), out _))
-            {
                 startIndex++;
-            }
         }
 
-        // Join the remaining segments to form the full folder path and public ID
         var remainingSegments = new List<string>();
         for (int i = startIndex; i < segments.Length; i++)
-        {
             remainingSegments.Add(Uri.UnescapeDataString(segments[i].Trim('/')));
-        }
 
         string publicIdWithPath = string.Join("/", remainingSegments);
 
-        // Images/videos strip the file extension, whereas raw resources retain it in Cloudinary
         if (resourceType != ResourceType.Raw)
         {
             int lastDotIndex = publicIdWithPath.LastIndexOf('.');
             if (lastDotIndex != -1)
-            {
                 publicIdWithPath = publicIdWithPath[..lastDotIndex];
-            }
         }
 
         return (publicIdWithPath, resourceType);

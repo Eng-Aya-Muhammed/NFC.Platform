@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using NFC.Platform.API.Controllers;
+using NFC.Platform.Application.DTOs.Upload;
 
 namespace NFC.Platform.Tests.Controllers
 {
@@ -91,7 +92,8 @@ namespace NFC.Platform.Tests.Controllers
             file.FileName.Returns("photo.jpg");
             var expectedUrl = "https://res.cloudinary.com/demo/image/upload/photo.jpg";
 
-            _storageService.UploadImageAsync(file, Arg.Any<string>()).Returns(expectedUrl);
+            _storageService.UploadImageAsync(file, Arg.Any<string>())
+                .Returns(Task.FromResult(new UploadResultDto { SecureUrl = expectedUrl }));
 
             // Act
             var result = await _sut.UploadImage(file, "profile-pics") as OkObjectResult;
@@ -101,9 +103,9 @@ namespace NFC.Platform.Tests.Controllers
             Assert.Equal(200, result.StatusCode);
             
             // Check that the returned value contains the Url
-            var value = result.Value;
-            var urlProp = value?.GetType().GetProperty("Url")?.GetValue(value, null) as string;
-            Assert.Equal(expectedUrl, urlProp);
+            var value = result.Value as UploadResultDto;
+            Assert.NotNull(value);
+            Assert.Equal(expectedUrl, value.SecureUrl);
         }
 
         [Fact]
@@ -144,7 +146,8 @@ namespace NFC.Platform.Tests.Controllers
             file.FileName.Returns("employees.xlsx");
             var expectedUrl = "https://res.cloudinary.com/demo/raw/upload/employees.xlsx";
 
-            _storageService.UploadRawFileAsync(file, Arg.Any<string>()).Returns(expectedUrl);
+            _storageService.UploadRawFileAsync(file, Arg.Any<string>())
+                .Returns(Task.FromResult(new UploadResultDto { SecureUrl = expectedUrl }));
 
             // Act
             var result = await _sut.UploadExcel(file) as OkObjectResult;
@@ -153,9 +156,9 @@ namespace NFC.Platform.Tests.Controllers
             Assert.NotNull(result);
             Assert.Equal(200, result.StatusCode);
             
-            var value = result.Value;
-            var urlProp = value?.GetType().GetProperty("Url")?.GetValue(value, null) as string;
-            Assert.Equal(expectedUrl, urlProp);
+            var value = result.Value as UploadResultDto;
+            Assert.NotNull(value);
+            Assert.Equal(expectedUrl, value.SecureUrl);
         }
 
         [Fact]
@@ -167,7 +170,8 @@ namespace NFC.Platform.Tests.Controllers
             file.FileName.Returns("PHOTO.PNG");
             var expectedUrl = "https://res.cloudinary.com/demo/image/upload/photo.png";
 
-            _storageService.UploadImageAsync(file, Arg.Any<string>()).Returns(expectedUrl);
+            _storageService.UploadImageAsync(file, Arg.Any<string>())
+                .Returns(Task.FromResult(new UploadResultDto { SecureUrl = expectedUrl }));
 
             // Act
             var result = await _sut.UploadImage(file) as OkObjectResult;
@@ -176,9 +180,9 @@ namespace NFC.Platform.Tests.Controllers
             Assert.NotNull(result);
             Assert.Equal(200, result.StatusCode);
             
-            var value = result.Value;
-            var urlProp = value?.GetType().GetProperty("Url")?.GetValue(value, null) as string;
-            Assert.Equal(expectedUrl, urlProp);
+            var value = result.Value as UploadResultDto;
+            Assert.NotNull(value);
+            Assert.Equal(expectedUrl, value.SecureUrl);
         }
 
         [Fact]
@@ -190,7 +194,8 @@ namespace NFC.Platform.Tests.Controllers
             file.FileName.Returns("EMPLOYEES.XLSX");
             var expectedUrl = "https://res.cloudinary.com/demo/raw/upload/employees.xlsx";
 
-            _storageService.UploadRawFileAsync(file, Arg.Any<string>()).Returns(expectedUrl);
+            _storageService.UploadRawFileAsync(file, Arg.Any<string>())
+                .Returns(Task.FromResult(new UploadResultDto { SecureUrl = expectedUrl }));
 
             // Act
             var result = await _sut.UploadExcel(file) as OkObjectResult;
@@ -199,9 +204,9 @@ namespace NFC.Platform.Tests.Controllers
             Assert.NotNull(result);
             Assert.Equal(200, result.StatusCode);
             
-            var value = result.Value;
-            var urlProp = value?.GetType().GetProperty("Url")?.GetValue(value, null) as string;
-            Assert.Equal(expectedUrl, urlProp);
+            var value = result.Value as UploadResultDto;
+            Assert.NotNull(value);
+            Assert.Equal(expectedUrl, value.SecureUrl);
         }
 
         [Fact]
@@ -213,7 +218,8 @@ namespace NFC.Platform.Tests.Controllers
             file.FileName.Returns("photo.jpg");
             var exceptionMessage = "Cloud connection timeout.";
 
-            _storageService.UploadImageAsync(file, Arg.Any<string>()).Returns(Task.FromException<string>(new Exception(exceptionMessage)));
+            _storageService.UploadImageAsync(file, Arg.Any<string>())
+                .Returns(Task.FromException<UploadResultDto>(new Exception(exceptionMessage)));
 
             // Act
             var result = await _sut.UploadImage(file) as ObjectResult;
@@ -233,7 +239,8 @@ namespace NFC.Platform.Tests.Controllers
             file.FileName.Returns("employees.xlsx");
             var exceptionMessage = "Cloud connection timeout.";
 
-            _storageService.UploadRawFileAsync(file, Arg.Any<string>()).Returns(Task.FromException<string>(new Exception(exceptionMessage)));
+            _storageService.UploadRawFileAsync(file, Arg.Any<string>())
+                .Returns(Task.FromException<UploadResultDto>(new Exception(exceptionMessage)));
 
             // Act
             var result = await _sut.UploadExcel(file) as ObjectResult;

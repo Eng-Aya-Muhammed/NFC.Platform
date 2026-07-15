@@ -112,4 +112,70 @@
   <data name="UploadError" xml:space="preserve">
     <value>حدث خطأ أثناء الرفع: {0}</value>
   </data>
+  <data name="FailedToParseExcel" xml:space="preserve">
+    <value>فشل في تحليل ملف إكسيل: {0}</value>
+  </data>
+  <data name="NoValidEmployeeRows" xml:space="preserve">
+    <value>لم يتم العثور على صفوف موظفين صالحة في الملف المرفوع.</value>
+  </data>
+  <data name="CardAlreadyAssigned" xml:space="preserve">
+    <value>البطاقة مخصصة بالفعل لمستخدم آخر.</value>
+  </data>
+  <data name="CardAlreadyActivated" xml:space="preserve">
+    <value>البطاقة مفعلة بالفعل.</value>
+  </data>
+  <data name="CardDeactivated" xml:space="preserve">
+    <value>تم تعطيل هذه البطاقة.</value>
+  </data>
+  <data name="CardNotYetActivated" xml:space="preserve">
+    <value>هذه البطاقة لم تفعل بعد.</value>
+  </data>
+  <data name="RejectionReasonRequired" xml:space="preserve">
+    <value>سبب الرفض مطلوب.</value>
+  </data>
+  <data name="OrderCannotBeCancelled" xml:space="preserve">
+    <value>لا يمكن إلغاء الطلب بعد بدء معالجته.</value>
+  </data>
+  <data name="EmployeeCountMismatch" xml:space="preserve">
+    <value>عدد معرفات الموظفين ({0}) يجب أن يتطابق مع الكمية المطلوبة ({1}).</value>
+  </data>
+  <data name="InvalidStatusTransition" xml:space="preserve">
+    <value>لا يمكن نقل الطلب من الحالة {0} إلى الحالة {1}.</value>
+  </data>
+  <data name="UserNotAuthenticated" xml:space="preserve">
+    <value>المستخدم غير مسجل الدخول.</value>
+  </data>
+  <data name="ProfileNotFound" xml:space="preserve">
+    <value>الملف الشخصي غير موجود.</value>
+  </data>
+  <data name="CustomCategory" xml:space="preserve">
+    <value>مخصص</value>
+  </data>
+  <data name="CannotMarkEncoded" xml:space="preserve">
+    <value>لا يمكن تحديد البطاقة كمشفرة من الحالة '{0}'.</value>
+  </data>
+  <data name="CardActivatedSuccessfully" xml:space="preserve">
+    <value>تم تفعيل البطاقة بنجاح.</value>
+  </data>
+  <data name="DefaultCardOrderName" xml:space="preserve">
+    <value>طلب كروت - {0}</value>
+  </data>
+  <data name="DefaultBulkOrderName" xml:space="preserve">
+    <value>طلب جماعي - {0}</value>
+  </data>
+  <data name="CompanyNotFound" xml:space="preserve">
+    <value>الشركة غير موجودة لهذا المستأجر.</value>
+  </data>
+  <data name="TrackingNumberRequired" xml:space="preserve">
+    <value>رقم التتبع مطلوب للتوصيل عبر المندوب.</value>
+  </data>
+  <data name="ImportCompleted" xml:space="preserve">
+    <value>مكتمل</value>
+  </data>
+  <data name="SubscriptionExpiredOrMissing" xml:space="preserve">
+    <value>لا يوجد اشتراك نشط. يرجى الاشتراك للمتابعة.</value>
+  </data>
+  <data name="MaxEmployeesLimitReached" xml:space="preserve">
+    <value>تم الوصول إلى الحد الأقصى للموظفين في باقة اشتراكك الحالية.</value>
+  </data>
 </root>

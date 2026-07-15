@@ -5,6 +5,7 @@ using NFC.Platform.Infrastructure.Interceptors;
 using NFC.Platform.Infrastructure.Repositories;
 using NFC.Platform.Infrastructure.Seeders;
 using NFC.Platform.Infrastructure.Services;
+using NFC.Platform.Application.Interfaces.Services;
 
 namespace NFC.Platform.Infrastructure.Extensions
 {
@@ -35,6 +36,7 @@ namespace NFC.Platform.Infrastructure.Extensions
             // 4. Register Token Service, Current Tenant Service, and Storage Service
             services.AddScoped<ITokenService, TokenService>();
             services.AddScoped<ICurrentTenant, CurrentTenantService>();
+            services.AddScoped<IExcelParser, ExcelParser>();
             
             // Cloudinary Registration
             services.Configure<CloudinarySettings>(configuration.GetSection("CloudinarySettings"));

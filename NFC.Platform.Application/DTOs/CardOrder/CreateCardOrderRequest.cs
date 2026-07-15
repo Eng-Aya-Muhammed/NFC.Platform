@@ -19,6 +19,13 @@ namespace NFC.Platform.Application.DTOs.CardOrder;
 
         public Guid? PrintTemplateId { get; set; }
 
+        /// <summary>
+        /// References a submitted custom-design request whose produced template
+        /// will be used when delivered. Mutually exclusive with PrintTemplateId
+        /// and FrontDesignUrl/BackDesignUrl.
+        /// </summary>
+        public Guid? CustomDesignRequestId { get; set; }
+
         [Required]
         [Range(1, 10000)]
         public int Quantity { get; set; }
@@ -27,6 +34,7 @@ namespace NFC.Platform.Application.DTOs.CardOrder;
         public string? FrontDesignUrl { get; set; }
         public string? BackDesignUrl { get; set; }
         public string? Notes { get; set; }
+        public DeliveryMethod DeliveryMethod { get; set; } = DeliveryMethod.Pickup;
 
         /// <summary>
         /// Optional list of specific employees to order cards for.

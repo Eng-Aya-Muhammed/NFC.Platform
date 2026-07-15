@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Http;
+using NFC.Platform.Application.DTOs.Upload;
 using NFC.Platform.BuildingBlocks.Localization;
 using System;
 using System.IO;
@@ -8,6 +9,7 @@ namespace NFC.Platform.API.Controllers
 {
     /// <summary>
     /// API Controller for handling file and image uploads to Cloudinary.
+    /// Returns both SecureUrl and PublicId for each uploaded file.
     /// </summary>
     [ApiController]
     [Route("api/uploads")]
@@ -20,10 +22,8 @@ namespace NFC.Platform.API.Controllers
 
         /// <summary>
         /// Uploads an image file to Cloudinary.
+        /// Returns both the SecureUrl and PublicId so the client can store both.
         /// </summary>
-        /// <param name="file">The image file to upload.</param>
-        /// <param name="folder">Optional target folder name (defaults to "general").</param>
-        /// <returns>The secure URL of the uploaded image.</returns>
         [HttpPost("image")]
         public async Task<IActionResult> UploadImage([FromForm] IFormFile file, [FromQuery] string folder = "general")
         {
@@ -41,8 +41,8 @@ namespace NFC.Platform.API.Controllers
                 var userId = _currentTenant.UserId?.ToString() ?? "no-user";
                 var folderPath = $"{tenantId}/{userId}/{folder.Trim('/')}";
 
-                var url = await _storageService.UploadImageAsync(file, folderPath);
-                return Ok(new { Url = url });
+                var result = await _storageService.UploadImageAsync(file, folderPath);
+                return Ok(result);
             }
             catch (Exception ex)
             {
@@ -52,9 +52,8 @@ namespace NFC.Platform.API.Controllers
 
         /// <summary>
         /// Uploads an Excel file to Cloudinary.
+        /// Returns both the SecureUrl and PublicId.
         /// </summary>
-        /// <param name="file">The Excel file (.xls, .xlsx) to upload.</param>
-        /// <returns>The secure URL of the uploaded Excel file.</returns>
         [HttpPost("excel")]
         public async Task<IActionResult> UploadExcel([FromForm] IFormFile file)
         {
@@ -72,8 +71,8 @@ namespace NFC.Platform.API.Controllers
                 var userId = _currentTenant.UserId?.ToString() ?? "no-user";
                 var folderPath = $"{tenantId}/{userId}/excel-orders";
 
-                var url = await _storageService.UploadRawFileAsync(file, folderPath);
-                return Ok(new { Url = url });
+                var result = await _storageService.UploadRawFileAsync(file, folderPath);
+                return Ok(result);
             }
             catch (Exception ex)
             {

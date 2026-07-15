@@ -51,7 +51,7 @@ namespace NFC.Platform.Tests.Services
             var result = await service.UploadImageAsync(null!, "pics");
 
             // Assert
-            Assert.Equal(string.Empty, result);
+            Assert.Equal(string.Empty, result.SecureUrl);
         }
 
         [Fact]
@@ -72,7 +72,7 @@ namespace NFC.Platform.Tests.Services
             var result = await service.UploadImageAsync(file, "pics");
 
             // Assert
-            Assert.Equal(string.Empty, result);
+            Assert.Equal(string.Empty, result.SecureUrl);
         }
 
         [Fact]
@@ -91,7 +91,7 @@ namespace NFC.Platform.Tests.Services
             var result = await service.UploadRawFileAsync(null!, "excel");
 
             // Assert
-            Assert.Equal(string.Empty, result);
+            Assert.Equal(string.Empty, result.SecureUrl);
         }
 
         [Fact]
@@ -112,7 +112,7 @@ namespace NFC.Platform.Tests.Services
             var result = await service.UploadRawFileAsync(file, "excel");
 
             // Assert
-            Assert.Equal(string.Empty, result);
+            Assert.Equal(string.Empty, result.SecureUrl);
         }
 
         [Fact]

@@ -1,18 +1,5 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using AutoMapper;
-using Microsoft.EntityFrameworkCore;
-using NFC.Platform.Application.DTOs;
-using NFC.Platform.Application.Interfaces.Repositories;
-using NFC.Platform.Application.Interfaces.Services;
-using NFC.Platform.BuildingBlocks.Localization;
-using NFC.Platform.BuildingBlocks.Results;
-using NFC.Platform.Domain.Entities;
+namespace NFC.Platform.Application.Services;
 
-namespace NFC.Platform.Application.Services
-{
     public class SubscriptionService(
         IUnitOfWork unitOfWork,
         IMapper mapper,
@@ -178,4 +165,3 @@ namespace NFC.Platform.Application.Services
             return ServiceResult<UserSubscriptionDto>.Success(dto, _messageService.Get("RecordUpdated") ?? "Subscription renewed successfully.");
         }
     }
-}

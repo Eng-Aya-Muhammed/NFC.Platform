@@ -100,4 +100,7 @@
   <data name="NoActiveSubscriptionToRenew" xml:space="preserve">
     <value>لا يوجد اشتراك نشط لتجديده. يرجى الاشتراك أولاً.</value>
   </data>
+  <data name="CustomCategory" xml:space="preserve">
+    <value>مخصص</value>
+  </data>
 </root>
