@@ -22,6 +22,8 @@ namespace NFC.Platform.Application.DTOs.CardOrder;
         public string? Notes { get; set; }
         public OrderStatus Status { get; set; }
         public decimal TotalPrice { get; set; }
+        public decimal UnitPrice { get; set; }
+        public string Currency { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; }
         public List<CardOrderItemDto> Items { get; set; } = [];
     }

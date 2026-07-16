@@ -45,6 +45,8 @@ namespace NFC.Platform.Domain.Entities
         public string? RejectionReason { get; set; }
 
         public decimal TotalPrice { get; set; }
+        public decimal UnitPrice { get; set; }
+        public string Currency { get; set; } = "KWD";
 
         public string? TrackingNumber { get; set; }
 

@@ -9,6 +9,8 @@ namespace NFC.Platform.Application.Mapping
 
             CreateMap<CardOrderItem, CardOrderItemDto>();
 
+            CreateMap<CardPricing, CardPricingDto>();
+
             CreateMap<CreateCardOrderRequest, CardOrder>()
                 .ForMember(dest => dest.Status, opt => opt.Ignore())
                 .ForMember(dest => dest.TotalPrice, opt => opt.Ignore())

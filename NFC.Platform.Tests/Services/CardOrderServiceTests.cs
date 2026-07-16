@@ -29,6 +29,7 @@ namespace NFC.Platform.Tests.Services
         private readonly IGenericRepository<Card> _cardRepo;
         private readonly IGenericRepository<CardOrderItem> _orderItemRepo;
         private readonly IGenericRepository<EmployeeImportJob> _jobRepo;
+        private readonly IGenericRepository<CardPricing> _cardPricingRepo;
         private readonly NFC.Platform.Application.Interfaces.Services.IStorageService _storageService;
         private readonly Hangfire.IBackgroundJobClient _backgroundJobClient;
 
@@ -46,11 +47,22 @@ namespace NFC.Platform.Tests.Services
             _cardRepo = Substitute.For<IGenericRepository<Card>>();
             _orderItemRepo = Substitute.For<IGenericRepository<CardOrderItem>>();
             _jobRepo = Substitute.For<IGenericRepository<EmployeeImportJob>>();
+            _cardPricingRepo = Substitute.For<IGenericRepository<CardPricing>>();
 
             _unitOfWork.Repository<CardOrder>().Returns(_orderRepo);
             _unitOfWork.Repository<Card>().Returns(_cardRepo);
             _unitOfWork.Repository<CardOrderItem>().Returns(_orderItemRepo);
             _unitOfWork.Repository<EmployeeImportJob>().Returns(_jobRepo);
+            _unitOfWork.Repository<CardPricing>().Returns(_cardPricingRepo);
+
+            var defaultPricings = new List<CardPricing>
+            {
+                new() { CardType = CardType.Plastic, UnitPrice = 4.5m, Currency = "KWD", IsActive = true, EffectiveFrom = DateTime.UtcNow.AddDays(-10) },
+                new() { CardType = CardType.Wooden, UnitPrice = 6.0m, Currency = "KWD", IsActive = true, EffectiveFrom = DateTime.UtcNow.AddDays(-10) },
+                new() { CardType = CardType.Metal, UnitPrice = 8.5m, Currency = "KWD", IsActive = true, EffectiveFrom = DateTime.UtcNow.AddDays(-10) }
+            };
+            var mockPricingQueryable = defaultPricings.AsQueryable().BuildMock();
+            _cardPricingRepo.GetQueryable().Returns(mockPricingQueryable);
 
             var validator = Substitute.For<FluentValidation.IValidator<CreateCardOrderRequest>>();
             var validationResult = new FluentValidation.Results.ValidationResult();
@@ -659,6 +671,99 @@ namespace NFC.Platform.Tests.Services
                 }
                 catch { }
             }
+        }
+
+        // ── CardPricing Database Tests ────────────────────────────────────────────
+
+        [Fact]
+        public async Task GetOrderPricingAsync_QueriesDatabase_WhenValidCardTypePassed()
+        {
+            // Arrange
+            var pricing = new CardPricing
+            {
+                CardType = CardType.Metal,
+                UnitPrice = 8.5m,
+                Currency = "KWD",
+                IsActive = true,
+                EffectiveFrom = DateTime.UtcNow.AddDays(-1)
+            };
+            var pricingsList = new List<CardPricing> { pricing };
+            var mockQueryable = pricingsList.AsQueryable().BuildMock();
+            _cardPricingRepo.GetQueryable().Returns(mockQueryable);
+
+            // Act
+            var result = await _sut.GetOrderPricingAsync("metal", 5);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(8.5m, result.Data!.UnitPrice);
+            Assert.Equal(42.5m, result.Data!.TotalPrice);
+            Assert.Equal("KWD", result.Data!.Currency);
+        }
+
+        [Fact]
+        public async Task GetOrderPricingAsync_ReturnsFailure_WhenInvalidCardTypePassed()
+        {
+            // Act
+            var result = await _sut.GetOrderPricingAsync("invalid_material", 5);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(400, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task CreateAsync_SavesPricingSnapshotOnOrder()
+        {
+            // Arrange
+            var pricing = new CardPricing
+            {
+                CardType = CardType.Plastic,
+                UnitPrice = 4.5m,
+                Currency = "KWD",
+                IsActive = true,
+                EffectiveFrom = DateTime.UtcNow.AddDays(-1)
+            };
+            var pricingsList = new List<CardPricing> { pricing };
+            var mockQueryable = pricingsList.AsQueryable().BuildMock();
+            _cardPricingRepo.GetQueryable().Returns(mockQueryable);
+
+            _currentTenant.UserId.Returns(Guid.NewGuid());
+
+            var request = new CreateCardOrderRequest
+            {
+                CardType = CardType.Plastic,
+                Quantity = 10,
+                CardName = "Test Plastic Order"
+            };
+
+            var mappedOrder = new CardOrder
+            {
+                CardType = CardType.Plastic,
+                Quantity = 10,
+                CardName = "Test Plastic Order"
+            };
+
+            _mapper.Map<CardOrder>(request).Returns(mappedOrder);
+            _mapper.Map<CardOrderDto>(Arg.Any<CardOrder>()).Returns(new CardOrderDto());
+
+            var savedOrders = new List<CardOrder>();
+            _orderRepo.AddAsync(Arg.Do<CardOrder>(o => savedOrders.Add(o))).Returns(Task.CompletedTask);
+
+            // Set up get queryable for reloading
+            var mockOrderQueryable = savedOrders.AsQueryable().BuildMock();
+            _orderRepo.GetQueryable().Returns(mockOrderQueryable);
+
+            // Act
+            var result = await _sut.CreateAsync(request);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Single(savedOrders);
+            var savedOrder = savedOrders[0];
+            Assert.Equal(4.5m, savedOrder.UnitPrice);
+            Assert.Equal("KWD", savedOrder.Currency);
+            Assert.Equal(45.0m, savedOrder.TotalPrice);
         }
     }
 }

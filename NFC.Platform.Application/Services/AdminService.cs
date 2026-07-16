@@ -363,4 +363,59 @@ namespace NFC.Platform.Application.Services;
 
             return ServiceResult.Success(_messageService.Get("RecordUpdated") ?? "Tenant status updated successfully.");
         }
+
+        public async Task<ServiceResult> UpdateCardPricingAsync(UpdateCardPricingDto dto)
+        {
+            if (dto == null)
+                return ServiceResult.Fail(_messageService.Get("InvalidRequest") ?? "Invalid request payload.", 400);
+
+            var normalizedCurrency = dto.Currency?.Trim().ToUpper();
+            if (string.IsNullOrEmpty(normalizedCurrency) || normalizedCurrency.Length != 3)
+            {
+                return ServiceResult.Fail(_messageService.Get("CurrencyMustBeThreeLetters") ?? "Currency must be exactly 3 alphabetic characters.", 400);
+            }
+
+            await _unitOfWork.BeginTransactionAsync();
+            try
+            {
+                var repo = _unitOfWork.Repository<CardPricing>();
+
+                var activePricing = await repo.GetQueryable()
+                    .FirstOrDefaultAsync(p => p.CardType == dto.CardType && p.IsActive);
+
+                if (activePricing != null)
+                {
+                    if (activePricing.UnitPrice == dto.UnitPrice && activePricing.Currency == normalizedCurrency)
+                    {
+                        await _unitOfWork.CommitTransactionAsync();
+                        return ServiceResult.Success(_messageService.Get("RecordUpdated") ?? "Pricing updated successfully.");
+                    }
+
+                    activePricing.EffectiveTo = DateTime.UtcNow;
+                    activePricing.IsActive = false;
+                }
+
+                var newPricing = new CardPricing
+                {
+                    CardType = dto.CardType,
+                    UnitPrice = dto.UnitPrice,
+                    Currency = normalizedCurrency,
+                    EffectiveFrom = DateTime.UtcNow,
+                    EffectiveTo = null,
+                    IsActive = true
+                };
+
+                await repo.AddAsync(newPricing);
+                await _unitOfWork.SaveChangesAsync();
+
+                await _unitOfWork.CommitTransactionAsync();
+            }
+            catch
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                throw;
+            }
+
+            return ServiceResult.Success(_messageService.Get("RecordUpdated") ?? "Pricing updated successfully.");
+        }
     }

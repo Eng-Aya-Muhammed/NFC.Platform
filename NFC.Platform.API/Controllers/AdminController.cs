@@ -134,6 +134,20 @@ namespace NFC.Platform.API.Controllers
         }
 
         /// <summary>
+        /// Updates global pricing structure for a card material.
+        /// </summary>
+        [HttpPost("pricing")]
+        public async Task<IActionResult> UpdateCardPricing([FromBody] UpdateCardPricingDto dto)
+        {
+            var result = await _adminService.UpdateCardPricingAsync(dto);
+            if (!result.IsSuccess)
+            {
+                return StatusCode(result.StatusCode, result);
+            }
+            return Ok(result);
+        }
+
+        /// <summary>
         /// Retrieves cards for a given order, optionally filtered by status (e.g. unassigned_code, encoded).
         /// Used by the encoding tool integration.
         /// </summary>

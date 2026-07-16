@@ -24,6 +24,17 @@ namespace NFC.Platform.API.Controllers
         }
 
         /// <summary>
+        /// Returns all currently active card pricing configurations.
+        /// </summary>
+        [HttpGet("pricing-catalog")]
+        [HttpGet("/api/pricing/config")]
+        public async Task<IActionResult> GetActivePricingCatalog()
+        {
+            var result = await _cardOrderService.GetActivePricingCatalogAsync();
+            return Ok(result);
+        }
+
+        /// <summary>
         /// Returns a paged list of card orders for the current tenant.
         /// Optional query param: status (e.g. PendingReview, InPrinting).
         /// </summary>

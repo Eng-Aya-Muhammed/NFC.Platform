@@ -29,6 +29,7 @@ namespace NFC.Platform.Tests.Services
         private readonly IGenericRepository<CardTemplate> _cardTemplateRepo;
         private readonly IGenericRepository<Tenant> _tenantRepo;
         private readonly IGenericRepository<UserSubscription> _subscriptionRepo;
+        private readonly IGenericRepository<CardPricing> _cardPricingRepo;
 
         private readonly AdminService _sut;
 
@@ -43,12 +44,14 @@ namespace NFC.Platform.Tests.Services
             _cardTemplateRepo = Substitute.For<IGenericRepository<CardTemplate>>();
             _tenantRepo = Substitute.For<IGenericRepository<Tenant>>();
             _subscriptionRepo = Substitute.For<IGenericRepository<UserSubscription>>();
+            _cardPricingRepo = Substitute.For<IGenericRepository<CardPricing>>();
 
             _unitOfWork.Repository<CardOrder>().Returns(_orderRepo);
             _unitOfWork.Repository<TemplateRequest>().Returns(_templateRequestRepo);
             _unitOfWork.Repository<CardTemplate>().Returns(_cardTemplateRepo);
             _unitOfWork.Repository<Tenant>().Returns(_tenantRepo);
             _unitOfWork.Repository<UserSubscription>().Returns(_subscriptionRepo);
+            _unitOfWork.Repository<CardPricing>().Returns(_cardPricingRepo);
 
             _sut = new AdminService(_unitOfWork, _mapper, _messageService);
         }
@@ -361,6 +364,74 @@ namespace NFC.Platform.Tests.Services
             Assert.True(result.IsSuccess);
             Assert.False(tenant.IsActive);
             await _unitOfWork.Received(1).SaveChangesAsync();
+        }
+
+        // ── UpdateCardPricingAsync ────────────────────────────────────────────────
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData("KW")]
+        [InlineData("KWD1")]
+        public async Task UpdateCardPricingAsync_ReturnsFailure_WhenCurrencyIsInvalid(string invalidCurrency)
+        {
+            // Arrange
+            var dto = new UpdateCardPricingDto
+            {
+                CardType = CardType.Plastic,
+                UnitPrice = 5.0m,
+                Currency = invalidCurrency
+            };
+
+            // Act
+            var result = await _sut.UpdateCardPricingAsync(dto);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(400, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task UpdateCardPricingAsync_ClosesOutOldAndInsertsNewPricingRecord()
+        {
+            // Arrange
+            var existingPricing = new CardPricing
+            {
+                Id = Guid.NewGuid(),
+                CardType = CardType.Plastic,
+                UnitPrice = 4.5m,
+                Currency = "KWD",
+                IsActive = true,
+                EffectiveFrom = DateTime.UtcNow.AddDays(-10)
+            };
+
+            var pricingsList = new List<CardPricing> { existingPricing };
+            var mockQueryable = pricingsList.AsQueryable().BuildMock();
+            _cardPricingRepo.GetQueryable().Returns(mockQueryable);
+
+            var dto = new UpdateCardPricingDto
+            {
+                CardType = CardType.Plastic,
+                UnitPrice = 5.0m,
+                Currency = "kwd " // Will be normalized to KWD
+            };
+
+            // Act
+            var result = await _sut.UpdateCardPricingAsync(dto);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.False(existingPricing.IsActive);
+            Assert.NotNull(existingPricing.EffectiveTo);
+            await _cardPricingRepo.Received(1).AddAsync(Arg.Is<CardPricing>(p => 
+                p.CardType == CardType.Plastic && 
+                p.UnitPrice == 5.0m && 
+                p.Currency == "KWD" && 
+                p.IsActive == true && 
+                p.EffectiveTo == null));
+
+            await _unitOfWork.Received(1).SaveChangesAsync();
+            await _unitOfWork.Received(1).CommitTransactionAsync();
         }
     }
 }

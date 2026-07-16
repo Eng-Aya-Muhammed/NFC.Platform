@@ -32,3 +32,7 @@ global using System.Security.Cryptography;
 global using NFC.Platform.Application.Constants;
 global using NFC.Platform.Application.DTOs.Profile;
 global using Hangfire;
+global using FluentValidation;
+global using System.Text.RegularExpressions;
+global using System.ComponentModel.DataAnnotations;
+global using NFC.Platform.Application.Validators.Admin;

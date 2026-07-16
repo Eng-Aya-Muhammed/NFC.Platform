@@ -202,4 +202,19 @@
   <data name="ImportExecutionFailed" xml:space="preserve">
     <value>فشل تنفيذ عملية الاستيراد: {0}</value>
   </data>
+  <data name="InvalidRequest" xml:space="preserve">
+    <value>طلب غير صالح.</value>
+  </data>
+  <data name="CurrencyMustBeThreeLetters" xml:space="preserve">
+    <value>يجب أن تتكون العملة من 3 أحرف هجائية بالضبط.</value>
+  </data>
+  <data name="UnitPriceMustBeGreaterThanZero" xml:space="preserve">
+    <value>يجب أن يكون سعر الوحدة أكبر من الصفر.</value>
+  </data>
+  <data name="PricingNotConfigured" xml:space="preserve">
+    <value>التسعير غير مهيأ لنوع البطاقة '{0}'.</value>
+  </data>
+  <data name="InvalidCardType" xml:space="preserve">
+    <value>نوع البطاقة غير صالح: '{0}'. الأنواع المدعومة هي Plastic، Wood، و Metal.</value>
+  </data>
 </root>

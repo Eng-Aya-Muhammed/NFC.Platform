@@ -20,5 +20,6 @@ namespace NFC.Platform.Application.Interfaces.Services
         Task<ServiceResult> DeleteTemplateAsync(Guid id);
         Task<ServiceResult<PagedResult<TenantSummaryDto>>> GetTenantsPagedAsync(PaginationRequest request);
         Task<ServiceResult> UpdateTenantStatusAsync(Guid id, UpdateTenantStatusDto dto);
+        Task<ServiceResult> UpdateCardPricingAsync(UpdateCardPricingDto dto);
     }
 }

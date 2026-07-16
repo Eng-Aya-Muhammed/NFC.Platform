@@ -202,4 +202,19 @@
   <data name="ImportExecutionFailed" xml:space="preserve">
     <value>Import execution failed: {0}</value>
   </data>
+  <data name="InvalidRequest" xml:space="preserve">
+    <value>Invalid request payload.</value>
+  </data>
+  <data name="CurrencyMustBeThreeLetters" xml:space="preserve">
+    <value>Currency must be exactly 3 alphabetic characters.</value>
+  </data>
+  <data name="UnitPriceMustBeGreaterThanZero" xml:space="preserve">
+    <value>UnitPrice must be greater than zero.</value>
+  </data>
+  <data name="PricingNotConfigured" xml:space="preserve">
+    <value>Pricing is not configured for card type '{0}'.</value>
+  </data>
+  <data name="InvalidCardType" xml:space="preserve">
+    <value>Invalid card type: '{0}'. Supported types are Plastic, Wood, and Metal.</value>
+  </data>
 </root>

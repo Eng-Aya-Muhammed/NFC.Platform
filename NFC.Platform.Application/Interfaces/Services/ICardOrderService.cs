@@ -63,5 +63,6 @@ namespace NFC.Platform.Application.Interfaces.Services
         /// Retrieves the Excel ingestion status for a bulk order or import job.
         /// </summary>
         Task<ServiceResult<EmployeesImportStatusDto>> GetEmployeesImportStatusAsync(Guid id);
+        Task<ServiceResult<IReadOnlyList<CardPricingDto>>> GetActivePricingCatalogAsync();
     }
 }

@@ -85,6 +85,23 @@ namespace NFC.Platform.Application.Services;
                 order.CardDesignType = CardDesignType.BuiltInTemplate;
             }
 
+            var pricing = await _unitOfWork.Repository<CardPricing>().GetQueryable()
+                .AsNoTracking()
+                .Where(p => p.CardType == order.CardType && p.IsActive && p.EffectiveFrom <= DateTime.UtcNow && (p.EffectiveTo == null || p.EffectiveTo > DateTime.UtcNow))
+                .OrderByDescending(p => p.EffectiveFrom)
+                .FirstOrDefaultAsync();
+
+            if (pricing == null)
+            {
+                return ServiceResult<CardOrderDto>.Fail(
+                    _messageService.Get("PricingNotConfigured") ?? $"Pricing is not configured for card type '{order.CardType}'.",
+                    500);
+            }
+
+            order.UnitPrice = pricing.UnitPrice;
+            order.Currency = pricing.Currency;
+            order.TotalPrice = pricing.UnitPrice * order.Quantity;
+
             // TenantId is auto-assigned by DbContext.ApplyTenantRules() on SaveChanges
             // for all ITenantEntity entries with TenantId == Guid.Empty
 
@@ -122,24 +139,54 @@ namespace NFC.Platform.Application.Services;
             return ServiceResult.Success(_messageService.Get("RecordDeleted"));
         }
 
-        public Task<ServiceResult<OrderPricingResponseDto>> GetOrderPricingAsync(string cardType, int quantity)
+        public async Task<ServiceResult<OrderPricingResponseDto>> GetOrderPricingAsync(string cardType, int quantity)
         {
-            // Config-based pricing tiers. Can be moved to a DB table later.
-            decimal unitPrice = cardType?.ToLower() switch
+            CardType resolvedCardType;
+            string normalizedInput = cardType?.Trim().ToLower() ?? "";
+            if (normalizedInput == "plastic")
             {
-                "metal" => 8.500m,
-                "wood"  => 6.000m,
-                _       => 4.500m   // plastic (default)
-            };
+                resolvedCardType = CardType.Plastic;
+            }
+            else if (normalizedInput == "metal")
+            {
+                resolvedCardType = CardType.Metal;
+            }
+            else if (normalizedInput == "wood" || normalizedInput == "wooden")
+            {
+                resolvedCardType = CardType.Wooden;
+            }
+            else if (normalizedInput == "custom")
+            {
+                resolvedCardType = CardType.Custom;
+            }
+            else
+            {
+                return ServiceResult<OrderPricingResponseDto>.Fail(
+                    _messageService.Get("InvalidCardType") ?? $"Invalid card type: '{cardType}'. Supported types are Plastic, Wood, and Metal.",
+                    400);
+            }
+
+            var pricing = await _unitOfWork.Repository<CardPricing>().GetQueryable()
+                .AsNoTracking()
+                .Where(p => p.CardType == resolvedCardType && p.IsActive && p.EffectiveFrom <= DateTime.UtcNow && (p.EffectiveTo == null || p.EffectiveTo > DateTime.UtcNow))
+                .OrderByDescending(p => p.EffectiveFrom)
+                .FirstOrDefaultAsync();
+
+            if (pricing == null)
+            {
+                return ServiceResult<OrderPricingResponseDto>.Fail(
+                    _messageService.Get("PricingNotConfigured") ?? $"Pricing is not configured for card type '{resolvedCardType}'.",
+                    500);
+            }
 
             var dto = new OrderPricingResponseDto
             {
-                UnitPrice = unitPrice,
-                TotalPrice = unitPrice * quantity,
-                Currency = "KWD"
+                UnitPrice = pricing.UnitPrice,
+                TotalPrice = pricing.UnitPrice * quantity,
+                Currency = pricing.Currency
             };
 
-            return Task.FromResult(ServiceResult<OrderPricingResponseDto>.Success(dto));
+            return ServiceResult<OrderPricingResponseDto>.Success(dto);
         }
 
         public async Task<ServiceResult<CardOrderDto>> CreateReorderAsync(Guid parentOrderId, ReorderRequest request)
@@ -164,6 +211,19 @@ namespace NFC.Platform.Application.Services;
                         _messageService.Get("EmployeeCountMismatch", request.EmployeeIds.Count.ToString(), request.Quantity.ToString()), 422);
             }
 
+            var pricing = await _unitOfWork.Repository<CardPricing>().GetQueryable()
+                .AsNoTracking()
+                .Where(p => p.CardType == parentOrder.CardType && p.IsActive && p.EffectiveFrom <= DateTime.UtcNow && (p.EffectiveTo == null || p.EffectiveTo > DateTime.UtcNow))
+                .OrderByDescending(p => p.EffectiveFrom)
+                .FirstOrDefaultAsync();
+
+            if (pricing == null)
+            {
+                return ServiceResult<CardOrderDto>.Fail(
+                    _messageService.Get("PricingNotConfigured") ?? $"Pricing is not configured for card type '{parentOrder.CardType}'.",
+                    500);
+            }
+
             var reorder = new CardOrder
             {
                 UserId = userId.Value,
@@ -175,7 +235,10 @@ namespace NFC.Platform.Application.Services;
                 BackDesignUrl = parentOrder.BackDesignUrl,
                 ParentOrderId = parentOrderId,
                 Quantity = request.Quantity,
-                Status = OrderStatus.PendingReview
+                Status = OrderStatus.PendingReview,
+                UnitPrice = pricing.UnitPrice,
+                Currency = pricing.Currency,
+                TotalPrice = pricing.UnitPrice * request.Quantity
             };
 
             await _unitOfWork.Repository<CardOrder>().AddAsync(reorder);
@@ -482,6 +545,17 @@ namespace NFC.Platform.Application.Services;
                         }
                     }
 
+                    var pricing = await _unitOfWork.Repository<CardPricing>().GetQueryable()
+                        .AsNoTracking()
+                        .Where(p => p.CardType == job.CardType && p.IsActive && p.EffectiveFrom <= DateTime.UtcNow && (p.EffectiveTo == null || p.EffectiveTo > DateTime.UtcNow))
+                        .OrderByDescending(p => p.EffectiveFrom)
+                        .FirstOrDefaultAsync();
+
+                    if (pricing == null)
+                    {
+                        throw new Exception($"Pricing is not configured for card type '{job.CardType}'.");
+                    }
+
                     var cardOrder = new CardOrder
                     {
                         CardName = _messageService.Get("DefaultBulkOrderName", itemsToOrder.Count.ToString()) ?? $"Bulk Order - {itemsToOrder.Count}",
@@ -493,7 +567,10 @@ namespace NFC.Platform.Application.Services;
                         UserId = job.UserId,
                         TenantId = job.TenantId,
                         Status = OrderStatus.PendingReview,
-                        Items = itemsToOrder
+                        Items = itemsToOrder,
+                        UnitPrice = pricing.UnitPrice,
+                        Currency = pricing.Currency,
+                        TotalPrice = pricing.UnitPrice * itemsToOrder.Count
                     };
 
                     await _unitOfWork.Repository<CardOrder>().AddAsync(cardOrder);
@@ -590,5 +667,17 @@ namespace NFC.Platform.Application.Services;
             orderDto.Status = "Completed";
 
             return ServiceResult<EmployeesImportStatusDto>.Success(orderDto);
+        }
+
+        public async Task<ServiceResult<IReadOnlyList<CardPricingDto>>> GetActivePricingCatalogAsync()
+        {
+            var pricings = await _unitOfWork.Repository<CardPricing>().GetQueryable()
+                .AsNoTracking()
+                .Where(p => p.IsActive && p.EffectiveFrom <= DateTime.UtcNow && (p.EffectiveTo == null || p.EffectiveTo > DateTime.UtcNow))
+                .ToListAsync();
+
+            var dtos = _mapper.Map<IReadOnlyList<CardPricingDto>>(pricings);
+
+            return ServiceResult<IReadOnlyList<CardPricingDto>>.Success(dtos);
         }
     }
