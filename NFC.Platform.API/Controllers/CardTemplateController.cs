@@ -6,11 +6,9 @@ namespace NFC.Platform.API.Controllers
     [Route("api/templates")]
     [Authorize]
     public class CardTemplateController(
-        ICardTemplateService cardTemplateService,
-        ICurrentTenant currentTenant) : ControllerBase
+        ICardTemplateService cardTemplateService) : ControllerBase
     {
         private readonly ICardTemplateService _cardTemplateService = cardTemplateService ?? throw new ArgumentNullException(nameof(cardTemplateService));
-        private readonly ICurrentTenant _currentTenant = currentTenant ?? throw new ArgumentNullException(nameof(currentTenant));
 
         [HttpGet]
         public async Task<IActionResult> GetActiveTemplates()

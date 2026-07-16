@@ -27,11 +27,24 @@ namespace NFC.Platform.Infrastructure.Services
         private Guid? _cachedTenantId;
         private bool _isSuperAdmin;
 
+        private Guid? _tenantIdOverride;
+        private Guid? _userIdOverride;
+
+        /// <inheritdoc />
+        public void SetCurrentTenant(Guid tenantId, Guid userId)
+        {
+            _tenantIdOverride = tenantId;
+            _userIdOverride = userId;
+            _cachedTenantId = tenantId;
+            _isTenantValidated = true;
+        }
+
         /// <inheritdoc />
         public Guid? TenantId
         {
             get
             {
+                if (_tenantIdOverride.HasValue) return _tenantIdOverride;
                 EnsureValidated();
                 return _cachedTenantId;
             }
@@ -42,6 +55,7 @@ namespace NFC.Platform.Infrastructure.Services
         {
             get
             {
+                if (_userIdOverride.HasValue) return _userIdOverride;
                 var user = _httpContextAccessor.HttpContext?.User;
                 var userIdStr = user?.FindFirstValue(AppClaims.UserId) ?? user?.FindFirstValue(ClaimTypes.NameIdentifier);
                 return Guid.TryParse(userIdStr, out Guid userId) ? userId : null;
@@ -50,12 +64,13 @@ namespace NFC.Platform.Infrastructure.Services
 
         /// <inheritdoc />
         public string? Email =>
-            _httpContextAccessor.HttpContext?.User?.FindFirstValue(AppClaims.Email)
-            ?? _httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.Email);
+            _userIdOverride.HasValue ? "system_job@nfcplatform.com" :
+            (_httpContextAccessor.HttpContext?.User?.FindFirstValue(AppClaims.Email)
+            ?? _httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.Email));
 
         /// <inheritdoc />
         public bool IsAuthenticated =>
-            _httpContextAccessor.HttpContext?.User?.Identity?.IsAuthenticated ?? false;
+            _userIdOverride.HasValue || (_httpContextAccessor.HttpContext?.User?.Identity?.IsAuthenticated ?? false);
 
         /// <inheritdoc />
         public bool IsSuperAdmin
@@ -133,6 +148,7 @@ namespace NFC.Platform.Infrastructure.Services
             public string? Email => null;
             public bool IsAuthenticated => false;
             public bool IsSuperAdmin => false;
+            public void SetCurrentTenant(Guid tenantId, Guid userId) { }
         }
     }
 }

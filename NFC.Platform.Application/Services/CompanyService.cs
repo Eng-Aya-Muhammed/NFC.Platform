@@ -68,7 +68,7 @@ public class CompanyService(
         {
             var userId = _currentTenant.UserId;
             if (!userId.HasValue)
-                return ServiceResult.Unauthorized("User is not authenticated.");
+                return ServiceResult.Unauthorized(_messageService.Get("Unauthorized") ?? "User is not authenticated.");
 
             var user = await _unitOfWork.Repository<User>().GetByIdAsync(userId.Value);
             if (user == null)

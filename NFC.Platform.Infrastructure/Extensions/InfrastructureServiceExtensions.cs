@@ -6,6 +6,7 @@ using NFC.Platform.Infrastructure.Repositories;
 using NFC.Platform.Infrastructure.Seeders;
 using NFC.Platform.Infrastructure.Services;
 using NFC.Platform.Application.Interfaces.Services;
+using Hangfire;
 
 namespace NFC.Platform.Infrastructure.Extensions
 {
@@ -41,6 +42,14 @@ namespace NFC.Platform.Infrastructure.Extensions
             // Cloudinary Registration
             services.Configure<CloudinarySettings>(configuration.GetSection("CloudinarySettings"));
             services.AddScoped<IStorageService, CloudinaryService>();
+
+            // Hangfire Setup
+            services.AddHangfire(config => config
+                .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+                .UseSimpleAssemblyNameTypeSerializer()
+                .UseRecommendedSerializerSettings()
+                .UseSqlServerStorage(configuration.GetConnectionString("DefaultConnection")));
+            services.AddHangfireServer();
 
             // 5. Register Seeders
             services.AddScoped<IRoleSeeder, RoleSeeder>();

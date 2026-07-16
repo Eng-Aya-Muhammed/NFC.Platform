@@ -25,7 +25,7 @@ namespace NFC.Platform.API.Controllers
         /// Returns both the SecureUrl and PublicId so the client can store both.
         /// </summary>
         [HttpPost("image")]
-        public async Task<IActionResult> UploadImage([FromForm] IFormFile file, [FromQuery] string folder = "general")
+        public async Task<IActionResult> UploadImage(IFormFile file, [FromQuery] string folder = "general")
         {
             if (file == null || file.Length == 0)
                 return BadRequest(_messageService.Get("NoFileUploaded"));
@@ -55,7 +55,7 @@ namespace NFC.Platform.API.Controllers
         /// Returns both the SecureUrl and PublicId.
         /// </summary>
         [HttpPost("excel")]
-        public async Task<IActionResult> UploadExcel([FromForm] IFormFile file)
+        public async Task<IActionResult> UploadExcel(IFormFile file)
         {
             if (file == null || file.Length == 0)
                 return BadRequest(_messageService.Get("NoFileUploaded"));

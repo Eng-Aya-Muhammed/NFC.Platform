@@ -1,14 +1,18 @@
+using NFC.Platform.API.Models;
+
 namespace NFC.Platform.Tests.Controllers
 {
     public class CardOrderControllerGapsTests
     {
         private readonly ICardOrderService _cardOrderService;
+        private readonly IMessageService _messageService;
         private readonly CardOrderController _sut;
 
         public CardOrderControllerGapsTests()
         {
             _cardOrderService = Substitute.For<ICardOrderService>();
-            _sut = new CardOrderController(_cardOrderService);
+            _messageService = Substitute.For<IMessageService>();
+            _sut = new CardOrderController(_cardOrderService, _messageService);
         }
 
         [Fact]
@@ -46,6 +50,44 @@ namespace NFC.Platform.Tests.Controllers
             Assert.NotNull(result);
             Assert.Equal(200, result.StatusCode);
             await _cardOrderService.Received(1).GetEmployeesImportStatusAsync(orderId);
+        }
+
+        [Fact]
+        public async Task PlaceBulkOrderFromExcel_ShouldCallQueueEmployeeImportJobAsync_OnCardOrderService()
+        {
+            // Arrange
+            var file = Substitute.For<Microsoft.AspNetCore.Http.IFormFile>();
+            var fileStream = new System.IO.MemoryStream();
+            file.OpenReadStream().Returns(fileStream);
+
+            var request = new ImportEmployeesAndOrderCardsRequest
+            {
+                File = file,
+                CardType = CardType.Plastic,
+                CardDesignType = CardDesignType.BuiltInTemplate
+            };
+
+            var expectedResult = ServiceResult<EmployeeImportJob>.Success(new EmployeeImportJob());
+            _cardOrderService.QueueEmployeeImportJobAsync(
+                Arg.Any<Microsoft.AspNetCore.Http.IFormFile>(),
+                Arg.Any<CardType>(),
+                Arg.Any<CardDesignType>(),
+                Arg.Any<Guid?>(),
+                Arg.Any<string?>()).Returns(expectedResult);
+
+            // Act
+            var result = await _sut.PlaceBulkOrderFromExcel(request) as ObjectResult;
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(202, result.StatusCode);
+            await _cardOrderService.Received(1).QueueEmployeeImportJobAsync(
+                file,
+                CardType.Plastic,
+                CardDesignType.BuiltInTemplate,
+                Arg.Any<Guid?>(),
+                Arg.Any<string?>()
+            );
         }
     }
 }

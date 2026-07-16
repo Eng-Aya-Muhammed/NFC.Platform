@@ -178,4 +178,28 @@
   <data name="MaxEmployeesLimitReached" xml:space="preserve">
     <value>Employee limit reached for your current subscription plan.</value>
   </data>
+  <data name="ExcelFilesOnly" xml:space="preserve">
+    <value>Only Excel files (.xlsx, .xls) are supported.</value>
+  </data>
+  <data name="FileUploadFailed" xml:space="preserve">
+    <value>Failed to upload the file to storage.</value>
+  </data>
+  <data name="FailedToDownloadExcel" xml:space="preserve">
+    <value>Failed to download Excel file from storage: {0}</value>
+  </data>
+  <data name="ImportRowNameRequired" xml:space="preserve">
+    <value>Row {0}: Name is required.</value>
+  </data>
+  <data name="ImportRowEmailRequired" xml:space="preserve">
+    <value>Row {0}: Email is required.</value>
+  </data>
+  <data name="ImportRowEmailInvalid" xml:space="preserve">
+    <value>Row {0}: Email '{1}' is not in a valid format.</value>
+  </data>
+  <data name="ImportRowEmailDuplicate" xml:space="preserve">
+    <value>Row {0}: Duplicate email '{1}' found in the import sheet.</value>
+  </data>
+  <data name="ImportExecutionFailed" xml:space="preserve">
+    <value>Import execution failed: {0}</value>
+  </data>
 </root>

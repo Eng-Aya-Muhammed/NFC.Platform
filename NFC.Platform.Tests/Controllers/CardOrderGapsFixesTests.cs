@@ -99,7 +99,9 @@ namespace NFC.Platform.Tests.Controllers
             validator.ValidateAsync(Arg.Any<CreateCardOrderRequest>(), default)
                 .Returns(Task.FromResult(validationResult));
 
-            var service = new CardOrderService(unitOfWork, mapper, messageService, currentTenant, excelParser, validator);
+            var storageService = Substitute.For<NFC.Platform.Application.Interfaces.Services.IStorageService>();
+            var backgroundJobClient = Substitute.For<Hangfire.IBackgroundJobClient>();
+            var service = new CardOrderService(unitOfWork, mapper, messageService, currentTenant, excelParser, validator, storageService, backgroundJobClient);
             var request = new CreateCardOrderRequest { Quantity = 1 };
 
             // Act

@@ -34,7 +34,7 @@ namespace NFC.Platform.Application.Services;
         {
             var tenantId = _currentTenant.TenantId;
             if (!tenantId.HasValue)
-                return ServiceResult<UserSubscriptionDto>.Unauthorized("User is not authenticated.");
+                return ServiceResult<UserSubscriptionDto>.Unauthorized(_messageService.Get("Unauthorized") ?? "User is not authenticated.");
 
             var activeSub = await _unitOfWork.Repository<UserSubscription>()
                 .GetQueryable()
@@ -57,7 +57,7 @@ namespace NFC.Platform.Application.Services;
         {
             var tenantId = _currentTenant.TenantId;
             if (!tenantId.HasValue)
-                return ServiceResult<IReadOnlyList<UserSubscriptionDto>>.Unauthorized("User is not authenticated.");
+                return ServiceResult<IReadOnlyList<UserSubscriptionDto>>.Unauthorized(_messageService.Get("Unauthorized") ?? "User is not authenticated.");
 
             var history = await _unitOfWork.Repository<UserSubscription>()
                 .GetQueryable()
@@ -83,7 +83,7 @@ namespace NFC.Platform.Application.Services;
             var userId = _currentTenant.UserId;
 
             if (!tenantId.HasValue || !userId.HasValue)
-                return ServiceResult<UserSubscriptionDto>.Unauthorized("User is not authenticated.");
+                return ServiceResult<UserSubscriptionDto>.Unauthorized(_messageService.Get("Unauthorized") ?? "User is not authenticated.");
 
             var plan = await _unitOfWork.Repository<SubscriptionPlan>()
                 .GetQueryable()
@@ -127,7 +127,7 @@ namespace NFC.Platform.Application.Services;
             var userId = _currentTenant.UserId;
 
             if (!tenantId.HasValue || !userId.HasValue)
-                return ServiceResult<UserSubscriptionDto>.Unauthorized("User is not authenticated.");
+                return ServiceResult<UserSubscriptionDto>.Unauthorized(_messageService.Get("Unauthorized") ?? "User is not authenticated.");
 
             var plan = await _unitOfWork.Repository<SubscriptionPlan>()
                 .GetQueryable()

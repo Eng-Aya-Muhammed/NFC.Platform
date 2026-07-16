@@ -35,6 +35,8 @@ namespace NFC.Platform.Infrastructure.Contexts
         public DbSet<UserSubscription> UserSubscriptions { get; set; }
         public DbSet<ProfileMetric> ProfileMetrics { get; set; }
         public DbSet<TemplateRequest> TemplateRequests { get; set; }
+        public DbSet<EmployeeImportJob> EmployeeImportJobs { get; set; }
+
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -47,6 +49,35 @@ namespace NFC.Platform.Infrastructure.Contexts
             base.OnModelCreating(modelBuilder);
 
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
+
+            modelBuilder.Entity<EmployeeImportJob>(builder =>
+            {
+                builder.ToTable("EmployeeImportJobs");
+                builder.HasKey(j => j.Id);
+                builder.Property(j => j.FileName).IsRequired().HasMaxLength(200);
+                builder.Property(j => j.ExcelFileUrl).IsRequired().HasMaxLength(1000);
+                builder.Property(j => j.ExcelFilePublicId).HasMaxLength(500);
+                builder.Property(j => j.Status).IsRequired();
+                builder.Property(j => j.Notes).HasMaxLength(2000);
+                builder.Property(j => j.TenantId).IsRequired();
+                builder.HasIndex(j => j.TenantId);
+
+                builder.HasOne(j => j.Tenant)
+                    .WithMany()
+                    .HasForeignKey(j => j.TenantId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                builder.HasOne(j => j.User)
+                    .WithMany()
+                    .HasForeignKey(j => j.UserId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                builder.HasOne(j => j.CardOrder)
+                    .WithMany()
+                    .HasForeignKey(j => j.CardOrderId)
+                    .OnDelete(DeleteBehavior.SetNull);
+            });
+
 
             foreach (var entityType in modelBuilder.Model.GetEntityTypes())
             {

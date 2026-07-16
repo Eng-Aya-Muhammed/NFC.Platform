@@ -1,11 +1,15 @@
+using NFC.Platform.BuildingBlocks.Localization;
+using NFC.Platform.API.Models;
+
 namespace NFC.Platform.API.Controllers
 {
     [ApiController]
     [Route("api/card-orders")]
     [Authorize]
-    public class CardOrderController(ICardOrderService cardOrderService) : ControllerBase
+    public class CardOrderController(ICardOrderService cardOrderService, IMessageService messageService) : ControllerBase
     {
         private readonly ICardOrderService _cardOrderService = cardOrderService ?? throw new ArgumentNullException(nameof(cardOrderService));
+        private readonly IMessageService _messageService = messageService ?? throw new ArgumentNullException(nameof(messageService));
 
         /// <summary>
         /// Returns the unit and total price for a given card type and quantity.
@@ -95,6 +99,33 @@ namespace NFC.Platform.API.Controllers
                 return StatusCode(result.StatusCode, result);
 
             return Ok(result);
+        }
+
+        /// <summary>
+        /// Handles bulk card ordering and Excel directory import for employees.
+        /// </summary>
+        [HttpPost("~/api/company/orders/bulk")]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> PlaceBulkOrderFromExcel([FromForm] ImportEmployeesAndOrderCardsRequest request)
+        {
+            if (request == null || request.File == null)
+            {
+                return BadRequest(_messageService.Get("NoFileUploaded") ?? "No file was uploaded.");
+            }
+
+            var result = await _cardOrderService.QueueEmployeeImportJobAsync(
+                request.File,
+                request.CardType,
+                request.CardDesignType,
+                request.PrintTemplateId,
+                request.Notes);
+
+            if (!result.IsSuccess)
+            {
+                return StatusCode(result.StatusCode, result);
+            }
+
+            return StatusCode(202, result); // 202 Accepted
         }
     }
 }

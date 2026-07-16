@@ -4,6 +4,7 @@ using NFC.Platform.API.Services;
 using NFC.Platform.Application.Extensions;
 using NFC.Platform.BuildingBlocks.Common.Helpers;
 using NFC.Platform.BuildingBlocks.Extensions;
+using Hangfire;
 using NFC.Platform.Infrastructure.Extensions;
 using Serilog;
 
@@ -42,6 +43,12 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseMiddleware<TenantMiddleware>();
 app.UseAuthorization();
+
+app.UseHangfireDashboard("/hangfire", new DashboardOptions
+{
+    Authorization = new[] { new HangfireAdminAuthorizationFilter() }
+});
+
 app.MapControllers();
 
 // Auto-Migrate and Seed Database (Development only)

@@ -31,3 +31,4 @@ global using NFC.Platform.Application.DTOs.Analytics;
 global using System.Security.Cryptography;
 global using NFC.Platform.Application.Constants;
 global using NFC.Platform.Application.DTOs.Profile;
+global using Hangfire;

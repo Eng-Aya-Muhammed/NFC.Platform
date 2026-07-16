@@ -178,4 +178,28 @@
   <data name="MaxEmployeesLimitReached" xml:space="preserve">
     <value>تم الوصول إلى الحد الأقصى للموظفين في باقة اشتراكك الحالية.</value>
   </data>
+  <data name="ExcelFilesOnly" xml:space="preserve">
+    <value>ملفات Excel فقط (.xlsx، .xls) هي المدعومة.</value>
+  </data>
+  <data name="FileUploadFailed" xml:space="preserve">
+    <value>فشل رفع الملف إلى وحدة التخزين.</value>
+  </data>
+  <data name="FailedToDownloadExcel" xml:space="preserve">
+    <value>فشل تحميل ملف Excel من وحدة التخزين: {0}</value>
+  </data>
+  <data name="ImportRowNameRequired" xml:space="preserve">
+    <value>الصف {0}: حقل الاسم مطلوب.</value>
+  </data>
+  <data name="ImportRowEmailRequired" xml:space="preserve">
+    <value>الصف {0}: حقل البريد الإلكتروني مطلوب.</value>
+  </data>
+  <data name="ImportRowEmailInvalid" xml:space="preserve">
+    <value>الصف {0}: البريد الإلكتروني '{1}' ليس بصيغة صحيحة.</value>
+  </data>
+  <data name="ImportRowEmailDuplicate" xml:space="preserve">
+    <value>الصف {0}: البريد الإلكتروني '{1}' مكرر في ورقة الاستيراد.</value>
+  </data>
+  <data name="ImportExecutionFailed" xml:space="preserve">
+    <value>فشل تنفيذ عملية الاستيراد: {0}</value>
+  </data>
 </root>

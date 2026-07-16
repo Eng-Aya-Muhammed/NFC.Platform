@@ -52,6 +52,8 @@ namespace NFC.Platform.Tests.Services
             _unitOfWork.Repository<Company>().Returns(_companyRepo);
             _unitOfWork.Repository<UserSubscription>().Returns(_subscriptionRepo);
 
+            _messageService.Get(Arg.Any<string>()).Returns(x => (string)x[0]);
+
             _sut = new EmployeeService(_unitOfWork, _mapper, _messageService, _currentTenant);
         }
 

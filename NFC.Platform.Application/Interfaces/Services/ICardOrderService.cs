@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using NFC.Platform.Application.DTOs;
 using NFC.Platform.Application.DTOs.CardOrder;
 using NFC.Platform.BuildingBlocks.Results;
@@ -44,13 +45,23 @@ namespace NFC.Platform.Application.Interfaces.Services
 
 
         /// <summary>
-        /// Handles bulk card ordering by importing employees from an Excel stream and placing their card requests.
+        /// Stages the Excel file, creates an import job tracking record, and enqueues the Hangfire background job.
         /// </summary>
-        Task<ServiceResult<CardOrderDto>> ImportEmployeesAndCreateBulkOrderAsync(CreateBulkCardOrderFromExcelRequest request);
+        Task<ServiceResult<EmployeeImportJob>> QueueEmployeeImportJobAsync(
+            IFormFile file,
+            CardType cardType,
+            CardDesignType cardDesignType,
+            Guid? printTemplateId,
+            string? notes);
 
         /// <summary>
-        /// Retrieves the Excel ingestion status for a bulk order.
+        /// Executes the employee import background job. Runs in Hangfire thread.
         /// </summary>
-        Task<ServiceResult<EmployeesImportStatusDto>> GetEmployeesImportStatusAsync(Guid orderId);
+        Task ProcessEmployeeImportJobAsync(Guid jobId);
+
+        /// <summary>
+        /// Retrieves the Excel ingestion status for a bulk order or import job.
+        /// </summary>
+        Task<ServiceResult<EmployeesImportStatusDto>> GetEmployeesImportStatusAsync(Guid id);
     }
 }

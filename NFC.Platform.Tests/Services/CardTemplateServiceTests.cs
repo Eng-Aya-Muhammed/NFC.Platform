@@ -20,7 +20,6 @@ namespace NFC.Platform.Tests.Services
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
-        private readonly IMessageService _messageService;
 
         private readonly IGenericRepository<CardTemplate> _templateRepo;
         private readonly IGenericRepository<UserProfile> _profileRepo;
@@ -32,7 +31,6 @@ namespace NFC.Platform.Tests.Services
         {
             _unitOfWork = Substitute.For<IUnitOfWork>();
             _mapper = Substitute.For<IMapper>();
-            _messageService = Substitute.For<IMessageService>();
 
             _templateRepo = Substitute.For<IGenericRepository<CardTemplate>>();
             _profileRepo = Substitute.For<IGenericRepository<UserProfile>>();
@@ -42,7 +40,7 @@ namespace NFC.Platform.Tests.Services
             _unitOfWork.Repository<UserProfile>().Returns(_profileRepo);
             _unitOfWork.Repository<User>().Returns(_userRepo);
 
-            _sut = new CardTemplateService(_unitOfWork, _mapper, _messageService);
+            _sut = new CardTemplateService(_unitOfWork, _mapper);
         }
 
         // ── GetActiveTemplatesAsync ───────────────────────────────────────────────
