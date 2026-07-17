@@ -137,5 +137,105 @@ namespace NFC.Platform.Tests.Services
 
             await _unitOfWork.Received(1).SaveChangesAsync();
         }
+
+        [Fact]
+        public async Task UpdateProfileAsync_CreatesNewProfile_WhenUserProfileIsNull()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var user = new User { Id = userId, TenantId = Guid.NewGuid(), UserProfile = null };
+            var mockQuery = new List<User> { user }.AsQueryable().BuildMock();
+            _userRepo.GetQueryable().Returns(mockQuery);
+
+            var request = new UpdateMyProfileRequest { FullName = "New User" };
+            _mapper.Map<EmployeeDetailsDto>(user).Returns(new EmployeeDetailsDto { FullName = "New User" });
+
+            // Act
+            var result = await _sut.UpdateProfileAsync(userId, request);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.NotNull(user.UserProfile);
+            await _userProfileRepo.Received(1).AddAsync(Arg.Any<UserProfile>());
+            await _unitOfWork.Received(2).SaveChangesAsync(); // One for add, one for map/save
+        }
+
+        [Fact]
+        public async Task UpdateProfileAsync_ReturnsNotFound_WhenUserDoesNotExist()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            _userRepo.GetQueryable().Returns(new List<User>().AsQueryable().BuildMock());
+
+            // Act
+            var result = await _sut.UpdateProfileAsync(userId, new UpdateMyProfileRequest());
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(404, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task SynchronizeLinksAsync_ReturnsNotFound_WhenUserDoesNotExist()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            _userRepo.GetQueryable().Returns(new List<User>().AsQueryable().BuildMock());
+
+            // Act
+            var result = await _sut.SynchronizeLinksAsync(userId, new SynchronizeLinksRequest { Links = [] });
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(404, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task SynchronizeLinksAsync_CreatesNewProfile_WhenUserProfileIsNull()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var user = new User { Id = userId, TenantId = Guid.NewGuid(), UserProfile = null };
+            var mockQuery = new List<User> { user }.AsQueryable().BuildMock();
+            _userRepo.GetQueryable().Returns(mockQuery);
+
+            var request = new SynchronizeLinksRequest { Links = new List<string> { "https://test.com" } };
+
+            // Act
+            var result = await _sut.SynchronizeLinksAsync(userId, request);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.NotNull(user.UserProfile);
+            await _userProfileRepo.Received(1).AddAsync(Arg.Any<UserProfile>());
+            await _unitOfWork.Received(2).SaveChangesAsync();
+        }
+
+        [Fact]
+        public async Task SynchronizeLinksAsync_ThrowsArgumentNull_WhenRequestIsNull()
+        {
+            // Act & Assert
+            await Assert.ThrowsAsync<ArgumentNullException>(() => _sut.SynchronizeLinksAsync(Guid.NewGuid(), null!));
+        }
+
+        [Fact]
+        public async Task SynchronizeLinksAsync_HandlesEmptyLinksArray()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var profile = new UserProfile { CustomLinks = new List<ProfileLink> { new ProfileLink { Url = "https://old.com" } } };
+            var user = new User { Id = userId, UserProfile = profile };
+            _userRepo.GetQueryable().Returns(new List<User> { user }.AsQueryable().BuildMock());
+
+            var request = new SynchronizeLinksRequest { Links = [] };
+
+            // Act
+            var result = await _sut.SynchronizeLinksAsync(userId, request);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Empty(profile.CustomLinks);
+            await _unitOfWork.Received(1).SaveChangesAsync();
+        }
     }
 }

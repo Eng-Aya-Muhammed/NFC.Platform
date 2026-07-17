@@ -403,5 +403,73 @@ namespace NFC.Platform.Tests.Services
             Assert.Equal("-", result.Data!.TopEmployeeName);
             Assert.Equal(6, result.Data!.MonthlyMetrics.Count);
         }
+
+        [Fact]
+        public async Task GetCompanyDashboardAsync_ReturnsUnauthorized_WhenTenantIdIsNull()
+        {
+            // Arrange
+            _currentTenant.TenantId.Returns((Guid?)null);
+
+            // Act
+            var result = await _sut.GetCompanyDashboardAsync();
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(401, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task GetCompanyDashboardAsync_ReturnsCorrectDashboardCounts_WhenMetricsExist()
+        {
+            // Arrange
+            var tenantId = Guid.NewGuid();
+            _currentTenant.TenantId.Returns(tenantId);
+
+            _employeeRepo.CountAsync().Returns(5);
+            _orderRepo.CountAsync().Returns(3);
+            _metricRepo.CountAsync(Arg.Any<System.Linq.Expressions.Expression<Func<ProfileMetric, bool>>>()).Returns(15);
+
+            var profileMetrics = new List<ProfileMetric>
+            {
+                new ProfileMetric { UserProfile = new UserProfile { FullName = "Top Employee" }, CreatedAt = DateTime.UtcNow }
+            };
+            _metricRepo.GetQueryable().Returns(profileMetrics.AsQueryable().BuildMock());
+
+            // Act
+            var result = await _sut.GetCompanyDashboardAsync();
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(5, result.Data!.TotalEmployeesCount);
+            Assert.Equal(3, result.Data!.CardRequestsCount);
+            Assert.Equal(15, result.Data!.ContactSavesCount);
+            Assert.Equal("Top Employee", result.Data!.TopEmployeeName);
+        }
+
+        [Fact]
+        public async Task ChangeCompanyAdminPasswordAsync_ReturnsFail_WhenOldPasswordIsIncorrect()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            _currentTenant.UserId.Returns(userId);
+
+            var user = new User
+            {
+                Id = userId,
+                PasswordHash = NFC.Platform.BuildingBlocks.Common.Helpers.PasswordHasher.HashPassword("CorrectOldPass123!")
+            };
+            _userRepo.GetByIdAsync(userId).Returns(user);
+
+            // Act
+            var result = await _sut.ChangeCompanyAdminPasswordAsync(new CompanyChangePasswordRequest
+            {
+                OldPassword = "IncorrectOldPass!",
+                NewPassword = "NewPassword123!"
+            });
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(400, result.StatusCode);
+        }
     }
 }

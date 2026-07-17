@@ -47,13 +47,13 @@ public class UserProfileMappingProfile : Profile
             .AfterMap((src, dest) =>
             {
                 if (!string.IsNullOrEmpty(src.LinkedInUrl))
-                    dest.CustomLinks.Add(new ProfileLink { Title = PlatformConstants.LinkedIn, Url = src.LinkedInUrl });
+                    dest.CustomLinks.Add(new ProfileLink { Id = Guid.Empty, Title = PlatformConstants.LinkedIn, Url = src.LinkedInUrl });
                 if (!string.IsNullOrEmpty(src.FacebookUrl))
-                    dest.CustomLinks.Add(new ProfileLink { Title = PlatformConstants.Facebook, Url = src.FacebookUrl });
+                    dest.CustomLinks.Add(new ProfileLink { Id = Guid.Empty, Title = PlatformConstants.Facebook, Url = src.FacebookUrl });
                 if (!string.IsNullOrEmpty(src.InstagramUrl))
-                    dest.CustomLinks.Add(new ProfileLink { Title = PlatformConstants.Instagram, Url = src.InstagramUrl });
+                    dest.CustomLinks.Add(new ProfileLink { Id = Guid.Empty, Title = PlatformConstants.Instagram, Url = src.InstagramUrl });
                 if (!string.IsNullOrEmpty(src.WebsiteUrl))
-                    dest.CustomLinks.Add(new ProfileLink { Title = PlatformConstants.Website, Url = src.WebsiteUrl });
+                    dest.CustomLinks.Add(new ProfileLink { Id = Guid.Empty, Title = PlatformConstants.Website, Url = src.WebsiteUrl });
             });
 
         CreateMap<UpdateMyProfileRequest, UserProfile>()
@@ -100,6 +100,7 @@ public class UserProfileMappingProfile : Profile
         {
             dest.CustomLinks.Add(new ProfileLink
             {
+                Id = Guid.Empty,
                 Title = title,
                 Url = url,
                 TenantId = dest.TenantId,

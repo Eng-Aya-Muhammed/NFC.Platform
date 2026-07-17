@@ -765,5 +765,225 @@ namespace NFC.Platform.Tests.Services
             Assert.Equal("KWD", savedOrder.Currency);
             Assert.Equal(45.0m, savedOrder.TotalPrice);
         }
+
+        [Fact]
+        public async Task GetOrderPricingAsync_ReturnsPricing_ForValidCardTypes()
+        {
+            // Act
+            var resultPlastic = await _sut.GetOrderPricingAsync("plastic", 10);
+            var resultMetal = await _sut.GetOrderPricingAsync("metal", 5);
+
+            // Assert
+            Assert.True(resultPlastic.IsSuccess);
+            Assert.Equal(45.0m, resultPlastic.Data!.TotalPrice);
+            Assert.True(resultMetal.IsSuccess);
+            Assert.Equal(42.5m, resultMetal.Data!.TotalPrice);
+        }
+
+        [Fact]
+        public async Task GetOrderPricingAsync_Returns400_ForInvalidCardType()
+        {
+            // Act
+            var result = await _sut.GetOrderPricingAsync("gold_plated_diamond", 10);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(400, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task GetOrderPricingAsync_Returns500_WhenPricingNotConfigured()
+        {
+            // Arrange
+            _cardPricingRepo.GetQueryable().Returns(new List<CardPricing>().AsQueryable().BuildMock());
+
+            // Act
+            var result = await _sut.GetOrderPricingAsync("plastic", 10);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(500, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task CreateReorderAsync_ReturnsUnauthorized_WhenUserIdIsNull()
+        {
+            // Arrange
+            _currentTenant.UserId.Returns((Guid?)null);
+
+            // Act
+            var result = await _sut.CreateReorderAsync(Guid.NewGuid(), new ReorderRequest());
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(401, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task CreateReorderAsync_ReturnsNotFound_WhenParentOrderDoesNotExist()
+        {
+            // Arrange
+            _currentTenant.UserId.Returns(Guid.NewGuid());
+            _orderRepo.GetQueryable().Returns(new List<CardOrder>().AsQueryable().BuildMock());
+
+            // Act
+            var result = await _sut.CreateReorderAsync(Guid.NewGuid(), new ReorderRequest());
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(404, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task CreateReorderAsync_Returns422_WhenEmployeeCountMismatch()
+        {
+            // Arrange
+            var parentId = Guid.NewGuid();
+            _currentTenant.UserId.Returns(Guid.NewGuid());
+            var parentOrder = new CardOrder { Id = parentId, CardType = CardType.Plastic };
+            _orderRepo.GetQueryable().Returns(new List<CardOrder> { parentOrder }.AsQueryable().BuildMock());
+
+            var request = new ReorderRequest
+            {
+                AssignmentScope = "specific_employees",
+                EmployeeIds = new List<Guid> { Guid.NewGuid() },
+                Quantity = 5
+            };
+
+            // Act
+            var result = await _sut.CreateReorderAsync(parentId, request);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(422, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task CreateReorderAsync_Returns500_WhenPricingNotConfigured()
+        {
+            // Arrange
+            var parentId = Guid.NewGuid();
+            _currentTenant.UserId.Returns(Guid.NewGuid());
+            var parentOrder = new CardOrder { Id = parentId, CardType = CardType.Plastic };
+            _orderRepo.GetQueryable().Returns(new List<CardOrder> { parentOrder }.AsQueryable().BuildMock());
+            
+            // Empty pricing
+            _cardPricingRepo.GetQueryable().Returns(new List<CardPricing>().AsQueryable().BuildMock());
+
+            var request = new ReorderRequest { Quantity = 5 };
+
+            // Act
+            var result = await _sut.CreateReorderAsync(parentId, request);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(500, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task CreateReorderAsync_ReturnsSuccess_WhenReorderIsValid()
+        {
+            // Arrange
+            var parentId = Guid.NewGuid();
+            _currentTenant.UserId.Returns(Guid.NewGuid());
+            var parentOrder = new CardOrder { Id = parentId, CardType = CardType.Plastic, CardName = "Parent Card" };
+            _orderRepo.GetQueryable().Returns(new List<CardOrder> { parentOrder }.AsQueryable().BuildMock());
+
+            var request = new ReorderRequest { Quantity = 5 };
+
+            // Act
+            var result = await _sut.CreateReorderAsync(parentId, request);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            await _orderRepo.Received(1).AddAsync(Arg.Is<CardOrder>(o => o.ParentOrderId == parentId && o.Quantity == 5));
+            await _unitOfWork.Received(1).SaveChangesAsync();
+        }
+
+        [Fact]
+        public async Task GetEmployeesImportStatusAsync_ReturnsJobStatus_WhenJobExists()
+        {
+            // Arrange
+            var jobId = Guid.NewGuid();
+            var job = new EmployeeImportJob
+            {
+                Id = jobId,
+                Status = EmployeeImportJobStatus.Completed,
+                TotalRows = 10,
+                Imported = 8,
+                Skipped = 2
+            };
+            _jobRepo.GetQueryable().Returns(new List<EmployeeImportJob> { job }.AsQueryable().BuildMock());
+
+            // Act
+            var result = await _sut.GetEmployeesImportStatusAsync(jobId);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal("Completed", result.Data!.Status);
+            Assert.Equal(10, result.Data.TotalRows);
+            Assert.Equal(8, result.Data.Imported);
+            Assert.Equal(2, result.Data.Skipped);
+        }
+
+        [Fact]
+        public async Task GetEmployeesImportStatusAsync_FallsBackToCardOrder_WhenJobDoesNotExist()
+        {
+            // Arrange
+            var orderId = Guid.NewGuid();
+            _jobRepo.GetQueryable().Returns(new List<EmployeeImportJob>().AsQueryable().BuildMock());
+
+            var order = new CardOrder { Id = orderId, Quantity = 5, Items = new List<CardOrderItem> { new CardOrderItem(), new CardOrderItem() } };
+            _orderRepo.GetQueryable().Returns(new List<CardOrder> { order }.AsQueryable().BuildMock());
+
+            var expectedDto = new EmployeesImportStatusDto { TotalRows = 5 };
+            _mapper.Map<EmployeesImportStatusDto>(order).Returns(expectedDto);
+
+            // Act
+            var result = await _sut.GetEmployeesImportStatusAsync(orderId);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal("Completed", result.Data!.Status);
+            Assert.Equal(5, result.Data.TotalRows);
+        }
+
+        [Fact]
+        public async Task GetEmployeesImportStatusAsync_ReturnsNotFound_WhenNeitherExists()
+        {
+            // Arrange
+            var id = Guid.NewGuid();
+            _jobRepo.GetQueryable().Returns(new List<EmployeeImportJob>().AsQueryable().BuildMock());
+            _orderRepo.GetQueryable().Returns(new List<CardOrder>().AsQueryable().BuildMock());
+
+            // Act
+            var result = await _sut.GetEmployeesImportStatusAsync(id);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(404, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task GetActivePricingCatalogAsync_ReturnsOnlyActivePricing()
+        {
+            // Arrange
+            var pricings = new List<CardPricing>
+            {
+                new CardPricing { IsActive = true, EffectiveFrom = DateTime.UtcNow.AddDays(-1), EffectiveTo = null },
+                new CardPricing { IsActive = false, EffectiveFrom = DateTime.UtcNow.AddDays(-5), EffectiveTo = DateTime.UtcNow.AddDays(-1) }
+            };
+            _cardPricingRepo.GetQueryable().Returns(pricings.AsQueryable().BuildMock());
+
+            var dtos = new List<CardPricingDto> { new CardPricingDto() };
+            _mapper.Map<IReadOnlyList<CardPricingDto>>(Arg.Is<List<CardPricing>>(l => l.Count == 1)).Returns(dtos);
+
+            // Act
+            var result = await _sut.GetActivePricingCatalogAsync();
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Single(result.Data!);
+        }
     }
 }

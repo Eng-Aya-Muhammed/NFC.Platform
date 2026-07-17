@@ -27,7 +27,7 @@ namespace NFC.Platform.Infrastructure.Seeders
                 return;
             }
 
-            var adminExists = await _context.Users.AnyAsync(u => u.Email == email);
+            var adminExists = await _context.Users.IgnoreQueryFilters().AnyAsync(u => u.Email == email);
             if (!adminExists)
             {
                 // Create a system/admin Tenant

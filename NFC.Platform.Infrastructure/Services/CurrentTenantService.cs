@@ -102,7 +102,8 @@ namespace NFC.Platform.Infrastructure.Services
                                         || r.Equals("SuperAdmin", StringComparison.OrdinalIgnoreCase));
 
             // 2. Resolve TenantId from claim
-            var tenantIdStr = httpContext.User.FindFirstValue(AppClaims.TenantId);
+            var tenantIdStr = httpContext.User.FindFirstValue(AppClaims.TenantId)
+                ?? httpContext.User.FindFirstValue("http://schemas.microsoft.com/identity/claims/tenantid");
             if (!Guid.TryParse(tenantIdStr, out Guid tenantId))
             {
                 // If it is a SuperAdmin, they may not have a tenant claim if they are a system user, or they might.

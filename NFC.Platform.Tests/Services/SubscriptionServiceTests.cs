@@ -360,5 +360,69 @@ namespace NFC.Platform.Tests.Services
             Assert.Equal(400, result.StatusCode);
             Assert.Equal("No active subscription found to renew.", result.Message);
         }
+
+        [Fact]
+        public async Task RenewSubscriptionAsync_StartsFromCurrentEndDate()
+        {
+            // Arrange
+            var tenantId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
+            var planId = Guid.NewGuid();
+
+            _currentTenant.TenantId.Returns(tenantId);
+            _currentTenant.UserId.Returns(userId);
+
+            var plan = new SubscriptionPlan { Id = planId, Name = "PremiumAnnual", DurationInDays = 365 };
+            _planRepo.GetQueryable().Returns(new List<SubscriptionPlan> { plan }.AsQueryable().BuildMock());
+
+            var currentEndDate = DateTime.UtcNow.AddDays(30);
+            var activeSub = new UserSubscription { TenantId = tenantId, IsActive = true, EndDate = currentEndDate };
+            _subscriptionRepo.GetQueryable().Returns(new List<UserSubscription> { activeSub }.AsQueryable().BuildMock());
+
+            var request = new RenewSubscriptionRequest { SubscriptionPlanId = planId };
+            _mapper.Map<UserSubscription>(request).Returns(new UserSubscription());
+            _mapper.Map<UserSubscriptionDto>(Arg.Any<UserSubscription>()).Returns(new UserSubscriptionDto { PlanName = "PremiumAnnual" });
+
+            // Act
+            var result = await _sut.RenewSubscriptionAsync(request);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            await _subscriptionRepo.Received(1).AddAsync(Arg.Is<UserSubscription>(s => 
+                s.StartDate == currentEndDate && 
+                s.EndDate == currentEndDate.AddDays(365) &&
+                s.IsActive == true));
+            await _unitOfWork.Received(1).SaveChangesAsync();
+        }
+
+        [Fact]
+        public async Task GetSubscriptionHistoryAsync_ReturnsEmpty_WhenNoHistory()
+        {
+            // Arrange
+            _currentTenant.TenantId.Returns(Guid.NewGuid());
+            _subscriptionRepo.GetQueryable().Returns(new List<UserSubscription>().AsQueryable().BuildMock());
+            _mapper.Map<IReadOnlyList<UserSubscriptionDto>>(Arg.Any<List<UserSubscription>>()).Returns(new List<UserSubscriptionDto>());
+
+            // Act
+            var result = await _sut.GetSubscriptionHistoryAsync();
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Empty(result.Data!);
+        }
+
+        [Fact]
+        public async Task GetSubscriptionHistoryAsync_ReturnsUnauthorized_WhenTenantIdIsNull()
+        {
+            // Arrange
+            _currentTenant.TenantId.Returns((Guid?)null);
+
+            // Act
+            var result = await _sut.GetSubscriptionHistoryAsync();
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(401, result.StatusCode);
+        }
     }
 }

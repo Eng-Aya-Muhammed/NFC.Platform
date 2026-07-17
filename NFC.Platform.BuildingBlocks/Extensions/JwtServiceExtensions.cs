@@ -38,7 +38,7 @@ namespace NFC.Platform.BuildingBlocks.Extensions
                     ValidateLifetime = true,
                     ClockSkew = TimeSpan.Zero,
                     NameClaimType = AppClaims.UserId,
-                    RoleClaimType = AppClaims.Role
+                    RoleClaimType = System.Security.Claims.ClaimTypes.Role
                 };
             });
 

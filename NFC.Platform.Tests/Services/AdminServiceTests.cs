@@ -433,5 +433,149 @@ namespace NFC.Platform.Tests.Services
             await _unitOfWork.Received(1).SaveChangesAsync();
             await _unitOfWork.Received(1).CommitTransactionAsync();
         }
+
+        [Fact]
+        public async Task UpdateCardPricingAsync_ReturnsFail_WhenDtoIsNull()
+        {
+            // Act
+            var result = await _sut.UpdateCardPricingAsync(null!);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(400, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task UpdateCardPricingAsync_ReturnsFail_WhenCurrencyIsInvalid()
+        {
+            // Arrange
+            var dto = new UpdateCardPricingDto { CardType = CardType.Plastic, UnitPrice = 5.0m, Currency = "US" }; // Not 3 chars
+
+            // Act
+            var result = await _sut.UpdateCardPricingAsync(dto);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(400, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task UpdateCardPricingAsync_ReturnsSuccessNoOp_WhenPriceAndCurrencyMatch()
+        {
+            // Arrange
+            var existingPricing = new CardPricing { CardType = CardType.Plastic, UnitPrice = 5.0m, Currency = "KWD", IsActive = true };
+            _cardPricingRepo.GetQueryable().Returns(new List<CardPricing> { existingPricing }.AsQueryable().BuildMock());
+
+            var dto = new UpdateCardPricingDto { CardType = CardType.Plastic, UnitPrice = 5.0m, Currency = "KWD" };
+
+            // Act
+            var result = await _sut.UpdateCardPricingAsync(dto);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.True(existingPricing.IsActive);
+            await _cardPricingRepo.DidNotReceive().AddAsync(Arg.Any<CardPricing>());
+            await _unitOfWork.Received(1).CommitTransactionAsync();
+        }
+
+        [Fact]
+        public async Task CreateTemplateAsync_CreatesGlobalTemplate()
+        {
+            // Arrange
+            var dto = new CreateCardTemplateDto { Name = "Global Temp", Category = "General" };
+            var mappedTemplate = new CardTemplate { Name = "Global Temp", Category = "General" };
+            _mapper.Map<CardTemplate>(dto).Returns(mappedTemplate);
+
+            var expectedDto = new CardTemplateDto { Name = "Global Temp" };
+            _mapper.Map<CardTemplateDto>(mappedTemplate).Returns(expectedDto);
+
+            // Act
+            var result = await _sut.CreateTemplateAsync(dto);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Null(mappedTemplate.TenantId);
+            await _cardTemplateRepo.Received(1).AddAsync(mappedTemplate);
+            await _unitOfWork.Received(1).SaveChangesAsync();
+        }
+
+        [Fact]
+        public async Task DeleteTemplateAsync_ReturnsNotFound_WhenTemplateDoesNotExist()
+        {
+            // Arrange
+            var id = Guid.NewGuid();
+            _cardTemplateRepo.GetByIdAsync(id).Returns((CardTemplate?)null);
+
+            // Act
+            var result = await _sut.DeleteTemplateAsync(id);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(404, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task ResolveTemplateRequestAsync_ReturnsNotFound_WhenRequestDoesNotExist()
+        {
+            // Arrange
+            var id = Guid.NewGuid();
+            _templateRequestRepo.GetByIdAsync(id).Returns((TemplateRequest?)null);
+
+            // Act
+            var result = await _sut.ResolveTemplateRequestAsync(id, new ResolveTemplateRequestDto());
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(404, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task ResolveTemplateRequestAsync_CascadesOrderStatus_WhenCompleted()
+        {
+            // Arrange
+            var requestId = Guid.NewGuid();
+            var orderId = Guid.NewGuid();
+            var templateRequest = new TemplateRequest { Id = requestId, LinkedOrderId = orderId, Status = TemplateRequestStatus.Pending };
+            _templateRequestRepo.GetByIdAsync(requestId).Returns(templateRequest);
+
+            var order = new CardOrder { Id = orderId, Status = OrderStatus.AwaitingDesign };
+            _orderRepo.GetByIdAsync(orderId).Returns(order);
+
+            var dto = new ResolveTemplateRequestDto { Status = TemplateRequestStatus.Completed, Notes = "Approved!" };
+
+            // Act
+            var result = await _sut.ResolveTemplateRequestAsync(requestId, dto);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(TemplateRequestStatus.Completed, templateRequest.Status);
+            Assert.Equal(OrderStatus.PendingReview, order.Status);
+            await _unitOfWork.Received(1).SaveChangesAsync();
+            await _unitOfWork.Received(1).CommitTransactionAsync();
+        }
+
+        [Fact]
+        public async Task ResolveTemplateRequestAsync_DoesNotCascadeOrderStatus_WhenNotCompleted()
+        {
+            // Arrange
+            var requestId = Guid.NewGuid();
+            var orderId = Guid.NewGuid();
+            var templateRequest = new TemplateRequest { Id = requestId, LinkedOrderId = orderId, Status = TemplateRequestStatus.Pending };
+            _templateRequestRepo.GetByIdAsync(requestId).Returns(templateRequest);
+
+            var order = new CardOrder { Id = orderId, Status = OrderStatus.AwaitingDesign };
+            _orderRepo.GetByIdAsync(orderId).Returns(order);
+
+            var dto = new ResolveTemplateRequestDto { Status = TemplateRequestStatus.Rejected, Notes = "Bad design" };
+
+            // Act
+            var result = await _sut.ResolveTemplateRequestAsync(requestId, dto);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(TemplateRequestStatus.Rejected, templateRequest.Status);
+            Assert.Equal(OrderStatus.AwaitingDesign, order.Status); // No transition
+            await _unitOfWork.Received(1).SaveChangesAsync();
+        }
     }
 }

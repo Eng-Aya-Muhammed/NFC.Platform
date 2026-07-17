@@ -18,6 +18,9 @@ namespace NFC.Platform.Infrastructure.Contexts
         private readonly AuditableEntitySaveChangesInterceptor _auditableInterceptor = auditableInterceptor ?? throw new ArgumentNullException(nameof(auditableInterceptor));
         private readonly ICurrentTenant _currentTenant = currentTenant ?? throw new ArgumentNullException(nameof(currentTenant));
 
+        public Guid CurrentTenantId => _currentTenant.TenantId ?? Guid.Empty;
+        public bool IsSuperAdmin => _currentTenant.IsSuperAdmin;
+
         public DbSet<Tenant> Tenants { get; set; }
         public DbSet<Card> Cards { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
@@ -105,10 +108,10 @@ namespace NFC.Platform.Infrastructure.Contexts
                             ?? throw new InvalidOperationException($"ITenantEntity {clrType.Name} does not have TenantId property.");
 
                         var tenantIdProp = Expression.Property(parameter, tenantIdPropInfo);
-                        var currentTenantExpr = Expression.Constant(_currentTenant);
+                        var dbContextExpr = Expression.Constant(this);
                         
-                        var isSuperAdminExpr = Expression.Property(currentTenantExpr, nameof(ICurrentTenant.IsSuperAdmin));
-                        var currentTenantIdExpr = Expression.Property(currentTenantExpr, nameof(ICurrentTenant.TenantId));
+                        var isSuperAdminExpr = Expression.Property(dbContextExpr, nameof(IsSuperAdmin));
+                        var currentTenantIdExpr = Expression.Property(dbContextExpr, nameof(CurrentTenantId));
 
                         Expression tenantIdComparison;
                         if (tenantIdPropInfo.PropertyType == typeof(Guid?))
@@ -117,7 +120,8 @@ namespace NFC.Platform.Infrastructure.Contexts
                             // _currentTenant.IsSuperAdmin || e.TenantId == null || e.TenantId == _currentTenant.TenantId
                             var nullConst = Expression.Constant(null, typeof(Guid?));
                             var isNullExpr = Expression.Equal(tenantIdProp, nullConst);
-                            var isMatchExpr = Expression.Equal(tenantIdProp, currentTenantIdExpr);
+                            var currentTenantIdNullable = Expression.Convert(currentTenantIdExpr, typeof(Guid?));
+                            var isMatchExpr = Expression.Equal(tenantIdProp, currentTenantIdNullable);
                             
                             var tenantMatchOrNull = Expression.OrElse(isNullExpr, isMatchExpr);
                             tenantIdComparison = Expression.OrElse(isSuperAdminExpr, tenantMatchOrNull);
@@ -125,11 +129,8 @@ namespace NFC.Platform.Infrastructure.Contexts
                         else
                         {
                             // Non-nullable Guid comparison:
-                            // _currentTenant.IsSuperAdmin || e.TenantId == (_currentTenant.TenantId ?? Guid.Empty)
-                            var guidEmpty = Expression.Constant(Guid.Empty, typeof(Guid));
-                            var resolvedTenantIdExpr = Expression.Coalesce(currentTenantIdExpr, guidEmpty);
-                            var isMatchExpr = Expression.Equal(tenantIdProp, resolvedTenantIdExpr);
-
+                            // _currentTenant.IsSuperAdmin || e.TenantId == _currentTenant.TenantId
+                            var isMatchExpr = Expression.Equal(tenantIdProp, currentTenantIdExpr);
                             tenantIdComparison = Expression.OrElse(isSuperAdminExpr, isMatchExpr);
                         }
 

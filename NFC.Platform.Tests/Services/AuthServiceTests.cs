@@ -450,5 +450,141 @@ namespace NFC.Platform.Tests.Services
             Assert.Equal(400, result.StatusCode);
             Assert.Equal("User already exists.", result.Message);
         }
+
+        [Fact]
+        public async Task ForgotPasswordAsync_SetsTokenAndExpires_WhenUserExists()
+        {
+            // Arrange
+            var user = new User { Email = "user@test.com" };
+            _userRepo.GetQueryable().Returns(new List<User> { user }.AsQueryable().BuildMock());
+
+            // Act
+            var result = await _sut.ForgotPasswordAsync(new ForgotPasswordRequest { Email = "user@test.com" });
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.NotNull(user.PasswordResetToken);
+            Assert.NotNull(user.PasswordResetTokenExpires);
+            await _unitOfWork.Received(1).SaveChangesAsync();
+        }
+
+        [Fact]
+        public async Task ForgotPasswordAsync_AlwaysReturnsSuccess_EvenWhenUserDoesNotExist()
+        {
+            // Arrange
+            _userRepo.GetQueryable().Returns(new List<User>().AsQueryable().BuildMock());
+
+            // Act
+            var result = await _sut.ForgotPasswordAsync(new ForgotPasswordRequest { Email = "nonexistent@test.com" });
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            await _unitOfWork.DidNotReceive().SaveChangesAsync();
+        }
+
+        [Fact]
+        public async Task ResetPasswordAsync_Returns400_WhenTokenIsInvalid()
+        {
+            // Arrange
+            _userRepo.GetQueryable().Returns(new List<User>().AsQueryable().BuildMock());
+
+            // Act
+            var result = await _sut.ResetPasswordAsync(new ResetPasswordRequest { Token = "invalid", NewPassword = "NewPassword123!" });
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(400, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task ResetPasswordAsync_Returns400_WhenTokenIsExpired()
+        {
+            // Arrange
+            var expiredUser = new User
+            {
+                PasswordResetToken = "expired",
+                PasswordResetTokenExpires = DateTime.UtcNow.AddMinutes(-10)
+            };
+            _userRepo.GetQueryable().Returns(new List<User> { expiredUser }.AsQueryable().BuildMock());
+
+            // Act
+            var result = await _sut.ResetPasswordAsync(new ResetPasswordRequest { Token = "expired", NewPassword = "NewPassword123!" });
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(400, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task ResetPasswordAsync_ResetsPasswordSuccessfully()
+        {
+            // Arrange
+            var user = new User
+            {
+                PasswordResetToken = "valid",
+                PasswordResetTokenExpires = DateTime.UtcNow.AddMinutes(10)
+            };
+            _userRepo.GetQueryable().Returns(new List<User> { user }.AsQueryable().BuildMock());
+
+            // Act
+            var result = await _sut.ResetPasswordAsync(new ResetPasswordRequest { Token = "valid", NewPassword = "NewPassword123!" });
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Null(user.PasswordResetToken);
+            Assert.Null(user.PasswordResetTokenExpires);
+            Assert.True(NFC.Platform.BuildingBlocks.Common.Helpers.PasswordHasher.VerifyPassword("NewPassword123!", user.PasswordHash));
+            await _unitOfWork.Received(1).SaveChangesAsync();
+        }
+
+        [Fact]
+        public async Task CreateUserByAdminAsync_Returns400_WhenRoleDoesNotExist()
+        {
+            // Arrange
+            var request = new AdminCreateUserRequest
+            {
+                Username = "newuser",
+                Email = "new@test.com",
+                Password = "Password123!",
+                Role = AppRole.Customer
+            };
+            _userRepo.GetQueryable().Returns(new List<User>().AsQueryable().BuildMock());
+            _roleRepo.FindAsync(Arg.Any<Expression<Func<Role, bool>>>()).Returns(new List<Role>()); // No roles matching
+
+            // Act
+            var result = await _sut.CreateUserByAdminAsync(request);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(400, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task CreateUserByAdminAsync_CreatesUserAndRoleSuccessfully()
+        {
+            // Arrange
+            var request = new AdminCreateUserRequest
+            {
+                Username = "newuser",
+                Email = "new@test.com",
+                Password = "Password123!",
+                Role = AppRole.Customer
+            };
+            _userRepo.GetQueryable().Returns(new List<User>().AsQueryable().BuildMock());
+
+            var role = new Role { Id = Guid.NewGuid(), Name = "Customer" };
+            _roleRepo.FindAsync(Arg.Any<Expression<Func<Role, bool>>>()).Returns(new List<Role> { role });
+
+            // Act
+            var result = await _sut.CreateUserByAdminAsync(request);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal("newuser", result.Data!.Username);
+            Assert.Equal("new@test.com", result.Data.Email);
+            await _userRepo.Received(1).AddAsync(Arg.Any<User>());
+            await _userRoleRepo.Received(1).AddAsync(Arg.Is<UserRole>(ur => ur.RoleId == role.Id));
+            await _unitOfWork.Received(2).SaveChangesAsync();
+        }
     }
 }

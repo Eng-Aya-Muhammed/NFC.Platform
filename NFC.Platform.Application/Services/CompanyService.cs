@@ -106,20 +106,14 @@ public class CompanyService(
                 return ServiceResult<CompanyDashboardDto>.Unauthorized(_messageService.Get("Unauthorized") ?? "User is not authenticated.");
 
             // 1. Employee Count
-            var employeesTask = _unitOfWork.Repository<Employee>().CountAsync();
+            var totalEmployees = await _unitOfWork.Repository<Employee>().CountAsync();
 
             // 2. Card Orders Count
-            var ordersTask = _unitOfWork.Repository<CardOrder>().CountAsync();
+            var cardRequests = await _unitOfWork.Repository<CardOrder>().CountAsync();
 
             // 3. Contact Saves Count
-            var contactSavesTask = _unitOfWork.Repository<ProfileMetric>()
+            var contactSaves = await _unitOfWork.Repository<ProfileMetric>()
                 .CountAsync(m => m.InteractionType == InteractionType.ContactSaved);
-
-            await Task.WhenAll(employeesTask, ordersTask, contactSavesTask);
-
-            var totalEmployees = employeesTask.Result;
-            var cardRequests = ordersTask.Result;
-            var contactSaves = contactSavesTask.Result;
 
             // 4. Top Employee (Most active profile, projection join)
             var topEmployeeName = await _unitOfWork.Repository<ProfileMetric>()

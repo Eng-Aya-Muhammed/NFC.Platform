@@ -345,5 +345,194 @@ namespace NFC.Platform.Tests.Services
             _cardRepo.Received(1).Remove(card);
             await _unitOfWork.Received(1).SaveChangesAsync();
         }
+
+        [Fact]
+        public async Task GetCardsForEncodingAsync_FiltersBy_StatusFilter()
+        {
+            // Arrange
+            var orderId = Guid.NewGuid();
+            var cards = new List<Card>
+            {
+                new Card { CardOrderId = orderId, Status = CardStatus.Active },
+                new Card { CardOrderId = orderId, Status = CardStatus.UnassignedCode }
+            };
+            _cardRepo.GetQueryable().Returns(cards.AsQueryable().BuildMock());
+
+            var activeDto = new CardDto { IsActive = true };
+            _mapper.Map<CardDto>(Arg.Is<Card>(c => c.Status == CardStatus.Active)).Returns(activeDto);
+
+            // Act
+            var result = await _sut.GetCardsForEncodingAsync(orderId, "Active");
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Single(result.Data!);
+            Assert.True(result.Data![0].IsActive);
+        }
+
+        [Fact]
+        public async Task GetCardsForEncodingAsync_ReturnsAll_WhenNoStatusFilter()
+        {
+            // Arrange
+            var orderId = Guid.NewGuid();
+            var cards = new List<Card>
+            {
+                new Card { CardOrderId = orderId, Status = CardStatus.Active },
+                new Card { CardOrderId = orderId, Status = CardStatus.UnassignedCode }
+            };
+            _cardRepo.GetQueryable().Returns(cards.AsQueryable().BuildMock());
+
+            _mapper.Map<CardDto>(Arg.Any<Card>()).Returns(new CardDto());
+
+            // Act
+            var result = await _sut.GetCardsForEncodingAsync(orderId, null);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(2, result.Data!.Count);
+        }
+
+        [Fact]
+        public async Task ActivateCardAsync_ReturnsDeactivated410_WhenCardIsDeactivated()
+        {
+            // Arrange
+            _currentTenant.UserId.Returns(Guid.NewGuid());
+            _currentTenant.TenantId.Returns(Guid.NewGuid());
+
+            var card = new Card { UniqueCode = "DEACT123", Status = CardStatus.Deactivated };
+            _cardRepo.FindAsync(Arg.Any<System.Linq.Expressions.Expression<Func<Card, bool>>>())
+                .Returns(new List<Card> { card });
+
+            // Act
+            var result = await _sut.ActivateCardAsync(new ActivateCardRequest { ActivationCode = "DEACT123" });
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(410, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task ActivateAllCardsForOrderAsync_ActivatesOnlyNonActive_Cards()
+        {
+            // Arrange
+            var orderId = Guid.NewGuid();
+            var cards = new List<Card>
+            {
+                new Card { CardOrderId = orderId, Status = CardStatus.UnassignedCode },
+                new Card { CardOrderId = orderId, Status = CardStatus.Active } // Should not match Query
+            };
+            _cardRepo.GetQueryable().Returns(cards.AsQueryable().Where(c => c.Status != CardStatus.Active).BuildMock());
+
+            // Act
+            var result = await _sut.ActivateAllCardsForOrderAsync(orderId);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.All(cards.Where(c => c.CardOrderId == orderId), c => Assert.Equal(CardStatus.Active, c.Status));
+            await _unitOfWork.Received(1).SaveChangesAsync();
+        }
+
+        [Fact]
+        public async Task ActivateAllCardsForOrderAsync_ReturnsSuccess_WhenNoCardsToActivate()
+        {
+            // Arrange
+            var orderId = Guid.NewGuid();
+            _cardRepo.GetQueryable().Returns(new List<Card>().AsQueryable().BuildMock());
+
+            // Act
+            var result = await _sut.ActivateAllCardsForOrderAsync(orderId);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            await _unitOfWork.DidNotReceive().SaveChangesAsync();
+        }
+
+        [Fact]
+        public async Task MarkCardEncodedAsync_ReturnsNotFound_WhenCardDoesNotExist()
+        {
+            // Arrange
+            var cardId = Guid.NewGuid();
+            _cardRepo.GetByIdAsync(cardId).Returns((Card?)null);
+
+            // Act
+            var result = await _sut.MarkCardEncodedAsync(cardId);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(404, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task MarkCardEncodedAsync_FailsWhenStatus_IsNotUnassignedCode()
+        {
+            // Arrange
+            var cardId = Guid.NewGuid();
+            var card = new Card { Id = cardId, Status = CardStatus.Active };
+            _cardRepo.GetByIdAsync(cardId).Returns(card);
+
+            // Act
+            var result = await _sut.MarkCardEncodedAsync(cardId);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(400, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task MarkCardEncodedAsync_TransitionsOrderToReady_WhenAllEncoded()
+        {
+            // Arrange
+            var cardId = Guid.NewGuid();
+            var orderId = Guid.NewGuid();
+            var card = new Card { Id = cardId, CardOrderId = orderId, Status = CardStatus.UnassignedCode };
+            _cardRepo.GetByIdAsync(cardId).Returns(card);
+
+            var order = new CardOrder { Id = orderId, Status = OrderStatus.Encoding };
+            _unitOfWork.Repository<CardOrder>().GetByIdAsync(orderId).Returns(order);
+
+            // Any remaining unassigned should be false
+            _cardRepo.GetQueryable().Returns(new List<Card>().AsQueryable().BuildMock());
+
+            // Act
+            var result = await _sut.MarkCardEncodedAsync(cardId);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(CardStatus.Encoded, card.Status);
+            Assert.Equal(OrderStatus.ReadyForDelivery, order.Status);
+            await _unitOfWork.Received(2).SaveChangesAsync(); // One for card, one for order transition
+        }
+
+        [Fact]
+        public async Task DeactivateCardAsync_NotFound_WhenCardDoesNotExist()
+        {
+            // Arrange
+            var cardId = Guid.NewGuid();
+            _cardRepo.GetByIdAsync(cardId).Returns((Card?)null);
+
+            // Act
+            var result = await _sut.DeactivateCardAsync(cardId);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(404, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task DeactivateCardAsync_SetsStatusToDeactivated()
+        {
+            // Arrange
+            var cardId = Guid.NewGuid();
+            var card = new Card { Id = cardId, Status = CardStatus.Active };
+            _cardRepo.GetByIdAsync(cardId).Returns(card);
+
+            // Act
+            var result = await _sut.DeactivateCardAsync(cardId);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(CardStatus.Deactivated, card.Status);
+            await _unitOfWork.Received(1).SaveChangesAsync();
+        }
     }
 }

@@ -86,6 +86,7 @@ namespace NFC.Platform.Application.Extensions
                 {
                     profile.CustomLinks.Add(new ProfileLink
                     {
+                        Id = Guid.Empty,
                         Title = url,
                         Url = url,
                         DisplayOrder = displayOrder++,

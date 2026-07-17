@@ -1,3 +1,5 @@
+using Microsoft.EntityFrameworkCore;
+
 namespace NFC.Platform.Application.Services;
 
     public class AuthService(
@@ -12,8 +14,18 @@ namespace NFC.Platform.Application.Services;
         public async Task<ServiceResult<AuthDto>> LoginAsync(LoginRequest request)
         {
             var userRepo = _unitOfWork.Repository<User>();
-            var matchedUsers = await userRepo.FindAsync(u => u.Email == request.Email);
-            var user = matchedUsers.Count > 0 ? matchedUsers[0] : null;
+            
+            User? user = null;
+            var query = userRepo.GetQueryable();
+            if (query != null && query.Provider is Microsoft.EntityFrameworkCore.Query.IAsyncQueryProvider)
+            {
+                user = await query.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Email == request.Email);
+            }
+            else
+            {
+                var matchedUsers = await userRepo.FindAsync(u => u.Email == request.Email);
+                user = matchedUsers.Count > 0 ? matchedUsers[0] : null;
+            }
 
             if (user == null || !PasswordHasher.VerifyPassword(request.Password, user.PasswordHash))
             {
@@ -32,8 +44,19 @@ namespace NFC.Platform.Application.Services;
             var companyRepo = _unitOfWork.Repository<Company>();
 
             // Check if user already exists
-            var existingUsers = await userRepo.FindAsync(u => u.Email == request.Email);
-            if (existingUsers.Count > 0)
+            bool userExists = false;
+            var query = userRepo.GetQueryable();
+            if (query != null && query.Provider is Microsoft.EntityFrameworkCore.Query.IAsyncQueryProvider)
+            {
+                userExists = await query.IgnoreQueryFilters().AnyAsync(u => u.Email == request.Email);
+            }
+            else
+            {
+                var existingUsers = await userRepo.FindAsync(u => u.Email == request.Email);
+                userExists = existingUsers.Count > 0;
+            }
+
+            if (userExists)
             {
                 return ServiceResult<AuthDto>.Fail(_messageService.Get("UserAlreadyExists"), 400);
             }
@@ -128,7 +151,17 @@ namespace NFC.Platform.Application.Services;
                 return ServiceResult<AuthDto>.Unauthorized(_messageService.Get("InvalidRefreshToken"));
             }
 
-            var user = await userRepo.GetByIdAsync(token.UserId);
+            User? user = null;
+            var query = userRepo.GetQueryable();
+            if (query != null && query.Provider is Microsoft.EntityFrameworkCore.Query.IAsyncQueryProvider)
+            {
+                user = await query.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Id == token.UserId);
+            }
+            else
+            {
+                user = await userRepo.GetByIdAsync(token.UserId);
+            }
+
             if (user == null)
             {
                 return ServiceResult<AuthDto>.Unauthorized(_messageService.Get("InvalidRefreshToken"));
@@ -159,8 +192,18 @@ namespace NFC.Platform.Application.Services;
         public async Task<ServiceResult> ForgotPasswordAsync(ForgotPasswordRequest request)
         {
             var userRepo = _unitOfWork.Repository<User>();
-            var matchedUsers = await userRepo.FindAsync(u => u.Email == request.Email);
-            var user = matchedUsers.Count > 0 ? matchedUsers[0] : null;
+            
+            User? user = null;
+            var query = userRepo.GetQueryable();
+            if (query != null && query.Provider is Microsoft.EntityFrameworkCore.Query.IAsyncQueryProvider)
+            {
+                user = await query.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Email == request.Email);
+            }
+            else
+            {
+                var matchedUsers = await userRepo.FindAsync(u => u.Email == request.Email);
+                user = matchedUsers.Count > 0 ? matchedUsers[0] : null;
+            }
 
             if (user != null)
             {
@@ -184,8 +227,18 @@ namespace NFC.Platform.Application.Services;
         public async Task<ServiceResult> ResetPasswordAsync(ResetPasswordRequest request)
         {
             var userRepo = _unitOfWork.Repository<User>();
-            var matchedUsers = await userRepo.FindAsync(u => u.PasswordResetToken == request.Token);
-            var user = matchedUsers.Count > 0 ? matchedUsers[0] : null;
+            
+            User? user = null;
+            var query = userRepo.GetQueryable();
+            if (query != null && query.Provider is Microsoft.EntityFrameworkCore.Query.IAsyncQueryProvider)
+            {
+                user = await query.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.PasswordResetToken == request.Token);
+            }
+            else
+            {
+                var matchedUsers = await userRepo.FindAsync(u => u.PasswordResetToken == request.Token);
+                user = matchedUsers.Count > 0 ? matchedUsers[0] : null;
+            }
 
             if (user == null)
             {
@@ -212,8 +265,19 @@ namespace NFC.Platform.Application.Services;
             var roleRepo = _unitOfWork.Repository<Role>();
             var userRoleRepo = _unitOfWork.Repository<UserRole>();
 
-            var existingUsers = await userRepo.FindAsync(u => u.Email == request.Email);
-            if (existingUsers.Count > 0)
+            bool userExists = false;
+            var query = userRepo.GetQueryable();
+            if (query != null && query.Provider is Microsoft.EntityFrameworkCore.Query.IAsyncQueryProvider)
+            {
+                userExists = await query.IgnoreQueryFilters().AnyAsync(u => u.Email == request.Email);
+            }
+            else
+            {
+                var existingUsers = await userRepo.FindAsync(u => u.Email == request.Email);
+                userExists = existingUsers.Count > 0;
+            }
+
+            if (userExists)
             {
                 return ServiceResult<UserDto>.Fail(_messageService.Get("UserAlreadyExists"), 400);
             }
