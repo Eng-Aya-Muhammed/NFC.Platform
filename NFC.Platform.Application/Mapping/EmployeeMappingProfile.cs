@@ -30,5 +30,13 @@ public class EmployeeMappingProfile : Profile
             .ForMember(dest => dest.JobTitle, opt => opt.MapFrom(src => src.JobTitle ?? string.Empty))
             .ForMember(dest => dest.Department, opt => opt.MapFrom(src => src.Department ?? string.Empty))
             .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => UserStatus.Active));
+
+        CreateMap<UpdateEmployeeRequest, Employee>()
+            .ForMember(dest => dest.JobTitle, opt => opt.MapFrom(src => src.JobTitle ?? string.Empty))
+            .ForMember(dest => dest.Department, opt => opt.MapFrom(src => src.Department ?? string.Empty))
+            .ForMember(dest => dest.FullName, opt => {
+                opt.Condition(src => src.FullName != null);
+                opt.MapFrom(src => src.FullName);
+            });
     }
 }

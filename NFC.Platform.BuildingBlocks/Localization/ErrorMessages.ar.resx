@@ -229,4 +229,7 @@
   <data name="CardMustHaveProfileToReissue" xml:space="preserve">
     <value>يجب ربط البطاقة بملف تعريفي لإعادة إصدارها.</value>
   </data>
+  <data name="ResetTokenExpired" xml:space="preserve">
+    <value>انتهت صلاحية رمز إعادة التعيين.</value>
+  </data>
 </root>

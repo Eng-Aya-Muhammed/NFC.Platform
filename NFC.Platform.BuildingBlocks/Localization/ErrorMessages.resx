@@ -229,4 +229,7 @@
   <data name="CardMustHaveProfileToReissue" xml:space="preserve">
     <value>The card must be linked to a user profile to be reissued.</value>
   </data>
+  <data name="ResetTokenExpired" xml:space="preserve">
+    <value>Reset token has expired.</value>
+  </data>
 </root>

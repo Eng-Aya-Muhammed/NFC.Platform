@@ -224,7 +224,7 @@ namespace NFC.Platform.Application.Services;
             if (user == null)
                 return null;
 
-            var newProfile = new UserProfile { UserId = userId, FullName = user.Username };
+            var newProfile = _mapper.Map<UserProfile>(user);
             await userProfileRepo.AddAsync(newProfile);
             await _unitOfWork.SaveChangesAsync();
             return newProfile;

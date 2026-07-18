@@ -130,5 +130,28 @@ namespace NFC.Platform.Tests.Mapping
             // Assert
             Assert.Equal("https://linkedin.com/in/employee", dto.LinkedInUrl);
         }
+
+        [Fact]
+        public void UpdateEmployeeRequest_To_Employee_MapsCorrectly()
+        {
+            // Arrange
+            var request = new UpdateEmployeeRequest
+            {
+                FullName = "Updated Name",
+                JobTitle = "Senior Dev",
+                Department = "Engineering",
+                Status = NFC.Platform.Domain.Enums.UserStatus.Active
+            };
+            var employee = new Employee { FullName = "Old Name" };
+
+            // Act
+            _mapper.Map(request, employee);
+
+            // Assert
+            Assert.Equal("Updated Name", employee.FullName);
+            Assert.Equal("Senior Dev", employee.JobTitle);
+            Assert.Equal("Engineering", employee.Department);
+            Assert.Equal(NFC.Platform.Domain.Enums.UserStatus.Active, employee.Status);
+        }
     }
 }

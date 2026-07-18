@@ -4,6 +4,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using AutoMapper;
+using NFC.Platform.Application.Mapping;
 using MockQueryable.NSubstitute;
 using NFC.Platform.Application.DTOs;
 using NFC.Platform.Application.Interfaces.Repositories;
@@ -34,6 +35,17 @@ namespace NFC.Platform.Tests.Services
             _unitOfWork = Substitute.For<IUnitOfWork>();
             _messageService = Substitute.For<IMessageService>();
             _mapper = Substitute.For<IMapper>();
+
+            _mapper.Map<ProfileMetric>(Arg.Any<RecordMetricRequest>()).Returns(x =>
+            {
+                var req = (RecordMetricRequest)x[0];
+                return new ProfileMetric
+                {
+                    InteractionType = req.InteractionType,
+                    ProfileLinkId = req.ProfileLinkId,
+                    CardId = req.CardId
+                };
+            });
 
             _cardRepo = Substitute.For<IGenericRepository<Card>>();
             _profileRepo = Substitute.For<IGenericRepository<UserProfile>>();

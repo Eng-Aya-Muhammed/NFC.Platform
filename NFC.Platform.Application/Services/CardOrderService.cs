@@ -604,7 +604,7 @@ namespace NFC.Platform.Application.Services;
                             // Validate subscription limit
                             if (currentEmployeesCount + newEmployeesCount >= activeSub.SubscriptionPlan.MaxEmployees)
                             {
-                                throw new Exception("MaxEmployeesLimitReached");
+                                throw new BusinessException("MaxEmployeesLimitReached");
                             }
 
                             // Create employee record
@@ -757,19 +757,7 @@ namespace NFC.Platform.Application.Services;
 
             if (job != null)
             {
-                var errors = string.IsNullOrWhiteSpace(job.ErrorsJson)
-                    ? new List<string>()
-                    : System.Text.Json.JsonSerializer.Deserialize<List<string>>(job.ErrorsJson) ?? new List<string>();
-
-                var dto = new EmployeesImportStatusDto
-                {
-                    Status = job.Status.ToString(),
-                    TotalRows = job.TotalRows,
-                    Imported = job.Imported,
-                    Skipped = job.Skipped,
-                    Errors = errors
-                };
-
+                var dto = _mapper.Map<EmployeesImportStatusDto>(job);
                 return ServiceResult<EmployeesImportStatusDto>.Success(dto);
             }
 

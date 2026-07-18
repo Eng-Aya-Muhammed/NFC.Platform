@@ -157,4 +157,10 @@
   <data name="WebsiteUrl" xml:space="preserve">
     <value>رابط الموقع الإلكتروني</value>
   </data>
+  <data name="ExactlyOneDesignSourceRequired" xml:space="preserve">
+    <value>يجب تحديد مصدر تصميم واحد بالضبط (الملفات المرفوعة أو طلب تصميم مخصص).</value>
+  </data>
+  <data name="InvalidUrl" xml:space="preserve">
+    <value>صيغة الرابط غير صحيحة.</value>
+  </data>
 </root>

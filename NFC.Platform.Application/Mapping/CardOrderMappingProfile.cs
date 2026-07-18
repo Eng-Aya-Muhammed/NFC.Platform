@@ -81,6 +81,12 @@ namespace NFC.Platform.Application.Mapping
                 .ForMember(dest => dest.Imported, opt => opt.MapFrom(src => src.Items.Count))
                 .ForMember(dest => dest.Skipped, opt => opt.MapFrom(_ => 0))
                 .ForMember(dest => dest.Errors, opt => opt.MapFrom(_ => new List<string>()));
+
+            CreateMap<EmployeeImportJob, EmployeesImportStatusDto>()
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
+                .ForMember(dest => dest.Errors, opt => opt.MapFrom(src => string.IsNullOrWhiteSpace(src.ErrorsJson) 
+                    ? new List<string>() 
+                    : System.Text.Json.JsonSerializer.Deserialize<List<string>>(src.ErrorsJson, (System.Text.Json.JsonSerializerOptions)null!) ?? new List<string>()));
         }
     }
 }

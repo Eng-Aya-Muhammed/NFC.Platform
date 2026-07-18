@@ -84,6 +84,18 @@ public class UserProfileMappingProfile : Profile
                 UpdateStandardLink(dest, PlatformConstants.Instagram, src.InstagramUrl);
                 UpdateStandardLink(dest, PlatformConstants.Website, src.WebsiteUrl);
             });
+
+        CreateMap<User, UserProfile>()
+            .ForMember(dest => dest.UserId, opt => opt.MapFrom(src => src.Id))
+            .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => src.Username))
+            .ForMember(dest => dest.TenantId, opt => opt.MapFrom(src => src.TenantId))
+            .ForMember(dest => dest.Id, opt => opt.Ignore())
+            .ForMember(dest => dest.CustomLinks, opt => opt.Ignore())
+            .ForMember(dest => dest.ActivatedCards, opt => opt.Ignore());
+
+        CreateMap<RecordMetricRequest, ProfileMetric>()
+            .ForMember(dest => dest.UserProfileId, opt => opt.Ignore())
+            .ForMember(dest => dest.TenantId, opt => opt.Ignore());
     }
 
     private static void UpdateStandardLink(UserProfile dest, string title, string? url)

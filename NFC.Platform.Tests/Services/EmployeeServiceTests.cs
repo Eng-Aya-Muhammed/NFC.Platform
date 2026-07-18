@@ -445,6 +445,13 @@ namespace NFC.Platform.Tests.Services
             };
 
             _mapper.Map<EmployeeDetailsDto>(employee).Returns(new EmployeeDetailsDto { JobTitle = "New Title" });
+            _mapper.Map(request, employee).Returns(x => {
+                employee.FullName = request.FullName ?? employee.FullName;
+                employee.JobTitle = request.JobTitle ?? string.Empty;
+                employee.Department = request.Department ?? string.Empty;
+                employee.Status = request.Status;
+                return employee;
+            });
             _messageService.Get("RecordUpdated").Returns("Updated successfully.");
 
             // Act

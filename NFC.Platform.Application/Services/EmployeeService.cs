@@ -123,10 +123,7 @@ namespace NFC.Platform.Application.Services;
             if (employee == null)
                 return ServiceResult<EmployeeDetailsDto>.NotFound(_messageService.Get("RecordNotFound"));
 
-            employee.Status = request.Status;
-            employee.JobTitle = request.JobTitle ?? string.Empty;
-            employee.Department = request.Department ?? string.Empty;
-            employee.FullName = request.FullName ?? employee.FullName;
+            _mapper.Map(request, employee);
 
             if (employee.UserProfile != null)
             {

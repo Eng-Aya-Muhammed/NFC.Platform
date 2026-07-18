@@ -157,4 +157,10 @@
   <data name="WebsiteUrl" xml:space="preserve">
     <value>Website Link</value>
   </data>
+  <data name="ExactlyOneDesignSourceRequired" xml:space="preserve">
+    <value>Exactly one design source must be specified (Uploaded Files or Custom Design Request).</value>
+  </data>
+  <data name="InvalidUrl" xml:space="preserve">
+    <value>Invalid URL format.</value>
+  </data>
 </root>

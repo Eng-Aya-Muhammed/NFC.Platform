@@ -78,14 +78,9 @@ public class ProfileMetricService(IUnitOfWork unitOfWork, IMessageService messag
         if (profile == null)
             return ServiceResult.NotFound(_messageService.Get("RecordNotFound") ?? "Profile not found.");
 
-        var metric = new ProfileMetric
-        {
-            UserProfileId = profileId,
-            TenantId = profile.TenantId,
-            InteractionType = request.InteractionType,
-            ProfileLinkId = request.ProfileLinkId,
-            CardId = request.CardId
-        };
+        var metric = _mapper.Map<ProfileMetric>(request);
+        metric.UserProfileId = profileId;
+        metric.TenantId = profile.TenantId;
 
         await _unitOfWork.Repository<ProfileMetric>().AddAsync(metric);
         await _unitOfWork.SaveChangesAsync();

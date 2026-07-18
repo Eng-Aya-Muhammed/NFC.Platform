@@ -4,6 +4,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using AutoMapper;
+using NFC.Platform.Application.Mapping;
 using NFC.Platform.Application.DTOs;
 using NFC.Platform.Application.Interfaces.Repositories;
 using NFC.Platform.Application.Services;
@@ -34,6 +35,18 @@ namespace NFC.Platform.Tests.Services
         {
             _unitOfWork = Substitute.For<IUnitOfWork>();
             _mapper = Substitute.For<IMapper>();
+            
+            _mapper.Map<UserProfile>(Arg.Any<User>()).Returns(x =>
+            {
+                var u = (User)x[0];
+                return new UserProfile
+                {
+                    UserId = u.Id,
+                    FullName = u.Username,
+                    TenantId = u.TenantId
+                };
+            });
+
             _messageService = Substitute.For<IMessageService>();
             _currentTenant = Substitute.For<ICurrentTenant>();
 

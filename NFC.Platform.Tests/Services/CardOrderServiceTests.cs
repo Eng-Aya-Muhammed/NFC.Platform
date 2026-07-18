@@ -1348,6 +1348,14 @@ namespace NFC.Platform.Tests.Services
                 Skipped = 2
             };
             _jobRepo.GetQueryable().Returns(new List<EmployeeImportJob> { job }.AsQueryable().BuildMock());
+            _mapper.Map<EmployeesImportStatusDto>(job).Returns(new EmployeesImportStatusDto
+            {
+                Status = job.Status.ToString(),
+                TotalRows = job.TotalRows,
+                Imported = job.Imported,
+                Skipped = job.Skipped,
+                Errors = new List<string>()
+            });
 
             // Act
             var result = await _sut.GetEmployeesImportStatusAsync(jobId);
