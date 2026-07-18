@@ -325,7 +325,7 @@ namespace NFC.Platform.Tests.Services
             var file = Substitute.For<Microsoft.AspNetCore.Http.IFormFile>();
 
             // Act
-            var result = await _sut.QueueEmployeeImportJobAsync(file, CardType.Plastic, CardDesignType.BuiltInTemplate, null, null);
+            var result = await _sut.QueueEmployeeImportJobAsync(file, CardType.Plastic, CardDesignType.BuiltInTemplate, null);
 
             // Assert
             Assert.False(result.IsSuccess);
@@ -340,7 +340,7 @@ namespace NFC.Platform.Tests.Services
             _currentTenant.UserId.Returns(Guid.NewGuid());
 
             // Act
-            var result = await _sut.QueueEmployeeImportJobAsync(null!, CardType.Plastic, CardDesignType.BuiltInTemplate, null, null);
+            var result = await _sut.QueueEmployeeImportJobAsync(null!, CardType.Plastic, CardDesignType.BuiltInTemplate, null);
 
             // Assert
             Assert.False(result.IsSuccess);
@@ -360,7 +360,7 @@ namespace NFC.Platform.Tests.Services
             file.Length.Returns(100);
 
             // Act
-            var result = await _sut.QueueEmployeeImportJobAsync(file, CardType.Plastic, CardDesignType.BuiltInTemplate, null, null);
+            var result = await _sut.QueueEmployeeImportJobAsync(file, CardType.Plastic, CardDesignType.BuiltInTemplate, null);
 
             // Assert
             Assert.False(result.IsSuccess);
@@ -388,7 +388,7 @@ namespace NFC.Platform.Tests.Services
             _messageService.Get("RecordCreated").Returns("Success message");
 
             // Act
-            var result = await _sut.QueueEmployeeImportJobAsync(file, CardType.Plastic, CardDesignType.BuiltInTemplate, null, "Notes test");
+            var result = await _sut.QueueEmployeeImportJobAsync(file, CardType.Plastic, CardDesignType.BuiltInTemplate, "Notes test");
 
             // Assert
             Assert.True(result.IsSuccess);

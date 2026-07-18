@@ -34,6 +34,8 @@ namespace NFC.Platform.Tests.Services
         private readonly IGenericRepository<Tenant> _tenantRepo;
         private readonly IGenericRepository<UserSubscription> _subscriptionRepo;
         private readonly IGenericRepository<CardPricing> _cardPricingRepo;
+        private readonly IGenericRepository<Company> _companyRepo;
+        private readonly IGenericRepository<UserProfile> _userProfileRepo;
 
         private readonly AdminService _sut;
 
@@ -51,6 +53,8 @@ namespace NFC.Platform.Tests.Services
             _tenantRepo          = Substitute.For<IGenericRepository<Tenant>>();
             _subscriptionRepo    = Substitute.For<IGenericRepository<UserSubscription>>();
             _cardPricingRepo     = Substitute.For<IGenericRepository<CardPricing>>();
+            _companyRepo         = Substitute.For<IGenericRepository<Company>>();
+            _userProfileRepo     = Substitute.For<IGenericRepository<UserProfile>>();
 
             _unitOfWork.Repository<CardOrder>().Returns(_orderRepo);
             _unitOfWork.Repository<TemplateRequest>().Returns(_templateRequestRepo);
@@ -58,6 +62,12 @@ namespace NFC.Platform.Tests.Services
             _unitOfWork.Repository<Tenant>().Returns(_tenantRepo);
             _unitOfWork.Repository<UserSubscription>().Returns(_subscriptionRepo);
             _unitOfWork.Repository<CardPricing>().Returns(_cardPricingRepo);
+            _unitOfWork.Repository<Company>().Returns(_companyRepo);
+            _unitOfWork.Repository<UserProfile>().Returns(_userProfileRepo);
+
+            // Seed mock queryable lists to avoid EF FirstOrDefaultAsync failures in tests
+            _companyRepo.GetQueryable().Returns(new List<Company>().AsQueryable().BuildMock());
+            _userProfileRepo.GetQueryable().Returns(new List<UserProfile>().AsQueryable().BuildMock());
 
             // Default QR mock: returns a minimal valid PNG header (8 bytes) + no-op upload.
             _qrCodeGenerator

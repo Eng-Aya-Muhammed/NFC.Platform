@@ -12,12 +12,11 @@ namespace NFC.Platform.Application.Validators.CardOrder
                 .Must(x =>
                 {
                     int count = 0;
-                    if (x.PrintTemplateId.HasValue) count++;
                     if (!string.IsNullOrWhiteSpace(x.FrontDesignUrl) || !string.IsNullOrWhiteSpace(x.BackDesignUrl)) count++;
                     if (x.CustomDesignRequestId.HasValue) count++;
                     return count == 1;
                 })
-                .WithMessage(x => messageService.Get("ExactlyOneDesignSourceRequired") ?? "Exactly one design source must be specified (Template, Uploaded Files, or Custom Design).");
+                .WithMessage(x => messageService.Get("ExactlyOneDesignSourceRequired") ?? "Exactly one design source must be specified (Uploaded Files or Custom Design Request).");
         }
     }
 }

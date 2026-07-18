@@ -40,10 +40,7 @@ namespace NFC.Platform.Infrastructure.Configurations
                 .HasForeignKey(o => o.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            builder.HasOne(o => o.PrintTemplate)
-                .WithMany()
-                .HasForeignKey(o => o.PrintTemplateId)
-                .OnDelete(DeleteBehavior.NoAction);
+            // PrintTemplateId FK removed — physical card design sourced only from FrontDesignUrl/BackDesignUrl
         }
     }
 }

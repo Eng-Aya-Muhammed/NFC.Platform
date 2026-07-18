@@ -9,7 +9,6 @@ namespace NFC.Platform.Application.DTOs.CardOrder
         public Stream ExcelStream { get; set; } = null!;
         public CardType CardType { get; set; } = CardType.Plastic;
         public CardDesignType CardDesignType { get; set; } = CardDesignType.BuiltInTemplate;
-        public Guid? PrintTemplateId { get; set; }
         public string? Notes { get; set; }
     }
 }

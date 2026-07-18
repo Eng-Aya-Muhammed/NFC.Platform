@@ -275,7 +275,6 @@ namespace NFC.Platform.Application.Services;
                 CardName = parentOrder.CardName,
                 CardType = parentOrder.CardType,
                 CardDesignType = parentOrder.CardDesignType,
-                PrintTemplateId = parentOrder.PrintTemplateId,
                 FrontDesignUrl = parentOrder.FrontDesignUrl,
                 BackDesignUrl = parentOrder.BackDesignUrl,
                 ParentOrderId = parentOrderId,
@@ -345,7 +344,6 @@ namespace NFC.Platform.Application.Services;
                 CardName = card.CardOrder?.CardName ?? $"Replacement - {card.UserProfile.FullName}",
                 CardType = cardType,
                 CardDesignType = card.CardOrder?.CardDesignType ?? CardDesignType.BuiltInTemplate,
-                PrintTemplateId = card.CardOrder?.PrintTemplateId,
                 FrontDesignUrl = card.CardOrder?.FrontDesignUrl,
                 BackDesignUrl = card.CardOrder?.BackDesignUrl,
                 ParentOrderId = card.CardOrderId,
@@ -382,7 +380,6 @@ namespace NFC.Platform.Application.Services;
             Microsoft.AspNetCore.Http.IFormFile file,
             CardType cardType,
             CardDesignType cardDesignType,
-            Guid? printTemplateId,
             string? notes)
         {
             var tenantId = _currentTenant.TenantId;
@@ -415,7 +412,6 @@ namespace NFC.Platform.Application.Services;
                 ExcelFilePublicId = uploadResult.PublicId,
                 CardType = cardType,
                 CardDesignType = cardDesignType,
-                PrintTemplateId = printTemplateId,
                 Notes = notes
             };
 
@@ -689,7 +685,6 @@ namespace NFC.Platform.Application.Services;
                         CardName = _messageService.Get("DefaultBulkOrderName", itemsToOrder.Count.ToString()) ?? $"Bulk Order - {itemsToOrder.Count}",
                         CardType = job.CardType,
                         CardDesignType = job.CardDesignType,
-                        PrintTemplateId = job.PrintTemplateId,
                         Quantity = itemsToOrder.Count,
                         Notes = job.Notes,
                         UserId = job.UserId,

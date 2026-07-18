@@ -471,5 +471,69 @@ namespace NFC.Platform.Tests.Services
             Assert.False(result.IsSuccess);
             Assert.Equal(400, result.StatusCode);
         }
+
+        [Fact]
+        public async Task UpdateCompanyTemplateAsync_ReturnsUnauthorized_WhenTenantIdIsNull()
+        {
+            // Arrange
+            _currentTenant.TenantId.Returns((Guid?)null);
+            var request = new UpdateCompanyTemplateRequest { ProfileTemplateId = Guid.NewGuid() };
+
+            // Act
+            var result = await _sut.UpdateCompanyTemplateAsync(request);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(401, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task UpdateCompanyTemplateAsync_ReturnsNotFound_WhenCompanyDoesNotExist()
+        {
+            // Arrange
+            var tenantId = Guid.NewGuid();
+            _currentTenant.TenantId.Returns(tenantId);
+            _companyRepo.GetQueryable().Returns(new List<Company>().BuildMock());
+            _messageService.Get("RecordNotFound").Returns("Record not found.");
+            var request = new UpdateCompanyTemplateRequest { ProfileTemplateId = Guid.NewGuid() };
+
+            // Act
+            var result = await _sut.UpdateCompanyTemplateAsync(request);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(404, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task UpdateCompanyTemplateAsync_ReturnsSuccess_AndSavesChanges()
+        {
+            // Arrange
+            var tenantId = Guid.NewGuid();
+            _currentTenant.TenantId.Returns(tenantId);
+
+            var company = new Company { Id = Guid.NewGuid(), Name = "OnPoint", TenantId = tenantId };
+            var queryable = new List<Company> { company }.BuildMock();
+            _companyRepo.GetQueryable().Returns(queryable);
+
+            // Mock subscription repository to prevent EF async query provider error in GetSubscriptionRemainingDaysAsync
+            var queryableSub = new List<UserSubscription>().BuildMock();
+            _subscriptionRepo.GetQueryable().Returns(queryableSub);
+
+            var templateId = Guid.NewGuid();
+            var request = new UpdateCompanyTemplateRequest { ProfileTemplateId = templateId };
+            var dto = new CompanyProfileDto { Id = company.Id, Name = "OnPoint", ProfileTemplateId = templateId };
+
+            _mapper.Map<CompanyProfileDto>(company).Returns(dto);
+
+            // Act
+            var result = await _sut.UpdateCompanyTemplateAsync(request);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(200, result.StatusCode);
+            Assert.Equal(templateId, company.ProfileTemplateId);
+            await _unitOfWork.Received(1).SaveChangesAsync();
+        }
     }
 }

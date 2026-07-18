@@ -24,4 +24,21 @@ public class EmployeeDetailsDto
     public System.Collections.Generic.List<ProfileLinkDto> CustomLinks { get; set; } = [];
 
     public Guid? CardId { get; set; }
+
+    // ── Digital profile branding ──────────────────────────────────────────────
+    /// <summary>
+    /// Company logo (for employee profiles) or null for individual profiles.
+    /// </summary>
+    public string? LogoUrl { get; set; }
+
+    /// <summary>
+    /// Layout identifier resolved from the linked CardTemplate.StyleConfigJson (e.g. "classic", "modern-dark").
+    /// Frontend uses this to select which fixed layout component to render.
+    /// </summary>
+    public string? Layout { get; set; }
+
+    /// <summary>
+    /// Full StyleConfigJson from the resolved CardTemplate, passed through for the frontend.
+    /// </summary>
+    public string? StyleConfigJson { get; set; }
 }

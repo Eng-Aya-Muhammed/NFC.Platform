@@ -56,7 +56,6 @@ namespace NFC.Platform.Application.Interfaces.Services
             IFormFile file,
             CardType cardType,
             CardDesignType cardDesignType,
-            Guid? printTemplateId,
             string? notes);
 
         /// <summary>

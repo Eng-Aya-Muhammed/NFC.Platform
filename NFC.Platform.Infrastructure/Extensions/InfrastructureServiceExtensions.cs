@@ -62,6 +62,7 @@ namespace NFC.Platform.Infrastructure.Extensions
             services.AddScoped<IRoleSeeder, RoleSeeder>();
             services.AddScoped<IAdminUserSeeder, AdminUserSeeder>();
             services.AddScoped<ISubscriptionPlanSeeder, SubscriptionPlanSeeder>();
+            services.AddScoped<IDefaultCardTemplateSeeder, DefaultCardTemplateSeeder>();
 
             return services;
         }

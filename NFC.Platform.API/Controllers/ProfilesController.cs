@@ -76,5 +76,26 @@ namespace NFC.Platform.API.Controllers
             }
             return Ok(result);
         }
+
+        /// <summary>
+        /// Sets the individual user's digital profile template and optional brand color overrides.
+        /// Applies to the user's public profile page at GET /c/{code}.
+        /// </summary>
+        [HttpPatch("template")]
+        public async Task<IActionResult> UpdateProfileTemplate([FromBody] UpdateUserProfileTemplateRequest request)
+        {
+            var userId = _currentTenant.UserId;
+            if (!userId.HasValue)
+            {
+                return Unauthorized("User is not authenticated.");
+            }
+
+            var result = await _profileService.UpdateProfileTemplateAsync(userId.Value, request);
+            if (!result.IsSuccess)
+            {
+                return StatusCode(result.StatusCode, result);
+            }
+            return Ok(result);
+        }
     }
 }

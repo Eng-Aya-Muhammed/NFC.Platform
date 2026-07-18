@@ -18,10 +18,9 @@ namespace NFC.Platform.Domain.Entities
         public string ExcelFileUrl { get; set; } = string.Empty;
         public string? ExcelFilePublicId { get; set; }
 
-        // Card Order parameters
+        // Card Order parameters — physical design sourced from FrontDesignUrl/BackDesignUrl on the resulting order
         public CardType CardType { get; set; }
         public CardDesignType CardDesignType { get; set; }
-        public Guid? PrintTemplateId { get; set; }
         public string? Notes { get; set; }
 
         // Job metrics & outcomes

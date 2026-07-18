@@ -17,12 +17,9 @@ namespace NFC.Platform.Application.DTOs.CardOrder;
 
         public CardDesignType? CardDesignType { get; set; }
 
-        public Guid? PrintTemplateId { get; set; }
-
         /// <summary>
         /// References a submitted custom-design request whose produced template
-        /// will be used when delivered. Mutually exclusive with PrintTemplateId
-        /// and FrontDesignUrl/BackDesignUrl.
+        /// will be used when delivered. Mutually exclusive with FrontDesignUrl/BackDesignUrl.
         /// </summary>
         public Guid? CustomDesignRequestId { get; set; }
 

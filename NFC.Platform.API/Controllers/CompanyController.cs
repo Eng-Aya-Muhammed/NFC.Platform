@@ -42,6 +42,21 @@ namespace NFC.Platform.API.Controllers
             return Ok(result);
         }
 
+        /// <summary>
+        /// Sets the company's digital profile template.
+        /// Applies to all employee public profile pages at GET /c/{code}.
+        /// </summary>
+        [HttpPatch("template")]
+        public async Task<IActionResult> UpdateTemplate([FromBody] UpdateCompanyTemplateRequest request)
+        {
+            var result = await _companyService.UpdateCompanyTemplateAsync(request);
+            if (!result.IsSuccess)
+            {
+                return StatusCode(result.StatusCode, result);
+            }
+            return Ok(result);
+        }
+
         [HttpPost("change-password")]
         public async Task<IActionResult> ChangePassword([FromBody] CompanyChangePasswordRequest request)
         {

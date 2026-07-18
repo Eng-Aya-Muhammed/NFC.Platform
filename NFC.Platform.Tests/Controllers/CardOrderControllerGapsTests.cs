@@ -72,7 +72,6 @@ namespace NFC.Platform.Tests.Controllers
                 Arg.Any<Microsoft.AspNetCore.Http.IFormFile>(),
                 Arg.Any<CardType>(),
                 Arg.Any<CardDesignType>(),
-                Arg.Any<Guid?>(),
                 Arg.Any<string?>()).Returns(expectedResult);
 
             // Act
@@ -85,7 +84,6 @@ namespace NFC.Platform.Tests.Controllers
                 file,
                 CardType.Plastic,
                 CardDesignType.BuiltInTemplate,
-                Arg.Any<Guid?>(),
                 Arg.Any<string?>()
             );
         }

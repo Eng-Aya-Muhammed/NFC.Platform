@@ -53,6 +53,10 @@ namespace NFC.Platform.API.Extensions
                 // 4. Seed Subscription Plans
                 var planSeeder = services.GetRequiredService<ISubscriptionPlanSeeder>();
                 await planSeeder.SeedAsync();
+
+                // 5. Seed default CardTemplate + normalize StyleConfigJson on existing templates
+                var templateSeeder = services.GetRequiredService<IDefaultCardTemplateSeeder>();
+                await templateSeeder.SeedAsync();
             }
             catch (Exception ex)
             {

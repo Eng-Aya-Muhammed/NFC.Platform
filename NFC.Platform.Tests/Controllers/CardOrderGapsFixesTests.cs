@@ -30,12 +30,29 @@ namespace NFC.Platform.Tests.Controllers
         }
 
         [Fact]
-        public void Validator_ShouldPass_WhenExactlyOneDesignSourceIsPresent()
+        public void Validator_ShouldPass_WhenExactlyOneDesignSourceIsPresent_FrontDesignUrl()
+        {
+            // Arrange — physical design is now sourced only from uploaded URLs or a custom design request
+            var request = new CreateCardOrderRequest
+            {
+                FrontDesignUrl = "https://cdn.example.com/front.png",
+                Quantity = 1
+            };
+
+            // Act
+            var result = _validator.Validate(request);
+
+            // Assert
+            Assert.True(result.IsValid);
+        }
+
+        [Fact]
+        public void Validator_ShouldPass_WhenExactlyOneDesignSourceIsPresent_CustomDesignRequestId()
         {
             // Arrange
             var request = new CreateCardOrderRequest
             {
-                PrintTemplateId = Guid.NewGuid(),
+                CustomDesignRequestId = Guid.NewGuid(),
                 Quantity = 1
             };
 
@@ -65,11 +82,11 @@ namespace NFC.Platform.Tests.Controllers
         [Fact]
         public void Validator_ShouldFail_WhenMultipleDesignSourcesArePresent()
         {
-            // Arrange
+            // Arrange — FrontDesignUrl and CustomDesignRequestId are mutually exclusive
             var request = new CreateCardOrderRequest
             {
-                PrintTemplateId = Guid.NewGuid(),
-                FrontDesignUrl = "http://design.png",
+                FrontDesignUrl = "https://cdn.example.com/front.png",
+                CustomDesignRequestId = Guid.NewGuid(),
                 Quantity = 1
             };
 

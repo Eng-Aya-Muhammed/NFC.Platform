@@ -24,7 +24,11 @@ public class UserProfileMappingProfile : Profile
             .ForMember(dest => dest.WebsiteUrl, opt => opt.MapFrom(src => src.CustomLinks.FirstOrDefault(l => l.Title == PlatformConstants.Website) != null ? src.CustomLinks.FirstOrDefault(l => l.Title == PlatformConstants.Website)!.Url : string.Empty))
             .ForMember(dest => dest.CustomLinks, opt => opt.MapFrom(src => src.CustomLinks
                 .Where(l => l.Title != PlatformConstants.LinkedIn && l.Title != PlatformConstants.Facebook && l.Title != PlatformConstants.Instagram && l.Title != PlatformConstants.Website)
-                .OrderBy(l => l.DisplayOrder)));
+                .OrderBy(l => l.DisplayOrder)))
+            // Branding fields are resolved manually in ProfileMetricService.ApplyBranding — not mapped from entity
+            .ForMember(dest => dest.LogoUrl, opt => opt.Ignore())
+            .ForMember(dest => dest.Layout, opt => opt.Ignore())
+            .ForMember(dest => dest.StyleConfigJson, opt => opt.Ignore());
 
         CreateMap<User, EmployeeDetailsDto>()
             .ConvertUsing((src, dest, ctx) =>

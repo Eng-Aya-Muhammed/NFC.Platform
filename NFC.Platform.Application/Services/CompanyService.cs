@@ -64,6 +64,32 @@ public class CompanyService(
             return ServiceResult<CompanyProfileDto>.Success(companyDto, _messageService.Get("RecordUpdated"));
         }
 
+        public async Task<ServiceResult<CompanyProfileDto>> UpdateCompanyTemplateAsync(UpdateCompanyTemplateRequest request)
+        {
+            var tenantId = _currentTenant.TenantId;
+            if (!tenantId.HasValue)
+                return ServiceResult<CompanyProfileDto>.Unauthorized(_messageService.Get("Unauthorized") ?? "User is not authenticated.");
+
+            var company = await _unitOfWork.Repository<Company>()
+                .GetQueryable()
+                .Include(c => c.AdminUser)
+                .FirstOrDefaultAsync();
+
+            if (company == null)
+                return ServiceResult<CompanyProfileDto>.NotFound(_messageService.Get("RecordNotFound"));
+
+            // Apply only the fields that were explicitly provided
+            if (request.ProfileTemplateId.HasValue) company.ProfileTemplateId = request.ProfileTemplateId;
+
+            await _unitOfWork.SaveChangesAsync();
+
+            var remainingDays = await GetSubscriptionRemainingDaysAsync(tenantId.Value);
+            var companyDto = _mapper.Map<CompanyProfileDto>(company);
+            companyDto.SubscriptionRemainingDays = remainingDays;
+
+            return ServiceResult<CompanyProfileDto>.Success(companyDto, _messageService.Get("RecordUpdated"));
+        }
+
         public async Task<ServiceResult> ChangeCompanyAdminPasswordAsync(CompanyChangePasswordRequest request)
         {
             var userId = _currentTenant.UserId;

@@ -9,6 +9,7 @@ global using NFC.Platform.Application.DTOs.Card;
 global using NFC.Platform.Application.DTOs.CardOrder;
 global using NFC.Platform.Application.DTOs.Company;
 global using NFC.Platform.Application.DTOs.Employee;
+global using NFC.Platform.Application.DTOs.Profile;
 global using NFC.Platform.Application.DTOs.Template;
 global using NFC.Platform.Application.Interfaces.Services;
 global using NFC.Platform.Application.Validators.Auth;

@@ -15,7 +15,6 @@ namespace NFC.Platform.Application.DTOs.Admin
         public string CardName { get; set; } = string.Empty;
         public CardType Material { get; set; }
         public CardDesignType DesignType { get; set; }
-        public Guid? PrintTemplateId { get; set; }
         public int Quantity { get; set; }
         public string? ExcelDataUrl { get; set; }
         public string? FrontDesignUrl { get; set; }

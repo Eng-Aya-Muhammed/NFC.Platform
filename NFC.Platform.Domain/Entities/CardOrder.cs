@@ -18,9 +18,6 @@ namespace NFC.Platform.Domain.Entities
 
         public CardDesignType CardDesignType { get; set; }
 
-        public Guid? PrintTemplateId { get; set; }
-        public CardTemplate? PrintTemplate { get; set; }
-
         /// <summary>
         /// For reorders: the parent order whose design/template is being reused.
         /// </summary>
@@ -31,6 +28,10 @@ namespace NFC.Platform.Domain.Entities
 
         public string? ExcelDataUrl { get; set; }
 
+        /// <summary>
+        /// Physical card design — customer upload or design-team deliverable (via TemplateRequest).
+        /// This is the sole source of truth for the printed card design.
+        /// </summary>
         public string? FrontDesignUrl { get; set; }
 
         public string? BackDesignUrl { get; set; }

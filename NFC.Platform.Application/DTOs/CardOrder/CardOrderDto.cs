@@ -14,7 +14,6 @@ namespace NFC.Platform.Application.DTOs.CardOrder;
         public string CardName { get; set; } = string.Empty;
         public CardType CardType { get; set; }
         public CardDesignType CardDesignType { get; set; }
-        public Guid? PrintTemplateId { get; set; }
         public int Quantity { get; set; }
         public string? ExcelDataUrl { get; set; }
         public string? FrontDesignUrl { get; set; }

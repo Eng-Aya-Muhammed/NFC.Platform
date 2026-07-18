@@ -265,8 +265,29 @@ namespace NFC.Platform.Application.Services;
 
                         if (linkedOrder != null && linkedOrder.Status == OrderStatus.AwaitingDesign)
                         {
-                            linkedOrder.PrintTemplateId = customTemplate.Id;
                             linkedOrder.Status = OrderStatus.PendingReview;
+                        }
+                    }
+
+                    // Auto-apply the new template + branding to the requesting tenant
+                    // Try Company first (company tenant), then fall back to UserProfile (individual tenant)
+                    var company = await _unitOfWork.Repository<Company>()
+                        .GetQueryable()
+                        .FirstOrDefaultAsync(c => c.TenantId == templateRequest.TenantId);
+
+                    if (company != null)
+                    {
+                        company.ProfileTemplateId = customTemplate.Id;
+                    }
+                    else
+                    {
+                        var userProfile = await _unitOfWork.Repository<UserProfile>()
+                            .GetQueryable()
+                            .FirstOrDefaultAsync(p => p.TenantId == templateRequest.TenantId && p.UserId == templateRequest.RequestedByUserId);
+
+                        if (userProfile != null)
+                        {
+                            userProfile.ProfileTemplateId = customTemplate.Id;
                         }
                     }
                 }
@@ -282,6 +303,7 @@ namespace NFC.Platform.Application.Services;
 
             return ServiceResult.Success(_messageService.Get("RecordUpdated"));
         }
+
 
 
         public async Task<ServiceResult<CardTemplateDto>> CreateTemplateAsync(CreateCardTemplateDto dto)

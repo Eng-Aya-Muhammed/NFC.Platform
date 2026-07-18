@@ -237,5 +237,71 @@ namespace NFC.Platform.Tests.Services
             Assert.Empty(profile.CustomLinks);
             await _unitOfWork.Received(1).SaveChangesAsync();
         }
+
+        [Fact]
+        public async Task UpdateProfileTemplateAsync_ReturnsNotFound_WhenUserDoesNotExist()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            _userRepo.GetQueryable().Returns(new List<User>().AsQueryable().BuildMock());
+            _messageService.Get("RecordNotFound").Returns("Record not found.");
+            var request = new UpdateUserProfileTemplateRequest { ProfileTemplateId = Guid.NewGuid() };
+
+            // Act
+            var result = await _sut.UpdateProfileTemplateAsync(userId, request);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(404, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task UpdateProfileTemplateAsync_CreatesNewProfile_WhenUserProfileIsNull()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var user = new User { Id = userId, TenantId = Guid.NewGuid(), UserProfile = null };
+            var mockQuery = new List<User> { user }.AsQueryable().BuildMock();
+            _userRepo.GetQueryable().Returns(mockQuery);
+
+            var templateId = Guid.NewGuid();
+            var request = new UpdateUserProfileTemplateRequest { ProfileTemplateId = templateId };
+            var expectedDto = new EmployeeDetailsDto { Id = userId, Layout = "classic" };
+            _mapper.Map<EmployeeDetailsDto>(user).Returns(expectedDto);
+
+            // Act
+            var result = await _sut.UpdateProfileTemplateAsync(userId, request);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.NotNull(user.UserProfile);
+            Assert.Equal(templateId, user.UserProfile.ProfileTemplateId);
+            await _userProfileRepo.Received(1).AddAsync(Arg.Any<UserProfile>());
+            await _unitOfWork.Received(2).SaveChangesAsync(); // One for create, one for save template ID
+        }
+
+        [Fact]
+        public async Task UpdateProfileTemplateAsync_UpdatesTemplate_WhenUserProfileExists()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var profile = new UserProfile { UserId = userId };
+            var user = new User { Id = userId, UserProfile = profile };
+            var mockQuery = new List<User> { user }.AsQueryable().BuildMock();
+            _userRepo.GetQueryable().Returns(mockQuery);
+
+            var templateId = Guid.NewGuid();
+            var request = new UpdateUserProfileTemplateRequest { ProfileTemplateId = templateId };
+            var expectedDto = new EmployeeDetailsDto { Id = userId, Layout = "classic" };
+            _mapper.Map<EmployeeDetailsDto>(user).Returns(expectedDto);
+
+            // Act
+            var result = await _sut.UpdateProfileTemplateAsync(userId, request);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(templateId, profile.ProfileTemplateId);
+            await _unitOfWork.Received(1).SaveChangesAsync();
+        }
     }
 }

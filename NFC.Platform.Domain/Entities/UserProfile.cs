@@ -26,6 +26,15 @@ namespace NFC.Platform.Domain.Entities
         public string? Phone { get; set; }
         public string? WhatsApp { get; set; }
 
+        // ── Digital profile branding (individual accounts only) ───────────────
+
+        /// <summary>
+        /// FK to the CardTemplate defining the digital profile layout for this individual account.
+        /// Used only when this profile is not linked to a Company. Set via PATCH /api/user/profile/template.
+        /// </summary>
+        public Guid? ProfileTemplateId { get; set; }
+        public CardTemplate? ProfileTemplate { get; set; }
+
         public ICollection<ProfileLink> CustomLinks { get; set; } = [];
 
         public ICollection<Card> ActivatedCards { get; set; } = [];

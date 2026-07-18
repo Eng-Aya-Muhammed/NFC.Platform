@@ -37,6 +37,11 @@ namespace NFC.Platform.Infrastructure.Configurations
                 .WithMany()
                 .HasForeignKey(p => p.TenantId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            builder.HasOne(p => p.ProfileTemplate)
+                .WithMany()
+                .HasForeignKey(p => p.ProfileTemplateId)
+                .OnDelete(DeleteBehavior.SetNull);
         }
     }
 }

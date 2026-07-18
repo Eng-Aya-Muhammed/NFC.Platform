@@ -128,7 +128,6 @@ namespace NFC.Platform.API.Controllers
                 request.File,
                 request.CardType,
                 request.CardDesignType,
-                request.PrintTemplateId,
                 request.Notes);
 
             if (!result.IsSuccess)
