@@ -43,6 +43,10 @@ namespace NFC.Platform.Infrastructure.Extensions
             services.Configure<CloudinarySettings>(configuration.GetSection("CloudinarySettings"));
             services.AddScoped<IStorageService, CloudinaryService>();
 
+            // Mail Registration
+            services.Configure<MailSettings>(configuration.GetSection("MailSettings"));
+            services.AddScoped<IEmailService, EmailService>();
+
             // QR Code Generator — Singleton: QRCoder is stateless; one instance per app lifetime is sufficient.
             services.AddSingleton<IQrCodeGenerator, QrCodeGeneratorService>();
 

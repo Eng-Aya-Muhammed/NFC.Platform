@@ -36,3 +36,5 @@ global using FluentValidation;
 global using System.Text.RegularExpressions;
 global using System.ComponentModel.DataAnnotations;
 global using NFC.Platform.Application.Validators.Admin;
+global using Microsoft.Extensions.Configuration;
+global using System.Globalization;

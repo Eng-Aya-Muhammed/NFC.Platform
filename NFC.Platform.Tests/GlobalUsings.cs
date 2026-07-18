@@ -30,3 +30,9 @@ global using NFC.Platform.API.Controllers;
 global using NFC.Platform.Application.DTOs;
 global using NFC.Platform.BuildingBlocks.Results;
 global using NFC.Platform.Application.DTOs.Admin;
+global using Microsoft.Extensions.Configuration;
+global using Hangfire;
+global using Hangfire.States;
+global using Hangfire.Common;
+global using System.Globalization;
+

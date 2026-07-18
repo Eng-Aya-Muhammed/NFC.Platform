@@ -5,11 +5,19 @@ namespace NFC.Platform.Application.Services;
     public class AuthService(
         IUnitOfWork unitOfWork,
         ITokenService tokenService,
-        IMessageService messageService) : IAuthService
+        IMessageService messageService,
+        IEmailService emailService,
+        IConfiguration configuration,
+        IBackgroundJobClient backgroundJobClient,
+        IMapper mapper) : IAuthService
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
         private readonly ITokenService _tokenService = tokenService ?? throw new ArgumentNullException(nameof(tokenService));
         private readonly IMessageService _messageService = messageService ?? throw new ArgumentNullException(nameof(messageService));
+        private readonly IEmailService _emailService = emailService ?? throw new ArgumentNullException(nameof(emailService));
+        private readonly IConfiguration _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+        private readonly IBackgroundJobClient _backgroundJobClient = backgroundJobClient ?? throw new ArgumentNullException(nameof(backgroundJobClient));
+        private readonly IMapper _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
 
         public async Task<ServiceResult<AuthDto>> LoginAsync(LoginRequest request)
         {
@@ -218,6 +226,12 @@ namespace NFC.Platform.Application.Services;
                 {
                     Console.WriteLine($"[TESTING ONLY] Reset password token for {user.Email} is: {resetToken}");
                 }
+
+                // Send reset email asynchronously using Hangfire
+                var clientUrl = _configuration["ClientSettings:ResetPasswordUrl"];
+                var resetLink = $"{clientUrl}?token={resetToken}&email={Uri.EscapeDataString(user.Email)}";
+                var culture = CultureInfo.CurrentUICulture.Name;
+                _backgroundJobClient.Enqueue<IEmailService>(x => x.SendPasswordResetEmailAsync(user.Email, resetLink, culture));
             }
 
             // Always return success to prevent email enumeration/discovery attacks
@@ -308,13 +322,11 @@ namespace NFC.Platform.Application.Services;
             });
             await _unitOfWork.SaveChangesAsync();
 
-            var userDto = new UserDto
-            {
-                Id = user.Id,
-                Username = user.Username,
-                Email = user.Email,
-                Role = targetRoleName
-            };
+            var userDto = _mapper.Map<UserDto>(user);
+            userDto.Role = targetRoleName;
+
+            var culture = CultureInfo.CurrentUICulture.Name;
+            _backgroundJobClient.Enqueue<IEmailService>(x => x.SendNewUserCredentialsEmailAsync(user.Email, user.Username, request.Password, culture));
 
             return ServiceResult<UserDto>.Success(userDto, _messageService.Get("UserCreated"));
         }

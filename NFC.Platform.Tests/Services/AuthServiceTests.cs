@@ -22,6 +22,10 @@ namespace NFC.Platform.Tests.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly ITokenService _tokenService;
         private readonly IMessageService _messageService;
+        private readonly IEmailService _emailService;
+        private readonly IConfiguration _configuration;
+        private readonly IBackgroundJobClient _backgroundJobClient;
+        private readonly IMapper _mapper;
         private readonly IGenericRepository<User> _userRepo;
         private readonly IGenericRepository<Role> _roleRepo;
         private readonly IGenericRepository<UserRole> _userRoleRepo;
@@ -33,6 +37,10 @@ namespace NFC.Platform.Tests.Services
             _unitOfWork = Substitute.For<IUnitOfWork>();
             _tokenService = Substitute.For<ITokenService>();
             _messageService = Substitute.For<IMessageService>();
+            _emailService = Substitute.For<IEmailService>();
+            _configuration = Substitute.For<IConfiguration>();
+            _backgroundJobClient = Substitute.For<IBackgroundJobClient>();
+            _mapper = Substitute.For<IMapper>();
 
             _userRepo = Substitute.For<IGenericRepository<User>>();
             _roleRepo = Substitute.For<IGenericRepository<Role>>();
@@ -44,7 +52,7 @@ namespace NFC.Platform.Tests.Services
             _unitOfWork.Repository<UserRole>().Returns(_userRoleRepo);
             _unitOfWork.Repository<RefreshToken>().Returns(_tokenRepo);
 
-            _sut = new AuthService(_unitOfWork, _tokenService, _messageService);
+            _sut = new AuthService(_unitOfWork, _tokenService, _messageService, _emailService, _configuration, _backgroundJobClient, _mapper);
         }
 
         [Fact]
@@ -152,6 +160,8 @@ namespace NFC.Platform.Tests.Services
             var user = new User { Email = email };
             var request = new ForgotPasswordRequest { Email = email };
 
+            _configuration["ClientSettings:ResetPasswordUrl"].Returns("http://localhost:3000/reset-password");
+
             _userRepo.FindAsync(Arg.Any<Expression<Func<User, bool>>>())
                 .Returns(new List<User> { user });
 
@@ -163,6 +173,12 @@ namespace NFC.Platform.Tests.Services
             Assert.NotNull(user.PasswordResetToken);
             Assert.NotNull(user.PasswordResetTokenExpires);
             await _unitOfWork.Received().SaveChangesAsync();
+            _backgroundJobClient.Received(1).Create(
+                Arg.Is<Job>(job => job.Method.Name == nameof(IEmailService.SendPasswordResetEmailAsync) &&
+                                   (string)job.Args[0] == email &&
+                                   ((string)job.Args[1]).Contains(user.PasswordResetToken!) &&
+                                   (string)job.Args[2] == CultureInfo.CurrentUICulture.Name),
+                Arg.Any<IState>());
         }
 
         [Fact]
@@ -410,6 +426,9 @@ namespace NFC.Platform.Tests.Services
 
             _messageService.Get("UserCreated").Returns("User created successfully.");
 
+            var expectedUserDto = new UserDto { Username = "newadmin", Email = "newadmin@test.com" };
+            _mapper.Map<UserDto>(Arg.Any<User>()).Returns(expectedUserDto);
+
             // Act
             var result = await _sut.CreateUserByAdminAsync(request);
 
@@ -422,6 +441,13 @@ namespace NFC.Platform.Tests.Services
             await _userRepo.Received(1).AddAsync(Arg.Any<User>());
             await _userRoleRepo.Received(1).AddAsync(Arg.Any<UserRole>());
             await _unitOfWork.Received(2).SaveChangesAsync();
+            _backgroundJobClient.Received(1).Create(
+                Arg.Is<Job>(job => job.Method.Name == nameof(IEmailService.SendNewUserCredentialsEmailAsync) &&
+                                   (string)job.Args[0] == request.Email &&
+                                   (string)job.Args[1] == request.Username &&
+                                   (string)job.Args[2] == request.Password &&
+                                   (string)job.Args[3] == CultureInfo.CurrentUICulture.Name),
+                Arg.Any<IState>());
         }
 
         [Fact]
@@ -575,6 +601,9 @@ namespace NFC.Platform.Tests.Services
             var role = new Role { Id = Guid.NewGuid(), Name = "Customer" };
             _roleRepo.FindAsync(Arg.Any<Expression<Func<Role, bool>>>()).Returns(new List<Role> { role });
 
+            var expectedUserDto = new UserDto { Username = "newuser", Email = "new@test.com" };
+            _mapper.Map<UserDto>(Arg.Any<User>()).Returns(expectedUserDto);
+
             // Act
             var result = await _sut.CreateUserByAdminAsync(request);
 
@@ -585,6 +614,13 @@ namespace NFC.Platform.Tests.Services
             await _userRepo.Received(1).AddAsync(Arg.Any<User>());
             await _userRoleRepo.Received(1).AddAsync(Arg.Is<UserRole>(ur => ur.RoleId == role.Id));
             await _unitOfWork.Received(2).SaveChangesAsync();
+            _backgroundJobClient.Received(1).Create(
+                Arg.Is<Job>(job => job.Method.Name == nameof(IEmailService.SendNewUserCredentialsEmailAsync) &&
+                                   (string)job.Args[0] == request.Email &&
+                                   (string)job.Args[1] == request.Username &&
+                                   (string)job.Args[2] == request.Password &&
+                                   (string)job.Args[3] == CultureInfo.CurrentUICulture.Name),
+                Arg.Any<IState>());
         }
     }
 }

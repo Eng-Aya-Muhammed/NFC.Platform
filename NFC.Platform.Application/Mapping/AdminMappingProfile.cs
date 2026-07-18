@@ -25,6 +25,8 @@ namespace NFC.Platform.Application.Mapping
             CreateMap<CreateCardTemplateDto, CardTemplate>();
             CreateMap<UpdateCardTemplateDto, CardTemplate>();
             CreateMap<Tenant, TenantSummaryDto>();
+            CreateMap<User, UserDto>()
+                .ForMember(dest => dest.Role, opt => opt.Ignore());
         }
     }
 }

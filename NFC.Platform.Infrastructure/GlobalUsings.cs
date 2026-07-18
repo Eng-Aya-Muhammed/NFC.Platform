@@ -8,3 +8,6 @@ global using NFC.Platform.Application.Interfaces.Repositories;
 global using NFC.Platform.Application.Interfaces.Services;
 global using NFC.Platform.Domain.Entities;
 global using NFC.Platform.Domain.Enums;
+global using MailKit.Net.Smtp;
+global using MailKit.Security;
+global using MimeKit;

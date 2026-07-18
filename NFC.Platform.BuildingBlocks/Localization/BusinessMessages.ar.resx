@@ -103,4 +103,16 @@
   <data name="CustomCategory" xml:space="preserve">
     <value>مخصص</value>
   </data>
+  <data name="EmailPasswordResetSubject" xml:space="preserve">
+    <value>منصة NFC - إعادة تعيين كلمة المرور الخاصة بك</value>
+  </data>
+  <data name="EmailPasswordResetBody" xml:space="preserve">
+    <value>&lt;h3&gt;طلب إعادة تعيين كلمة المرور&lt;/h3&gt;&lt;p&gt;لقد طلبت إعادة تعيين كلمة المرور الخاصة بك. يرجى الضغط على الرابط أدناه لتعيين كلمة مرور جديدة:&lt;/p&gt;&lt;p&gt;&lt;a href="{0}" style="background:#007bff;color:white;padding:10px 20px;text-decoration:none;border-radius:5px;display:inline-block;"&gt;إعادة تعيين كلمة المرور&lt;/a&gt;&lt;/p&gt;&lt;p&gt;إذا لم تكن أنت من قام بهذا الطلب، يرجى تجاهل هذا البريد الإلكتروني.&lt;/p&gt;</value>
+  </data>
+  <data name="EmailNewUserCredentialsSubject" xml:space="preserve">
+    <value>منصة NFC - بيانات اعتماد حسابك</value>
+  </data>
+  <data name="EmailNewUserCredentialsBody" xml:space="preserve">
+    <value>&lt;h3&gt;مرحباً بك في منصة NFC!&lt;/h3&gt;&lt;p&gt;قام مسؤول النظام بإنشاء حساب لك. إليك بيانات تسجيل الدخول الخاصة بك:&lt;/p&gt;&lt;ul&gt;&lt;li&gt;&lt;strong&gt;اسم المستخدم:&lt;/strong&gt; {0}&lt;/li&gt;&lt;li&gt;&lt;strong&gt;كلمة المرور المؤقتة:&lt;/strong&gt; {1}&lt;/li&gt;&lt;/ul&gt;&lt;p&gt;يرجى تسجيل الدخول وتغيير كلمة المرور الخاصة بك فوراً.&lt;/p&gt;</value>
+  </data>
 </root>
