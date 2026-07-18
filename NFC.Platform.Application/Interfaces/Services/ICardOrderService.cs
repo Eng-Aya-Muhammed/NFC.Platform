@@ -56,7 +56,10 @@ namespace NFC.Platform.Application.Interfaces.Services
             IFormFile file,
             CardType cardType,
             CardDesignType cardDesignType,
-            string? notes);
+            string? notes,
+            string? designReferenceUrl = null,
+            string? logoUrl = null,
+            string? designNotes = null);
 
         /// <summary>
         /// Executes the employee import background job. Runs in Hangfire thread.

@@ -16,6 +16,7 @@ namespace NFC.Platform.Infrastructure.Configurations
             builder.Property(r => r.ReferenceImageUrl).HasMaxLength(1000);
             builder.Property(r => r.Notes).HasMaxLength(1000);
             builder.Property(r => r.Status).IsRequired();
+            builder.Property(r => r.RequestType).IsRequired();
 
             builder.Property(r => r.TenantId).IsRequired();
             builder.HasIndex(r => r.TenantId);

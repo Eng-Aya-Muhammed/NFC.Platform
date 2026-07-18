@@ -99,6 +99,29 @@ namespace NFC.Platform.Tests.Services
             Assert.Equal(id, result.Data!.Id);
         }
 
+        [Fact]
+        public async Task GetPagedCardsAsync_ReturnsSuccess_WithPagedCards()
+        {
+            // Arrange
+            var cards = new List<Card>
+            {
+                new Card { Id = Guid.NewGuid(), CreatedAt = DateTime.UtcNow.AddMinutes(-5) },
+                new Card { Id = Guid.NewGuid(), CreatedAt = DateTime.UtcNow }
+            };
+            _cardRepo.GetQueryable().Returns(cards.AsQueryable().BuildMock());
+            
+            var request = new PaginationRequest { PageNumber = 1, PageSize = 10 };
+            _mapper.Map<CardDto>(Arg.Any<Card>()).Returns(new CardDto());
+
+            // Act
+            var result = await _sut.GetPagedCardsAsync(request);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.NotNull(result.Data);
+            Assert.Equal(2, result.Data.TotalCount);
+        }
+
         // ── CreateCardAsync ───────────────────────────────────────────────────────
 
         [Fact]
@@ -545,6 +568,63 @@ namespace NFC.Platform.Tests.Services
             // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(CardStatus.Deactivated, card.Status);
+            await _unitOfWork.Received(1).SaveChangesAsync();
+        }
+
+        // ── ActivateCardByIdAsync ──────────────────────────────────────────────────
+
+        [Fact]
+        public async Task ActivateCardByIdAsync_ReturnsNotFound_WhenCardDoesNotExist()
+        {
+            // Arrange
+            var cardId = Guid.NewGuid();
+            _cardRepo.GetByIdAsync(cardId).Returns((Card?)null);
+            _messageService.Get("CardNotFound").Returns("Card not found.");
+
+            // Act
+            var result = await _sut.ActivateCardByIdAsync(cardId);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(404, result.StatusCode);
+            Assert.Equal("Card not found.", result.Message);
+        }
+
+        [Fact]
+        public async Task ActivateCardByIdAsync_ReturnsBadRequest_WhenCardIsAlreadyActive()
+        {
+            // Arrange
+            var cardId = Guid.NewGuid();
+            var card = new Card { Id = cardId, Status = CardStatus.Active };
+            _cardRepo.GetByIdAsync(cardId).Returns(card);
+            _messageService.Get("CardAlreadyActivated").Returns("Card already activated.");
+
+            // Act
+            var result = await _sut.ActivateCardByIdAsync(cardId);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(400, result.StatusCode);
+            Assert.Equal("Card already activated.", result.Message);
+        }
+
+        [Fact]
+        public async Task ActivateCardByIdAsync_ReturnsSuccess_AndActivatesCard()
+        {
+            // Arrange
+            var cardId = Guid.NewGuid();
+            var card = new Card { Id = cardId, Status = CardStatus.PendingGeneration };
+            _cardRepo.GetByIdAsync(cardId).Returns(card);
+            _messageService.Get("CardActivatedSuccessfully").Returns("Card activated successfully.");
+
+            // Act
+            var result = await _sut.ActivateCardByIdAsync(cardId);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(CardStatus.Active, card.Status);
+            Assert.NotNull(card.ActivatedAt);
+            Assert.Equal("Card activated successfully.", result.Message);
             await _unitOfWork.Received(1).SaveChangesAsync();
         }
     }

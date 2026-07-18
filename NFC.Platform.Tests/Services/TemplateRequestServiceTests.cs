@@ -168,5 +168,45 @@ namespace NFC.Platform.Tests.Services
             Assert.Equal("Second", result.Data![0].TemplateName);
         }
 
+        // ── GetRequestByIdAsync ───────────────────────────────────────────────────
+
+        [Fact]
+        public async Task GetRequestByIdAsync_ReturnsNotFound_WhenRequestDoesNotExist()
+        {
+            // Arrange
+            var id = Guid.NewGuid();
+            var emptyQueryable = new List<TemplateRequest>().AsQueryable().BuildMock();
+            _templateRequestRepo.GetQueryable().Returns(emptyQueryable);
+            _messageService.Get("RecordNotFound").Returns("Record not found.");
+
+            // Act
+            var result = await _sut.GetRequestByIdAsync(id);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(404, result.StatusCode);
+            Assert.Equal("Record not found.", result.Message);
+        }
+
+        [Fact]
+        public async Task GetRequestByIdAsync_ReturnsSuccess_WhenRequestExists()
+        {
+            // Arrange
+            var id = Guid.NewGuid();
+            var templateRequest = new TemplateRequest { Id = id, TemplateName = "Premium" };
+            var queryable = new List<TemplateRequest> { templateRequest }.AsQueryable().BuildMock();
+            _templateRequestRepo.GetQueryable().Returns(queryable);
+
+            var dto = new TemplateRequestDto { Id = id, TemplateName = "Premium" };
+            _mapper.Map<TemplateRequestDto>(templateRequest).Returns(dto);
+
+            // Act
+            var result = await _sut.GetRequestByIdAsync(id);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(200, result.StatusCode);
+            Assert.Equal("Premium", result.Data!.TemplateName);
+        }
     }
 }

@@ -16,14 +16,13 @@ public class ReorderRequest
     public int Quantity { get; set; }
 
     /// <summary>
-    /// "all_employees" assigns cards across all current employees.
-    /// "specific_employees" requires EmployeeIds to be provided.
+    /// Assignment scope (AllEmployees, SpecificEmployees, or Individual).
     /// </summary>
     [Required]
-    public string AssignmentScope { get; set; } = "all_employees";
+    public AssignmentScope AssignmentScope { get; set; } = AssignmentScope.AllEmployees;
 
     /// <summary>
-    /// Required when AssignmentScope = "specific_employees".
+    /// Required when AssignmentScope = AssignmentScope.SpecificEmployees.
     /// Count must equal Quantity.
     /// </summary>
     public List<Guid> EmployeeIds { get; set; } = [];

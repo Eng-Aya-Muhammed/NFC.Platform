@@ -90,5 +90,32 @@ namespace NFC.Platform.Tests.Services
             Assert.Equal(2, result.Data!.Count);
             Assert.Equal("First", result.Data![0].Name);
         }
+
+        [Fact]
+        public async Task GetActiveTemplatesAsync_ExcludesInactiveTemplates()
+        {
+            // Arrange
+            var templates = new List<CardTemplate>
+            {
+                new() { Id = Guid.NewGuid(), Name = "Active1", IsActive = true, DisplayOrder = 1 },
+                new() { Id = Guid.NewGuid(), Name = "Inactive1", IsActive = false, DisplayOrder = 2 }
+            };
+            var queryable = templates.AsQueryable().BuildMock();
+            _templateRepo.GetQueryable().Returns(queryable);
+
+            var dtos = new List<CardTemplateDto>
+            {
+                new() { Name = "Active1" }
+            };
+            _mapper.Map<IReadOnlyList<CardTemplateDto>>(Arg.Any<List<CardTemplate>>()).Returns(dtos);
+
+            // Act
+            var result = await _sut.GetActiveTemplatesAsync();
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Single(result.Data!);
+            Assert.Equal("Active1", result.Data![0].Name);
+        }
     }
 }

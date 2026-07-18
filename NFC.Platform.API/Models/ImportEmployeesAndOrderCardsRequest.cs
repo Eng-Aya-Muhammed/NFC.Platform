@@ -10,7 +10,10 @@ namespace NFC.Platform.API.Models
         [Required]
         public IFormFile File { get; set; } = null!;
         public CardType CardType { get; set; } = CardType.Plastic;
-        public CardDesignType CardDesignType { get; set; } = CardDesignType.BuiltInTemplate;
+        public CardDesignType CardDesignType { get; set; }
         public string? Notes { get; set; }
+        public string? DesignReferenceUrl { get; set; }
+        public string? LogoUrl { get; set; }
+        public string? DesignNotes { get; set; }
     }
 }

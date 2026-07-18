@@ -12,13 +12,16 @@ namespace NFC.Platform.Infrastructure.Configurations
             builder.HasKey(o => o.Id);
 
             builder.Property(o => o.CardName).IsRequired().HasMaxLength(200);
-            builder.Property(o => o.CardType).IsRequired();
-            builder.Property(o => o.CardDesignType).IsRequired();
+            builder.Property(o => o.CardType).IsRequired(false);
+            builder.Property(o => o.CardDesignType).IsRequired(false);
             builder.Property(o => o.Quantity).IsRequired();
 
             builder.Property(o => o.ExcelDataUrl).HasMaxLength(1000);
             builder.Property(o => o.FrontDesignUrl).HasMaxLength(1000);
             builder.Property(o => o.BackDesignUrl).HasMaxLength(1000);
+            builder.Property(o => o.DesignReferenceUrl).HasMaxLength(1000);
+            builder.Property(o => o.LogoUrl).HasMaxLength(1000);
+            builder.Property(o => o.DesignNotes).HasMaxLength(2000);
 
             builder.Property(o => o.Notes).HasMaxLength(2000);
             builder.Property(o => o.Status).IsRequired();

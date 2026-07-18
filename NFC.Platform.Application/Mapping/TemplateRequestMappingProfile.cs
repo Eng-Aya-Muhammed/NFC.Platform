@@ -11,7 +11,8 @@ namespace NFC.Platform.Application.Mapping
         {
             CreateMap<TemplateRequest, TemplateRequestDto>()
                 .ForMember(dest => dest.RequestedByUsername, opt => opt.MapFrom(src => src.RequestedByUser != null ? src.RequestedByUser.Username : string.Empty))
-                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()));
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
+                .ForMember(dest => dest.RequestType, opt => opt.MapFrom(src => src.RequestType.ToString()));
 
             CreateMap<CreateTemplateRequest, TemplateRequest>()
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => TemplateRequestStatus.Pending));

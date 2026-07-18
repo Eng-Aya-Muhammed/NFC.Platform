@@ -163,4 +163,28 @@
   <data name="InvalidUrl" xml:space="preserve">
     <value>صيغة الرابط غير صحيحة.</value>
   </data>
+  <data name="CardDesignTypeRequired" xml:space="preserve">
+    <value>نوع تصميم الكارت مطلوب.</value>
+  </data>
+  <data name="FrontDesignRequired" xml:space="preserve">
+    <value>ملف التصميم الأمامي مطلوب.</value>
+  </data>
+  <data name="BackDesignRequired" xml:space="preserve">
+    <value>ملف التصميم الخلفي مطلوب.</value>
+  </data>
+  <data name="LogoRequiredForCustomDesign" xml:space="preserve">
+    <value>الشعار مطلوب لطلبات التصميم المخصص.</value>
+  </data>
+  <data name="EmployeeIdsRequiredForSpecificAssignment" xml:space="preserve">
+    <value>معرّفات الموظفين مطلوبة عند التخصيص لموظفين محددين.</value>
+  </data>
+  <data name="EmployeeCountMismatch" xml:space="preserve">
+    <value>الكمية المطلوبة ({1}) لا تطابق عدد الموظفين المحددين ({0}).</value>
+  </data>
+  <data name="EmployeesNotFound" xml:space="preserve">
+    <value>الموظفون غير موجودين: {0}</value>
+  </data>
+  <data name="EmployeesMissingProfile" xml:space="preserve">
+    <value>الموظفون ليس لديهم ملف شخصي مكتمل: {0}</value>
+  </data>
 </root>

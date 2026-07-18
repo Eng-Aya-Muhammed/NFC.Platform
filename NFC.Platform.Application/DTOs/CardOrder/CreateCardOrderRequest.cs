@@ -17,11 +17,9 @@ namespace NFC.Platform.Application.DTOs.CardOrder;
 
         public CardDesignType? CardDesignType { get; set; }
 
-        /// <summary>
-        /// References a submitted custom-design request whose produced template
-        /// will be used when delivered. Mutually exclusive with FrontDesignUrl/BackDesignUrl.
-        /// </summary>
-        public Guid? CustomDesignRequestId { get; set; }
+        public string? DesignReferenceUrl { get; set; }
+        public string? LogoUrl { get; set; }
+        public string? DesignNotes { get; set; }
 
         [Required]
         [Range(1, 10000)]
@@ -38,6 +36,9 @@ namespace NFC.Platform.Application.DTOs.CardOrder;
         /// </summary>
         [StringLength(500)]
         public string? ShippingAddress { get; set; }
+
+        public AssignmentScope? AssignmentScope { get; set; }
+        public List<Guid>? EmployeeIds { get; set; }
 
         /// <summary>
         /// Optional list of specific employees to order cards for.

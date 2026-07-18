@@ -45,10 +45,14 @@ public class ProfileMetricService(IUnitOfWork unitOfWork, IMessageService messag
             if (card.UserProfile.Employee?.Company != null)
             {
                 var tenantId = card.UserProfile.TenantId;
+                // TemplateRequest here is exclusively for digital profile template requests.
+                // There is no relationship between this table and physical card design orders.
                 var completedRequest = await _unitOfWork.Repository<TemplateRequest>()
                     .GetQueryable()
                     .AsNoTracking()
-                    .Where(r => r.TenantId == tenantId && r.Status == TemplateRequestStatus.Completed)
+                    .Where(r => r.TenantId == tenantId 
+                             && r.Status == TemplateRequestStatus.Completed 
+                             && r.RequestType == TemplateRequestType.ProfileTemplate)
                     .OrderByDescending(r => r.CreatedAt)
                     .FirstOrDefaultAsync();
 

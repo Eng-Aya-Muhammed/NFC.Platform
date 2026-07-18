@@ -12,12 +12,15 @@ namespace NFC.Platform.Application.DTOs.CardOrder;
         public Guid TenantId { get; set; }
         public Guid UserId { get; set; }
         public string CardName { get; set; } = string.Empty;
-        public CardType CardType { get; set; }
-        public CardDesignType CardDesignType { get; set; }
+        public CardType? CardType { get; set; }
+        public CardDesignType? CardDesignType { get; set; }
         public int Quantity { get; set; }
         public string? ExcelDataUrl { get; set; }
         public string? FrontDesignUrl { get; set; }
         public string? BackDesignUrl { get; set; }
+        public string? DesignReferenceUrl { get; set; }
+        public string? LogoUrl { get; set; }
+        public string? DesignNotes { get; set; }
         public string? Notes { get; set; }
         public OrderStatus Status { get; set; }
         public decimal TotalPrice { get; set; }

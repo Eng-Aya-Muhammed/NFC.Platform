@@ -74,6 +74,23 @@ namespace NFC.Platform.Tests.Services
 
             _messageService.Get(default!, default!).ReturnsForAnyArgs(x => (string)x[0]);
 
+            _mapper.Map<CardOrder>(Arg.Any<CardOrder>()).Returns(x =>
+            {
+                var src = x.Arg<CardOrder>();
+                if (src == null) return null!;
+                return new CardOrder
+                {
+                    CardName = src.CardName,
+                    CardType = src.CardType,
+                    CardDesignType = src.CardDesignType,
+                    FrontDesignUrl = src.FrontDesignUrl,
+                    BackDesignUrl = src.BackDesignUrl,
+                    LogoUrl = src.LogoUrl,
+                    DesignReferenceUrl = src.DesignReferenceUrl,
+                    DesignNotes = src.DesignNotes
+                };
+            });
+
             _sut = new CardOrderService(_unitOfWork, _mapper, _messageService, _currentTenant, _excelParser, validator, _storageService, _backgroundJobClient);
         }
 
@@ -116,6 +133,53 @@ namespace NFC.Platform.Tests.Services
             Assert.Equal(id, result.Data!.Id);
         }
 
+        [Fact]
+        public async Task GetPagedAsync_ReturnsSuccess_WithPagedOrders()
+        {
+            // Arrange
+            var orders = new List<CardOrder>
+            {
+                new CardOrder { Id = Guid.NewGuid(), CreatedAt = DateTime.UtcNow.AddMinutes(-5), Items = [] },
+                new CardOrder { Id = Guid.NewGuid(), CreatedAt = DateTime.UtcNow, Items = [] }
+            };
+            _orderRepo.GetQueryable().Returns(orders.AsQueryable().BuildMock());
+
+            var request = new PaginationRequest { PageNumber = 1, PageSize = 10 };
+            _mapper.Map<CardOrderDto>(Arg.Any<CardOrder>()).Returns(new CardOrderDto());
+
+            // Act
+            var result = await _sut.GetPagedAsync(request, null);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.NotNull(result.Data);
+            Assert.Equal(2, result.Data.TotalCount);
+        }
+
+        [Fact]
+        public async Task GetPagedAsync_FiltersByStatus_WhenStatusFilterPassed()
+        {
+            // Arrange
+            var orderId = Guid.NewGuid();
+            var orders = new List<CardOrder>
+            {
+                new CardOrder { Id = orderId, Status = OrderStatus.Encoding, CreatedAt = DateTime.UtcNow.AddMinutes(-5), Items = [] },
+                new CardOrder { Id = Guid.NewGuid(), Status = OrderStatus.Delivered, CreatedAt = DateTime.UtcNow, Items = [] }
+            };
+            _orderRepo.GetQueryable().Returns(orders.AsQueryable().BuildMock());
+
+            var request = new PaginationRequest { PageNumber = 1, PageSize = 10 };
+            _mapper.Map<CardOrderDto>(Arg.Any<CardOrder>()).Returns(new CardOrderDto());
+
+            // Act
+            var result = await _sut.GetPagedAsync(request, "Encoding");
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.NotNull(result.Data);
+            Assert.Equal(1, result.Data.TotalCount);
+        }
+
         // ── CreateAsync ───────────────────────────────────────────────────────────
 
         [Fact]
@@ -134,7 +198,7 @@ namespace NFC.Platform.Tests.Services
         }
 
         [Fact]
-        public async Task CreateAsync_ReturnsSuccess_AndSetsDefaults_WhenNoCardNameOrType()
+        public async Task CreateAsync_ReturnsSuccess_AndLeavesCardTypeNull_WhenNoCardTypeProvided()
         {
             // Arrange
             var userId = Guid.NewGuid();
@@ -158,11 +222,39 @@ namespace NFC.Platform.Tests.Services
             // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(200, result.StatusCode);
-            // Defaults should have been applied to the order object
             Assert.Equal($"طلب كروت - 5", order.CardName);
-            Assert.Equal(CardType.Plastic, order.CardType);
-            Assert.Equal(CardDesignType.BuiltInTemplate, order.CardDesignType);
+            Assert.Null(order.CardType);
+            Assert.Null(order.CardDesignType);
+            Assert.Equal(0, order.UnitPrice);
+            Assert.Equal(0, order.TotalPrice);
             await _orderRepo.Received(1).AddAsync(order);
+        }
+
+        [Fact]
+        public async Task CreateAsync_CalculatesPricing_WhenCardTypeIsProvided()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            _currentTenant.UserId.Returns(userId);
+
+            var request = new CreateCardOrderRequest { Quantity = 5, CardType = CardType.Metal };
+            var order = new CardOrder { Id = Guid.NewGuid(), Quantity = 5, CardType = CardType.Metal, Items = [] };
+            _mapper.Map<CardOrder>(request).Returns(order);
+
+            var createdQueryable = new List<CardOrder> { order }.AsQueryable().BuildMock();
+            _orderRepo.GetQueryable().Returns(createdQueryable);
+
+            var dto = new CardOrderDto { Quantity = 5, CardType = CardType.Metal };
+            _mapper.Map<CardOrderDto>(order).Returns(dto);
+
+            // Act
+            var result = await _sut.CreateAsync(request);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(200, result.StatusCode);
+            Assert.Equal(8.5m, order.UnitPrice);
+            Assert.Equal(42.5m, order.TotalPrice);
         }
 
         [Fact]
@@ -265,7 +357,7 @@ namespace NFC.Platform.Tests.Services
             var request = new ReorderRequest
             {
                 Quantity = 5,
-                AssignmentScope = "individual",
+                AssignmentScope = AssignmentScope.Individual,
                 DeliveryMethod = DeliveryMethod.Courier,
                 ShippingAddress = null
             };
@@ -325,7 +417,7 @@ namespace NFC.Platform.Tests.Services
             var file = Substitute.For<Microsoft.AspNetCore.Http.IFormFile>();
 
             // Act
-            var result = await _sut.QueueEmployeeImportJobAsync(file, CardType.Plastic, CardDesignType.BuiltInTemplate, null);
+            var result = await _sut.QueueEmployeeImportJobAsync(file, CardType.Plastic, CardDesignType.CustomArtwork, null);
 
             // Assert
             Assert.False(result.IsSuccess);
@@ -340,7 +432,7 @@ namespace NFC.Platform.Tests.Services
             _currentTenant.UserId.Returns(Guid.NewGuid());
 
             // Act
-            var result = await _sut.QueueEmployeeImportJobAsync(null!, CardType.Plastic, CardDesignType.BuiltInTemplate, null);
+            var result = await _sut.QueueEmployeeImportJobAsync(null!, CardType.Plastic, CardDesignType.CustomArtwork, null);
 
             // Assert
             Assert.False(result.IsSuccess);
@@ -360,7 +452,7 @@ namespace NFC.Platform.Tests.Services
             file.Length.Returns(100);
 
             // Act
-            var result = await _sut.QueueEmployeeImportJobAsync(file, CardType.Plastic, CardDesignType.BuiltInTemplate, null);
+            var result = await _sut.QueueEmployeeImportJobAsync(file, CardType.Plastic, CardDesignType.CustomArtwork, null);
 
             // Assert
             Assert.False(result.IsSuccess);
@@ -388,7 +480,7 @@ namespace NFC.Platform.Tests.Services
             _messageService.Get("RecordCreated").Returns("Success message");
 
             // Act
-            var result = await _sut.QueueEmployeeImportJobAsync(file, CardType.Plastic, CardDesignType.BuiltInTemplate, "Notes test");
+            var result = await _sut.QueueEmployeeImportJobAsync(file, CardType.Plastic, CardDesignType.CustomArtwork, "Notes test");
 
             // Assert
             Assert.True(result.IsSuccess);
@@ -679,7 +771,7 @@ namespace NFC.Platform.Tests.Services
                 ExcelFileUrl = server.Url + "import.xlsx",
                 TenantId = Guid.NewGuid(),
                 CardType = CardType.Plastic,
-                CardDesignType = CardDesignType.BuiltInTemplate
+                CardDesignType = CardDesignType.CustomArtwork
             };
 
             var jobQueryable = new List<EmployeeImportJob> { job }.BuildMock();
@@ -925,7 +1017,7 @@ namespace NFC.Platform.Tests.Services
             _currentTenant.UserId.Returns((Guid?)null);
 
             // Act
-            var result = await _sut.CreateReorderAsync(Guid.NewGuid(), new ReorderRequest { AssignmentScope = "individual" });
+            var result = await _sut.CreateReorderAsync(Guid.NewGuid(), new ReorderRequest { AssignmentScope = AssignmentScope.Individual });
 
             // Assert
             Assert.False(result.IsSuccess);
@@ -940,7 +1032,7 @@ namespace NFC.Platform.Tests.Services
             _orderRepo.GetQueryable().Returns(new List<CardOrder>().AsQueryable().BuildMock());
 
             // Act
-            var result = await _sut.CreateReorderAsync(Guid.NewGuid(), new ReorderRequest { AssignmentScope = "individual" });
+            var result = await _sut.CreateReorderAsync(Guid.NewGuid(), new ReorderRequest { AssignmentScope = AssignmentScope.Individual });
 
             // Assert
             Assert.False(result.IsSuccess);
@@ -958,7 +1050,7 @@ namespace NFC.Platform.Tests.Services
 
             var request = new ReorderRequest
             {
-                AssignmentScope = "specific_employees",
+                AssignmentScope = AssignmentScope.SpecificEmployees,
                 EmployeeIds = new List<Guid> { Guid.NewGuid() },
                 Quantity = 5
             };
@@ -983,7 +1075,7 @@ namespace NFC.Platform.Tests.Services
             // Empty pricing
             _cardPricingRepo.GetQueryable().Returns(new List<CardPricing>().AsQueryable().BuildMock());
 
-            var request = new ReorderRequest { Quantity = 5, AssignmentScope = "individual" };
+            var request = new ReorderRequest { Quantity = 5, AssignmentScope = AssignmentScope.Individual };
 
             // Act
             var result = await _sut.CreateReorderAsync(parentId, request);
@@ -1002,7 +1094,7 @@ namespace NFC.Platform.Tests.Services
             var parentOrder = new CardOrder { Id = parentId, CardType = CardType.Plastic, CardName = "Parent Card" };
             _orderRepo.GetQueryable().Returns(new List<CardOrder> { parentOrder }.AsQueryable().BuildMock());
 
-            var request = new ReorderRequest { Quantity = 5, AssignmentScope = "individual" };
+            var request = new ReorderRequest { Quantity = 5, AssignmentScope = AssignmentScope.Individual };
 
             // Act
             var result = await _sut.CreateReorderAsync(parentId, request);
@@ -1027,7 +1119,7 @@ namespace NFC.Platform.Tests.Services
             var employeeId2 = Guid.NewGuid();
             var request = new ReorderRequest
             {
-                AssignmentScope = "specific_employees",
+                AssignmentScope = AssignmentScope.SpecificEmployees,
                 EmployeeIds = new List<Guid> { employeeId1, employeeId2 },
                 Quantity = 2
             };
@@ -1075,7 +1167,7 @@ namespace NFC.Platform.Tests.Services
             var employeeId = Guid.NewGuid();
             var request = new ReorderRequest
             {
-                AssignmentScope = "specific_employees",
+                AssignmentScope = AssignmentScope.SpecificEmployees,
                 EmployeeIds = new List<Guid> { employeeId },
                 Quantity = 1
             };
@@ -1105,7 +1197,7 @@ namespace NFC.Platform.Tests.Services
             var employeeId = Guid.NewGuid();
             var request = new ReorderRequest
             {
-                AssignmentScope = "specific_employees",
+                AssignmentScope = AssignmentScope.SpecificEmployees,
                 EmployeeIds = new List<Guid> { employeeId },
                 Quantity = 1
             };
@@ -1139,7 +1231,7 @@ namespace NFC.Platform.Tests.Services
 
             var request = new ReorderRequest
             {
-                AssignmentScope = "all_employees",
+                AssignmentScope = AssignmentScope.AllEmployees,
                 Quantity = 2
             };
 
@@ -1185,7 +1277,7 @@ namespace NFC.Platform.Tests.Services
 
             var request = new ReorderRequest
             {
-                AssignmentScope = "all_employees",
+                AssignmentScope = AssignmentScope.AllEmployees,
                 Quantity = 5
             };
 
@@ -1279,7 +1371,7 @@ namespace NFC.Platform.Tests.Services
                 Id = Guid.NewGuid(),
                 CardType = CardType.Plastic,
                 CardName = "Original Order Name",
-                CardDesignType = CardDesignType.BuiltInTemplate
+                CardDesignType = CardDesignType.CustomArtwork
             };
 
             var card = new Card
@@ -1426,6 +1518,488 @@ namespace NFC.Platform.Tests.Services
             // Assert
             Assert.True(result.IsSuccess);
             Assert.Single(result.Data!);
+        }
+
+        [Fact]
+        public async Task GetEmployeesImportStatusAsync_DeserializesErrorsJson_WhenJobContainsErrors()
+        {
+            // Arrange
+            var jobId = Guid.NewGuid();
+            var job = new EmployeeImportJob
+            {
+                Id = jobId,
+                Status = EmployeeImportJobStatus.Completed,
+                TotalRows = 10,
+                Imported = 8,
+                Skipped = 2,
+                ErrorsJson = "[\"Error 1\",\"Error 2\"]"
+            };
+            _jobRepo.GetQueryable().Returns(new List<EmployeeImportJob> { job }.AsQueryable().BuildMock());
+            _mapper.Map<EmployeesImportStatusDto>(job).Returns(new EmployeesImportStatusDto
+            {
+                Status = job.Status.ToString(),
+                TotalRows = job.TotalRows,
+                Imported = job.Imported,
+                Skipped = job.Skipped,
+                Errors = new List<string> { "Error 1", "Error 2" }
+            });
+
+            // Act
+            var result = await _sut.GetEmployeesImportStatusAsync(jobId);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal("Completed", result.Data!.Status);
+            Assert.Equal(2, result.Data.Errors.Count);
+            Assert.Contains("Error 1", result.Data.Errors);
+            Assert.Contains("Error 2", result.Data.Errors);
+        }
+
+        [Fact]
+        public async Task CreateReorderAsync_CopiesCustomDesignFields_WhenParentOrderIsNeedCustomDesign()
+        {
+            // Arrange
+            var parentId = Guid.NewGuid();
+            _currentTenant.UserId.Returns(Guid.NewGuid());
+            var parentOrder = new CardOrder
+            {
+                Id = parentId,
+                CardType = CardType.Plastic,
+                CardName = "Custom Parent Card",
+                CardDesignType = CardDesignType.NeedCustomDesign,
+                LogoUrl = "https://cdn.example.com/logo.png",
+                DesignReferenceUrl = "https://cdn.example.com/ref.png",
+                DesignNotes = "Some notes"
+            };
+            _orderRepo.GetQueryable().Returns(new List<CardOrder> { parentOrder }.AsQueryable().BuildMock());
+
+            var request = new ReorderRequest { Quantity = 2, AssignmentScope = AssignmentScope.Individual };
+
+            // Act
+            var result = await _sut.CreateReorderAsync(parentId, request);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            await _orderRepo.Received(1).AddAsync(Arg.Is<CardOrder>(o =>
+                o.ParentOrderId == parentId &&
+                o.CardDesignType == CardDesignType.NeedCustomDesign &&
+                o.LogoUrl == "https://cdn.example.com/logo.png" &&
+                o.DesignReferenceUrl == "https://cdn.example.com/ref.png" &&
+                o.DesignNotes == "Some notes"
+            ));
+        }
+
+        [Fact]
+        public async Task ReissueCardAsync_CopiesCustomDesignFields_WhenOriginalOrderIsNeedCustomDesign()
+        {
+            // Arrange
+            var cardId = Guid.NewGuid();
+            var tenantId = Guid.NewGuid();
+            var profileId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
+            _currentTenant.UserId.Returns(userId);
+
+            var userProfile = new UserProfile
+            {
+                Id = profileId,
+                FullName = "Emp 1",
+                Phone = "123456",
+                ContactEmail = "emp1@test.com"
+            };
+
+            var originalOrder = new CardOrder
+            {
+                Id = Guid.NewGuid(),
+                CardType = CardType.Plastic,
+                CardName = "Original Order Name",
+                CardDesignType = CardDesignType.NeedCustomDesign,
+                LogoUrl = "https://cdn.example.com/logo.png",
+                DesignReferenceUrl = "https://cdn.example.com/ref.png",
+                DesignNotes = "Original Design Notes"
+            };
+
+            var card = new Card
+            {
+                Id = cardId,
+                TenantId = tenantId,
+                UserProfileId = profileId,
+                UserProfile = userProfile,
+                CardOrder = originalOrder,
+                Status = CardStatus.Active
+            };
+
+            _cardRepo.GetQueryable().Returns(new List<Card> { card }.AsQueryable().BuildMock());
+
+            var request = new ReissueCardRequest
+            {
+                DeliveryMethod = DeliveryMethod.Courier,
+                ShippingAddress = "Replacement Address"
+            };
+
+            var createdOrder = new CardOrder { Id = Guid.NewGuid(), Items = [] };
+            _orderRepo.GetQueryable().Returns(new List<CardOrder> { createdOrder }.AsQueryable().BuildMock());
+            _mapper.Map<CardOrderDto>(createdOrder).Returns(new CardOrderDto { Id = createdOrder.Id });
+
+            var mappedItem = new CardOrderItem { UserProfileId = profileId };
+            _mapper.Map<CardOrderItem>(userProfile).Returns(mappedItem);
+
+            // Act
+            var result = await _sut.ReissueCardAsync(cardId, request);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            await _orderRepo.Received(1).AddAsync(Arg.Is<CardOrder>(o =>
+                o.CardDesignType == CardDesignType.NeedCustomDesign &&
+                o.LogoUrl == "https://cdn.example.com/logo.png" &&
+                o.DesignReferenceUrl == "https://cdn.example.com/ref.png" &&
+                o.DesignNotes == "Original Design Notes"
+            ));
+        }
+
+        [Fact]
+        public async Task QueueEmployeeImportJobAsync_ReturnsUnprocessableEntity_WhenNeedCustomDesignButLogoMissing()
+        {
+            // Arrange
+            _currentTenant.TenantId.Returns(Guid.NewGuid());
+            _currentTenant.UserId.Returns(Guid.NewGuid());
+
+            var file = Substitute.For<Microsoft.AspNetCore.Http.IFormFile>();
+            file.FileName.Returns("import.xlsx");
+            file.Length.Returns(100);
+
+            // Act
+            var result = await _sut.QueueEmployeeImportJobAsync(
+                file, 
+                CardType.Plastic, 
+                CardDesignType.NeedCustomDesign, 
+                "Notes test",
+                logoUrl: null);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(422, result.StatusCode);
+            Assert.Contains("LogoRequiredForCustomDesign", result.Message);
+        }
+
+        [Fact]
+        public async Task QueueEmployeeImportJobAsync_ReturnsSuccess_WhenNeedCustomDesignAndLogoProvided()
+        {
+            // Arrange
+            _currentTenant.TenantId.Returns(Guid.NewGuid());
+            _currentTenant.UserId.Returns(Guid.NewGuid());
+
+            var file = Substitute.For<Microsoft.AspNetCore.Http.IFormFile>();
+            file.FileName.Returns("import.xlsx");
+            file.Length.Returns(100);
+
+            var uploadResult = new NFC.Platform.Application.DTOs.Upload.UploadResultDto
+            {
+                SecureUrl = "https://cloudinary.com/raw/import.xlsx",
+                PublicId = "cloudinary-id"
+            };
+            _storageService.UploadRawFileAsync(file, "employee-imports").Returns(Task.FromResult(uploadResult));
+            _messageService.Get("RecordCreated").Returns("Success message");
+
+            // Act
+            var result = await _sut.QueueEmployeeImportJobAsync(
+                file, 
+                CardType.Plastic, 
+                CardDesignType.NeedCustomDesign, 
+                "Notes test",
+                designReferenceUrl: "https://example.com/ref.png",
+                logoUrl: "https://example.com/logo.png",
+                designNotes: "Custom design details");
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.NotNull(result.Data);
+            Assert.Equal("https://example.com/logo.png", result.Data.LogoUrl);
+            Assert.Equal("https://example.com/ref.png", result.Data.DesignReferenceUrl);
+            Assert.Equal("Custom design details", result.Data.DesignNotes);
+        }
+
+        [Fact]
+        public async Task ProcessEmployeeImportJobAsync_CopiesCustomDesignFields_WhenJobIsNeedCustomDesign()
+        {
+            // Arrange
+            using var server = new TestHttpServer(new byte[] { 1, 2, 3 });
+            var jobId = Guid.NewGuid();
+            var job = new EmployeeImportJob
+            {
+                Id = jobId,
+                Status = EmployeeImportJobStatus.Pending,
+                ExcelFileUrl = server.Url + "import.xlsx",
+                TenantId = Guid.NewGuid(),
+                CardType = CardType.Plastic,
+                CardDesignType = CardDesignType.NeedCustomDesign,
+                LogoUrl = "https://example.com/logo.png",
+                DesignReferenceUrl = "https://example.com/ref.png",
+                DesignNotes = "Custom design details"
+            };
+
+            var jobQueryable = new List<EmployeeImportJob> { job }.BuildMock();
+            _jobRepo.GetQueryable().Returns(jobQueryable);
+
+            var rows = new List<ExcelEmployeeImportDto>
+            {
+                new ExcelEmployeeImportDto { Name = "John Doe", Email = "john@example.com", JobTitle = "Engineer", Department = "IT" }
+            };
+            _excelParser.ParseEmployeesFromExcel(Arg.Any<Stream>()).Returns(rows);
+
+            var company = new Company { Id = Guid.NewGuid(), Name = "OnPoint", TenantId = job.TenantId };
+            var companyRepo = Substitute.For<IGenericRepository<Company>>();
+            companyRepo.GetQueryable().Returns(new List<Company> { company }.BuildMock());
+            _unitOfWork.Repository<Company>().Returns(companyRepo);
+
+            var plan = new SubscriptionPlan { MaxEmployees = 10 };
+            var activeSub = new UserSubscription { TenantId = job.TenantId, IsActive = true, EndDate = DateTime.UtcNow.AddDays(10), SubscriptionPlan = plan };
+            var subRepo = Substitute.For<IGenericRepository<UserSubscription>>();
+            subRepo.GetQueryable().Returns(new List<UserSubscription> { activeSub }.BuildMock());
+            _unitOfWork.Repository<UserSubscription>().Returns(subRepo);
+
+            var employeeRepo = Substitute.For<IGenericRepository<Employee>>();
+            employeeRepo.CountAsync(Arg.Any<System.Linq.Expressions.Expression<Func<Employee, bool>>>()).Returns(Task.FromResult(0));
+            employeeRepo.GetQueryable().Returns(new List<Employee>().BuildMock());
+            _unitOfWork.Repository<Employee>().Returns(employeeRepo);
+
+            var userRepo = Substitute.For<IGenericRepository<User>>();
+            userRepo.GetQueryable().Returns(new List<User>().BuildMock());
+            _unitOfWork.Repository<User>().Returns(userRepo);
+
+            var userProfileRepo = Substitute.For<IGenericRepository<UserProfile>>();
+            _unitOfWork.Repository<UserProfile>().Returns(userProfileRepo);
+
+            var mappedEmployee = new Employee { Id = Guid.NewGuid(), Email = "john@example.com" };
+            var mappedProfile = new UserProfile { Id = Guid.NewGuid() };
+            var mappedItem = new CardOrderItem { UserProfileId = mappedProfile.Id };
+
+            _mapper.Map<Employee>(Arg.Any<ExcelEmployeeImportDto>()).Returns(mappedEmployee);
+            _mapper.Map<UserProfile>(Arg.Any<ExcelEmployeeImportDto>()).Returns(mappedProfile);
+            _mapper.Map<CardOrderItem>(Arg.Any<ExcelEmployeeImportDto>()).Returns(mappedItem);
+
+            // Act
+            await _sut.ProcessEmployeeImportJobAsync(jobId);
+
+            // Assert
+            Assert.Equal(EmployeeImportJobStatus.Completed, job.Status);
+            await _orderRepo.Received(1).AddAsync(Arg.Is<CardOrder>(o =>
+                o.CardDesignType == CardDesignType.NeedCustomDesign &&
+                o.LogoUrl == "https://example.com/logo.png" &&
+                o.DesignReferenceUrl == "https://example.com/ref.png" &&
+                o.DesignNotes == "Custom design details"
+            ));
+            await _unitOfWork.Received(1).CommitTransactionAsync();
+        }
+
+        [Fact]
+        public async Task CreateAsync_SavesSpecificEmployeeItems_WhenAssignmentScopeIsSpecificEmployees()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            _currentTenant.UserId.Returns(userId);
+
+            var empId1 = Guid.NewGuid();
+            var empId2 = Guid.NewGuid();
+            var request = new CreateCardOrderRequest
+            {
+                Quantity = 2,
+                AssignmentScope = AssignmentScope.SpecificEmployees,
+                EmployeeIds = new List<Guid> { empId1, empId2 }
+            };
+
+            var order = new CardOrder { Id = Guid.NewGuid(), Quantity = 2, Items = [] };
+            _mapper.Map<CardOrder>(request).Returns(order);
+
+            var mockEmployees = new List<Employee>
+            {
+                new Employee { Id = empId1, FullName = "Emp 1", UserProfile = new UserProfile { Id = Guid.NewGuid() } },
+                new Employee { Id = empId2, FullName = "Emp 2", UserProfile = new UserProfile { Id = Guid.NewGuid() } }
+            };
+            var employeeRepo = Substitute.For<IGenericRepository<Employee>>();
+            employeeRepo.GetQueryable().Returns(mockEmployees.AsQueryable().BuildMock());
+            _unitOfWork.Repository<Employee>().Returns(employeeRepo);
+
+            var item1 = new CardOrderItem { EmployeeName = "Emp 1", UserProfileId = mockEmployees[0].UserProfile!.Id };
+            var item2 = new CardOrderItem { EmployeeName = "Emp 2", UserProfileId = mockEmployees[1].UserProfile!.Id };
+            _mapper.Map<CardOrderItem>(mockEmployees[0]).Returns(item1);
+            _mapper.Map<CardOrderItem>(mockEmployees[1]).Returns(item2);
+
+            _orderRepo.GetQueryable().Returns(new List<CardOrder> { order }.AsQueryable().BuildMock());
+            _mapper.Map<CardOrderDto>(order).Returns(new CardOrderDto());
+
+            // Act
+            var result = await _sut.CreateAsync(request);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(200, result.StatusCode);
+            Assert.Equal(2, order.Items.Count);
+            Assert.Contains(order.Items, i => i.EmployeeName == "Emp 1");
+            Assert.Contains(order.Items, i => i.EmployeeName == "Emp 2");
+        }
+
+        [Fact]
+        public async Task CreateAsync_SavesAllEmployeeItems_WhenAssignmentScopeIsAllEmployees()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            _currentTenant.UserId.Returns(userId);
+
+            var request = new CreateCardOrderRequest
+            {
+                Quantity = 2,
+                AssignmentScope = AssignmentScope.AllEmployees
+            };
+
+            var order = new CardOrder { Id = Guid.NewGuid(), Quantity = 2, Items = [] };
+            _mapper.Map<CardOrder>(request).Returns(order);
+
+            var mockEmployees = new List<Employee>
+            {
+                new Employee { Id = Guid.NewGuid(), FullName = "Emp 1", IsDeleted = false, UserProfile = new UserProfile { Id = Guid.NewGuid() } },
+                new Employee { Id = Guid.NewGuid(), FullName = "Emp 2", IsDeleted = false, UserProfile = new UserProfile { Id = Guid.NewGuid() } }
+            };
+            var employeeRepo = Substitute.For<IGenericRepository<Employee>>();
+            employeeRepo.GetQueryable().Returns(mockEmployees.AsQueryable().BuildMock());
+            _unitOfWork.Repository<Employee>().Returns(employeeRepo);
+
+            var item1 = new CardOrderItem { EmployeeName = "Emp 1", UserProfileId = mockEmployees[0].UserProfile!.Id };
+            var item2 = new CardOrderItem { EmployeeName = "Emp 2", UserProfileId = mockEmployees[1].UserProfile!.Id };
+            _mapper.Map<CardOrderItem>(mockEmployees[0]).Returns(item1);
+            _mapper.Map<CardOrderItem>(mockEmployees[1]).Returns(item2);
+
+            _orderRepo.GetQueryable().Returns(new List<CardOrder> { order }.AsQueryable().BuildMock());
+            _mapper.Map<CardOrderDto>(order).Returns(new CardOrderDto());
+
+            // Act
+            var result = await _sut.CreateAsync(request);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(200, result.StatusCode);
+            Assert.Equal(2, order.Items.Count);
+        }
+
+        [Fact]
+        public async Task CreateAsync_FailsWith422_WhenSpecificEmployeesQuantityMismatch()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            _currentTenant.UserId.Returns(userId);
+
+            var request = new CreateCardOrderRequest
+            {
+                Quantity = 5,
+                AssignmentScope = AssignmentScope.SpecificEmployees,
+                EmployeeIds = new List<Guid> { Guid.NewGuid() }
+            };
+
+            // Act
+            var result = await _sut.CreateAsync(request);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(422, result.StatusCode);
+            Assert.Contains("EmployeeCountMismatch", result.Errors[0]);
+        }
+
+        [Fact]
+        public async Task CreateAsync_FailsWith422_WhenEmployeeNotFound()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            _currentTenant.UserId.Returns(userId);
+
+            var request = new CreateCardOrderRequest
+            {
+                Quantity = 1,
+                AssignmentScope = AssignmentScope.SpecificEmployees,
+                EmployeeIds = new List<Guid> { Guid.NewGuid() }
+            };
+
+            var employeeRepo = Substitute.For<IGenericRepository<Employee>>();
+            employeeRepo.GetQueryable().Returns(new List<Employee>().AsQueryable().BuildMock());
+            _unitOfWork.Repository<Employee>().Returns(employeeRepo);
+
+            // Act
+            var result = await _sut.CreateAsync(request);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(422, result.StatusCode);
+            Assert.Contains("EmployeesNotFound", result.Errors[0]);
+        }
+
+        [Fact]
+        public async Task CreateAsync_FailsWith422_WhenEmployeeMissingProfile()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            _currentTenant.UserId.Returns(userId);
+
+            var empId = Guid.NewGuid();
+            var request = new CreateCardOrderRequest
+            {
+                Quantity = 1,
+                AssignmentScope = AssignmentScope.SpecificEmployees,
+                EmployeeIds = new List<Guid> { empId }
+            };
+
+            var mockEmployees = new List<Employee>
+            {
+                new Employee { Id = empId, FullName = "Emp 1", UserProfile = null }
+            };
+            var employeeRepo = Substitute.For<IGenericRepository<Employee>>();
+            employeeRepo.GetQueryable().Returns(mockEmployees.AsQueryable().BuildMock());
+            _unitOfWork.Repository<Employee>().Returns(employeeRepo);
+
+            // Act
+            var result = await _sut.CreateAsync(request);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(422, result.StatusCode);
+            Assert.Contains("EmployeesMissingProfile", result.Errors[0]);
+        }
+
+        [Fact]
+        public async Task CreateReorderAsync_RegressionTest_UsesSharedHelperToBuildItems()
+        {
+            // Arrange
+            var parentId = Guid.NewGuid();
+            _currentTenant.UserId.Returns(Guid.NewGuid());
+            var parentOrder = new CardOrder { Id = parentId, CardType = CardType.Plastic };
+            _orderRepo.GetQueryable().Returns(new List<CardOrder> { parentOrder }.AsQueryable().BuildMock());
+
+            var request = new ReorderRequest
+            {
+                Quantity = 1,
+                AssignmentScope = AssignmentScope.AllEmployees,
+                DeliveryMethod = DeliveryMethod.Pickup
+            };
+
+            var mockEmployees = new List<Employee>
+            {
+                new Employee { Id = Guid.NewGuid(), FullName = "Emp 1", IsDeleted = false, UserProfile = new UserProfile { Id = Guid.NewGuid() } }
+            };
+            var employeeRepo = Substitute.For<IGenericRepository<Employee>>();
+            employeeRepo.GetQueryable().Returns(mockEmployees.AsQueryable().BuildMock());
+            _unitOfWork.Repository<Employee>().Returns(employeeRepo);
+
+            var pricing = new CardPricing { CardType = CardType.Plastic, UnitPrice = 4.5m, Currency = "KWD", IsActive = true, EffectiveFrom = DateTime.UtcNow.AddDays(-10) };
+            _cardPricingRepo.GetQueryable().Returns(new List<CardPricing> { pricing }.AsQueryable().BuildMock());
+
+            var reorder = new CardOrder { Id = Guid.NewGuid(), CardType = CardType.Plastic };
+            _mapper.Map<CardOrder>(parentOrder).Returns(reorder);
+            _mapper.Map<CardOrderDto>(reorder).Returns(new CardOrderDto());
+
+            // Act
+            var result = await _sut.CreateReorderAsync(parentId, request);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(200, result.StatusCode);
+            Assert.Single(reorder.Items);
         }
     }
 }

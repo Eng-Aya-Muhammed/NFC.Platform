@@ -163,4 +163,28 @@
   <data name="InvalidUrl" xml:space="preserve">
     <value>Invalid URL format.</value>
   </data>
+  <data name="CardDesignTypeRequired" xml:space="preserve">
+    <value>Card design type is required.</value>
+  </data>
+  <data name="FrontDesignRequired" xml:space="preserve">
+    <value>Front design file is required.</value>
+  </data>
+  <data name="BackDesignRequired" xml:space="preserve">
+    <value>Back design file is required.</value>
+  </data>
+  <data name="LogoRequiredForCustomDesign" xml:space="preserve">
+    <value>Logo is required for custom design requests.</value>
+  </data>
+  <data name="EmployeeIdsRequiredForSpecificAssignment" xml:space="preserve">
+    <value>Employee IDs are required when assigning to specific employees.</value>
+  </data>
+  <data name="EmployeeCountMismatch" xml:space="preserve">
+    <value>Quantity ({1}) does not match the number of assigned employees ({0}).</value>
+  </data>
+  <data name="EmployeesNotFound" xml:space="preserve">
+    <value>Employees not found: {0}</value>
+  </data>
+  <data name="EmployeesMissingProfile" xml:space="preserve">
+    <value>Employees missing profile: {0}</value>
+  </data>
 </root>

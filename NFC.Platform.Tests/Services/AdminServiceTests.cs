@@ -712,53 +712,5 @@ namespace NFC.Platform.Tests.Services
             Assert.Equal(404, result.StatusCode);
         }
 
-        [Fact]
-        public async Task ResolveTemplateRequestAsync_CascadesOrderStatus_WhenCompleted()
-        {
-            // Arrange
-            var requestId = Guid.NewGuid();
-            var orderId = Guid.NewGuid();
-            var templateRequest = new TemplateRequest { Id = requestId, LinkedOrderId = orderId, Status = TemplateRequestStatus.Pending };
-            _templateRequestRepo.GetByIdAsync(requestId).Returns(templateRequest);
-
-            var order = new CardOrder { Id = orderId, Status = OrderStatus.AwaitingDesign };
-            _orderRepo.GetByIdAsync(orderId).Returns(order);
-
-            var dto = new ResolveTemplateRequestDto { Status = TemplateRequestStatus.Completed, Notes = "Approved!" };
-
-            // Act
-            var result = await _sut.ResolveTemplateRequestAsync(requestId, dto);
-
-            // Assert
-            Assert.True(result.IsSuccess);
-            Assert.Equal(TemplateRequestStatus.Completed, templateRequest.Status);
-            Assert.Equal(OrderStatus.PendingReview, order.Status);
-            await _unitOfWork.Received(1).SaveChangesAsync();
-            await _unitOfWork.Received(1).CommitTransactionAsync();
-        }
-
-        [Fact]
-        public async Task ResolveTemplateRequestAsync_DoesNotCascadeOrderStatus_WhenNotCompleted()
-        {
-            // Arrange
-            var requestId = Guid.NewGuid();
-            var orderId = Guid.NewGuid();
-            var templateRequest = new TemplateRequest { Id = requestId, LinkedOrderId = orderId, Status = TemplateRequestStatus.Pending };
-            _templateRequestRepo.GetByIdAsync(requestId).Returns(templateRequest);
-
-            var order = new CardOrder { Id = orderId, Status = OrderStatus.AwaitingDesign };
-            _orderRepo.GetByIdAsync(orderId).Returns(order);
-
-            var dto = new ResolveTemplateRequestDto { Status = TemplateRequestStatus.Rejected, Notes = "Bad design" };
-
-            // Act
-            var result = await _sut.ResolveTemplateRequestAsync(requestId, dto);
-
-            // Assert
-            Assert.True(result.IsSuccess);
-            Assert.Equal(TemplateRequestStatus.Rejected, templateRequest.Status);
-            Assert.Equal(OrderStatus.AwaitingDesign, order.Status); // No transition
-            await _unitOfWork.Received(1).SaveChangesAsync();
-        }
     }
 }

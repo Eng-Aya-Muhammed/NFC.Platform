@@ -12,6 +12,7 @@ namespace NFC.Platform.Application.DTOs.Template;
         public string? ReferenceImageUrl { get; set; }
         public string? Notes { get; set; }
         public string Status { get; set; } = string.Empty;
+        public string RequestType { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; }
     }
 

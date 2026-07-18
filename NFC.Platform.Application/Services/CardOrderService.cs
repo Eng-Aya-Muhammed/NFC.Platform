@@ -73,39 +73,45 @@ namespace NFC.Platform.Application.Services;
             if (!userId.HasValue)
                 return ServiceResult<CardOrderDto>.Unauthorized(_messageService.Get("UserNotAuthenticated"));
 
+            var itemsResult = await BuildOrderItemsAsync(request.AssignmentScope, request.EmployeeIds, request.Quantity);
+            if (!itemsResult.IsSuccess)
+            {
+                return ServiceResult<CardOrderDto>.Fail(itemsResult.Message ?? string.Join(", ", itemsResult.Errors), itemsResult.StatusCode);
+            }
+
             var order = _mapper.Map<CardOrder>(request);
             order.UserId = userId.Value;
+            order.Items = itemsResult.Data ?? new List<CardOrderItem>();
 
             // Apply defaults for fields not supplied by the simple UI modal
             if (string.IsNullOrWhiteSpace(order.CardName))
             {
                 order.CardName = _messageService.Get("DefaultCardOrderName", order.Quantity.ToString()) ?? $"Card Order - {order.Quantity}";
             }
-            if (order.CardType == 0)
+            if (order.CardType.HasValue)
             {
-                order.CardType = CardType.Plastic;
+                var pricing = await _unitOfWork.Repository<CardPricing>().GetQueryable()
+                    .AsNoTracking()
+                    .Where(p => p.CardType == order.CardType.Value && p.IsActive && p.EffectiveFrom <= DateTime.UtcNow && (p.EffectiveTo == null || p.EffectiveTo > DateTime.UtcNow))
+                    .OrderByDescending(p => p.EffectiveFrom)
+                    .FirstOrDefaultAsync();
+
+                if (pricing == null)
+                {
+                    return ServiceResult<CardOrderDto>.Fail(
+                        _messageService.Get("PricingNotConfigured") ?? $"Pricing is not configured for card type '{order.CardType}'.",
+                        500);
+                }
+
+                order.UnitPrice = pricing.UnitPrice;
+                order.Currency = pricing.Currency;
+                order.TotalPrice = pricing.UnitPrice * order.Quantity;
             }
-            if (order.CardDesignType == 0)
+            else
             {
-                order.CardDesignType = CardDesignType.BuiltInTemplate;
+                order.UnitPrice = 0;
+                order.TotalPrice = 0;
             }
-
-            var pricing = await _unitOfWork.Repository<CardPricing>().GetQueryable()
-                .AsNoTracking()
-                .Where(p => p.CardType == order.CardType && p.IsActive && p.EffectiveFrom <= DateTime.UtcNow && (p.EffectiveTo == null || p.EffectiveTo > DateTime.UtcNow))
-                .OrderByDescending(p => p.EffectiveFrom)
-                .FirstOrDefaultAsync();
-
-            if (pricing == null)
-            {
-                return ServiceResult<CardOrderDto>.Fail(
-                    _messageService.Get("PricingNotConfigured") ?? $"Pricing is not configured for card type '{order.CardType}'.",
-                    500);
-            }
-
-            order.UnitPrice = pricing.UnitPrice;
-            order.Currency = pricing.Currency;
-            order.TotalPrice = pricing.UnitPrice * order.Quantity;
 
             // TenantId is auto-assigned by DbContext.ApplyTenantRules() on SaveChanges
             // for all ITenantEntity entries with TenantId == Guid.Empty
@@ -194,6 +200,59 @@ namespace NFC.Platform.Application.Services;
             return ServiceResult<OrderPricingResponseDto>.Success(dto);
         }
 
+        private async Task<ServiceResult<List<CardOrderItem>>> BuildOrderItemsAsync(
+            AssignmentScope? scope, List<Guid>? employeeIds, int quantity)
+        {
+            if (!scope.HasValue)
+                return ServiceResult<List<CardOrderItem>>.Success(new List<CardOrderItem>());
+
+            if (scope == AssignmentScope.SpecificEmployees)
+            {
+                if (employeeIds == null || employeeIds.Count != quantity)
+                    return ServiceResult<List<CardOrderItem>>.Fail(
+                        _messageService.Get("EmployeeCountMismatch", (employeeIds?.Count ?? 0).ToString(), quantity.ToString()), 422);
+
+                var employees = await _unitOfWork.Repository<Employee>()
+                    .GetQueryable()
+                    .AsNoTracking()
+                    .Include(e => e.UserProfile)
+                    .Where(e => employeeIds.Contains(e.Id))
+                    .ToListAsync();
+
+                var missingIds = employeeIds.Except(employees.Select(e => e.Id)).ToList();
+                if (missingIds.Count > 0)
+                    return ServiceResult<List<CardOrderItem>>.Fail(
+                        _messageService.Get("EmployeesNotFound", string.Join(", ", missingIds)), 422);
+
+                var employeesWithoutProfile = employees.Where(e => e.UserProfile == null).Select(e => e.Id).ToList();
+                if (employeesWithoutProfile.Count > 0)
+                    return ServiceResult<List<CardOrderItem>>.Fail(
+                        _messageService.Get("EmployeesMissingProfile", string.Join(", ", employeesWithoutProfile)), 422);
+
+                return ServiceResult<List<CardOrderItem>>.Success(
+                    employees.Select(e => _mapper.Map<CardOrderItem>(e)).ToList());
+            }
+
+            if (scope == AssignmentScope.AllEmployees)
+            {
+                var allEmployees = await _unitOfWork.Repository<Employee>()
+                    .GetQueryable()
+                    .AsNoTracking()
+                    .Include(e => e.UserProfile)
+                    .Where(e => !e.IsDeleted && e.UserProfile != null)
+                    .ToListAsync();
+
+                if (quantity != allEmployees.Count)
+                    return ServiceResult<List<CardOrderItem>>.Fail(
+                        _messageService.Get("EmployeeCountMismatch", allEmployees.Count.ToString(), quantity.ToString()), 422);
+
+                return ServiceResult<List<CardOrderItem>>.Success(
+                    allEmployees.Select(e => _mapper.Map<CardOrderItem>(e)).ToList());
+            }
+
+            return ServiceResult<List<CardOrderItem>>.Success(new List<CardOrderItem>());
+        }
+
         public async Task<ServiceResult<CardOrderDto>> CreateReorderAsync(Guid parentOrderId, ReorderRequest request)
         {
             var userId = _currentTenant.UserId;
@@ -213,48 +272,9 @@ namespace NFC.Platform.Application.Services;
             if (parentOrder == null)
                 return ServiceResult<CardOrderDto>.NotFound(_messageService.Get("RecordNotFound"));
 
-            var items = new List<CardOrderItem>();
-
-            if (string.Equals(request.AssignmentScope, "specific_employees", StringComparison.OrdinalIgnoreCase))
-            {
-                if (request.EmployeeIds.Count != request.Quantity)
-                    return ServiceResult<CardOrderDto>.Fail(
-                        _messageService.Get("EmployeeCountMismatch", request.EmployeeIds.Count.ToString(), request.Quantity.ToString()), 422);
-
-                var employees = await _unitOfWork.Repository<Employee>()
-                    .GetQueryable()
-                    .AsNoTracking()
-                    .Include(e => e.UserProfile)
-                    .Where(e => request.EmployeeIds.Contains(e.Id))
-                    .ToListAsync();
-
-                var missingIds = request.EmployeeIds.Except(employees.Select(e => e.Id)).ToList();
-                if (missingIds.Count > 0)
-                    return ServiceResult<CardOrderDto>.Fail(
-                        _messageService.Get("EmployeesNotFound", string.Join(", ", missingIds)), 422);
-
-                var employeesWithoutProfile = employees.Where(e => e.UserProfile == null).Select(e => e.Id).ToList();
-                if (employeesWithoutProfile.Count > 0)
-                    return ServiceResult<CardOrderDto>.Fail(
-                        _messageService.Get("EmployeesMissingProfile", string.Join(", ", employeesWithoutProfile)), 422);
-
-                items = employees.Select(e => _mapper.Map<CardOrderItem>(e)).ToList();
-            }
-            else if (string.Equals(request.AssignmentScope, "all_employees", StringComparison.OrdinalIgnoreCase))
-            {
-                var allEmployees = await _unitOfWork.Repository<Employee>()
-                    .GetQueryable()
-                    .AsNoTracking()
-                    .Include(e => e.UserProfile)
-                    .Where(e => !e.IsDeleted && e.UserProfile != null)
-                    .ToListAsync();
-
-                if (request.Quantity != allEmployees.Count)
-                    return ServiceResult<CardOrderDto>.Fail(
-                        _messageService.Get("EmployeeCountMismatch", allEmployees.Count.ToString(), request.Quantity.ToString()), 422);
-
-                items = allEmployees.Select(e => _mapper.Map<CardOrderItem>(e)).ToList();
-            }
+            var itemsResult = await BuildOrderItemsAsync(request.AssignmentScope, request.EmployeeIds, request.Quantity);
+            if (!itemsResult.IsSuccess)
+                return ServiceResult<CardOrderDto>.Fail(itemsResult.Message ?? string.Join(", ", itemsResult.Errors), itemsResult.StatusCode);
 
             var pricing = await _unitOfWork.Repository<CardPricing>().GetQueryable()
                 .AsNoTracking()
@@ -269,24 +289,17 @@ namespace NFC.Platform.Application.Services;
                     500);
             }
 
-            var reorder = new CardOrder
-            {
-                UserId = userId.Value,
-                CardName = parentOrder.CardName,
-                CardType = parentOrder.CardType,
-                CardDesignType = parentOrder.CardDesignType,
-                FrontDesignUrl = parentOrder.FrontDesignUrl,
-                BackDesignUrl = parentOrder.BackDesignUrl,
-                ParentOrderId = parentOrderId,
-                Quantity = request.Quantity,
-                Status = OrderStatus.PendingReview,
-                UnitPrice = pricing.UnitPrice,
-                Currency = pricing.Currency,
-                TotalPrice = pricing.UnitPrice * request.Quantity,
-                DeliveryMethod = request.DeliveryMethod,
-                ShippingAddress = request.ShippingAddress,
-                Items = items
-            };
+            var reorder = _mapper.Map<CardOrder>(parentOrder);
+            reorder.UserId = userId.Value;
+            reorder.ParentOrderId = parentOrderId;
+            reorder.Quantity = request.Quantity;
+            reorder.Status = OrderStatus.PendingReview;
+            reorder.UnitPrice = pricing.UnitPrice;
+            reorder.Currency = pricing.Currency;
+            reorder.TotalPrice = pricing.UnitPrice * request.Quantity;
+            reorder.DeliveryMethod = request.DeliveryMethod;
+            reorder.ShippingAddress = request.ShippingAddress;
+            reorder.Items = itemsResult.Data ?? new List<CardOrderItem>();
 
             await _unitOfWork.Repository<CardOrder>().AddAsync(reorder);
             await _unitOfWork.SaveChangesAsync();
@@ -338,27 +351,22 @@ namespace NFC.Platform.Application.Services;
                     500);
             }
 
-            var reissueOrder = new CardOrder
-            {
-                UserId = userId.Value,
-                CardName = card.CardOrder?.CardName ?? $"Replacement - {card.UserProfile.FullName}",
-                CardType = cardType,
-                CardDesignType = card.CardOrder?.CardDesignType ?? CardDesignType.BuiltInTemplate,
-                FrontDesignUrl = card.CardOrder?.FrontDesignUrl,
-                BackDesignUrl = card.CardOrder?.BackDesignUrl,
-                ParentOrderId = card.CardOrderId,
-                Quantity = 1,
-                Status = OrderStatus.PendingReview,
-                UnitPrice = pricing.UnitPrice,
-                Currency = pricing.Currency,
-                TotalPrice = pricing.UnitPrice,
-                DeliveryMethod = request.DeliveryMethod,
-                ShippingAddress = request.ShippingAddress,
-                Items = new List<CardOrderItem>
-                {
-                    _mapper.Map<CardOrderItem>(card.UserProfile)
-                }
-            };
+            var reissueOrder = card.CardOrder != null
+                ? _mapper.Map<CardOrder>(card.CardOrder)
+                : new CardOrder { CardDesignType = CardDesignType.CustomArtwork };
+
+            reissueOrder.UserId = userId.Value;
+            reissueOrder.CardName = card.CardOrder?.CardName ?? $"Replacement - {card.UserProfile.FullName}";
+            reissueOrder.CardType = cardType;
+            reissueOrder.ParentOrderId = card.CardOrderId;
+            reissueOrder.Quantity = 1;
+            reissueOrder.Status = OrderStatus.PendingReview;
+            reissueOrder.UnitPrice = pricing.UnitPrice;
+            reissueOrder.Currency = pricing.Currency;
+            reissueOrder.TotalPrice = pricing.UnitPrice;
+            reissueOrder.DeliveryMethod = request.DeliveryMethod;
+            reissueOrder.ShippingAddress = request.ShippingAddress;
+            reissueOrder.Items = new List<CardOrderItem> { _mapper.Map<CardOrderItem>(card.UserProfile) };
 
             await _unitOfWork.Repository<CardOrder>().AddAsync(reissueOrder);
             await _unitOfWork.SaveChangesAsync();
@@ -380,13 +388,22 @@ namespace NFC.Platform.Application.Services;
             Microsoft.AspNetCore.Http.IFormFile file,
             CardType cardType,
             CardDesignType cardDesignType,
-            string? notes)
+            string? notes,
+            string? designReferenceUrl = null,
+            string? logoUrl = null,
+            string? designNotes = null)
         {
             var tenantId = _currentTenant.TenantId;
             var userId = _currentTenant.UserId;
 
             if (!tenantId.HasValue || !userId.HasValue)
                 return ServiceResult<EmployeeImportJob>.Unauthorized(_messageService.Get("Unauthorized") ?? "User is not authenticated.");
+
+            if (cardDesignType == CardDesignType.NeedCustomDesign && string.IsNullOrWhiteSpace(logoUrl))
+            {
+                return ServiceResult<EmployeeImportJob>.Fail(
+                    _messageService.Get("LogoRequiredForCustomDesign") ?? "Logo is required for custom design requests.", 422);
+            }
 
             if (file == null || file.Length == 0)
                 return ServiceResult<EmployeeImportJob>.Fail(_messageService.Get("NoFileUploaded") ?? "No file uploaded.", 400);
@@ -412,7 +429,10 @@ namespace NFC.Platform.Application.Services;
                 ExcelFilePublicId = uploadResult.PublicId,
                 CardType = cardType,
                 CardDesignType = cardDesignType,
-                Notes = notes
+                Notes = notes,
+                DesignReferenceUrl = designReferenceUrl,
+                LogoUrl = logoUrl,
+                DesignNotes = designNotes
             };
 
             await _unitOfWork.Repository<EmployeeImportJob>().AddAsync(job);
@@ -687,6 +707,9 @@ namespace NFC.Platform.Application.Services;
                         CardDesignType = job.CardDesignType,
                         Quantity = itemsToOrder.Count,
                         Notes = job.Notes,
+                        DesignReferenceUrl = job.DesignReferenceUrl,
+                        LogoUrl = job.LogoUrl,
+                        DesignNotes = job.DesignNotes,
                         UserId = job.UserId,
                         TenantId = job.TenantId,
                         Status = OrderStatus.PendingReview,

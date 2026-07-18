@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NFC.Platform.Infrastructure.Contexts;
 
@@ -11,9 +12,11 @@ using NFC.Platform.Infrastructure.Contexts;
 namespace NFC.Platform.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260718215244_AddCustomDesignFieldsToEmployeeImportJob")]
+    partial class AddCustomDesignFieldsToEmployeeImportJob
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -96,7 +99,7 @@ namespace NFC.Platform.Infrastructure.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
 
-                    b.Property<int?>("CardDesignType")
+                    b.Property<int>("CardDesignType")
                         .HasColumnType("int");
 
                     b.Property<string>("CardName")
@@ -104,7 +107,7 @@ namespace NFC.Platform.Infrastructure.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
-                    b.Property<int?>("CardType")
+                    b.Property<int>("CardType")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedAt")

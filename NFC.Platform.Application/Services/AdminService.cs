@@ -257,18 +257,6 @@ namespace NFC.Platform.Application.Services;
                     // Fill in the produced template reference
                     templateRequest.ProducedTemplateId = customTemplate.Id;
 
-                    // Cascade: advance the linked order from AwaitingDesign → PendingReview
-                    if (templateRequest.LinkedOrderId.HasValue)
-                    {
-                        var linkedOrder = await _unitOfWork.Repository<CardOrder>()
-                            .GetByIdAsync(templateRequest.LinkedOrderId.Value);
-
-                        if (linkedOrder != null && linkedOrder.Status == OrderStatus.AwaitingDesign)
-                        {
-                            linkedOrder.Status = OrderStatus.PendingReview;
-                        }
-                    }
-
                     // Auto-apply the new template + branding to the requesting tenant
                     // Try Company first (company tenant), then fall back to UserProfile (individual tenant)
                     var company = await _unitOfWork.Repository<Company>()

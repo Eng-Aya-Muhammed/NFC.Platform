@@ -30,12 +30,13 @@ namespace NFC.Platform.Tests.Controllers
         }
 
         [Fact]
-        public void Validator_ShouldPass_WhenExactlyOneDesignSourceIsPresent_FrontDesignUrl()
+        public void Validator_ShouldPass_WhenCustomArtwork_HasFrontAndBackDesignUrl()
         {
-            // Arrange — physical design is now sourced only from uploaded URLs or a custom design request
             var request = new CreateCardOrderRequest
             {
+                CardDesignType = CardDesignType.CustomArtwork,
                 FrontDesignUrl = "https://cdn.example.com/front.png",
+                BackDesignUrl = "https://cdn.example.com/back.png",
                 Quantity = 1
             };
 
@@ -47,12 +48,13 @@ namespace NFC.Platform.Tests.Controllers
         }
 
         [Fact]
-        public void Validator_ShouldPass_WhenExactlyOneDesignSourceIsPresent_CustomDesignRequestId()
+        public void Validator_ShouldPass_WhenNeedCustomDesign_HasLogoUrl()
         {
             // Arrange
             var request = new CreateCardOrderRequest
             {
-                CustomDesignRequestId = Guid.NewGuid(),
+                CardDesignType = CardDesignType.NeedCustomDesign,
+                LogoUrl = "https://cdn.example.com/logo.png",
                 Quantity = 1
             };
 
@@ -64,11 +66,13 @@ namespace NFC.Platform.Tests.Controllers
         }
 
         [Fact]
-        public void Validator_ShouldFail_WhenZeroDesignSourcesArePresent()
+        public void Validator_ShouldFail_WhenCustomArtwork_MissingFrontOrBackDesignUrl()
         {
             // Arrange
             var request = new CreateCardOrderRequest
             {
+                CardDesignType = CardDesignType.CustomArtwork,
+                FrontDesignUrl = "https://cdn.example.com/front.png",
                 Quantity = 1
             };
 
@@ -80,13 +84,12 @@ namespace NFC.Platform.Tests.Controllers
         }
 
         [Fact]
-        public void Validator_ShouldFail_WhenMultipleDesignSourcesArePresent()
+        public void Validator_ShouldFail_WhenNeedCustomDesign_MissingLogoUrl()
         {
-            // Arrange — FrontDesignUrl and CustomDesignRequestId are mutually exclusive
+            // Arrange
             var request = new CreateCardOrderRequest
             {
-                FrontDesignUrl = "https://cdn.example.com/front.png",
-                CustomDesignRequestId = Guid.NewGuid(),
+                CardDesignType = CardDesignType.NeedCustomDesign,
                 Quantity = 1
             };
 
