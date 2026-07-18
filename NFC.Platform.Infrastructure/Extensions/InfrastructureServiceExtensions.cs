@@ -43,6 +43,9 @@ namespace NFC.Platform.Infrastructure.Extensions
             services.Configure<CloudinarySettings>(configuration.GetSection("CloudinarySettings"));
             services.AddScoped<IStorageService, CloudinaryService>();
 
+            // QR Code Generator — Singleton: QRCoder is stateless; one instance per app lifetime is sufficient.
+            services.AddSingleton<IQrCodeGenerator, QrCodeGeneratorService>();
+
             // Hangfire Setup
             services.AddHangfire(config => config
                 .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)

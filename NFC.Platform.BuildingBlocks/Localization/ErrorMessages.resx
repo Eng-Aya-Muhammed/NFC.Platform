@@ -217,4 +217,16 @@
   <data name="InvalidCardType" xml:space="preserve">
     <value>Invalid card type: '{0}'. Supported types are Plastic, Wood, and Metal.</value>
   </data>
+  <data name="EmployeesNotFound" xml:space="preserve">
+    <value>Employees not found: {0}.</value>
+  </data>
+  <data name="EmployeesMissingProfile" xml:space="preserve">
+    <value>Employees missing profile: {0}.</value>
+  </data>
+  <data name="ShippingAddressRequired" xml:space="preserve">
+    <value>Shipping address is required when delivery method is Courier.</value>
+  </data>
+  <data name="CardMustHaveProfileToReissue" xml:space="preserve">
+    <value>The card must be linked to a user profile to be reissued.</value>
+  </data>
 </root>

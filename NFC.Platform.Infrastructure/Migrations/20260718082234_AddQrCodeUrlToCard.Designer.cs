@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NFC.Platform.Infrastructure.Contexts;
 
@@ -11,9 +12,11 @@ using NFC.Platform.Infrastructure.Contexts;
 namespace NFC.Platform.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260718082234_AddQrCodeUrlToCard")]
+    partial class AddQrCodeUrlToCard
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -146,9 +149,6 @@ namespace NFC.Platform.Infrastructure.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("RejectionReason")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ShippingAddress")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("Status")
@@ -638,9 +638,6 @@ namespace NFC.Platform.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid?>("CardId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -669,8 +666,6 @@ namespace NFC.Platform.Infrastructure.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("CardId");
 
                     b.HasIndex("ProfileLinkId");
 
@@ -1331,11 +1326,6 @@ namespace NFC.Platform.Infrastructure.Migrations
 
             modelBuilder.Entity("NFC.Platform.Domain.Entities.ProfileMetric", b =>
                 {
-                    b.HasOne("NFC.Platform.Domain.Entities.Card", "Card")
-                        .WithMany()
-                        .HasForeignKey("CardId")
-                        .OnDelete(DeleteBehavior.NoAction);
-
                     b.HasOne("NFC.Platform.Domain.Entities.ProfileLink", "ProfileLink")
                         .WithMany()
                         .HasForeignKey("ProfileLinkId")
@@ -1352,8 +1342,6 @@ namespace NFC.Platform.Infrastructure.Migrations
                         .HasForeignKey("UserProfileId")
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
-
-                    b.Navigation("Card");
 
                     b.Navigation("ProfileLink");
 

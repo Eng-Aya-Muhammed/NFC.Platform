@@ -26,20 +26,23 @@ public class ProfileMetricService(IUnitOfWork unitOfWork, IMessageService messag
             return ServiceResult<EmployeeDetailsDto>.NotFound(_messageService.Get("CardNotFound"));
 
         // Status-based resolution
-        return card.Status switch
+        if (card.Status == CardStatus.Active)
         {
-            CardStatus.Active when card.UserProfile != null =>
-                ServiceResult<EmployeeDetailsDto>.Success(_mapper.Map<EmployeeDetailsDto>(card.UserProfile)),
+            if (card.UserProfile == null)
+                return ServiceResult<EmployeeDetailsDto>.NotFound(_messageService.Get("ProfileNotFound"));
 
-            CardStatus.Active =>
-                ServiceResult<EmployeeDetailsDto>.NotFound(_messageService.Get("ProfileNotFound")),
+            var dto = _mapper.Map<EmployeeDetailsDto>(card.UserProfile);
+            dto.CardId = card.Id;
+            return ServiceResult<EmployeeDetailsDto>.Success(dto);
+        }
 
-            CardStatus.Deactivated =>
-                ServiceResult<EmployeeDetailsDto>.Fail(_messageService.Get("CardDeactivated"), 410),
+        if (card.Status == CardStatus.Deactivated)
+        {
+            return ServiceResult<EmployeeDetailsDto>.Fail(_messageService.Get("CardDeactivated"), 410);
+        }
 
-            _ => // UnassignedCode, Encoded, PendingGeneration
-                ServiceResult<EmployeeDetailsDto>.Fail(_messageService.Get("CardNotYetActivated"), 403)
-        };
+        // UnassignedCode, Encoded, PendingGeneration
+        return ServiceResult<EmployeeDetailsDto>.Fail(_messageService.Get("CardNotYetActivated"), 403);
     }
 
     public async Task<ServiceResult> RecordMetricAsync(Guid profileId, RecordMetricRequest request)
@@ -55,7 +58,8 @@ public class ProfileMetricService(IUnitOfWork unitOfWork, IMessageService messag
             UserProfileId = profileId,
             TenantId = profile.TenantId,
             InteractionType = request.InteractionType,
-            ProfileLinkId = request.ProfileLinkId
+            ProfileLinkId = request.ProfileLinkId,
+            CardId = request.CardId
         };
 
         await _unitOfWork.Repository<ProfileMetric>().AddAsync(metric);

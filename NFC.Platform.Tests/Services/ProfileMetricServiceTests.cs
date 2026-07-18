@@ -153,6 +153,7 @@ namespace NFC.Platform.Tests.Services
             Assert.Equal("Mohamed Ahmed", result.Data!.FullName);
             Assert.Single(result.Data!.CustomLinks);
             Assert.Equal("LinkedIn", result.Data!.CustomLinks[0].Title);
+            Assert.Equal(card.Id, result.Data!.CardId);
         }
 
         // ── RecordMetricAsync ─────────────────────────────────────────────────────
@@ -224,6 +225,35 @@ namespace NFC.Platform.Tests.Services
             // Assert
             Assert.True(result.IsSuccess);
             await _metricRepo.Received(1).AddAsync(Arg.Is<ProfileMetric>(m => m.ProfileLinkId == null));
+        }
+
+        [Fact]
+        public async Task RecordMetricAsync_SavesCardId_WhenProvided()
+        {
+            // Arrange
+            var profileId = Guid.NewGuid();
+            var tenantId = Guid.NewGuid();
+            var cardId = Guid.NewGuid();
+            var profile = new UserProfile { Id = profileId, TenantId = tenantId };
+            _profileRepo.GetByIdAsync(profileId).Returns(profile);
+
+            var request = new RecordMetricRequest
+            {
+                InteractionType = InteractionType.ProfileView,
+                CardId = cardId
+            };
+
+            // Act
+            var result = await _sut.RecordMetricAsync(profileId, request);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            await _metricRepo.Received(1).AddAsync(Arg.Is<ProfileMetric>(m =>
+                m.UserProfileId == profileId &&
+                m.TenantId == tenantId &&
+                m.InteractionType == InteractionType.ProfileView &&
+                m.CardId == cardId));
+            await _unitOfWork.Received(1).SaveChangesAsync();
         }
     }
 }

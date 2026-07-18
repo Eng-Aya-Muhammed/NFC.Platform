@@ -22,4 +22,6 @@ public class EmployeeDetailsDto
     public string WebsiteUrl { get; set; } = string.Empty;
 
     public System.Collections.Generic.List<ProfileLinkDto> CustomLinks { get; set; } = [];
+
+    public Guid? CardId { get; set; }
 }

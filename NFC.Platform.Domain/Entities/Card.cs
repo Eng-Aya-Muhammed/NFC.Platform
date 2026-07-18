@@ -35,5 +35,12 @@ namespace NFC.Platform.Domain.Entities
             get => UniqueCode;
             set => UniqueCode = value;
         }
+
+        /// <summary>
+        /// Cloudinary URL of the QR code image that encodes this card's ProfileUrl.
+        /// Populated atomically during the InPrinting card-generation step.
+        /// Null until that step runs (e.g. PendingReview orders).
+        /// </summary>
+        public string? QrCodeUrl { get; set; }
     }
 }

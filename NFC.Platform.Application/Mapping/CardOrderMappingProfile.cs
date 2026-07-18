@@ -54,6 +54,27 @@ namespace NFC.Platform.Application.Mapping
                 .ForMember(dest => dest.ActivationCode, opt => opt.Ignore())
                 .ForMember(dest => dest.LinkedCardId, opt => opt.Ignore());
 
+            CreateMap<Employee, CardOrderItem>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.EmployeeName, opt => opt.MapFrom(src => src.FullName))
+                .ForMember(dest => dest.UserProfileId, opt => opt.MapFrom(src => src.UserProfile != null ? (Guid?)src.UserProfile.Id : null))
+                .ForMember(dest => dest.Phone, opt => opt.MapFrom(src => src.UserProfile != null ? src.UserProfile.Phone : null))
+                .ForMember(dest => dest.CardOrderId, opt => opt.Ignore())
+                .ForMember(dest => dest.ActivationCode, opt => opt.Ignore())
+                .ForMember(dest => dest.LinkedCardId, opt => opt.Ignore())
+                .ForMember(dest => dest.TenantId, opt => opt.MapFrom(src => src.TenantId));
+
+            CreateMap<UserProfile, CardOrderItem>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.EmployeeName, opt => opt.MapFrom(src => src.FullName))
+                .ForMember(dest => dest.UserProfileId, opt => opt.MapFrom(src => src.Id))
+                .ForMember(dest => dest.Phone, opt => opt.MapFrom(src => src.Phone))
+                .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.Employee != null ? src.Employee.Email : src.ContactEmail))
+                .ForMember(dest => dest.CardOrderId, opt => opt.Ignore())
+                .ForMember(dest => dest.ActivationCode, opt => opt.Ignore())
+                .ForMember(dest => dest.LinkedCardId, opt => opt.Ignore())
+                .ForMember(dest => dest.TenantId, opt => opt.MapFrom(src => src.TenantId));
+
             CreateMap<CardOrder, EmployeesImportStatusDto>()
                 .ForMember(dest => dest.Status, opt => opt.Ignore())
                 .ForMember(dest => dest.TotalRows, opt => opt.MapFrom(src => src.Items.Count))

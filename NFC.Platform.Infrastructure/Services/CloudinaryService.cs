@@ -96,6 +96,33 @@ public class CloudinaryService : IStorageService
         catch { return false; }
     }
 
+    /// <inheritdoc />
+    public async Task<UploadResultDto> UploadBytesAsImageAsync(byte[] bytes, string fileName, string folderName)
+    {
+        using var stream = new MemoryStream(bytes);
+        var uploadParams = new ImageUploadParams
+        {
+            File = new FileDescription(fileName, stream),
+            Folder = $"nfc-platform/{folderName.Trim('/')}",
+            // Lossless PNG — QR codes must never be re-compressed or they become unreadable.
+            Transformation = new Transformation().Quality(100).FetchFormat("png")
+        };
+
+        var result = await _cloudinary.UploadAsync(uploadParams);
+
+        if (result.Error != null)
+            throw new Exception($"Cloudinary QR code upload failed: {result.Error.Message}");
+
+        return new UploadResultDto
+        {
+            SecureUrl = result.SecureUrl?.ToString() ?? string.Empty,
+            PublicId  = result.PublicId  ?? string.Empty,
+            ResourceType = "image",
+            Format = result.Format ?? string.Empty,
+            Bytes  = result.Bytes
+        };
+    }
+
     public async Task<bool> DeleteFileAsync(string fileUrl)
     {
         if (string.IsNullOrWhiteSpace(fileUrl))

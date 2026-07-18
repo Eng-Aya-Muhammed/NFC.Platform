@@ -23,7 +23,9 @@ namespace NFC.Platform.Application.DTOs.Admin
         public string? Notes { get; set; }
         public OrderStatus Status { get; set; }
         public decimal TotalPrice { get; set; }
+        public DeliveryMethod DeliveryMethod { get; set; }
         public string? TrackingNumber { get; set; }
+        public string? ShippingAddress { get; set; }
         public DateTime CreatedAt { get; set; }
         public List<CardOrderItemDto> Items { get; set; } = [];
     }

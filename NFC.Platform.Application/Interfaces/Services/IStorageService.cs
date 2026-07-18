@@ -29,4 +29,13 @@ public interface IStorageService
     /// Deletes a file from Cloudinary using its secure URL (extracts public_id internally).
     /// </summary>
     Task<bool> DeleteFileAsync(string fileUrl);
+
+    /// <summary>
+    /// Uploads raw bytes (e.g. a programmatically generated QR code PNG) to Cloudinary.
+    /// Avoids the overhead of wrapping bytes in an <see cref="Microsoft.AspNetCore.Http.IFormFile"/>.
+    /// </summary>
+    /// <param name="bytes">The raw file bytes to upload.</param>
+    /// <param name="fileName">File name hint used by Cloudinary (e.g. "qr-ABC123.png").</param>
+    /// <param name="folderName">Cloudinary sub-folder relative to the nfc-platform root.</param>
+    Task<UploadResultDto> UploadBytesAsImageAsync(byte[] bytes, string fileName, string folderName);
 }

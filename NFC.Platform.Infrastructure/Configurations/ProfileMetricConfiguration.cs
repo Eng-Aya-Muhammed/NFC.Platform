@@ -30,6 +30,11 @@ namespace NFC.Platform.Infrastructure.Configurations
                 .WithMany()
                 .HasForeignKey(m => m.ProfileLinkId)
                 .OnDelete(DeleteBehavior.SetNull);
+
+            builder.HasOne(m => m.Card)
+                .WithMany()
+                .HasForeignKey(m => m.CardId)
+                .OnDelete(DeleteBehavior.NoAction);
         }
     }
 }

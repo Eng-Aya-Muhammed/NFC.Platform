@@ -165,6 +165,119 @@ namespace NFC.Platform.Tests.Services
             await _orderRepo.Received(1).AddAsync(order);
         }
 
+        [Fact]
+        public async Task CreateAsync_Returns422_WhenDeliveryIsCourierAndNoShippingAddress()
+        {
+            // Arrange
+            _currentTenant.UserId.Returns(Guid.NewGuid());
+            var request = new CreateCardOrderRequest 
+            { 
+                Quantity = 5, 
+                DeliveryMethod = DeliveryMethod.Courier, 
+                ShippingAddress = null 
+            };
+
+            // Act
+            var result = await _sut.CreateAsync(request);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(422, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task CreateAsync_ReturnsSuccess_WhenDeliveryIsCourierWithShippingAddress()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            _currentTenant.UserId.Returns(userId);
+
+            var request = new CreateCardOrderRequest 
+            { 
+                Quantity = 5, 
+                DeliveryMethod = DeliveryMethod.Courier, 
+                ShippingAddress = "123 Main St, Kuwait" 
+            };
+            var order = new CardOrder 
+            { 
+                Id = Guid.NewGuid(), 
+                Quantity = 5, 
+                DeliveryMethod = DeliveryMethod.Courier, 
+                ShippingAddress = "123 Main St, Kuwait", 
+                Items = [] 
+            };
+            _mapper.Map<CardOrder>(request).Returns(order);
+            _orderRepo.GetQueryable().Returns(new List<CardOrder> { order }.AsQueryable().BuildMock());
+            _mapper.Map<CardOrderDto>(order).Returns(new CardOrderDto());
+
+            // Act
+            var result = await _sut.CreateAsync(request);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(200, result.StatusCode);
+            Assert.Equal("123 Main St, Kuwait", order.ShippingAddress);
+            Assert.Equal(DeliveryMethod.Courier, order.DeliveryMethod);
+        }
+
+        [Fact]
+        public async Task CreateAsync_ReturnsSuccess_WhenDeliveryIsPickupWithNoShippingAddress()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            _currentTenant.UserId.Returns(userId);
+
+            var request = new CreateCardOrderRequest 
+            { 
+                Quantity = 5, 
+                DeliveryMethod = DeliveryMethod.Pickup, 
+                ShippingAddress = null 
+            };
+            var order = new CardOrder 
+            { 
+                Id = Guid.NewGuid(), 
+                Quantity = 5, 
+                DeliveryMethod = DeliveryMethod.Pickup, 
+                ShippingAddress = null, 
+                Items = [] 
+            };
+            _mapper.Map<CardOrder>(request).Returns(order);
+            _orderRepo.GetQueryable().Returns(new List<CardOrder> { order }.AsQueryable().BuildMock());
+            _mapper.Map<CardOrderDto>(order).Returns(new CardOrderDto());
+
+            // Act
+            var result = await _sut.CreateAsync(request);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(200, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task CreateReorderAsync_Returns422_WhenDeliveryIsCourierAndNoShippingAddress()
+        {
+            // Arrange
+            var parentId = Guid.NewGuid();
+            _currentTenant.UserId.Returns(Guid.NewGuid());
+            var parentOrder = new CardOrder { Id = parentId, CardType = CardType.Plastic };
+            _orderRepo.GetQueryable().Returns(new List<CardOrder> { parentOrder }.AsQueryable().BuildMock());
+
+            var request = new ReorderRequest
+            {
+                Quantity = 5,
+                AssignmentScope = "individual",
+                DeliveryMethod = DeliveryMethod.Courier,
+                ShippingAddress = null
+            };
+
+            // Act
+            var result = await _sut.CreateReorderAsync(parentId, request);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(422, result.StatusCode);
+        }
+
 
         // ── DeleteAsync ───────────────────────────────────────────────────────────
 
@@ -812,7 +925,7 @@ namespace NFC.Platform.Tests.Services
             _currentTenant.UserId.Returns((Guid?)null);
 
             // Act
-            var result = await _sut.CreateReorderAsync(Guid.NewGuid(), new ReorderRequest());
+            var result = await _sut.CreateReorderAsync(Guid.NewGuid(), new ReorderRequest { AssignmentScope = "individual" });
 
             // Assert
             Assert.False(result.IsSuccess);
@@ -827,7 +940,7 @@ namespace NFC.Platform.Tests.Services
             _orderRepo.GetQueryable().Returns(new List<CardOrder>().AsQueryable().BuildMock());
 
             // Act
-            var result = await _sut.CreateReorderAsync(Guid.NewGuid(), new ReorderRequest());
+            var result = await _sut.CreateReorderAsync(Guid.NewGuid(), new ReorderRequest { AssignmentScope = "individual" });
 
             // Assert
             Assert.False(result.IsSuccess);
@@ -870,7 +983,7 @@ namespace NFC.Platform.Tests.Services
             // Empty pricing
             _cardPricingRepo.GetQueryable().Returns(new List<CardPricing>().AsQueryable().BuildMock());
 
-            var request = new ReorderRequest { Quantity = 5 };
+            var request = new ReorderRequest { Quantity = 5, AssignmentScope = "individual" };
 
             // Act
             var result = await _sut.CreateReorderAsync(parentId, request);
@@ -889,7 +1002,7 @@ namespace NFC.Platform.Tests.Services
             var parentOrder = new CardOrder { Id = parentId, CardType = CardType.Plastic, CardName = "Parent Card" };
             _orderRepo.GetQueryable().Returns(new List<CardOrder> { parentOrder }.AsQueryable().BuildMock());
 
-            var request = new ReorderRequest { Quantity = 5 };
+            var request = new ReorderRequest { Quantity = 5, AssignmentScope = "individual" };
 
             // Act
             var result = await _sut.CreateReorderAsync(parentId, request);
@@ -897,6 +1010,327 @@ namespace NFC.Platform.Tests.Services
             // Assert
             Assert.True(result.IsSuccess);
             await _orderRepo.Received(1).AddAsync(Arg.Is<CardOrder>(o => o.ParentOrderId == parentId && o.Quantity == 5));
+            await _unitOfWork.Received(1).SaveChangesAsync();
+        }
+
+        [Fact]
+        public async Task CreateReorderAsync_ReturnsSuccess_WithItems_WhenAssignmentScopeIsSpecificEmployees()
+        {
+            // Arrange
+            var parentId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
+            _currentTenant.UserId.Returns(userId);
+            var parentOrder = new CardOrder { Id = parentId, CardType = CardType.Plastic, CardName = "Parent Card" };
+            _orderRepo.GetQueryable().Returns(new List<CardOrder> { parentOrder }.AsQueryable().BuildMock());
+
+            var employeeId1 = Guid.NewGuid();
+            var employeeId2 = Guid.NewGuid();
+            var request = new ReorderRequest
+            {
+                AssignmentScope = "specific_employees",
+                EmployeeIds = new List<Guid> { employeeId1, employeeId2 },
+                Quantity = 2
+            };
+
+            var userProfile1 = new UserProfile { Id = Guid.NewGuid(), Phone = "123456" };
+            var userProfile2 = new UserProfile { Id = Guid.NewGuid(), Phone = "789012" };
+            var employees = new List<Employee>
+            {
+                new Employee { Id = employeeId1, FullName = "Emp 1", Email = "emp1@example.com", JobTitle = "Dev", Department = "IT", UserProfile = userProfile1, TenantId = Guid.NewGuid() },
+                new Employee { Id = employeeId2, FullName = "Emp 2", Email = "emp2@example.com", JobTitle = "QA", Department = "IT", UserProfile = userProfile2, TenantId = Guid.NewGuid() }
+            };
+
+            var employeeRepo = Substitute.For<IGenericRepository<Employee>>();
+            employeeRepo.GetQueryable().Returns(employees.AsQueryable().BuildMock());
+            _unitOfWork.Repository<Employee>().Returns(employeeRepo);
+
+            var item1 = new CardOrderItem { UserProfileId = userProfile1.Id };
+            var item2 = new CardOrderItem { UserProfileId = userProfile2.Id };
+            _mapper.Map<CardOrderItem>(employees[0]).Returns(item1);
+            _mapper.Map<CardOrderItem>(employees[1]).Returns(item2);
+
+            // Act
+            var result = await _sut.CreateReorderAsync(parentId, request);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            await _orderRepo.Received(1).AddAsync(Arg.Is<CardOrder>(o =>
+                o.ParentOrderId == parentId &&
+                o.Quantity == 2 &&
+                o.Items.Count == 2 &&
+                o.Items.Contains(item1) &&
+                o.Items.Contains(item2)));
+            await _unitOfWork.Received(1).SaveChangesAsync();
+        }
+
+        [Fact]
+        public async Task CreateReorderAsync_Returns422_WhenSpecificEmployeeNotFound()
+        {
+            // Arrange
+            var parentId = Guid.NewGuid();
+            _currentTenant.UserId.Returns(Guid.NewGuid());
+            var parentOrder = new CardOrder { Id = parentId, CardType = CardType.Plastic };
+            _orderRepo.GetQueryable().Returns(new List<CardOrder> { parentOrder }.AsQueryable().BuildMock());
+
+            var employeeId = Guid.NewGuid();
+            var request = new ReorderRequest
+            {
+                AssignmentScope = "specific_employees",
+                EmployeeIds = new List<Guid> { employeeId },
+                Quantity = 1
+            };
+
+            var employeeRepo = Substitute.For<IGenericRepository<Employee>>();
+            employeeRepo.GetQueryable().Returns(new List<Employee>().AsQueryable().BuildMock());
+            _unitOfWork.Repository<Employee>().Returns(employeeRepo);
+
+            // Act
+            var result = await _sut.CreateReorderAsync(parentId, request);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(422, result.StatusCode);
+            Assert.Contains("EmployeesNotFound", result.Message);
+        }
+
+        [Fact]
+        public async Task CreateReorderAsync_Returns422_WhenSpecificEmployeeMissingProfile()
+        {
+            // Arrange
+            var parentId = Guid.NewGuid();
+            _currentTenant.UserId.Returns(Guid.NewGuid());
+            var parentOrder = new CardOrder { Id = parentId, CardType = CardType.Plastic };
+            _orderRepo.GetQueryable().Returns(new List<CardOrder> { parentOrder }.AsQueryable().BuildMock());
+
+            var employeeId = Guid.NewGuid();
+            var request = new ReorderRequest
+            {
+                AssignmentScope = "specific_employees",
+                EmployeeIds = new List<Guid> { employeeId },
+                Quantity = 1
+            };
+
+            var employees = new List<Employee>
+            {
+                new Employee { Id = employeeId, FullName = "Emp 1", UserProfile = null }
+            };
+
+            var employeeRepo = Substitute.For<IGenericRepository<Employee>>();
+            employeeRepo.GetQueryable().Returns(employees.AsQueryable().BuildMock());
+            _unitOfWork.Repository<Employee>().Returns(employeeRepo);
+
+            // Act
+            var result = await _sut.CreateReorderAsync(parentId, request);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(422, result.StatusCode);
+            Assert.Contains("EmployeesMissingProfile", result.Message);
+        }
+
+        [Fact]
+        public async Task CreateReorderAsync_ReturnsSuccess_WithItems_WhenAssignmentScopeIsAllEmployees()
+        {
+            // Arrange
+            var parentId = Guid.NewGuid();
+            _currentTenant.UserId.Returns(Guid.NewGuid());
+            var parentOrder = new CardOrder { Id = parentId, CardType = CardType.Plastic, CardName = "Parent Card" };
+            _orderRepo.GetQueryable().Returns(new List<CardOrder> { parentOrder }.AsQueryable().BuildMock());
+
+            var request = new ReorderRequest
+            {
+                AssignmentScope = "all_employees",
+                Quantity = 2
+            };
+
+            var userProfile1 = new UserProfile { Id = Guid.NewGuid() };
+            var userProfile2 = new UserProfile { Id = Guid.NewGuid() };
+            var employees = new List<Employee>
+            {
+                new Employee { Id = Guid.NewGuid(), FullName = "Emp 1", IsDeleted = false, UserProfile = userProfile1 },
+                new Employee { Id = Guid.NewGuid(), FullName = "Emp 2", IsDeleted = false, UserProfile = userProfile2 }
+            };
+
+            var employeeRepo = Substitute.For<IGenericRepository<Employee>>();
+            employeeRepo.GetQueryable().Returns(employees.AsQueryable().BuildMock());
+            _unitOfWork.Repository<Employee>().Returns(employeeRepo);
+
+            var item1 = new CardOrderItem { UserProfileId = userProfile1.Id };
+            var item2 = new CardOrderItem { UserProfileId = userProfile2.Id };
+            _mapper.Map<CardOrderItem>(employees[0]).Returns(item1);
+            _mapper.Map<CardOrderItem>(employees[1]).Returns(item2);
+
+            // Act
+            var result = await _sut.CreateReorderAsync(parentId, request);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            await _orderRepo.Received(1).AddAsync(Arg.Is<CardOrder>(o =>
+                o.ParentOrderId == parentId &&
+                o.Quantity == 2 &&
+                o.Items.Count == 2 &&
+                o.Items.Contains(item1) &&
+                o.Items.Contains(item2)));
+            await _unitOfWork.Received(1).SaveChangesAsync();
+        }
+
+        [Fact]
+        public async Task CreateReorderAsync_Returns422_WhenAllEmployeesQuantityMismatch()
+        {
+            // Arrange
+            var parentId = Guid.NewGuid();
+            _currentTenant.UserId.Returns(Guid.NewGuid());
+            var parentOrder = new CardOrder { Id = parentId, CardType = CardType.Plastic };
+            _orderRepo.GetQueryable().Returns(new List<CardOrder> { parentOrder }.AsQueryable().BuildMock());
+
+            var request = new ReorderRequest
+            {
+                AssignmentScope = "all_employees",
+                Quantity = 5
+            };
+
+            var employees = new List<Employee>
+            {
+                new Employee { Id = Guid.NewGuid(), FullName = "Emp 1", IsDeleted = false, UserProfile = new UserProfile() }
+            };
+
+            var employeeRepo = Substitute.For<IGenericRepository<Employee>>();
+            employeeRepo.GetQueryable().Returns(employees.AsQueryable().BuildMock());
+            _unitOfWork.Repository<Employee>().Returns(employeeRepo);
+
+            // Act
+            var result = await _sut.CreateReorderAsync(parentId, request);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(422, result.StatusCode);
+            Assert.Contains("EmployeeCountMismatch", result.Message);
+        }
+
+        [Fact]
+        public async Task ReissueCardAsync_Returns404_WhenCardDoesNotExist()
+        {
+            // Arrange
+            _currentTenant.UserId.Returns(Guid.NewGuid());
+            _cardRepo.GetQueryable().Returns(new List<Card>().AsQueryable().BuildMock());
+
+            // Act
+            var result = await _sut.ReissueCardAsync(Guid.NewGuid(), new ReissueCardRequest());
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(404, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task ReissueCardAsync_Returns422_WhenCardHasNoUserProfile()
+        {
+            // Arrange
+            var cardId = Guid.NewGuid();
+            _currentTenant.UserId.Returns(Guid.NewGuid());
+            var card = new Card { Id = cardId, UserProfileId = null, UserProfile = null };
+            _cardRepo.GetQueryable().Returns(new List<Card> { card }.AsQueryable().BuildMock());
+
+            // Act
+            var result = await _sut.ReissueCardAsync(cardId, new ReissueCardRequest());
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(422, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task ReissueCardAsync_Returns422_WhenCourierMissingAddress()
+        {
+            // Arrange
+            _currentTenant.UserId.Returns(Guid.NewGuid());
+            var request = new ReissueCardRequest { DeliveryMethod = DeliveryMethod.Courier, ShippingAddress = null };
+
+            // Act
+            var result = await _sut.ReissueCardAsync(Guid.NewGuid(), request);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(422, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task ReissueCardAsync_DeactivatesOldCard_AndCreatesNewOrderAndItem_OnSuccess()
+        {
+            // Arrange
+            var cardId = Guid.NewGuid();
+            var tenantId = Guid.NewGuid();
+            var profileId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
+            _currentTenant.UserId.Returns(userId);
+
+            var userProfile = new UserProfile
+            {
+                Id = profileId,
+                FullName = "Emp 1",
+                JobTitle = "Title 1",
+                Department = "Dept 1",
+                Phone = "123456",
+                ContactEmail = "emp1@test.com"
+            };
+
+            var originalOrder = new CardOrder
+            {
+                Id = Guid.NewGuid(),
+                CardType = CardType.Plastic,
+                CardName = "Original Order Name",
+                CardDesignType = CardDesignType.BuiltInTemplate
+            };
+
+            var card = new Card
+            {
+                Id = cardId,
+                TenantId = tenantId,
+                UserProfileId = profileId,
+                UserProfile = userProfile,
+                CardOrder = originalOrder,
+                Status = CardStatus.Active
+            };
+
+            _cardRepo.GetQueryable().Returns(new List<Card> { card }.AsQueryable().BuildMock());
+
+            var request = new ReissueCardRequest
+            {
+                DeliveryMethod = DeliveryMethod.Courier,
+                ShippingAddress = "Replacement Address"
+            };
+
+            // Set up order queryable for the reload inside ReissueCardAsync
+            var createdOrder = new CardOrder { Id = Guid.NewGuid(), Items = [] };
+            _orderRepo.GetQueryable().Returns(new List<CardOrder> { createdOrder }.AsQueryable().BuildMock());
+            _mapper.Map<CardOrderDto>(createdOrder).Returns(new CardOrderDto { Id = createdOrder.Id });
+
+            var mappedItem = new CardOrderItem
+            {
+                UserProfileId = profileId,
+                EmployeeName = "Emp 1",
+                Phone = "123456",
+                Email = "emp1@test.com"
+            };
+            _mapper.Map<CardOrderItem>(userProfile).Returns(mappedItem);
+
+            // Act
+            var result = await _sut.ReissueCardAsync(cardId, request);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(CardStatus.Deactivated, card.Status); // Old card must be deactivated
+            await _orderRepo.Received(1).AddAsync(Arg.Is<CardOrder>(o =>
+                o.UserId == userId &&
+                o.Quantity == 1 &&
+                o.DeliveryMethod == DeliveryMethod.Courier &&
+                o.ShippingAddress == "Replacement Address" &&
+                o.Items.Count == 1 &&
+                o.Items.First().UserProfileId == profileId &&
+                o.Items.First().EmployeeName == "Emp 1" &&
+                o.Items.First().Phone == "123456" &&
+                o.Items.First().Email == "emp1@test.com"
+            ));
             await _unitOfWork.Received(1).SaveChangesAsync();
         }
 

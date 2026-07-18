@@ -5,12 +5,21 @@ namespace NFC.Platform.Application.Services;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly IMessageService _messageService;
+        private readonly IQrCodeGenerator _qrCodeGenerator;
+        private readonly IStorageService _storageService;
 
-        public AdminService(IUnitOfWork unitOfWork, IMapper mapper, IMessageService messageService)
+        public AdminService(
+            IUnitOfWork unitOfWork,
+            IMapper mapper,
+            IMessageService messageService,
+            IQrCodeGenerator qrCodeGenerator,
+            IStorageService storageService)
         {
-            _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
-            _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
-            _messageService = messageService ?? throw new ArgumentNullException(nameof(messageService));
+            _unitOfWork       = unitOfWork       ?? throw new ArgumentNullException(nameof(unitOfWork));
+            _mapper           = mapper           ?? throw new ArgumentNullException(nameof(mapper));
+            _messageService   = messageService   ?? throw new ArgumentNullException(nameof(messageService));
+            _qrCodeGenerator  = qrCodeGenerator  ?? throw new ArgumentNullException(nameof(qrCodeGenerator));
+            _storageService   = storageService   ?? throw new ArgumentNullException(nameof(storageService));
         }
 
         public async Task<ServiceResult<PagedResult<AdminOrderSummaryDto>>> GetOrdersPagedAsync(PaginationRequest request, OrderStatus? statusFilter, Guid? companyId = null)
@@ -110,6 +119,7 @@ namespace NFC.Platform.Application.Services;
             var existingSet = new HashSet<string>(existingCardCodes, StringComparer.OrdinalIgnoreCase);
             var newCards = new List<Card>();
 
+            // ── Build card stubs ─────────────────────────────────────────────────────
             // Use OrderItems to create one Card per item (or fill up to Quantity if no items)
             if (order.Items.Count > 0)
             {
@@ -117,17 +127,16 @@ namespace NFC.Platform.Application.Services;
                 {
                     var code = GenerateUniqueCode(existingSet);
                     var isCompanyCard = item.UserProfileId.HasValue;
-                    var card = new Card
+                    newCards.Add(new Card
                     {
-                        TenantId = order.TenantId,
-                        UniqueCode = code,
-                        ProfileUrl = $"https://onpoint-teasting.com/c/{code}",
-                        Status = isCompanyCard ? CardStatus.Active : CardStatus.UnassignedCode,
-                        ActivatedAt = isCompanyCard ? DateTime.UtcNow : null,
-                        CardOrderId = order.Id,
+                        TenantId      = order.TenantId,
+                        UniqueCode    = code,
+                        ProfileUrl    = $"https://onpoint-teasting.com/c/{code}",
+                        Status        = isCompanyCard ? CardStatus.Active : CardStatus.UnassignedCode,
+                        ActivatedAt   = isCompanyCard ? DateTime.UtcNow : null,
+                        CardOrderId   = order.Id,
                         UserProfileId = item.UserProfileId
-                    };
-                    newCards.Add(card);
+                    });
                     existingSet.Add(code);
                 }
             }
@@ -138,16 +147,32 @@ namespace NFC.Platform.Application.Services;
                     var code = GenerateUniqueCode(existingSet);
                     newCards.Add(new Card
                     {
-                        TenantId = order.TenantId,
-                        UniqueCode = code,
-                        ProfileUrl = $"https://onpoint-teasting.com/c/{code}",
-                        Status = CardStatus.UnassignedCode,
+                        TenantId    = order.TenantId,
+                        UniqueCode  = code,
+                        ProfileUrl  = $"https://onpoint-teasting.com/c/{code}",
+                        Status      = CardStatus.UnassignedCode,
                         CardOrderId = order.Id
                     });
                     existingSet.Add(code);
                 }
             }
 
+            // ── Generate QR PNGs (CPU-only, sync) then upload all in parallel ────────
+            // Generating bytes is synchronous and fast (~1 ms/card).
+            // Cloudinary uploads are I/O-bound — Task.WhenAll maximises throughput.
+            var uploadTasks = newCards.Select(async card =>
+            {
+                var pngBytes = _qrCodeGenerator.GeneratePngBytes(card.ProfileUrl);
+                var uploadResult = await _storageService.UploadBytesAsImageAsync(
+                    pngBytes,
+                    $"qr-{card.UniqueCode}.png",
+                    $"qrcodes/{order.TenantId}");
+                card.QrCodeUrl = uploadResult.SecureUrl;
+            });
+
+            await Task.WhenAll(uploadTasks);
+
+            // ── Persist all cards in one SaveChanges call ────────────────────────────
             foreach (var card in newCards)
                 await cardRepo.AddAsync(card);
 

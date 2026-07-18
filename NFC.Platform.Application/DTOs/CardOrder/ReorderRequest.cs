@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using NFC.Platform.Domain.Enums;
 
 namespace NFC.Platform.Application.DTOs.CardOrder;
 
@@ -26,4 +27,9 @@ public class ReorderRequest
     /// Count must equal Quantity.
     /// </summary>
     public List<Guid> EmployeeIds { get; set; } = [];
+
+    public DeliveryMethod DeliveryMethod { get; set; } = DeliveryMethod.Pickup;
+
+    [StringLength(500)]
+    public string? ShippingAddress { get; set; }
 }

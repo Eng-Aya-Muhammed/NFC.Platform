@@ -6,13 +6,16 @@ using NFC.Platform.Application.DTOs;
 using NFC.Platform.Application.Interfaces.Services;
 using NFC.Platform.BuildingBlocks.Common.Constants;
 
+using NFC.Platform.Application.DTOs.CardOrder;
+
 namespace NFC.Platform.API.Controllers
 {
     [ApiController]
     [Route("api/cards")]
-    public class CardController(ICardService cardService) : ControllerBase
+    public class CardController(ICardService cardService, ICardOrderService cardOrderService) : ControllerBase
     {
         private readonly ICardService _cardService = cardService ?? throw new ArgumentNullException(nameof(cardService));
+        private readonly ICardOrderService _cardOrderService = cardOrderService ?? throw new ArgumentNullException(nameof(cardOrderService));
 
         [HttpGet("{id:guid}")]
         [Authorize]
@@ -137,6 +140,20 @@ namespace NFC.Platform.API.Controllers
         public async Task<IActionResult> Delete([FromRoute] Guid id)
         {
             var result = await _cardService.DeleteCardAsync(id);
+            if (!result.IsSuccess)
+                return StatusCode(result.StatusCode, result);
+
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// Reissues a lost/damaged card: deactivates the current card and places a new replacement order of quantity 1.
+        /// </summary>
+        [HttpPost("{id:guid}/reissue")]
+        [Authorize]
+        public async Task<IActionResult> Reissue([FromRoute] Guid id, [FromBody] ReissueCardRequest request)
+        {
+            var result = await _cardOrderService.ReissueCardAsync(id, request);
             if (!result.IsSuccess)
                 return StatusCode(result.StatusCode, result);
 

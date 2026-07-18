@@ -37,6 +37,11 @@ namespace NFC.Platform.Application.Interfaces.Services
         /// </summary>
         Task<ServiceResult<CardOrderDto>> CreateReorderAsync(Guid parentOrderId, ReorderRequest request);
 
+        /// <summary>
+        /// Reissues a lost/damaged card, deactivating the old card and placing a new order of quantity 1.
+        /// </summary>
+        Task<ServiceResult<CardOrderDto>> ReissueCardAsync(Guid cardId, ReissueCardRequest request);
+
 
         /// <summary>
         /// Soft-deletes a CardOrder. Only allowed while Status = PendingReview.

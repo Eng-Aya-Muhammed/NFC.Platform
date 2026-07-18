@@ -52,6 +52,12 @@ namespace NFC.Platform.Domain.Entities
 
         public DeliveryMethod DeliveryMethod { get; set; } = DeliveryMethod.Pickup;
 
+        /// <summary>
+        /// Delivery address. Required when DeliveryMethod = Courier.
+        /// Stored as free-text to match Gulf address conventions.
+        /// </summary>
+        public string? ShippingAddress { get; set; }
+
         public ICollection<CardOrderItem> Items { get; set; } = [];
 
         public ICollection<Card> GeneratedCards { get; set; } = [];

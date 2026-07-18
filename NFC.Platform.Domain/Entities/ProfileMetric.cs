@@ -16,5 +16,8 @@ namespace NFC.Platform.Domain.Entities
 
         public Guid? ProfileLinkId { get; set; }
         public ProfileLink? ProfileLink { get; set; }
+
+        public Guid? CardId { get; set; }
+        public Card? Card { get; set; }
     }
 }

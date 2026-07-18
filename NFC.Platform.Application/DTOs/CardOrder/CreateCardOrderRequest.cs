@@ -37,6 +37,12 @@ namespace NFC.Platform.Application.DTOs.CardOrder;
         public DeliveryMethod DeliveryMethod { get; set; } = DeliveryMethod.Pickup;
 
         /// <summary>
+        /// Delivery address. Required when DeliveryMethod = Courier.
+        /// </summary>
+        [StringLength(500)]
+        public string? ShippingAddress { get; set; }
+
+        /// <summary>
         /// Optional list of specific employees to order cards for.
         /// If empty, the order is treated as a bulk order (quantity only).
         /// </summary>

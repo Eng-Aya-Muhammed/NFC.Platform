@@ -7,7 +7,9 @@ using MockQueryable.NSubstitute;
 using NFC.Platform.Application.DTOs;
 using NFC.Platform.Application.DTOs.Admin;
 using NFC.Platform.Application.DTOs.Template;
+using NFC.Platform.Application.DTOs.Upload;
 using NFC.Platform.Application.Interfaces.Repositories;
+using NFC.Platform.Application.Interfaces.Services;
 using NFC.Platform.Application.Services;
 using NFC.Platform.BuildingBlocks.Localization;
 using NFC.Platform.BuildingBlocks.Results;
@@ -23,6 +25,8 @@ namespace NFC.Platform.Tests.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly IMessageService _messageService;
+        private readonly IQrCodeGenerator _qrCodeGenerator;
+        private readonly IStorageService _storageService;
 
         private readonly IGenericRepository<CardOrder> _orderRepo;
         private readonly IGenericRepository<TemplateRequest> _templateRequestRepo;
@@ -35,16 +39,18 @@ namespace NFC.Platform.Tests.Services
 
         public AdminServiceTests()
         {
-            _unitOfWork = Substitute.For<IUnitOfWork>();
-            _mapper = Substitute.For<IMapper>();
-            _messageService = Substitute.For<IMessageService>();
+            _unitOfWork          = Substitute.For<IUnitOfWork>();
+            _mapper              = Substitute.For<IMapper>();
+            _messageService      = Substitute.For<IMessageService>();
+            _qrCodeGenerator     = Substitute.For<IQrCodeGenerator>();
+            _storageService      = Substitute.For<IStorageService>();
 
-            _orderRepo = Substitute.For<IGenericRepository<CardOrder>>();
+            _orderRepo           = Substitute.For<IGenericRepository<CardOrder>>();
             _templateRequestRepo = Substitute.For<IGenericRepository<TemplateRequest>>();
-            _cardTemplateRepo = Substitute.For<IGenericRepository<CardTemplate>>();
-            _tenantRepo = Substitute.For<IGenericRepository<Tenant>>();
-            _subscriptionRepo = Substitute.For<IGenericRepository<UserSubscription>>();
-            _cardPricingRepo = Substitute.For<IGenericRepository<CardPricing>>();
+            _cardTemplateRepo    = Substitute.For<IGenericRepository<CardTemplate>>();
+            _tenantRepo          = Substitute.For<IGenericRepository<Tenant>>();
+            _subscriptionRepo    = Substitute.For<IGenericRepository<UserSubscription>>();
+            _cardPricingRepo     = Substitute.For<IGenericRepository<CardPricing>>();
 
             _unitOfWork.Repository<CardOrder>().Returns(_orderRepo);
             _unitOfWork.Repository<TemplateRequest>().Returns(_templateRequestRepo);
@@ -53,7 +59,20 @@ namespace NFC.Platform.Tests.Services
             _unitOfWork.Repository<UserSubscription>().Returns(_subscriptionRepo);
             _unitOfWork.Repository<CardPricing>().Returns(_cardPricingRepo);
 
-            _sut = new AdminService(_unitOfWork, _mapper, _messageService);
+            // Default QR mock: returns a minimal valid PNG header (8 bytes) + no-op upload.
+            _qrCodeGenerator
+                .GeneratePngBytes(Arg.Any<string>(), Arg.Any<int>())
+                .Returns(new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A });
+
+            _storageService
+                .UploadBytesAsImageAsync(Arg.Any<byte[]>(), Arg.Any<string>(), Arg.Any<string>())
+                .Returns(Task.FromResult(new UploadResultDto
+                {
+                    SecureUrl = "https://res.cloudinary.com/demo/image/upload/qr-placeholder.png",
+                    PublicId  = "nfc-platform/qrcodes/test/qr-placeholder"
+                }));
+
+            _sut = new AdminService(_unitOfWork, _mapper, _messageService, _qrCodeGenerator, _storageService);
         }
 
         // ── GetOrdersPagedAsync ───────────────────────────────────────────────────
@@ -174,6 +193,160 @@ namespace NFC.Platform.Tests.Services
             Assert.Equal(OrderStatus.ReadyForDelivery, order.Status);
             Assert.Equal("TRK12345", order.TrackingNumber);
             await _unitOfWork.Received(1).SaveChangesAsync();
+        }
+
+        [Fact]
+        public async Task UpdateOrderStatusAsync_GeneratesActiveCards_WhenMovingToInPrintingWithOrderItems()
+        {
+            // Arrange
+            var orderId   = Guid.NewGuid();
+            var tenantId  = Guid.NewGuid();
+            var userProfileId1 = Guid.NewGuid();
+            var userProfileId2 = Guid.NewGuid();
+            var userProfileId3 = Guid.NewGuid();
+
+            var items = new List<CardOrderItem>
+            {
+                new() { UserProfileId = userProfileId1, TenantId = tenantId },
+                new() { UserProfileId = userProfileId2, TenantId = tenantId },
+                new() { UserProfileId = userProfileId3, TenantId = tenantId }
+            };
+
+            var order = new CardOrder
+            {
+                Id       = orderId,
+                TenantId = tenantId,
+                Status   = OrderStatus.UnderReview,
+                Quantity = 3,
+                Items    = items
+            };
+
+            var mockOrderQueryable = new List<CardOrder> { order }.AsQueryable().BuildMock();
+            _orderRepo.GetQueryable().Returns(mockOrderQueryable);
+
+            var cardRepo = Substitute.For<IGenericRepository<Card>>();
+            cardRepo.GetQueryable().Returns(new List<Card>().AsQueryable().BuildMock());
+            _unitOfWork.Repository<Card>().Returns(cardRepo);
+
+            var updateDto = new UpdateOrderStatusDto { Status = OrderStatus.InPrinting };
+
+            // Act
+            var result = await _sut.UpdateOrderStatusAsync(orderId, updateDto);
+
+            // Assert: status transition succeeded
+            Assert.True(result.IsSuccess);
+            Assert.Equal(OrderStatus.InPrinting, order.Status);
+
+            // Assert: 3 cards added, all Active and linked to correct profiles
+            await cardRepo.Received(3).AddAsync(Arg.Is<Card>(c =>
+                c.TenantId   == tenantId &&
+                c.CardOrderId == orderId  &&
+                c.Status      == CardStatus.Active &&
+                (c.UserProfileId == userProfileId1 ||
+                 c.UserProfileId == userProfileId2 ||
+                 c.UserProfileId == userProfileId3)));
+
+            // Assert: QR generation was called once per card
+            _qrCodeGenerator.Received(3).GeneratePngBytes(Arg.Any<string>(), Arg.Any<int>());
+
+            // Assert: QR upload was called once per card
+            await _storageService.Received(3).UploadBytesAsImageAsync(
+                Arg.Any<byte[]>(),
+                Arg.Is<string>(fn => fn.StartsWith("qr-")),
+                Arg.Is<string>(folder => folder.Contains(tenantId.ToString())));
+
+            // Two SaveChanges calls: one inside UpdateOrderStatusAsync, one inside GenerateCardsForOrderAsync
+            await _unitOfWork.Received(2).SaveChangesAsync();
+        }
+
+        [Fact]
+        public async Task UpdateOrderStatusAsync_GeneratesUnassignedCards_WithQrCodes_WhenNoOrderItems()
+        {
+            // Arrange — order without items (Quantity-only fallback path)
+            var orderId  = Guid.NewGuid();
+            var tenantId = Guid.NewGuid();
+
+            var order = new CardOrder
+            {
+                Id       = orderId,
+                TenantId = tenantId,
+                Status   = OrderStatus.UnderReview,
+                Quantity = 5,
+                Items    = new List<CardOrderItem>() // no items
+            };
+
+            var mockOrderQueryable = new List<CardOrder> { order }.AsQueryable().BuildMock();
+            _orderRepo.GetQueryable().Returns(mockOrderQueryable);
+
+            var cardRepo = Substitute.For<IGenericRepository<Card>>();
+            cardRepo.GetQueryable().Returns(new List<Card>().AsQueryable().BuildMock());
+            _unitOfWork.Repository<Card>().Returns(cardRepo);
+
+            var updateDto = new UpdateOrderStatusDto { Status = OrderStatus.InPrinting };
+
+            // Act
+            var result = await _sut.UpdateOrderStatusAsync(orderId, updateDto);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+
+            // 5 UnassignedCode cards created
+            await cardRepo.Received(5).AddAsync(Arg.Is<Card>(c =>
+                c.TenantId    == tenantId &&
+                c.CardOrderId == orderId  &&
+                c.Status      == CardStatus.UnassignedCode));
+
+            // QR generation + upload fired 5 times
+            _qrCodeGenerator.Received(5).GeneratePngBytes(Arg.Any<string>(), Arg.Any<int>());
+            await _storageService.Received(5).UploadBytesAsImageAsync(
+                Arg.Any<byte[]>(), Arg.Any<string>(), Arg.Any<string>());
+        }
+
+        [Fact]
+        public async Task UpdateOrderStatusAsync_QrCodeUrl_IsSetOnEachCard_WhenMovingToInPrinting()
+        {
+            // Arrange — capture the cards added to repo to inspect QrCodeUrl
+            var orderId  = Guid.NewGuid();
+            var tenantId = Guid.NewGuid();
+
+            const string expectedQrUrl = "https://res.cloudinary.com/demo/image/upload/qr-test.png";
+
+            _storageService
+                .UploadBytesAsImageAsync(Arg.Any<byte[]>(), Arg.Any<string>(), Arg.Any<string>())
+                .Returns(Task.FromResult(new UploadResultDto { SecureUrl = expectedQrUrl }));
+
+            var order = new CardOrder
+            {
+                Id       = orderId,
+                TenantId = tenantId,
+                Status   = OrderStatus.UnderReview,
+                Quantity = 2,
+                Items    = new List<CardOrderItem>()
+            };
+
+            _orderRepo.GetQueryable().Returns(new List<CardOrder> { order }.AsQueryable().BuildMock());
+
+            var capturedCards = new List<Card>();
+            var cardRepo = Substitute.For<IGenericRepository<Card>>();
+            cardRepo.GetQueryable().Returns(new List<Card>().AsQueryable().BuildMock());
+            cardRepo
+                .When(r => r.AddAsync(Arg.Any<Card>()))
+                .Do(ci => capturedCards.Add(ci.Arg<Card>()));
+            _unitOfWork.Repository<Card>().Returns(cardRepo);
+
+            var updateDto = new UpdateOrderStatusDto { Status = OrderStatus.InPrinting };
+
+            // Act
+            await _sut.UpdateOrderStatusAsync(orderId, updateDto);
+
+            // Assert: both cards have the expected QrCodeUrl
+            Assert.Equal(2, capturedCards.Count);
+            Assert.All(capturedCards, card =>
+            {
+                Assert.Equal(expectedQrUrl, card.QrCodeUrl);
+                Assert.False(string.IsNullOrEmpty(card.UniqueCode));
+                Assert.StartsWith("https://onpoint-teasting.com/c/", card.ProfileUrl);
+            });
         }
 
         // ── ResolveTemplateRequestAsync ───────────────────────────────────────────
