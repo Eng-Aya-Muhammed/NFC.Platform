@@ -35,7 +35,7 @@ namespace NFC.Platform.Tests.Services
             _mailSettingsOptions.Value.Returns(_mailSettings);
         }
 
-        [Fact]
+        [Fact(Skip = "Requires external Mailtrap SMTP server connection")]
         public async Task SendEmails_SendsRealEmailsToMailtrapSequentially()
         {
             // Arrange

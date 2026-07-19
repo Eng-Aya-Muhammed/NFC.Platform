@@ -1,4 +1,4 @@
-
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace NFC.Platform.API.Controllers
 {
@@ -10,6 +10,7 @@ namespace NFC.Platform.API.Controllers
 
         [HttpPost("login")]
         [AllowAnonymous]
+        [EnableRateLimiting("LoginPolicy")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
             var result = await _authService.LoginAsync(request);
@@ -23,6 +24,7 @@ namespace NFC.Platform.API.Controllers
 
         [HttpPost("register")]
         [AllowAnonymous]
+        [EnableRateLimiting("RegisterPolicy")]
         public async Task<IActionResult> Register([FromBody] RegisterRequest request)
         {
             var result = await _authService.RegisterAsync(request);
@@ -62,6 +64,7 @@ namespace NFC.Platform.API.Controllers
 
         [HttpPost("forgot-password")]
         [AllowAnonymous]
+        [EnableRateLimiting("ForgotPasswordPolicy")]
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
         {
             var result = await _authService.ForgotPasswordAsync(request);
@@ -75,6 +78,7 @@ namespace NFC.Platform.API.Controllers
 
         [HttpPost("reset-password")]
         [AllowAnonymous]
+        [EnableRateLimiting("ResetPasswordPolicy")]
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
         {
             var result = await _authService.ResetPasswordAsync(request);

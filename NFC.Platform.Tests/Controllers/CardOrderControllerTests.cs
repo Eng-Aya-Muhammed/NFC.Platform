@@ -220,7 +220,7 @@ namespace NFC.Platform.Tests.Controllers
         {
             _messageService.Get("NoFileUploaded").Returns("No file was uploaded.");
 
-            var result = await _sut.PlaceBulkOrderFromExcel(null) as BadRequestObjectResult;
+            var result = await _sut.PlaceBulkOrderFromExcel(null!) as BadRequestObjectResult;
 
             Assert.NotNull(result);
             Assert.Equal(400, result.StatusCode);

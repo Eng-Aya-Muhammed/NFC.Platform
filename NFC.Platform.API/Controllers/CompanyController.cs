@@ -1,4 +1,4 @@
-
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace NFC.Platform.API.Controllers
 {
@@ -58,6 +58,7 @@ namespace NFC.Platform.API.Controllers
         }
 
         [HttpPost("change-password")]
+        [EnableRateLimiting("ChangePasswordPolicy")]
         public async Task<IActionResult> ChangePassword([FromBody] CompanyChangePasswordRequest request)
         {
             var result = await _companyService.ChangeCompanyAdminPasswordAsync(request);

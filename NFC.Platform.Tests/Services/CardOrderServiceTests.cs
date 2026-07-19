@@ -825,7 +825,7 @@ namespace NFC.Platform.Tests.Services
             await _unitOfWork.Received(1).CommitTransactionAsync();
         }
 
-        private class TestHttpServer : IDisposable
+        private sealed class TestHttpServer : IDisposable
         {
             private readonly System.Net.HttpListener _listener;
             public string Url { get; }

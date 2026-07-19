@@ -85,5 +85,29 @@ namespace NFC.Platform.Tests.Controllers
             Assert.NotNull(result);
             Assert.Equal(400, result.StatusCode);
         }
+
+        [Fact]
+        public void ResolvePublicProfile_ShouldHaveRateLimitingPolicy()
+        {
+            var method = typeof(PublicProfileController).GetMethod(nameof(PublicProfileController.ResolvePublicProfile));
+            Assert.NotNull(method);
+
+            var attr = method.GetCustomAttributes(typeof(EnableRateLimitingAttribute), true)
+                .Cast<EnableRateLimitingAttribute>()
+                .FirstOrDefault();
+
+            Assert.NotNull(attr);
+            Assert.Equal("ResolvePublicProfilePolicy", attr.PolicyName);
+        }
+
+        [Fact]
+        public void RecordMetric_ShouldNotHaveRateLimiting()
+        {
+            var method = typeof(PublicProfileController).GetMethod(nameof(PublicProfileController.RecordMetric));
+            Assert.NotNull(method);
+
+            var attr = method.GetCustomAttributes(typeof(EnableRateLimitingAttribute), true);
+            Assert.Empty(attr);
+        }
     }
 }

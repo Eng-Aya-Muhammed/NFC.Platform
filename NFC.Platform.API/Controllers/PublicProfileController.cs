@@ -1,4 +1,4 @@
-
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace NFC.Platform.API.Controllers
 {
@@ -13,6 +13,7 @@ namespace NFC.Platform.API.Controllers
         /// Resolves a physical card scan/tap by its activation code and retrieves the public profile.
         /// </summary>
         [HttpGet("cards/resolve/{activationCode}")]
+        [EnableRateLimiting("ResolvePublicProfilePolicy")]
         public async Task<IActionResult> ResolvePublicProfile([FromRoute] string activationCode)
         {
             var result = await _profileMetricService.ResolvePublicProfileAsync(activationCode);

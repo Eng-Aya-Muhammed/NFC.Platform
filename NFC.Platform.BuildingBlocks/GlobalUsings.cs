@@ -1,0 +1,11 @@
+global using System;
+global using System.Text;
+global using System.Threading.RateLimiting;
+global using System.Threading.Tasks;
+global using Microsoft.AspNetCore.Builder;
+global using Microsoft.AspNetCore.Http;
+global using Microsoft.AspNetCore.RateLimiting;
+global using Microsoft.Extensions.Caching.Distributed;
+global using Microsoft.Extensions.DependencyInjection;
+global using NFC.Platform.BuildingBlocks.Localization;
+global using NFC.Platform.BuildingBlocks.Results;

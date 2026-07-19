@@ -21,6 +21,9 @@ namespace NFC.Platform.BuildingBlocks.Extensions
             // 2. Global Exception Middleware
             app.UseMiddleware<GlobalExceptionMiddleware>();
 
+            // 3. Rate Limiting Middleware
+            app.UseRateLimiter();
+
             return app;
         }
     }

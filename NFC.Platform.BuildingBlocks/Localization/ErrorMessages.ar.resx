@@ -232,4 +232,34 @@
   <data name="ResetTokenExpired" xml:space="preserve">
     <value>انتهت صلاحية رمز إعادة التعيين.</value>
   </data>
+  <data name="TooManyAuthAttempts" xml:space="preserve">
+    <value>لقد تجاوزت الحد الأقصى لمحاولات تسجيل الدخول أو التسجيل. يرجى المحاولة مرة أخرى بعد {0} ثانية.</value>
+  </data>
+  <data name="TooManyForgotPasswordRequests" xml:space="preserve">
+    <value>لقد تجاوزت الحد الأقصى لطلبات استعادة كلمة المرور. يرجى المحاولة مرة أخرى بعد {0} ثانية.</value>
+  </data>
+  <data name="TooManyProfileRequests" xml:space="preserve">
+    <value>لقد تجاوزت الحد الأقصى للطلبات. يرجى المحاولة مرة أخرى بعد {0} ثانية.</value>
+  </data>
+  <data name="TooManyCardActivationAttempts" xml:space="preserve">
+    <value>لقد تجاوزت الحد الأقصى لمحاولات تفعيل البطاقة. يرجى المحاولة مرة أخرى بعد {0} ثانية.</value>
+  </data>
+  <data name="CardActivationLockedOut" xml:space="preserve">
+    <value>تم قفل عنوان IP هذا مؤقتاً بسبب محاولات تفعيل بطاقة فاشلة متكررة. يرجى المحاولة مرة أخرى بعد {0} دقيقة.</value>
+  </data>
+  <data name="TooManyChangePasswordAttempts" xml:space="preserve">
+    <value>لقد تجاوزت الحد الأقصى لمحاولات تغيير كلمة المرور. يرجى المحاولة مرة أخرى بعد {0} ثانية.</value>
+  </data>
+  <data name="ChangePasswordLockedOut" xml:space="preserve">
+    <value>تم قفل عنوان IP هذا مؤقتاً بسبب محاولات تغيير كلمة مرور فاشلة متكررة. يرجى المحاولة مرة أخرى بعد {0} دقيقة.</value>
+  </data>
+  <data name="TooManyLoginAttempts" xml:space="preserve">
+    <value>لقد تجاوزت الحد الأقصى لمحاولات تسجيل الدخول. يرجى المحاولة مرة أخرى بعد {0} ثانية.</value>
+  </data>
+  <data name="TooManyRegisterAttempts" xml:space="preserve">
+    <value>لقد تجاوزت الحد الأقصى لمحاولات إنشاء الحساب. يرجى المحاولة مرة أخرى بعد {0} ثانية.</value>
+  </data>
+  <data name="TooManyResetPasswordAttempts" xml:space="preserve">
+    <value>لقد تجاوزت الحد الأقصى لمحاولات إعادة تعيين كلمة المرور. يرجى المحاولة مرة أخرى بعد {0} ثانية.</value>
+  </data>
 </root>

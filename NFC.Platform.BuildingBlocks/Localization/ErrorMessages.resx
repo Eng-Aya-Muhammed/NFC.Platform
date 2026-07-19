@@ -232,4 +232,34 @@
   <data name="ResetTokenExpired" xml:space="preserve">
     <value>Reset token has expired.</value>
   </data>
+  <data name="TooManyAuthAttempts" xml:space="preserve">
+    <value>Too many authentication attempts. Please try again in {0} seconds.</value>
+  </data>
+  <data name="TooManyForgotPasswordRequests" xml:space="preserve">
+    <value>Too many forgot password requests. Please try again in {0} seconds.</value>
+  </data>
+  <data name="TooManyProfileRequests" xml:space="preserve">
+    <value>Too many requests. Please try again in {0} seconds.</value>
+  </data>
+  <data name="TooManyCardActivationAttempts" xml:space="preserve">
+    <value>Too many card activation attempts. Please try again in {0} seconds.</value>
+  </data>
+  <data name="CardActivationLockedOut" xml:space="preserve">
+    <value>This IP has been temporarily locked out due to repeated failed card activation attempts. Please try again after {0} minutes.</value>
+  </data>
+  <data name="TooManyChangePasswordAttempts" xml:space="preserve">
+    <value>Too many password change attempts. Please try again in {0} seconds.</value>
+  </data>
+  <data name="ChangePasswordLockedOut" xml:space="preserve">
+    <value>This IP has been temporarily locked out due to repeated failed password change attempts. Please try again after {0} minutes.</value>
+  </data>
+  <data name="TooManyLoginAttempts" xml:space="preserve">
+    <value>Too many login attempts. Please try again in {0} seconds.</value>
+  </data>
+  <data name="TooManyRegisterAttempts" xml:space="preserve">
+    <value>Too many registration attempts. Please try again in {0} seconds.</value>
+  </data>
+  <data name="TooManyResetPasswordAttempts" xml:space="preserve">
+    <value>Too many password reset attempts. Please try again in {0} seconds.</value>
+  </data>
 </root>

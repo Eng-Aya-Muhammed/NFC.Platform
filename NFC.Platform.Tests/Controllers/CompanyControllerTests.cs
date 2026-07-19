@@ -157,5 +157,33 @@ namespace NFC.Platform.Tests.Controllers
             Assert.NotNull(result);
             Assert.Equal(400, result.StatusCode);
         }
+
+        [Fact]
+        public void ChangePassword_ShouldHaveRateLimitingPolicy()
+        {
+            var method = typeof(CompanyController).GetMethod(nameof(CompanyController.ChangePassword));
+            Assert.NotNull(method);
+
+            var attr = method.GetCustomAttributes(typeof(EnableRateLimitingAttribute), true)
+                .Cast<EnableRateLimitingAttribute>()
+                .FirstOrDefault();
+
+            Assert.NotNull(attr);
+            Assert.Equal("ChangePasswordPolicy", attr.PolicyName);
+        }
+
+        [Theory]
+        [InlineData(nameof(CompanyController.GetDashboard))]
+        [InlineData(nameof(CompanyController.GetProfile))]
+        [InlineData(nameof(CompanyController.UpdateProfile))]
+        [InlineData(nameof(CompanyController.UpdateTemplate))]
+        public void NonSensitiveCompanyEndpoints_ShouldNotHaveRateLimiting(string methodName)
+        {
+            var method = typeof(CompanyController).GetMethod(methodName);
+            Assert.NotNull(method);
+
+            var attr = method.GetCustomAttributes(typeof(EnableRateLimitingAttribute), true);
+            Assert.Empty(attr);
+        }
     }
 }

@@ -334,5 +334,43 @@ namespace NFC.Platform.Tests.Controllers
             Assert.NotNull(result);
             Assert.Equal(400, result.StatusCode);
         }
+
+        [Fact]
+        public void Activate_ShouldHaveCardActivationRateLimitingPolicy()
+        {
+            var methods = typeof(CardController).GetMethods()
+                .Where(m => m.Name == nameof(CardController.Activate) && m.GetParameters().Length == 1
+                    && m.GetParameters()[0].ParameterType == typeof(ActivateCardRequest))
+                .ToList();
+
+            Assert.NotEmpty(methods);
+            var method = methods.First();
+
+            var attr = method.GetCustomAttributes(typeof(EnableRateLimitingAttribute), true)
+                .Cast<EnableRateLimitingAttribute>()
+                .FirstOrDefault();
+
+            Assert.NotNull(attr);
+            Assert.Equal("CardActivationPolicy", attr.PolicyName);
+        }
+
+        [Theory]
+        [InlineData(nameof(CardController.GetById))]
+        [InlineData(nameof(CardController.GetPaged))]
+        [InlineData(nameof(CardController.Create))]
+        [InlineData(nameof(CardController.GetCardsForEncoding))]
+        [InlineData(nameof(CardController.MarkEncoded))]
+        [InlineData(nameof(CardController.ActivateAllForOrder))]
+        [InlineData(nameof(CardController.Deactivate))]
+        [InlineData(nameof(CardController.Delete))]
+        [InlineData(nameof(CardController.Reissue))]
+        public void NonSensitiveCardEndpoints_ShouldNotHaveRateLimiting(string methodName)
+        {
+            var method = typeof(CardController).GetMethods().FirstOrDefault(m => m.Name == methodName);
+            Assert.NotNull(method);
+
+            var attr = method.GetCustomAttributes(typeof(EnableRateLimitingAttribute), true);
+            Assert.Empty(attr);
+        }
     }
 }

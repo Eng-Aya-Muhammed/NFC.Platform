@@ -24,6 +24,8 @@ builder.Services.AddAutoMapperConfig();
 builder.Services.AddFluentValidationConfig();
 builder.Services.AddSwaggerWithJwt();
 builder.Services.AddLocalizationConfig();
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddRateLimitingConfig();
 builder.Services.AddInfrastructureServices(builder.Configuration);
 builder.Services.AddApplicationServices();
 

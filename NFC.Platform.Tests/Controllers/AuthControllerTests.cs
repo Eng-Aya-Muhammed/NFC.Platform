@@ -223,5 +223,36 @@ namespace NFC.Platform.Tests.Controllers
             Assert.NotNull(auth);
             Assert.Equal(AppPolicies.AdminOnly, auth.Policy);
         }
+
+        [Theory]
+        [InlineData(nameof(AuthController.Login), "LoginPolicy")]
+        [InlineData(nameof(AuthController.Register), "RegisterPolicy")]
+        [InlineData(nameof(AuthController.ResetPassword), "ResetPasswordPolicy")]
+        [InlineData(nameof(AuthController.ForgotPassword), "ForgotPasswordPolicy")]
+        public void AuthEndpoints_ShouldHaveCorrectRateLimitingPolicy(string methodName, string expectedPolicy)
+        {
+            var method = typeof(AuthController).GetMethod(methodName);
+            Assert.NotNull(method);
+
+            var attr = method.GetCustomAttributes(typeof(EnableRateLimitingAttribute), true)
+                .Cast<EnableRateLimitingAttribute>()
+                .FirstOrDefault();
+
+            Assert.NotNull(attr);
+            Assert.Equal(expectedPolicy, attr.PolicyName);
+        }
+
+        [Theory]
+        [InlineData(nameof(AuthController.Refresh))]
+        [InlineData(nameof(AuthController.Revoke))]
+        [InlineData(nameof(AuthController.CreateUserByAdmin))]
+        public void NonSensitiveEndpoints_ShouldNotHaveRateLimiting(string methodName)
+        {
+            var method = typeof(AuthController).GetMethod(methodName);
+            Assert.NotNull(method);
+
+            var attr = method.GetCustomAttributes(typeof(EnableRateLimitingAttribute), true);
+            Assert.Empty(attr);
+        }
     }
 }

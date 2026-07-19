@@ -2,11 +2,10 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using NFC.Platform.Application.DTOs;
 using NFC.Platform.Application.Interfaces.Services;
-using NFC.Platform.BuildingBlocks.Common.Constants;
 
-using NFC.Platform.Application.DTOs.CardOrder;
 
 namespace NFC.Platform.API.Controllers
 {
@@ -52,6 +51,7 @@ namespace NFC.Platform.API.Controllers
         /// </summary>
         [HttpPost("activate")]
         [Authorize]
+        [EnableRateLimiting("CardActivationPolicy")]
         public async Task<IActionResult> Activate([FromBody] ActivateCardRequest request)
         {
             var result = await _cardService.ActivateCardAsync(request);
