@@ -1,5 +1,6 @@
 using NFC.Platform.BuildingBlocks.Common.Helpers;
 using NFC.Platform.BuildingBlocks.Common.Seeders;
+using NFC.Platform.BuildingBlocks.Settings;
 using NFC.Platform.Infrastructure.Contexts;
 using NFC.Platform.Infrastructure.Interceptors;
 using NFC.Platform.Infrastructure.Repositories;
@@ -46,6 +47,10 @@ namespace NFC.Platform.Infrastructure.Extensions
             // Mail Registration
             services.Configure<MailSettings>(configuration.GetSection("MailSettings"));
             services.AddScoped<IEmailService, EmailService>();
+
+            // Twilio WhatsApp Registration
+            services.Configure<TwilioSettings>(configuration.GetSection("TwilioSettings"));
+            services.AddScoped<IWhatsAppService, WhatsAppService>();
 
             // QR Code Generator — Singleton: QRCoder is stateless; one instance per app lifetime is sufficient.
 

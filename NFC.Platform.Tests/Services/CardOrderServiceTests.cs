@@ -1734,5 +1734,177 @@ namespace NFC.Platform.Tests.Services
             Assert.Equal(200, result.StatusCode);
             Assert.Single(reorder.Items);
         }
+
+        // ── OTP Resend Unit Tests ──────────────────────────────────────────────
+
+        [Fact]
+        public async Task ResendDeliveryOtpAsync_ReturnsNotFound_WhenOrderDoesNotExist()
+        {
+            // Arrange
+            var tenantId = Guid.NewGuid();
+            _currentTenant.TenantId.Returns(tenantId);
+            _orderRepo.GetQueryable().Returns(new List<CardOrder>().AsQueryable().BuildMock());
+            _messageService.Get("RecordNotFound").Returns("Record not found.");
+
+            // Act
+            var result = await _sut.ResendDeliveryOtpAsync(Guid.NewGuid());
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(404, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task ResendDeliveryOtpAsync_ReturnsNotFound_WhenOrderBelongsToDifferentTenant()
+        {
+            // Arrange — Security Tenant Isolation check
+            var currentTenantId = Guid.NewGuid();
+            var differentTenantId = Guid.NewGuid();
+            _currentTenant.TenantId.Returns(currentTenantId);
+
+            var order = new CardOrder
+            {
+                Id       = Guid.NewGuid(),
+                TenantId = differentTenantId, // Different tenant
+                Status   = OrderStatus.ReadyForDelivery
+            };
+            _orderRepo.GetQueryable().Returns(new List<CardOrder> { order }.AsQueryable().BuildMock());
+            _messageService.Get("RecordNotFound").Returns("Record not found.");
+
+            // Act
+            var result = await _sut.ResendDeliveryOtpAsync(order.Id);
+
+            // Assert — Must return 404 Not Found to prevent cross-tenant enumeration
+            Assert.False(result.IsSuccess);
+            Assert.Equal(404, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task ResendDeliveryOtpAsync_ReturnsFail_WhenOrderNotReadyForDelivery()
+        {
+            // Arrange
+            var tenantId = Guid.NewGuid();
+            _currentTenant.TenantId.Returns(tenantId);
+
+            var order = new CardOrder
+            {
+                Id       = Guid.NewGuid(),
+                TenantId = tenantId,
+                Status   = OrderStatus.InPrinting // Not ReadyForDelivery
+            };
+            _orderRepo.GetQueryable().Returns(new List<CardOrder> { order }.AsQueryable().BuildMock());
+            _messageService.Get("OrderNotReadyForDelivery").Returns("Order not ready.");
+
+            // Act
+            var result = await _sut.ResendDeliveryOtpAsync(order.Id);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(422, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task ResendDeliveryOtpAsync_ReturnsFail_WhenCooldownActive()
+        {
+            // Arrange
+            var tenantId = Guid.NewGuid();
+            _currentTenant.TenantId.Returns(tenantId);
+
+            var order = new CardOrder
+            {
+                Id                    = Guid.NewGuid(),
+                TenantId              = tenantId,
+                Status                = OrderStatus.ReadyForDelivery,
+                DeliveryOtpLastSentAt = DateTime.UtcNow.AddSeconds(-20) // Sent 20s ago (< 60s)
+            };
+            _orderRepo.GetQueryable().Returns(new List<CardOrder> { order }.AsQueryable().BuildMock());
+            _messageService.Get("OtpCooldownActive").Returns("Please wait 60 seconds.");
+
+            // Act
+            var result = await _sut.ResendDeliveryOtpAsync(order.Id);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(422, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task ResendDeliveryOtpAsync_ReturnsFail_WhenResendLimitReached()
+        {
+            // Arrange
+            var tenantId = Guid.NewGuid();
+            _currentTenant.TenantId.Returns(tenantId);
+
+            var order = new CardOrder
+            {
+                Id                    = Guid.NewGuid(),
+                TenantId              = tenantId,
+                Status                = OrderStatus.ReadyForDelivery,
+                DeliveryOtpLastSentAt = DateTime.UtcNow.AddMinutes(-5),
+                DeliveryOtpResendCount = 5 // Max limit (5) reached
+            };
+            _orderRepo.GetQueryable().Returns(new List<CardOrder> { order }.AsQueryable().BuildMock());
+            _messageService.Get("OtpResendLimitReached").Returns("Limit reached.");
+
+            // Act
+            var result = await _sut.ResendDeliveryOtpAsync(order.Id);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(422, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task ResendDeliveryOtpAsync_Succeeds_GeneratesNewOtp_UpdatesState_AndEnqueuesJobs()
+        {
+            // Arrange
+            var tenantId = Guid.NewGuid();
+            _currentTenant.TenantId.Returns(tenantId);
+
+            var user = new User
+            {
+                Email = "customer@example.com",
+                UserProfile = new UserProfile { WhatsApp = "+201013503890" }
+            };
+            var order = new CardOrder
+            {
+                Id                    = Guid.NewGuid(),
+                TenantId              = tenantId,
+                Status                = OrderStatus.ReadyForDelivery,
+                CardName              = "Premium Wood Card",
+                DeliveryOtp           = "111111",
+                DeliveryOtpLastSentAt = DateTime.UtcNow.AddMinutes(-3),
+                DeliveryOtpResendCount = 1,
+                Tenant                = new Tenant { Company = null },
+                User                  = user
+            };
+            _orderRepo.GetQueryable().Returns(new List<CardOrder> { order }.AsQueryable().BuildMock());
+            _messageService.Get("OtpResent").Returns("OTP code has been resent successfully.");
+            _messageService.Get("WhatsAppNewOtp", Arg.Any<object[]>()).Returns("New pickup code!");
+
+            // Act
+            var result = await _sut.ResendDeliveryOtpAsync(order.Id);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal("OTP code has been resent successfully.", result.Message);
+            Assert.NotEqual("111111", order.DeliveryOtp); // New OTP generated
+            Assert.Equal(6, order.DeliveryOtp!.Length);
+            Assert.Equal(2, order.DeliveryOtpResendCount); // Incremented
+            Assert.NotNull(order.DeliveryOtpExpiresAt);
+
+            await _unitOfWork.Received(1).SaveChangesAsync();
+
+            // Background jobs enqueued
+            _backgroundJobClient.Received(1).Create(
+                Arg.Is<Hangfire.Common.Job>(j =>
+                    j.Method.Name == nameof(IEmailService.SendOrderReadyOtpEmailAsync)),
+                Arg.Any<Hangfire.States.IState>());
+
+            _backgroundJobClient.Received(1).Create(
+                Arg.Is<Hangfire.Common.Job>(j =>
+                    j.Method.Name == nameof(NFC.Platform.Application.Interfaces.Services.IWhatsAppService.SendWhatsAppMessageAsync)),
+                Arg.Any<Hangfire.States.IState>());
+        }
     }
 }

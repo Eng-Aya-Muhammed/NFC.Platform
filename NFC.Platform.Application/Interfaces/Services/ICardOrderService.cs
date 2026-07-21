@@ -64,5 +64,11 @@ namespace NFC.Platform.Application.Interfaces.Services
         /// </summary>
         Task<ServiceResult<EmployeesImportStatusDto>> GetEmployeesImportStatusAsync(Guid id);
         Task<ServiceResult<IReadOnlyList<CardPricingDto>>> GetActivePricingCatalogAsync();
+
+        /// <summary>
+        /// Resends the delivery OTP for an order belonging to the current tenant/user.
+        /// Enforces 60-second cooldown and maximum 5 resends.
+        /// </summary>
+        Task<ServiceResult> ResendDeliveryOtpAsync(Guid orderId);
     }
 }

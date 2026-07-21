@@ -187,4 +187,52 @@
   <data name="EmployeesMissingProfile" xml:space="preserve">
     <value>Employees missing profile: {0}</value>
   </data>
+  <data name="EmailOrderReadySubject" xml:space="preserve">
+    <value>Your order is ready for pickup</value>
+  </data>
+  <data name="InvalidOtp" xml:space="preserve">
+    <value>Invalid OTP. Please check the code and try again.</value>
+  </data>
+  <data name="OrderNotReadyForDelivery" xml:space="preserve">
+    <value>This order is not in a ready-for-delivery state.</value>
+  </data>
+  <data name="OrderDelivered" xml:space="preserve">
+    <value>Order has been marked as delivered successfully.</value>
+  </data>
+  <data name="OtpExpired" xml:space="preserve">
+    <value>OTP code has expired. Please request a new code.</value>
+  </data>
+  <data name="OtpCooldownActive" xml:space="preserve">
+    <value>Please wait 60 seconds before requesting a new OTP.</value>
+  </data>
+  <data name="OtpResendLimitReached" xml:space="preserve">
+    <value>Maximum OTP resend limit reached for this order (5 attempts).</value>
+  </data>
+  <data name="OtpResent" xml:space="preserve">
+    <value>OTP code has been resent successfully.</value>
+  </data>
+  <data name="EmailOrderReadySubtitle" xml:space="preserve">
+    <value>Your Order is Ready for Pickup</value>
+  </data>
+  <data name="EmailOrderReadyGreeting" xml:space="preserve">
+    <value>Hello,</value>
+  </data>
+  <data name="EmailOrderReadyBody" xml:space="preserve">
+    <value>Your order &lt;strong style="color:#1a1a2e;"&gt;{0}&lt;/strong&gt; is now ready for pickup.&lt;br&gt;Use the following code when collecting your order:</value>
+  </data>
+  <data name="EmailOrderReadyOtpLabel" xml:space="preserve">
+    <value>Pickup Code</value>
+  </data>
+  <data name="EmailOrderReadyWarning" xml:space="preserve">
+    <value>Do not share this code with anyone else.</value>
+  </data>
+  <data name="EmailOrderReadyFooter" xml:space="preserve">
+    <value>© 2026 NFC Platform. All rights reserved.</value>
+  </data>
+  <data name="WhatsAppOrderReady" xml:space="preserve">
+    <value>Your order is ready! 🎉 Pickup code: *{0}*</value>
+  </data>
+  <data name="WhatsAppNewOtp" xml:space="preserve">
+    <value>New pickup code! 🎉 Your new code is: *{0}*</value>
+  </data>
 </root>

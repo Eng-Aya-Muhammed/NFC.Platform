@@ -13,6 +13,8 @@ namespace NFC.Platform.Application.Interfaces.Services
         Task<ServiceResult<PagedResult<AdminOrderSummaryDto>>> GetOrdersPagedAsync(PaginationRequest request, OrderStatus? statusFilter, Guid? companyId = null);
         Task<ServiceResult<AdminOrderDetailDto>> GetOrderByIdAsync(Guid id);
         Task<ServiceResult> UpdateOrderStatusAsync(Guid id, UpdateOrderStatusDto dto);
+        Task<ServiceResult> VerifyDeliveryOtpAsync(Guid orderId, string otp);
+        Task<ServiceResult> ResendDeliveryOtpAsync(Guid orderId);
         Task<ServiceResult<PagedResult<TemplateRequestDto>>> GetTemplateRequestsPagedAsync(PaginationRequest request, TemplateRequestStatus? status = null);
         Task<ServiceResult> ResolveTemplateRequestAsync(Guid id, ResolveTemplateRequestDto dto);
         Task<ServiceResult<CardTemplateDto>> CreateTemplateAsync(CreateCardTemplateDto dto);

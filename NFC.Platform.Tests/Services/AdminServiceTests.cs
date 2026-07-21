@@ -36,6 +36,7 @@ namespace NFC.Platform.Tests.Services
         private readonly IGenericRepository<CardPricing> _cardPricingRepo;
         private readonly IGenericRepository<Company> _companyRepo;
         private readonly IGenericRepository<UserProfile> _userProfileRepo;
+        private readonly IBackgroundJobClient _backgroundJobClient;
 
         private readonly AdminService _sut;
 
@@ -46,6 +47,7 @@ namespace NFC.Platform.Tests.Services
             _messageService      = Substitute.For<IMessageService>();
 
             _storageService      = Substitute.For<IStorageService>();
+            _backgroundJobClient = Substitute.For<IBackgroundJobClient>();
 
             _orderRepo           = Substitute.For<IGenericRepository<CardOrder>>();
             _templateRequestRepo = Substitute.For<IGenericRepository<TemplateRequest>>();
@@ -79,7 +81,7 @@ namespace NFC.Platform.Tests.Services
                     PublicId  = "nfc-platform/qrcodes/test/qr-placeholder"
                 }));
 
-            _sut = new AdminService(_unitOfWork, _mapper, _messageService, _storageService);
+            _sut = new AdminService(_unitOfWork, _mapper, _messageService, _storageService, _backgroundJobClient);
         }
 
         // ── GetOrdersPagedAsync ───────────────────────────────────────────────────
@@ -618,5 +620,143 @@ namespace NFC.Platform.Tests.Services
             await _unitOfWork.Received(1).SaveChangesAsync();
         }
 
+        // ── OTP Expiration & Resend Unit Tests ────────────────────────────────────
+
+        [Fact]
+        public async Task VerifyDeliveryOtpAsync_ReturnsFail_WhenOtpHasExpired()
+        {
+            // Arrange
+            var orderId = Guid.NewGuid();
+            var order = new CardOrder
+            {
+                Id                   = orderId,
+                Status               = OrderStatus.ReadyForDelivery,
+                DeliveryOtp          = "123456",
+                DeliveryOtpExpiresAt = DateTime.UtcNow.AddMinutes(-5) // Expired 5 mins ago
+            };
+
+            var mockQueryable = new List<CardOrder> { order }.AsQueryable().BuildMock();
+            _orderRepo.GetQueryable().Returns(mockQueryable);
+            _messageService.Get("OtpExpired").Returns("OTP code has expired.");
+
+            // Act
+            var result = await _sut.VerifyDeliveryOtpAsync(orderId, "123456");
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(422, result.StatusCode);
+            Assert.Equal("OTP code has expired.", result.Message);
+            Assert.Equal(OrderStatus.ReadyForDelivery, order.Status); // Status unchanged
+        }
+
+        [Fact]
+        public async Task ResendDeliveryOtpAsync_ReturnsFail_WhenCooldownActive()
+        {
+            // Arrange
+            var orderId = Guid.NewGuid();
+            var order = new CardOrder
+            {
+                Id                   = orderId,
+                Status               = OrderStatus.ReadyForDelivery,
+                DeliveryOtp          = "123456",
+                DeliveryOtpLastSentAt = DateTime.UtcNow.AddSeconds(-30), // Sent 30 seconds ago (< 60s)
+                DeliveryOtpResendCount = 1
+            };
+
+            var mockQueryable = new List<CardOrder> { order }.AsQueryable().BuildMock();
+            _orderRepo.GetQueryable().Returns(mockQueryable);
+            _messageService.Get("OtpCooldownActive").Returns("Please wait 60 seconds.");
+
+            // Act
+            var result = await _sut.ResendDeliveryOtpAsync(orderId);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(422, result.StatusCode);
+            Assert.Equal("Please wait 60 seconds.", result.Message);
+        }
+
+        [Fact]
+        public async Task ResendDeliveryOtpAsync_ReturnsFail_WhenResendLimitReached()
+        {
+            // Arrange
+            var orderId = Guid.NewGuid();
+            var order = new CardOrder
+            {
+                Id                   = orderId,
+                Status               = OrderStatus.ReadyForDelivery,
+                DeliveryOtp          = "123456",
+                DeliveryOtpLastSentAt = DateTime.UtcNow.AddMinutes(-10),
+                DeliveryOtpResendCount = 5 // Max limit reached (5)
+            };
+
+            var mockQueryable = new List<CardOrder> { order }.AsQueryable().BuildMock();
+            _orderRepo.GetQueryable().Returns(mockQueryable);
+            _messageService.Get("OtpResendLimitReached").Returns("Limit reached.");
+
+            // Act
+            var result = await _sut.ResendDeliveryOtpAsync(orderId);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(422, result.StatusCode);
+            Assert.Equal("Limit reached.", result.Message);
+        }
+
+        [Fact]
+        public async Task ResendDeliveryOtpAsync_GeneratesNewOtp_ResetsExpiry_IncrementsCount_AndEnqueuesJobs()
+        {
+            // Arrange
+            var orderId = Guid.NewGuid();
+            var user = new User
+            {
+                Email = "customer@example.com",
+                UserProfile = new UserProfile { WhatsApp = "+201013503890" }
+            };
+            var order = new CardOrder
+            {
+                Id                   = orderId,
+                Status               = OrderStatus.ReadyForDelivery,
+                CardName             = "My NFC Card",
+                DeliveryOtp          = "111111",
+                DeliveryOtpLastSentAt = DateTime.UtcNow.AddMinutes(-2), // > 60s ago
+                DeliveryOtpResendCount = 2,
+                Tenant               = new Tenant { Company = null },
+                User                 = user
+            };
+
+            var mockQueryable = new List<CardOrder> { order }.AsQueryable().BuildMock();
+            _orderRepo.GetQueryable().Returns(mockQueryable);
+            _messageService.Get("OtpResent").Returns("OTP code has been resent successfully.");
+
+            // Act
+            var result = await _sut.ResendDeliveryOtpAsync(orderId);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal("OTP code has been resent successfully.", result.Message);
+            Assert.NotEqual("111111", order.DeliveryOtp); // New OTP generated
+            Assert.Equal(6, order.DeliveryOtp!.Length);
+            Assert.Equal(3, order.DeliveryOtpResendCount); // Incremented from 2 to 3
+            Assert.NotNull(order.DeliveryOtpExpiresAt);
+            Assert.True(order.DeliveryOtpExpiresAt > DateTime.UtcNow);
+
+            await _unitOfWork.Received(1).SaveChangesAsync();
+
+            // Background jobs enqueued
+            _backgroundJobClient.Received(1).Create(
+                Arg.Is<Hangfire.Common.Job>(j =>
+                    j.Method.Name == nameof(IEmailService.SendOrderReadyOtpEmailAsync) &&
+                    j.Args[0].ToString() == "customer@example.com"),
+                Arg.Any<Hangfire.States.IState>());
+
+            _backgroundJobClient.Received(1).Create(
+                Arg.Is<Hangfire.Common.Job>(j =>
+                    j.Method.Name == nameof(IWhatsAppService.SendWhatsAppMessageAsync) &&
+                    j.Args[0].ToString() == "+201013503890"),
+                Arg.Any<Hangfire.States.IState>());
+        }
+
     }
 }
+

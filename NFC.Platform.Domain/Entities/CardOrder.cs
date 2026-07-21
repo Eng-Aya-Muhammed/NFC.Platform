@@ -51,6 +51,27 @@ namespace NFC.Platform.Domain.Entities
 
         public string? TrackingNumber { get; set; }
 
+        /// <summary>
+        /// 6-digit OTP sent to the recipient when order is ReadyForDelivery.
+        /// Cleared after successful delivery confirmation.
+        /// </summary>
+        public string? DeliveryOtp { get; set; }
+
+        /// <summary>
+        /// Expiration timestamp for the delivery OTP (valid for 7 days while ReadyForDelivery).
+        /// </summary>
+        public DateTime? DeliveryOtpExpiresAt { get; set; }
+
+        /// <summary>
+        /// Timestamp when the last OTP notification was sent (used for 60-second cooldown rate limit).
+        /// </summary>
+        public DateTime? DeliveryOtpLastSentAt { get; set; }
+
+        /// <summary>
+        /// Total number of times an OTP resend was requested (maximum 5 attempts per order).
+        /// </summary>
+        public int DeliveryOtpResendCount { get; set; } = 0;
+
         public DeliveryMethod DeliveryMethod { get; set; } = DeliveryMethod.Pickup;
 
         /// <summary>

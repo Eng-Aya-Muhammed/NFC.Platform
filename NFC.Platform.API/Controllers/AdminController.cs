@@ -46,6 +46,37 @@ namespace NFC.Platform.API.Controllers
         }
 
         /// <summary>
+        /// Verifies the delivery OTP for a ReadyForDelivery order.
+        /// On success, marks the order as Delivered and clears the OTP.
+        /// </summary>
+        [HttpPost("orders/{id:guid}/verify-otp")]
+        public async Task<IActionResult> VerifyDeliveryOtp([FromRoute] Guid id, [FromBody] VerifyDeliveryOtpRequest request)
+        {
+            var result = await _adminService.VerifyDeliveryOtpAsync(id, request.Otp);
+            if (!result.IsSuccess)
+            {
+                return StatusCode(result.StatusCode, result);
+            }
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// Resends the delivery OTP for a ReadyForDelivery order.
+        /// Generates a new 6-digit OTP, updates expiry (+7 days), enforces a 60-second cooldown, and re-triggers Email & WhatsApp notifications.
+        /// </summary>
+        [HttpPost("orders/{id:guid}/resend-otp")]
+        public async Task<IActionResult> ResendDeliveryOtp([FromRoute] Guid id)
+        {
+            var result = await _adminService.ResendDeliveryOtpAsync(id);
+            if (!result.IsSuccess)
+            {
+                return StatusCode(result.StatusCode, result);
+            }
+            return Ok(result);
+        }
+
+
+        /// <summary>
         /// Retrieves all custom template requests submitted by all users/companies.
         /// </summary>
         [HttpGet("template-requests")]

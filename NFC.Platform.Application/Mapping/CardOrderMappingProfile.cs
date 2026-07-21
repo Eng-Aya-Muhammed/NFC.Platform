@@ -22,6 +22,10 @@ namespace NFC.Platform.Application.Mapping
                 .ForMember(dest => dest.UnitPrice, opt => opt.Ignore())
                 .ForMember(dest => dest.Currency, opt => opt.Ignore())
                 .ForMember(dest => dest.TrackingNumber, opt => opt.Ignore())
+                .ForMember(dest => dest.DeliveryOtp, opt => opt.Ignore())
+                .ForMember(dest => dest.DeliveryOtpExpiresAt, opt => opt.Ignore())
+                .ForMember(dest => dest.DeliveryOtpLastSentAt, opt => opt.Ignore())
+                .ForMember(dest => dest.DeliveryOtpResendCount, opt => opt.Ignore())
                 .ForMember(dest => dest.DeliveryMethod, opt => opt.Ignore())
                 .ForMember(dest => dest.ShippingAddress, opt => opt.Ignore())
                 .ForMember(dest => dest.Items, opt => opt.Ignore());
