@@ -128,10 +128,7 @@ namespace NFC.Platform.API.Controllers
                 request.File,
                 request.CardType,
                 request.CardDesignType,
-                request.Notes,
-                request.DesignReferenceUrl,
-                request.LogoUrl,
-                request.DesignNotes);
+                request.Notes);
 
             if (!result.IsSuccess)
             {

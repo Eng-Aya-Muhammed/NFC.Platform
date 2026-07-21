@@ -16,14 +16,11 @@ public class EmployeeDetailsDto
     public string Phone { get; set; } = string.Empty;
     public string WhatsApp { get; set; } = string.Empty;
 
-    public string InstagramUrl { get; set; } = string.Empty;
-    public string FacebookUrl { get; set; } = string.Empty;
-    public string LinkedInUrl { get; set; } = string.Empty;
-    public string WebsiteUrl { get; set; } = string.Empty;
-
-    public System.Collections.Generic.List<ProfileLinkDto> CustomLinks { get; set; } = [];
+    public System.Collections.Generic.List<ProfileLinkDto> Links { get; set; } = [];
 
     public Guid? CardId { get; set; }
+    public Guid ProfileId { get; set; }
+    public string? Subdomain { get; set; }
 
     // ── Digital profile branding ──────────────────────────────────────────────
     /// <summary>

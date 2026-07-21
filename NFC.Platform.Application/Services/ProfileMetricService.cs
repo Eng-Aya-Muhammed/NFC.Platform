@@ -8,70 +8,47 @@ public class ProfileMetricService(IUnitOfWork unitOfWork, IMessageService messag
     private readonly IMessageService _messageService = messageService ?? throw new ArgumentNullException(nameof(messageService));
     private readonly IMapper _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
 
-    public async Task<ServiceResult<EmployeeDetailsDto>> ResolvePublicProfileAsync(string activationCode)
+    public async Task<ServiceResult<EmployeeDetailsDto>> ResolvePublicProfileAsync(string subdomain)
     {
-        if (string.IsNullOrWhiteSpace(activationCode))
-            return ServiceResult<EmployeeDetailsDto>.NotFound(_messageService.Get("CardNotFound"));
+        if (string.IsNullOrWhiteSpace(subdomain))
+            return ServiceResult<EmployeeDetailsDto>.NotFound(_messageService.Get("ProfileNotFound"));
 
-        var card = await _unitOfWork.Repository<Card>()
+        var profile = await _unitOfWork.Repository<UserProfile>()
             .GetQueryable()
             .AsNoTracking()
-            .Include(c => c.UserProfile)
-                .ThenInclude(p => p!.CustomLinks)
-            .Include(c => c.UserProfile)
-                .ThenInclude(p => p!.Employee)
-                    .ThenInclude(e => e!.Company)
-                        .ThenInclude(co => co!.ProfileTemplate)
-            .Include(c => c.UserProfile)
-                .ThenInclude(p => p!.ProfileTemplate)
-            .Include(c => c.UserProfile)
-                .ThenInclude(p => p!.User)
-            .FirstOrDefaultAsync(c => c.UniqueCode == activationCode && !c.IsDeleted);
+            .Include(p => p.CustomLinks)
+            .Include(p => p.Employee)
+                .ThenInclude(e => e!.Company)
+                    .ThenInclude(co => co!.ProfileTemplate)
+            .Include(p => p.ProfileTemplate)
+            .Include(p => p.User)
+            .FirstOrDefaultAsync(p => p.Subdomain == subdomain && !p.IsDeleted);
 
-        if (card == null)
-            return ServiceResult<EmployeeDetailsDto>.NotFound(_messageService.Get("CardNotFound"));
+        if (profile == null)
+            return ServiceResult<EmployeeDetailsDto>.NotFound(_messageService.Get("ProfileNotFound"));
 
-        // Status-based resolution
-        if (card.Status == CardStatus.Active)
+        var dto = _mapper.Map<EmployeeDetailsDto>(profile);
+        dto.ProfileId = profile.Id;
+
+        // Resolve logo URL for company employees
+        string? logoUrl = null;
+        if (profile.Employee?.Company != null)
         {
-            if (card.UserProfile == null)
-                return ServiceResult<EmployeeDetailsDto>.NotFound(_messageService.Get("ProfileNotFound"));
+            var completedRequest = await _unitOfWork.Repository<TemplateRequest>()
+                .GetQueryable()
+                .AsNoTracking()
+                .Where(r => r.TenantId == profile.TenantId
+                         && r.Status == TemplateRequestStatus.Completed
+                         && r.RequestType == TemplateRequestType.ProfileTemplate)
+                .OrderByDescending(r => r.CreatedAt)
+                .FirstOrDefaultAsync();
 
-            var dto = _mapper.Map<EmployeeDetailsDto>(card.UserProfile);
-            dto.CardId = card.Id;
-
-            // Resolve Logo Url asynchronously if it's a company employee
-            string? logoUrl = null;
-            if (card.UserProfile.Employee?.Company != null)
-            {
-                var tenantId = card.UserProfile.TenantId;
-                // TemplateRequest here is exclusively for digital profile template requests.
-                // There is no relationship between this table and physical card design orders.
-                var completedRequest = await _unitOfWork.Repository<TemplateRequest>()
-                    .GetQueryable()
-                    .AsNoTracking()
-                    .Where(r => r.TenantId == tenantId 
-                             && r.Status == TemplateRequestStatus.Completed 
-                             && r.RequestType == TemplateRequestType.ProfileTemplate)
-                    .OrderByDescending(r => r.CreatedAt)
-                    .FirstOrDefaultAsync();
-
-                logoUrl = completedRequest?.LogoUrl;
-            }
-
-            // Resolve branding — priority: Company > Individual > Default
-            ApplyBranding(dto, card.UserProfile, logoUrl);
-
-            return ServiceResult<EmployeeDetailsDto>.Success(dto);
+            logoUrl = completedRequest?.LogoUrl;
         }
 
-        if (card.Status == CardStatus.Deactivated)
-        {
-            return ServiceResult<EmployeeDetailsDto>.Fail(_messageService.Get("CardDeactivated"), 410);
-        }
+        ApplyBranding(dto, profile, logoUrl);
 
-        // UnassignedCode, Encoded, PendingGeneration
-        return ServiceResult<EmployeeDetailsDto>.Fail(_messageService.Get("CardNotYetActivated"), 403);
+        return ServiceResult<EmployeeDetailsDto>.Success(dto);
     }
 
     public async Task<ServiceResult> RecordMetricAsync(Guid profileId, RecordMetricRequest request)

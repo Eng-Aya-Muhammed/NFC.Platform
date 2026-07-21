@@ -17,14 +17,10 @@ public class UserProfileMappingProfile : Profile
 
         CreateMap<UserProfile, EmployeeDetailsDto>()
             .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.EmployeeId ?? src.UserId ?? src.Id))
+            .ForMember(dest => dest.ProfileId, opt => opt.MapFrom(src => src.Id))
+            .ForMember(dest => dest.Subdomain, opt => opt.MapFrom(src => src.Subdomain))
             .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Employee != null ? src.Employee.Status.ToString() : (src.User != null ? src.User.Status.ToString() : UserStatus.Active.ToString())))
-            .ForMember(dest => dest.LinkedInUrl, opt => opt.MapFrom(src => src.CustomLinks.FirstOrDefault(l => l.Title == PlatformConstants.LinkedIn) != null ? src.CustomLinks.FirstOrDefault(l => l.Title == PlatformConstants.LinkedIn)!.Url : string.Empty))
-            .ForMember(dest => dest.FacebookUrl, opt => opt.MapFrom(src => src.CustomLinks.FirstOrDefault(l => l.Title == PlatformConstants.Facebook) != null ? src.CustomLinks.FirstOrDefault(l => l.Title == PlatformConstants.Facebook)!.Url : string.Empty))
-            .ForMember(dest => dest.InstagramUrl, opt => opt.MapFrom(src => src.CustomLinks.FirstOrDefault(l => l.Title == PlatformConstants.Instagram) != null ? src.CustomLinks.FirstOrDefault(l => l.Title == PlatformConstants.Instagram)!.Url : string.Empty))
-            .ForMember(dest => dest.WebsiteUrl, opt => opt.MapFrom(src => src.CustomLinks.FirstOrDefault(l => l.Title == PlatformConstants.Website) != null ? src.CustomLinks.FirstOrDefault(l => l.Title == PlatformConstants.Website)!.Url : string.Empty))
-            .ForMember(dest => dest.CustomLinks, opt => opt.MapFrom(src => src.CustomLinks
-                .Where(l => l.Title != PlatformConstants.LinkedIn && l.Title != PlatformConstants.Facebook && l.Title != PlatformConstants.Instagram && l.Title != PlatformConstants.Website)
-                .OrderBy(l => l.DisplayOrder)))
+            .ForMember(dest => dest.Links, opt => opt.MapFrom(src => src.CustomLinks.OrderBy(l => l.DisplayOrder)))
             // Branding fields are resolved manually in ProfileMetricService.ApplyBranding — not mapped from entity
             .ForMember(dest => dest.LogoUrl, opt => opt.Ignore())
             .ForMember(dest => dest.Layout, opt => opt.Ignore())
@@ -47,27 +43,11 @@ public class UserProfileMappingProfile : Profile
             .ForMember(dest => dest.JobTitle, opt => opt.MapFrom(src => src.JobTitle ?? string.Empty))
             .ForMember(dest => dest.Department, opt => opt.MapFrom(src => src.Department ?? string.Empty))
             .ForMember(dest => dest.ContactEmail, opt => opt.MapFrom(src => src.Email))
-            .ForMember(dest => dest.CustomLinks, opt => opt.Ignore())
-            .AfterMap((src, dest) =>
-            {
-                if (!string.IsNullOrEmpty(src.LinkedInUrl))
-                    dest.CustomLinks.Add(new ProfileLink { Id = Guid.Empty, Title = PlatformConstants.LinkedIn, Url = src.LinkedInUrl });
-                if (!string.IsNullOrEmpty(src.FacebookUrl))
-                    dest.CustomLinks.Add(new ProfileLink { Id = Guid.Empty, Title = PlatformConstants.Facebook, Url = src.FacebookUrl });
-                if (!string.IsNullOrEmpty(src.InstagramUrl))
-                    dest.CustomLinks.Add(new ProfileLink { Id = Guid.Empty, Title = PlatformConstants.Instagram, Url = src.InstagramUrl });
-                if (!string.IsNullOrEmpty(src.WebsiteUrl))
-                    dest.CustomLinks.Add(new ProfileLink { Id = Guid.Empty, Title = PlatformConstants.Website, Url = src.WebsiteUrl });
-            });
+            .ForMember(dest => dest.CustomLinks, opt => opt.Ignore());
 
         CreateMap<UpdateMyProfileRequest, UserProfile>()
-            .AfterMap((src, dest) =>
-            {
-                UpdateStandardLink(dest, PlatformConstants.LinkedIn, src.LinkedInUrl);
-                UpdateStandardLink(dest, PlatformConstants.Facebook, src.FacebookUrl);
-                UpdateStandardLink(dest, PlatformConstants.Instagram, src.InstagramUrl);
-                UpdateStandardLink(dest, PlatformConstants.Website, src.WebsiteUrl);
-            });
+            // Subdomain is handled manually in ProfileService.UpdateProfileAsync (slug + uniqueness check)
+            .ForMember(dest => dest.Subdomain, opt => opt.Ignore());
 
         CreateMap<UpdateEmployeeRequest, UserProfile>()
             .ForMember(dest => dest.JobTitle, opt => opt.MapFrom(src => src.JobTitle ?? string.Empty))
@@ -76,52 +56,17 @@ public class UserProfileMappingProfile : Profile
                 opt.Condition(src => src.FullName != null);
                 opt.MapFrom(src => src.FullName);
             })
-            .ForMember(dest => dest.CustomLinks, opt => opt.Ignore())
-            .AfterMap((src, dest) =>
-            {
-                UpdateStandardLink(dest, PlatformConstants.LinkedIn, src.LinkedInUrl);
-                UpdateStandardLink(dest, PlatformConstants.Facebook, src.FacebookUrl);
-                UpdateStandardLink(dest, PlatformConstants.Instagram, src.InstagramUrl);
-                UpdateStandardLink(dest, PlatformConstants.Website, src.WebsiteUrl);
-            });
+            .ForMember(dest => dest.CustomLinks, opt => opt.Ignore());
 
         CreateMap<User, UserProfile>()
             .ForMember(dest => dest.UserId, opt => opt.MapFrom(src => src.Id))
             .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => src.Username))
             .ForMember(dest => dest.TenantId, opt => opt.MapFrom(src => src.TenantId))
             .ForMember(dest => dest.Id, opt => opt.Ignore())
-            .ForMember(dest => dest.CustomLinks, opt => opt.Ignore())
-            .ForMember(dest => dest.ActivatedCards, opt => opt.Ignore());
+            .ForMember(dest => dest.CustomLinks, opt => opt.Ignore());
 
         CreateMap<RecordMetricRequest, ProfileMetric>()
             .ForMember(dest => dest.UserProfileId, opt => opt.Ignore())
             .ForMember(dest => dest.TenantId, opt => opt.Ignore());
-    }
-
-    private static void UpdateStandardLink(UserProfile dest, string title, string? url)
-    {
-        var existing = dest.CustomLinks.FirstOrDefault(l => l.Title == title);
-        if (existing != null)
-        {
-            if (string.IsNullOrWhiteSpace(url))
-            {
-                dest.CustomLinks.Remove(existing);
-            }
-            else
-            {
-                existing.Url = url;
-            }
-        }
-        else if (!string.IsNullOrWhiteSpace(url))
-        {
-            dest.CustomLinks.Add(new ProfileLink
-            {
-                Id = Guid.Empty,
-                Title = title,
-                Url = url,
-                TenantId = dest.TenantId,
-                UserProfileId = dest.Id
-            });
-        }
     }
 }

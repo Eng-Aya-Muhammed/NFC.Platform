@@ -3,10 +3,9 @@ namespace NFC.Platform.API.Controllers
     [ApiController]
     [Route("api/admin")]
     [Authorize(Policy = AppPolicies.AdminOnly)]
-    public class AdminController(IAdminService adminService, ICardService cardService) : ControllerBase
+    public class AdminController(IAdminService adminService) : ControllerBase
     {
         private readonly IAdminService _adminService = adminService ?? throw new ArgumentNullException(nameof(adminService));
-        private readonly ICardService _cardService = cardService ?? throw new ArgumentNullException(nameof(cardService));
 
         /// <summary>
         /// Retrieves all orders across all tenants with optional status filtering and paging.
@@ -147,14 +146,28 @@ namespace NFC.Platform.API.Controllers
             return Ok(result);
         }
 
+
+
+        // ── Subdomain management ──────────────────────────────────────────────────
+
         /// <summary>
-        /// Retrieves cards for a given order, optionally filtered by status (e.g. unassigned_code, encoded).
-        /// Used by the encoding tool integration.
+        /// Lists all profile subdomains across all tenants with optional search by name or subdomain.
+        /// Used for oversight and conflict detection.
         /// </summary>
-        [HttpGet("cards")]
-        public async Task<IActionResult> GetCards([FromQuery(Name = "order_id")] Guid orderId, [FromQuery] string? status = null)
+        [HttpGet("subdomains")]
+        public async Task<IActionResult> GetAllSubdomains([FromQuery] PaginationRequest request, [FromQuery] string? search)
         {
-            var result = await _cardService.GetCardsForEncodingAsync(orderId, status);
+            var result = await _adminService.GetAllProfileSubdomainsAsync(request, search);
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// Forcibly reassigns a subdomain for any profile (conflict resolution / policy violation).
+        /// </summary>
+        [HttpPut("subdomains/{profileId:guid}")]
+        public async Task<IActionResult> ReassignSubdomain([FromRoute] Guid profileId, [FromBody] ReassignSubdomainDto dto)
+        {
+            var result = await _adminService.ReassignSubdomainAsync(profileId, dto.Subdomain);
             if (!result.IsSuccess)
             {
                 return StatusCode(result.StatusCode, result);

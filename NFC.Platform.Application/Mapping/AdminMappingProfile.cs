@@ -27,6 +27,13 @@ namespace NFC.Platform.Application.Mapping
             CreateMap<Tenant, TenantSummaryDto>();
             CreateMap<User, UserDto>()
                 .ForMember(dest => dest.Role, opt => opt.Ignore());
+
+            CreateMap<UserProfile, ProfileSubdomainSummaryDto>()
+                .ForMember(dest => dest.ProfileId, opt => opt.MapFrom(src => src.Id))
+                .ForMember(dest => dest.CompanyName, opt => opt.MapFrom(src =>
+                    src.Employee != null && src.Employee.Company != null
+                        ? src.Employee.Company.Name
+                        : src.CompanyName));
         }
     }
 }

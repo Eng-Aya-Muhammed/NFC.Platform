@@ -14,7 +14,6 @@ namespace NFC.Platform.Application.DTOs.CardOrder;
         public string? Email { get; set; }
         public string? Phone { get; set; }
         public string? Department { get; set; }
-        public string? ActivationCode { get; set; }
         public Guid? LinkedCardId { get; set; }
         public Guid? UserProfileId { get; set; }
     }

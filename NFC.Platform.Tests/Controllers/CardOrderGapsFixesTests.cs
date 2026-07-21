@@ -47,23 +47,7 @@ namespace NFC.Platform.Tests.Controllers
             Assert.True(result.IsValid);
         }
 
-        [Fact]
-        public void Validator_ShouldPass_WhenNeedCustomDesign_HasLogoUrl()
-        {
-            // Arrange
-            var request = new CreateCardOrderRequest
-            {
-                CardDesignType = CardDesignType.NeedCustomDesign,
-                LogoUrl = "https://cdn.example.com/logo.png",
-                Quantity = 1
-            };
 
-            // Act
-            var result = _validator.Validate(request);
-
-            // Assert
-            Assert.True(result.IsValid);
-        }
 
         [Fact]
         public void Validator_ShouldFail_WhenCustomArtwork_MissingFrontOrBackDesignUrl()
@@ -83,22 +67,7 @@ namespace NFC.Platform.Tests.Controllers
             Assert.False(result.IsValid);
         }
 
-        [Fact]
-        public void Validator_ShouldFail_WhenNeedCustomDesign_MissingLogoUrl()
-        {
-            // Arrange
-            var request = new CreateCardOrderRequest
-            {
-                CardDesignType = CardDesignType.NeedCustomDesign,
-                Quantity = 1
-            };
 
-            // Act
-            var result = _validator.Validate(request);
-
-            // Assert
-            Assert.False(result.IsValid);
-        }
 
         [Fact]
         public async Task CreateAsync_ShouldReturn422_WhenValidationFails()

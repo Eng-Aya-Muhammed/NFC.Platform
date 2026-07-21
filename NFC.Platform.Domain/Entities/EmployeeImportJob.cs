@@ -22,9 +22,6 @@ namespace NFC.Platform.Domain.Entities
         public CardType CardType { get; set; }
         public CardDesignType CardDesignType { get; set; }
         public string? Notes { get; set; }
-        public string? DesignReferenceUrl { get; set; }
-        public string? LogoUrl { get; set; }
-        public string? DesignNotes { get; set; }
 
         // Job metrics & outcomes
         public int TotalRows { get; set; }

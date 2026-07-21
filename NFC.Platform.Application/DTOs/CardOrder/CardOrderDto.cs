@@ -18,9 +18,7 @@ namespace NFC.Platform.Application.DTOs.CardOrder;
         public string? ExcelDataUrl { get; set; }
         public string? FrontDesignUrl { get; set; }
         public string? BackDesignUrl { get; set; }
-        public string? DesignReferenceUrl { get; set; }
-        public string? LogoUrl { get; set; }
-        public string? DesignNotes { get; set; }
+
         public string? Notes { get; set; }
         public OrderStatus Status { get; set; }
         public decimal TotalPrice { get; set; }

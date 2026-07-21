@@ -36,25 +36,11 @@ public class UpdateEmployeeRequestValidator : AbstractValidator<UpdateEmployeeRe
             .MaximumLength(50)
             .WithMessage(x => messageService.Get("MaxLength", messageService.Get("WhatsApp"), 50));
 
-        RuleFor(x => x.LinkedInUrl)
-            .Must(LinkMustBeWebUrl)
-            .WithMessage(x => messageService.Get("InvalidUrl"))
-            .When(x => !string.IsNullOrEmpty(x.LinkedInUrl));
-
-        RuleFor(x => x.FacebookUrl)
-            .Must(LinkMustBeWebUrl)
-            .WithMessage(x => messageService.Get("InvalidUrl"))
-            .When(x => !string.IsNullOrEmpty(x.FacebookUrl));
-
-        RuleFor(x => x.InstagramUrl)
-            .Must(LinkMustBeWebUrl)
-            .WithMessage(x => messageService.Get("InvalidUrl"))
-            .When(x => !string.IsNullOrEmpty(x.InstagramUrl));
-
-        RuleFor(x => x.WebsiteUrl)
-            .Must(LinkMustBeWebUrl)
-            .WithMessage(x => messageService.Get("InvalidUrl"))
-            .When(x => !string.IsNullOrEmpty(x.WebsiteUrl));
+        RuleForEach(x => x.Links).ChildRules(link => {
+            link.RuleFor(l => l.Url)
+                .Must(LinkMustBeWebUrl)
+                .WithMessage(x => messageService.Get("InvalidUrl"));
+        });
     }
 
     private static bool LinkMustBeWebUrl(string? link)

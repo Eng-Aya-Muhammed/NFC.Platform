@@ -12,10 +12,6 @@ namespace NFC.Platform.Application.DTOs.Employee;
         public string? ProfilePictureUrl { get; set; }
         public string? Phone { get; set; }
         public string? WhatsApp { get; set; }
-        public string? InstagramUrl { get; set; }
-        public string? FacebookUrl { get; set; }
-        public string? LinkedInUrl { get; set; }
-        public string? WebsiteUrl { get; set; }
-        public string? CustomLinks { get; set; }
+        public List<Profile.CustomLinkInput> Links { get; set; } = [];
     }
 

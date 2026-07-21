@@ -12,6 +12,6 @@ public class UserAnalyticsSummaryDto
     public int TotalProfileViews { get; set; }
     public int TotalContactSaves { get; set; }
     public int TotalLinkClicks { get; set; }
-    public int ActiveCardsCount { get; set; }
+
     public List<MonthlyMetricDto> MonthlyViews { get; set; } = [];
 }

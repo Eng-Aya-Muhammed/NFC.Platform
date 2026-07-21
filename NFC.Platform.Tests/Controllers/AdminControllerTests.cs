@@ -20,14 +20,12 @@ namespace NFC.Platform.Tests.Controllers
     public class AdminControllerTests
     {
         private readonly IAdminService _adminService;
-        private readonly ICardService _cardService;
         private readonly AdminController _sut;
 
         public AdminControllerTests()
         {
             _adminService = Substitute.For<IAdminService>();
-            _cardService = Substitute.For<ICardService>();
-            _sut = new AdminController(_adminService, _cardService);
+            _sut = new AdminController(_adminService);
         }
 
         [Fact]
@@ -314,32 +312,5 @@ namespace NFC.Platform.Tests.Controllers
             Assert.Equal(400, result.StatusCode);
         }
 
-        [Fact]
-        public async Task GetCards_CallsCardService_AndReturnsOk_OnSuccess()
-        {
-            var orderId = Guid.NewGuid();
-            var status = "unassigned_code";
-            var expectedResult = ServiceResult<List<CardDto>>.Success(new List<CardDto>());
-
-            _cardService.GetCardsForEncodingAsync(orderId, status).Returns(expectedResult);
-
-            var result = await _sut.GetCards(orderId, status) as OkObjectResult;
-
-            Assert.NotNull(result);
-            Assert.Equal(200, result.StatusCode);
-            await _cardService.Received(1).GetCardsForEncodingAsync(orderId, status);
-        }
-
-        [Fact]
-        public async Task GetCards_ReturnsError_OnFailure()
-        {
-            var orderId = Guid.NewGuid();
-            _cardService.GetCardsForEncodingAsync(orderId, null).Returns(ServiceResult<List<CardDto>>.Fail("Error", 400));
-
-            var result = await _sut.GetCards(orderId, null) as ObjectResult;
-
-            Assert.NotNull(result);
-            Assert.Equal(400, result.StatusCode);
-        }
     }
 }

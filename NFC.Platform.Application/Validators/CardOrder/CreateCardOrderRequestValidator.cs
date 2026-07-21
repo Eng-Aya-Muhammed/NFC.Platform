@@ -24,12 +24,7 @@ namespace NFC.Platform.Application.Validators.CardOrder
                     .WithMessage(x => messageService.Get("BackDesignRequired") ?? "Back design file is required.");
             });
 
-            When(x => x.CardDesignType == CardDesignType.NeedCustomDesign, () =>
-            {
-                RuleFor(x => x.LogoUrl)
-                    .NotEmpty()
-                    .WithMessage(x => messageService.Get("LogoRequiredForCustomDesign") ?? "Logo is required for custom design requests.");
-            });
+
 
             When(x => x.AssignmentScope == AssignmentScope.SpecificEmployees, () =>
             {

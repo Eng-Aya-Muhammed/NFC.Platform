@@ -23,7 +23,7 @@ namespace NFC.Platform.Tests.Services
 
         private readonly IGenericRepository<UserProfile> _profileRepo;
         private readonly IGenericRepository<ProfileMetric> _metricRepo;
-        private readonly IGenericRepository<Card> _cardRepo;
+
         private readonly IGenericRepository<Employee> _employeeRepo;
 
         private readonly AnalyticsService _sut;
@@ -36,12 +36,12 @@ namespace NFC.Platform.Tests.Services
 
             _profileRepo = Substitute.For<IGenericRepository<UserProfile>>();
             _metricRepo = Substitute.For<IGenericRepository<ProfileMetric>>();
-            _cardRepo = Substitute.For<IGenericRepository<Card>>();
+
             _employeeRepo = Substitute.For<IGenericRepository<Employee>>();
 
             _unitOfWork.Repository<UserProfile>().Returns(_profileRepo);
             _unitOfWork.Repository<ProfileMetric>().Returns(_metricRepo);
-            _unitOfWork.Repository<Card>().Returns(_cardRepo);
+
             _unitOfWork.Repository<Employee>().Returns(_employeeRepo);
 
             _messageService.Get(Arg.Any<string>()).Returns(x => (string)x[0]);
@@ -104,8 +104,7 @@ namespace NFC.Platform.Tests.Services
                     return Task.FromResult(0);
                 });
 
-            _unitOfWork.Repository<Card>().CountAsync(Arg.Any<System.Linq.Expressions.Expression<Func<Card, bool>>>())
-                .Returns(Task.FromResult(2));
+
 
             // Set up monthly views (last 6 months)
             var metrics = new List<ProfileMetric>
@@ -124,7 +123,7 @@ namespace NFC.Platform.Tests.Services
             Assert.Equal(10, result.Data.TotalProfileViews);
             Assert.Equal(5, result.Data.TotalContactSaves);
             Assert.Equal(3, result.Data.TotalLinkClicks);
-            Assert.Equal(2, result.Data.ActiveCardsCount);
+
             Assert.Equal(6, result.Data.MonthlyViews.Count);
         }
 

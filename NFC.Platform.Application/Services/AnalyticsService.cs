@@ -32,7 +32,7 @@ namespace NFC.Platform.Application.Services;
             var viewsCount = await metricRepo.CountAsync(m => m.UserProfileId == profile.Id && m.InteractionType == InteractionType.ProfileView);
             var savesCount = await metricRepo.CountAsync(m => m.UserProfileId == profile.Id && m.InteractionType == InteractionType.ContactSaved);
             var clicksCount = await metricRepo.CountAsync(m => m.UserProfileId == profile.Id && m.InteractionType == InteractionType.LinkClick);
-            var activeCardsCount = await _unitOfWork.Repository<Card>().CountAsync(c => c.UserProfileId == profile.Id && c.Status == CardStatus.Active);
+
 
             // Last 6 months of views, broken down monthly
             var sixMonthsAgo = DateTime.UtcNow.AddMonths(-6);
@@ -63,7 +63,7 @@ namespace NFC.Platform.Application.Services;
                 TotalProfileViews = viewsCount,
                 TotalContactSaves = savesCount,
                 TotalLinkClicks = clicksCount,
-                ActiveCardsCount = activeCardsCount,
+
                 MonthlyViews = monthlyViews
             };
 

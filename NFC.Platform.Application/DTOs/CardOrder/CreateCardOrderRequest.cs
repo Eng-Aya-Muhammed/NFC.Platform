@@ -17,9 +17,7 @@ namespace NFC.Platform.Application.DTOs.CardOrder;
 
         public CardDesignType? CardDesignType { get; set; }
 
-        public string? DesignReferenceUrl { get; set; }
-        public string? LogoUrl { get; set; }
-        public string? DesignNotes { get; set; }
+
 
         [Required]
         [Range(1, 10000)]

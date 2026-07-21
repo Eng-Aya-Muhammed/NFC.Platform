@@ -24,8 +24,7 @@ namespace NFC.Platform.Application.Mapping
                 .ForMember(dest => dest.TrackingNumber, opt => opt.Ignore())
                 .ForMember(dest => dest.DeliveryMethod, opt => opt.Ignore())
                 .ForMember(dest => dest.ShippingAddress, opt => opt.Ignore())
-                .ForMember(dest => dest.Items, opt => opt.Ignore())
-                .ForMember(dest => dest.GeneratedCards, opt => opt.Ignore());
+                .ForMember(dest => dest.Items, opt => opt.Ignore());
 
             CreateMap<CardOrder, CardOrderDto>()
                 .ForMember(dest => dest.Items, opt => opt.MapFrom(src => src.Items));
@@ -43,9 +42,7 @@ namespace NFC.Platform.Application.Mapping
 
             CreateMap<CreateCardOrderItemRequest, CardOrderItem>()
                 .ForMember(dest => dest.TenantId, opt => opt.Ignore())
-                .ForMember(dest => dest.CardOrderId, opt => opt.Ignore())
-                .ForMember(dest => dest.ActivationCode, opt => opt.Ignore())
-                .ForMember(dest => dest.LinkedCardId, opt => opt.Ignore());
+                .ForMember(dest => dest.CardOrderId, opt => opt.Ignore());
 
             // Excel import mappings to avoid manual mapping in CardOrderService
             CreateMap<ExcelEmployeeImportDto, Employee>()
@@ -66,16 +63,13 @@ namespace NFC.Platform.Application.Mapping
                 .ForMember(dest => dest.EmployeeId, opt => opt.Ignore())
                 .ForMember(dest => dest.UserId, opt => opt.Ignore())
                 .ForMember(dest => dest.CompanyName, opt => opt.Ignore())
-                .ForMember(dest => dest.CustomLinks, opt => opt.Ignore())
-                .ForMember(dest => dest.ActivatedCards, opt => opt.Ignore());
+                .ForMember(dest => dest.CustomLinks, opt => opt.Ignore());
 
             CreateMap<ExcelEmployeeImportDto, CardOrderItem>()
                 .ForMember(dest => dest.EmployeeName, opt => opt.MapFrom(src => src.Name))
                 .ForMember(dest => dest.UserProfileId, opt => opt.Ignore())
                 .ForMember(dest => dest.TenantId, opt => opt.Ignore())
-                .ForMember(dest => dest.CardOrderId, opt => opt.Ignore())
-                .ForMember(dest => dest.ActivationCode, opt => opt.Ignore())
-                .ForMember(dest => dest.LinkedCardId, opt => opt.Ignore());
+                .ForMember(dest => dest.CardOrderId, opt => opt.Ignore());
 
             CreateMap<Employee, CardOrderItem>()
                 .ForMember(dest => dest.Id, opt => opt.Ignore())
@@ -83,8 +77,6 @@ namespace NFC.Platform.Application.Mapping
                 .ForMember(dest => dest.UserProfileId, opt => opt.MapFrom(src => src.UserProfile != null ? (Guid?)src.UserProfile.Id : null))
                 .ForMember(dest => dest.Phone, opt => opt.MapFrom(src => src.UserProfile != null ? src.UserProfile.Phone : null))
                 .ForMember(dest => dest.CardOrderId, opt => opt.Ignore())
-                .ForMember(dest => dest.ActivationCode, opt => opt.Ignore())
-                .ForMember(dest => dest.LinkedCardId, opt => opt.Ignore())
                 .ForMember(dest => dest.TenantId, opt => opt.MapFrom(src => src.TenantId));
 
             CreateMap<UserProfile, CardOrderItem>()
@@ -94,8 +86,6 @@ namespace NFC.Platform.Application.Mapping
                 .ForMember(dest => dest.Phone, opt => opt.MapFrom(src => src.Phone))
                 .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.Employee != null ? src.Employee.Email : src.ContactEmail))
                 .ForMember(dest => dest.CardOrderId, opt => opt.Ignore())
-                .ForMember(dest => dest.ActivationCode, opt => opt.Ignore())
-                .ForMember(dest => dest.LinkedCardId, opt => opt.Ignore())
                 .ForMember(dest => dest.TenantId, opt => opt.MapFrom(src => src.TenantId));
 
             CreateMap<CardOrder, EmployeesImportStatusDto>()

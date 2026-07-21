@@ -10,13 +10,15 @@ namespace NFC.Platform.API.Controllers
         private readonly IProfileMetricService _profileMetricService = profileMetricService ?? throw new ArgumentNullException(nameof(profileMetricService));
 
         /// <summary>
-        /// Resolves a physical card scan/tap by its activation code and retrieves the public profile.
+        /// Resolves a digital profile by its unique subdomain and returns the public profile data.
+        /// Fallback route while wildcard DNS (*.on-point-kw.com) is not yet configured.
+        /// Primary access: GET https://{subdomain}.on-point-kw.com/
         /// </summary>
-        [HttpGet("cards/resolve/{activationCode}")]
+        [HttpGet("p/{subdomain}")]
         [EnableRateLimiting("ResolvePublicProfilePolicy")]
-        public async Task<IActionResult> ResolvePublicProfile([FromRoute] string activationCode)
+        public async Task<IActionResult> ResolvePublicProfile([FromRoute] string subdomain)
         {
-            var result = await _profileMetricService.ResolvePublicProfileAsync(activationCode);
+            var result = await _profileMetricService.ResolvePublicProfileAsync(subdomain);
             if (!result.IsSuccess)
             {
                 return StatusCode(result.StatusCode, result);

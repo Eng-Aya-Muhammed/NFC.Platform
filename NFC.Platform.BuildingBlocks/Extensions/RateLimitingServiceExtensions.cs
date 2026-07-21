@@ -82,13 +82,7 @@ namespace NFC.Platform.BuildingBlocks.Extensions
                         });
                 });
 
-                // 3 requests per 5 minutes + distributed lockout after 3 violations
-                options.AddPolicy("CardActivationPolicy", httpContext =>
-                {
-                    var ip = GetClientIp(httpContext);
-                    var cache = httpContext.RequestServices.GetRequiredService<IDistributedCache>();
-                    return GetLockoutPartition("CardActivation", ip, 3, TimeSpan.FromMinutes(5), cache);
-                });
+
 
                 // 3 requests per 10 minutes + distributed lockout after 3 violations
                 options.AddPolicy("ChangePasswordPolicy", httpContext =>
@@ -138,26 +132,7 @@ namespace NFC.Platform.BuildingBlocks.Extensions
                             messageKey = "TooManyProfileRequests";
                             break;
 
-                        case "CardActivationPolicy" when cache != null:
-                        {
-                            var (isLocked, minutesLeft, _) = await GetOrUpdateLockoutStateAsync(
-                                cache, "CardActivation", ip, LockoutViolationThreshold,
-                                TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(LockoutDurationMinutes));
 
-                            if (isLocked)
-                            {
-                                messageKey = "CardActivationLockedOut";
-                                messageParam = minutesLeft;
-                                retryAfterSeconds = minutesLeft * 60;
-                            }
-                            else
-                            {
-                                messageKey = "TooManyCardActivationAttempts";
-                                messageParam = 300;
-                                retryAfterSeconds = 300;
-                            }
-                            break;
-                        }
 
                         case "ChangePasswordPolicy" when cache != null:
                         {

@@ -77,76 +77,7 @@ namespace NFC.Platform.Tests.Services
             Assert.Equal(expectedRetryAfterSeconds, httpContext.Response.Headers["Retry-After"].ToString());
         }
 
-        [Fact]
-        public async Task CardActivationPolicy_SetsRetryAfterHeader_InSeconds()
-        {
-            var (provider, rateLimiterOptions) = BuildProviderWithOptions();
 
-            var ip = "200.200.200.200";
-            for (var i = 0; i < 3; i++)
-            {
-                var ctx = CreateHttpContextWithPolicy("CardActivationPolicy", ip, "/api/cards/activate", provider);
-                var reqCtx = new OnRejectedContext { HttpContext = ctx, Lease = Substitute.For<RateLimitLease>() };
-                await rateLimiterOptions.OnRejected!(reqCtx, CancellationToken.None);
-            }
-
-            var lockedCtx = CreateHttpContextWithPolicy("CardActivationPolicy", ip, "/api/cards/activate", provider);
-            var lockedReqCtx = new OnRejectedContext { HttpContext = lockedCtx, Lease = Substitute.For<RateLimitLease>() };
-            await rateLimiterOptions.OnRejected!(lockedReqCtx, CancellationToken.None);
-
-            var retryAfter = lockedCtx.Response.Headers["Retry-After"].ToString();
-            Assert.NotEmpty(retryAfter);
-            Assert.True(int.Parse(retryAfter) >= 1799, $"Expected Retry-After >= 1799 seconds but got {retryAfter}");
-        }
-
-        [Fact]
-        public async Task CardActivationPolicy_LockoutTriggersAfterThreeViolations()
-        {
-            var (provider, rateLimiterOptions) = BuildProviderWithOptions();
-
-            var ip = "10.0.0.1";
-            var path = "/api/cards/activate";
-
-            var ctx1 = CreateHttpContextWithPolicy("CardActivationPolicy", ip, path, provider);
-            await rateLimiterOptions.OnRejected!(new OnRejectedContext { HttpContext = ctx1, Lease = Substitute.For<RateLimitLease>() }, CancellationToken.None);
-            var body1 = await ReadBodyAsync(ctx1);
-            Assert.Contains("activation", body1.ToLowerInvariant());
-            Assert.DoesNotContain("locked", body1.ToLowerInvariant());
-
-            var ctx2 = CreateHttpContextWithPolicy("CardActivationPolicy", ip, path, provider);
-            await rateLimiterOptions.OnRejected!(new OnRejectedContext { HttpContext = ctx2, Lease = Substitute.For<RateLimitLease>() }, CancellationToken.None);
-
-            var ctx3 = CreateHttpContextWithPolicy("CardActivationPolicy", ip, path, provider);
-            await rateLimiterOptions.OnRejected!(new OnRejectedContext { HttpContext = ctx3, Lease = Substitute.For<RateLimitLease>() }, CancellationToken.None);
-            var body3 = await ReadBodyAsync(ctx3);
-            Assert.Contains("locked out", body3.ToLowerInvariant());
-
-            var ctx4 = CreateHttpContextWithPolicy("CardActivationPolicy", ip, path, provider);
-            await rateLimiterOptions.OnRejected!(new OnRejectedContext { HttpContext = ctx4, Lease = Substitute.For<RateLimitLease>() }, CancellationToken.None);
-            var body4 = await ReadBodyAsync(ctx4);
-            Assert.Contains("locked out", body4.ToLowerInvariant());
-        }
-
-        [Fact]
-        public async Task CardActivationPolicy_DifferentIPs_AreIsolated()
-        {
-            var (provider, rateLimiterOptions) = BuildProviderWithOptions();
-
-            var ipA = "11.0.0.1";
-            var ipB = "11.0.0.2";
-            var path = "/api/cards/activate";
-
-            for (var i = 0; i < 3; i++)
-            {
-                var ctx = CreateHttpContextWithPolicy("CardActivationPolicy", ipA, path, provider);
-                await rateLimiterOptions.OnRejected!(new OnRejectedContext { HttpContext = ctx, Lease = Substitute.For<RateLimitLease>() }, CancellationToken.None);
-            }
-
-            var ctxB = CreateHttpContextWithPolicy("CardActivationPolicy", ipB, path, provider);
-            await rateLimiterOptions.OnRejected!(new OnRejectedContext { HttpContext = ctxB, Lease = Substitute.For<RateLimitLease>() }, CancellationToken.None);
-            var bodyB = await ReadBodyAsync(ctxB);
-            Assert.DoesNotContain("locked out", bodyB.ToLowerInvariant());
-        }
 
         [Fact]
         public async Task ChangePasswordPolicy_LockoutTriggersAfterThreeViolations()

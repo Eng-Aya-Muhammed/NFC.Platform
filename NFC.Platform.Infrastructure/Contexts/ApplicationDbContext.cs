@@ -22,7 +22,7 @@ namespace NFC.Platform.Infrastructure.Contexts
         public bool IsSuperAdmin => _currentTenant.IsSuperAdmin;
 
         public DbSet<Tenant> Tenants { get; set; }
-        public DbSet<Card> Cards { get; set; }
+
         public DbSet<RefreshToken> RefreshTokens { get; set; }
         public DbSet<User> Users { get; set; }
         public DbSet<Employee> Employees { get; set; }
@@ -63,9 +63,8 @@ namespace NFC.Platform.Infrastructure.Contexts
                 builder.Property(j => j.ExcelFilePublicId).HasMaxLength(500);
                 builder.Property(j => j.Status).IsRequired();
                 builder.Property(j => j.Notes).HasMaxLength(2000);
-                builder.Property(j => j.DesignReferenceUrl).HasMaxLength(1000);
-                builder.Property(j => j.LogoUrl).HasMaxLength(1000);
-                builder.Property(j => j.DesignNotes).HasMaxLength(2000);
+
+
                 builder.Property(j => j.TenantId).IsRequired();
                 builder.HasIndex(j => j.TenantId);
 

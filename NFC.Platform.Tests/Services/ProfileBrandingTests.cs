@@ -20,7 +20,7 @@ namespace NFC.Platform.Tests.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMessageService _messageService;
         private readonly IMapper _mapper;
-        private readonly IGenericRepository<Card> _cardRepo;
+        private readonly IGenericRepository<UserProfile> _profileRepo;
         private readonly IGenericRepository<TemplateRequest> _templateRequestRepo;
         private readonly ProfileMetricService _sut;
 
@@ -30,10 +30,10 @@ namespace NFC.Platform.Tests.Services
             _messageService = Substitute.For<IMessageService>();
             _mapper = Substitute.For<IMapper>();
 
-            _cardRepo = Substitute.For<IGenericRepository<Card>>();
+            _profileRepo = Substitute.For<IGenericRepository<UserProfile>>();
             _templateRequestRepo = Substitute.For<IGenericRepository<TemplateRequest>>();
 
-            _unitOfWork.Repository<Card>().Returns(_cardRepo);
+            _unitOfWork.Repository<UserProfile>().Returns(_profileRepo);
             _unitOfWork.Repository<TemplateRequest>().Returns(_templateRequestRepo);
 
             // Configure Mapper to map UserProfile to EmployeeDetailsDto basic fields
@@ -81,20 +81,13 @@ namespace NFC.Platform.Tests.Services
             var profile = new UserProfile
             {
                 Id = Guid.NewGuid(),
+                Subdomain = "emp-subdomain",
                 FullName = "Alice Smith",
                 JobTitle = "Senior Engineer",
                 Department = "Engineering",
                 Employee = employee
             };
 
-            var card = new Card
-            {
-                Id = Guid.NewGuid(),
-                UniqueCode = "EMP_CODE",
-                Status = CardStatus.Active,
-                UserProfileId = profile.Id,
-                UserProfile = profile
-            };
 
             // Set up template request mock containing the company logo
             var templateRequest = new TemplateRequest
@@ -105,14 +98,14 @@ namespace NFC.Platform.Tests.Services
                 CreatedAt = DateTime.UtcNow
             };
 
-            var cardQueryable = new List<Card> { card }.AsQueryable().BuildMock();
-            _cardRepo.GetQueryable().Returns(cardQueryable);
+            var profileQueryable = new List<UserProfile> { profile }.AsQueryable().BuildMock();
+            _profileRepo.GetQueryable().Returns(profileQueryable);
 
             var requestQueryable = new List<TemplateRequest> { templateRequest }.AsQueryable().BuildMock();
             _templateRequestRepo.GetQueryable().Returns(requestQueryable);
 
             // Act
-            var result = await _sut.ResolvePublicProfileAsync("EMP_CODE");
+            var result = await _sut.ResolvePublicProfileAsync("emp-subdomain");
 
             // Assert
             Assert.True(result.IsSuccess);
@@ -137,6 +130,7 @@ namespace NFC.Platform.Tests.Services
             var profile = new UserProfile
             {
                 Id = Guid.NewGuid(),
+                Subdomain = "ind-subdomain",
                 FullName = "John Doe",
                 JobTitle = "Freelancer",
                 Department = "",
@@ -145,23 +139,14 @@ namespace NFC.Platform.Tests.Services
                 ProfileTemplate = personalTemplate
             };
 
-            var card = new Card
-            {
-                Id = Guid.NewGuid(),
-                UniqueCode = "IND_CODE",
-                Status = CardStatus.Active,
-                UserProfileId = profile.Id,
-                UserProfile = profile
-            };
-
-            var cardQueryable = new List<Card> { card }.AsQueryable().BuildMock();
-            _cardRepo.GetQueryable().Returns(cardQueryable);
+            var profileQueryable = new List<UserProfile> { profile }.AsQueryable().BuildMock();
+            _profileRepo.GetQueryable().Returns(profileQueryable);
 
             var requestQueryable = new List<TemplateRequest>().AsQueryable().BuildMock();
             _templateRequestRepo.GetQueryable().Returns(requestQueryable);
 
             // Act
-            var result = await _sut.ResolvePublicProfileAsync("IND_CODE");
+            var result = await _sut.ResolvePublicProfileAsync("ind-subdomain");
 
             // Assert
             Assert.True(result.IsSuccess);
@@ -179,6 +164,7 @@ namespace NFC.Platform.Tests.Services
             var profile = new UserProfile
             {
                 Id = Guid.NewGuid(),
+                Subdomain = "default-subdomain",
                 FullName = "Bob Vance",
                 JobTitle = "Manager",
                 Employee = null,
@@ -186,23 +172,14 @@ namespace NFC.Platform.Tests.Services
                 ProfileTemplate = null
             };
 
-            var card = new Card
-            {
-                Id = Guid.NewGuid(),
-                UniqueCode = "DEFAULT_CODE",
-                Status = CardStatus.Active,
-                UserProfileId = profile.Id,
-                UserProfile = profile
-            };
-
-            var cardQueryable = new List<Card> { card }.AsQueryable().BuildMock();
-            _cardRepo.GetQueryable().Returns(cardQueryable);
+            var profileQueryable = new List<UserProfile> { profile }.AsQueryable().BuildMock();
+            _profileRepo.GetQueryable().Returns(profileQueryable);
 
             var requestQueryable = new List<TemplateRequest>().AsQueryable().BuildMock();
             _templateRequestRepo.GetQueryable().Returns(requestQueryable);
 
             // Act
-            var result = await _sut.ResolvePublicProfileAsync("DEFAULT_CODE");
+            var result = await _sut.ResolvePublicProfileAsync("default-subdomain");
 
             // Assert
             Assert.True(result.IsSuccess);

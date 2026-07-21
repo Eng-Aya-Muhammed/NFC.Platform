@@ -15,11 +15,8 @@ public class UpdateEmployeeRequest
     public string? Phone { get; set; }
     public string? WhatsApp { get; set; }
 
-    public string? LinkedInUrl { get; set; }
-    public string? FacebookUrl { get; set; }
-    public string? InstagramUrl { get; set; }
-    public string? WebsiteUrl { get; set; }
+    public System.Collections.Generic.List<Profile.CustomLinkInput> Links { get; set; } = [];
 
-    public string? CustomLinks { get; set; }
+    public string? Subdomain { get; set; }
 }
 

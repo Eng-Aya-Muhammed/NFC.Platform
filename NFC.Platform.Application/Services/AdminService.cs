@@ -5,20 +5,17 @@ namespace NFC.Platform.Application.Services;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly IMessageService _messageService;
-        private readonly IQrCodeGenerator _qrCodeGenerator;
         private readonly IStorageService _storageService;
 
         public AdminService(
             IUnitOfWork unitOfWork,
             IMapper mapper,
             IMessageService messageService,
-            IQrCodeGenerator qrCodeGenerator,
             IStorageService storageService)
         {
             _unitOfWork       = unitOfWork       ?? throw new ArgumentNullException(nameof(unitOfWork));
             _mapper           = mapper           ?? throw new ArgumentNullException(nameof(mapper));
             _messageService   = messageService   ?? throw new ArgumentNullException(nameof(messageService));
-            _qrCodeGenerator  = qrCodeGenerator  ?? throw new ArgumentNullException(nameof(qrCodeGenerator));
             _storageService   = storageService   ?? throw new ArgumentNullException(nameof(storageService));
         }
 
@@ -98,97 +95,8 @@ namespace NFC.Platform.Application.Services;
             var previousStatus = order.Status;
             order.Status = dto.Status;
             await _unitOfWork.SaveChangesAsync();
-
-            // Step B: generate Card rows when moving into InPrinting
-            if (dto.Status == OrderStatus.InPrinting && previousStatus != OrderStatus.InPrinting)
-                await GenerateCardsForOrderAsync(order);
-
+        
             return ServiceResult.Success(_messageService.Get("RecordUpdated"));
-        }
-
-        private async Task GenerateCardsForOrderAsync(CardOrder order)
-        {
-            var cardRepo = _unitOfWork.Repository<Card>();
-            var existingCardCodes = await cardRepo
-                .GetQueryable()
-                .AsNoTracking()
-                .Where(c => c.CardOrderId == order.Id)
-                .Select(c => c.UniqueCode)
-                .ToListAsync();
-
-            var existingSet = new HashSet<string>(existingCardCodes, StringComparer.OrdinalIgnoreCase);
-            var newCards = new List<Card>();
-
-            // ── Build card stubs ─────────────────────────────────────────────────────
-            // Use OrderItems to create one Card per item (or fill up to Quantity if no items)
-            if (order.Items.Count > 0)
-            {
-                foreach (var item in order.Items)
-                {
-                    var code = GenerateUniqueCode(existingSet);
-                    var isCompanyCard = item.UserProfileId.HasValue;
-                    newCards.Add(new Card
-                    {
-                        TenantId      = order.TenantId,
-                        UniqueCode    = code,
-                        ProfileUrl    = $"https://onpoint-teasting.com/c/{code}",
-                        Status        = isCompanyCard ? CardStatus.Active : CardStatus.UnassignedCode,
-                        ActivatedAt   = isCompanyCard ? DateTime.UtcNow : null,
-                        CardOrderId   = order.Id,
-                        UserProfileId = item.UserProfileId
-                    });
-                    existingSet.Add(code);
-                }
-            }
-            else
-            {
-                for (var i = 0; i < order.Quantity; i++)
-                {
-                    var code = GenerateUniqueCode(existingSet);
-                    newCards.Add(new Card
-                    {
-                        TenantId    = order.TenantId,
-                        UniqueCode  = code,
-                        ProfileUrl  = $"https://onpoint-teasting.com/c/{code}",
-                        Status      = CardStatus.UnassignedCode,
-                        CardOrderId = order.Id
-                    });
-                    existingSet.Add(code);
-                }
-            }
-
-            // ── Generate QR PNGs (CPU-only, sync) then upload all in parallel ────────
-            // Generating bytes is synchronous and fast (~1 ms/card).
-            // Cloudinary uploads are I/O-bound — Task.WhenAll maximises throughput.
-            var uploadTasks = newCards.Select(async card =>
-            {
-                var pngBytes = _qrCodeGenerator.GeneratePngBytes(card.ProfileUrl);
-                var uploadResult = await _storageService.UploadBytesAsImageAsync(
-                    pngBytes,
-                    $"qr-{card.UniqueCode}.png",
-                    $"qrcodes/{order.TenantId}");
-                card.QrCodeUrl = uploadResult.SecureUrl;
-            });
-
-            await Task.WhenAll(uploadTasks);
-
-            // ── Persist all cards in one SaveChanges call ────────────────────────────
-            foreach (var card in newCards)
-                await cardRepo.AddAsync(card);
-
-            await _unitOfWork.SaveChangesAsync();
-        }
-
-        private string GenerateUniqueCode(HashSet<string> existingCodes)
-        {
-            const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
-            string code;
-            do
-            {
-                code = new string(Enumerable.Range(0, 10).Select(_ => chars[RandomNumberGenerator.GetInt32(chars.Length)]).ToArray());
-            }
-            while (existingCodes.Contains(code));
-            return code;
         }
 
         private bool IsValidStatusTransition(OrderStatus current, OrderStatus next)
@@ -452,5 +360,53 @@ namespace NFC.Platform.Application.Services;
             }
 
             return ServiceResult.Success(_messageService.Get("RecordUpdated") ?? "Pricing updated successfully.");
+        }
+
+        // ── Subdomain management (Super Admin) ───────────────────────────────────
+
+        public async Task<ServiceResult<PagedResult<ProfileSubdomainSummaryDto>>> GetAllProfileSubdomainsAsync(
+            PaginationRequest request, string? search)
+        {
+            var query = _unitOfWork.Repository<UserProfile>()
+                .GetQueryable()
+                .AsNoTracking()
+                .Include(p => p.Employee)
+                    .ThenInclude(e => e!.Company)
+                .Where(p => !p.IsDeleted)
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(search))
+                query = query.Where(p =>
+                    (p.Subdomain != null && p.Subdomain.Contains(search)) ||
+                    p.FullName.Contains(search));
+
+            var pagedResult = await query
+                .OrderByDescending(p => p.CreatedAt)
+                .ToPagedResultAsync(request, p => _mapper.Map<ProfileSubdomainSummaryDto>(p));
+
+            return ServiceResult<PagedResult<ProfileSubdomainSummaryDto>>.Success(pagedResult);
+        }
+
+        public async Task<ServiceResult> ReassignSubdomainAsync(Guid profileId, string newSubdomain)
+        {
+            var profile = await _unitOfWork.Repository<UserProfile>().GetByIdAsync(profileId);
+            if (profile == null)
+                return ServiceResult.NotFound(_messageService.Get("RecordNotFound") ?? "Profile not found.");
+
+            var normalized = SubdomainHelper.Slugify(newSubdomain);
+
+            var exists = await _unitOfWork.Repository<UserProfile>()
+                .GetQueryable()
+                .IgnoreQueryFilters()
+                .AnyAsync(p => p.Subdomain == normalized && p.Id != profileId);
+
+            if (exists)
+                return ServiceResult.Fail(
+                    _messageService.Get("SubdomainAlreadyTaken") ?? "This subdomain is already taken.", 409);
+
+            profile.Subdomain = normalized;
+            await _unitOfWork.SaveChangesAsync();
+
+            return ServiceResult.Success(_messageService.Get("RecordUpdated") ?? "Subdomain reassigned successfully.");
         }
     }

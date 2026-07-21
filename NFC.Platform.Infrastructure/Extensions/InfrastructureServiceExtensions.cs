@@ -48,7 +48,6 @@ namespace NFC.Platform.Infrastructure.Extensions
             services.AddScoped<IEmailService, EmailService>();
 
             // QR Code Generator — Singleton: QRCoder is stateless; one instance per app lifetime is sufficient.
-            services.AddSingleton<IQrCodeGenerator, QrCodeGeneratorService>();
 
             // Hangfire Setup
             services.AddHangfire(config => config

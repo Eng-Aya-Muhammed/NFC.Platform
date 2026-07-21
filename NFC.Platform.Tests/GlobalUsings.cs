@@ -9,7 +9,7 @@ global using NFC.Platform.Application.DTOs.Template;
 global using NFC.Platform.Application.Interfaces.Repositories;
 global using NFC.Platform.Application.Services;
 global using NFC.Platform.Application.Validators.Auth;
-global using NFC.Platform.Application.Validators.Card;
+
 global using NFC.Platform.Application.Validators.Company;
 global using NFC.Platform.Application.Validators.Employee;
 global using NFC.Platform.Application.Validators.Template;

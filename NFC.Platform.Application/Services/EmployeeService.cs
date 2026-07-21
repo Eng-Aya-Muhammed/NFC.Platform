@@ -88,10 +88,13 @@ namespace NFC.Platform.Application.Services;
             profile.EmployeeId = employee.Id;
             profile.CompanyName = company.Name;
             profile.TenantId = tenantId.Value;
+            profile.Subdomain = await SubdomainHelper.GenerateUniqueAsync(
+                request.FullName,
+                _unitOfWork.Repository<UserProfile>());
 
-            if (!string.IsNullOrWhiteSpace(request.CustomLinks))
+            if (request.Links?.Count > 0)
             {
-                profile.UpdateCustomLinks(request.CustomLinks);
+                profile.UpdateCustomLinks(request.Links);
             }
 
             await _unitOfWork.BeginTransactionAsync();
@@ -123,12 +126,34 @@ namespace NFC.Platform.Application.Services;
             if (employee == null)
                 return ServiceResult<EmployeeDetailsDto>.NotFound(_messageService.Get("RecordNotFound"));
 
+            // ── Subdomain update (slugify + global uniqueness check) ──────────────
+            if (!string.IsNullOrWhiteSpace(request.Subdomain))
+            {
+                var normalized = SubdomainHelper.Slugify(request.Subdomain);
+
+                if (!string.Equals(normalized, employee.UserProfile?.Subdomain, StringComparison.OrdinalIgnoreCase))
+                {
+                    var profileId = employee.UserProfile?.Id;
+                    var exists = await _unitOfWork.Repository<UserProfile>()
+                        .GetQueryable()
+                        .IgnoreQueryFilters()
+                        .AnyAsync(p => p.Subdomain == normalized && (profileId == null || p.Id != profileId));
+
+                    if (exists)
+                        return ServiceResult<EmployeeDetailsDto>.Fail(
+                            _messageService.Get("SubdomainAlreadyTaken") ?? "This subdomain is already taken.", 409);
+
+                    if (employee.UserProfile != null)
+                        employee.UserProfile.Subdomain = normalized;
+                }
+            }
+
             _mapper.Map(request, employee);
 
             if (employee.UserProfile != null)
             {
                 _mapper.Map(request, employee.UserProfile);
-                employee.UserProfile.UpdateCustomLinks(request.CustomLinks);
+                employee.UserProfile.UpdateCustomLinks(request.Links);
             }
 
             await _unitOfWork.SaveChangesAsync();

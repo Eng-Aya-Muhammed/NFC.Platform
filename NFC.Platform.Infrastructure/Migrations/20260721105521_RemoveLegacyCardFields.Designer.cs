@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NFC.Platform.Infrastructure.Contexts;
 
@@ -11,9 +12,11 @@ using NFC.Platform.Infrastructure.Contexts;
 namespace NFC.Platform.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260721105521_RemoveLegacyCardFields")]
+    partial class RemoveLegacyCardFields
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,6 +24,59 @@ namespace NFC.Platform.Infrastructure.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+
+            modelBuilder.Entity("NFC.Platform.Domain.Entities.Card", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("ActivatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("CardOrderId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("UniqueCode")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("UserProfileId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CardOrderId");
+
+                    b.HasIndex("UserProfileId");
+
+                    b.HasIndex("TenantId", "UniqueCode")
+                        .IsUnique();
+
+                    b.ToTable("Cards", (string)null);
+                });
 
             modelBuilder.Entity("NFC.Platform.Domain.Entities.CardOrder", b =>
                 {
@@ -57,6 +113,14 @@ namespace NFC.Platform.Infrastructure.Migrations
                     b.Property<int>("DeliveryMethod")
                         .HasColumnType("int");
 
+                    b.Property<string>("DesignNotes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("DesignReferenceUrl")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
                     b.Property<string>("ExcelDataUrl")
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
@@ -67,6 +131,10 @@ namespace NFC.Platform.Infrastructure.Migrations
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
+
+                    b.Property<string>("LogoUrl")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
 
                     b.Property<string>("Notes")
                         .HasMaxLength(2000)
@@ -155,6 +223,9 @@ namespace NFC.Platform.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<Guid?>("LinkedCardId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("Phone")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
@@ -174,6 +245,8 @@ namespace NFC.Platform.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CardOrderId");
+
+                    b.HasIndex("LinkedCardId");
 
                     b.HasIndex("TenantId");
 
@@ -446,6 +519,14 @@ namespace NFC.Platform.Infrastructure.Migrations
                     b.Property<Guid?>("CreatedBy")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("DesignNotes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("DesignReferenceUrl")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
                     b.Property<string>("ErrorsJson")
                         .HasColumnType("nvarchar(max)");
 
@@ -468,6 +549,10 @@ namespace NFC.Platform.Infrastructure.Migrations
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
+
+                    b.Property<string>("LogoUrl")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
 
                     b.Property<string>("Notes")
                         .HasMaxLength(2000)
@@ -560,6 +645,9 @@ namespace NFC.Platform.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("CardId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -588,6 +676,8 @@ namespace NFC.Platform.Infrastructure.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CardId");
 
                     b.HasIndex("ProfileLinkId");
 
@@ -1074,6 +1164,31 @@ namespace NFC.Platform.Infrastructure.Migrations
                     b.ToTable("UserSubscriptions", (string)null);
                 });
 
+            modelBuilder.Entity("NFC.Platform.Domain.Entities.Card", b =>
+                {
+                    b.HasOne("NFC.Platform.Domain.Entities.CardOrder", "CardOrder")
+                        .WithMany("GeneratedCards")
+                        .HasForeignKey("CardOrderId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("NFC.Platform.Domain.Entities.Tenant", "Tenant")
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("NFC.Platform.Domain.Entities.UserProfile", "UserProfile")
+                        .WithMany("ActivatedCards")
+                        .HasForeignKey("UserProfileId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("CardOrder");
+
+                    b.Navigation("Tenant");
+
+                    b.Navigation("UserProfile");
+                });
+
             modelBuilder.Entity("NFC.Platform.Domain.Entities.CardOrder", b =>
                 {
                     b.HasOne("NFC.Platform.Domain.Entities.CardOrder", "ParentOrder")
@@ -1107,6 +1222,11 @@ namespace NFC.Platform.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("NFC.Platform.Domain.Entities.Card", "LinkedCard")
+                        .WithMany()
+                        .HasForeignKey("LinkedCardId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("NFC.Platform.Domain.Entities.Tenant", "Tenant")
                         .WithMany()
                         .HasForeignKey("TenantId")
@@ -1119,6 +1239,8 @@ namespace NFC.Platform.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("CardOrder");
+
+                    b.Navigation("LinkedCard");
 
                     b.Navigation("Tenant");
 
@@ -1227,6 +1349,11 @@ namespace NFC.Platform.Infrastructure.Migrations
 
             modelBuilder.Entity("NFC.Platform.Domain.Entities.ProfileMetric", b =>
                 {
+                    b.HasOne("NFC.Platform.Domain.Entities.Card", "Card")
+                        .WithMany()
+                        .HasForeignKey("CardId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
                     b.HasOne("NFC.Platform.Domain.Entities.ProfileLink", "ProfileLink")
                         .WithMany()
                         .HasForeignKey("ProfileLinkId")
@@ -1243,6 +1370,8 @@ namespace NFC.Platform.Infrastructure.Migrations
                         .HasForeignKey("UserProfileId")
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
+
+                    b.Navigation("Card");
 
                     b.Navigation("ProfileLink");
 
@@ -1366,6 +1495,8 @@ namespace NFC.Platform.Infrastructure.Migrations
 
             modelBuilder.Entity("NFC.Platform.Domain.Entities.CardOrder", b =>
                 {
+                    b.Navigation("GeneratedCards");
+
                     b.Navigation("Items");
                 });
 
@@ -1393,6 +1524,8 @@ namespace NFC.Platform.Infrastructure.Migrations
 
             modelBuilder.Entity("NFC.Platform.Domain.Entities.UserProfile", b =>
                 {
+                    b.Navigation("ActivatedCards");
+
                     b.Navigation("CustomLinks");
                 });
 #pragma warning restore 612, 618

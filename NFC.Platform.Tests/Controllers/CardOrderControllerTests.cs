@@ -236,10 +236,7 @@ namespace NFC.Platform.Tests.Controllers
                 File = file,
                 CardType = CardType.Plastic,
                 CardDesignType = CardDesignType.NeedCustomDesign,
-                Notes = "Design notes",
-                DesignReferenceUrl = "https://ref.url",
-                LogoUrl = "https://logo.url",
-                DesignNotes = "Design detailed notes"
+                Notes = "Design notes"
             };
 
             var job = new EmployeeImportJob();
@@ -247,10 +244,7 @@ namespace NFC.Platform.Tests.Controllers
                 file,
                 CardType.Plastic,
                 CardDesignType.NeedCustomDesign,
-                "Design notes",
-                "https://ref.url",
-                "https://logo.url",
-                "Design detailed notes").Returns(ServiceResult<EmployeeImportJob>.Success(job));
+                "Design notes").Returns(ServiceResult<EmployeeImportJob>.Success(job));
 
             var result = await _sut.PlaceBulkOrderFromExcel(request) as ObjectResult;
 
@@ -260,10 +254,7 @@ namespace NFC.Platform.Tests.Controllers
                 file,
                 CardType.Plastic,
                 CardDesignType.NeedCustomDesign,
-                "Design notes",
-                "https://ref.url",
-                "https://logo.url",
-                "Design detailed notes");
+                "Design notes");
         }
 
         [Fact]
@@ -276,9 +267,6 @@ namespace NFC.Platform.Tests.Controllers
                 file,
                 Arg.Any<CardType>(),
                 Arg.Any<CardDesignType>(),
-                Arg.Any<string>(),
-                Arg.Any<string>(),
-                Arg.Any<string>(),
                 Arg.Any<string>()).Returns(ServiceResult<EmployeeImportJob>.Fail("Validation failed", 422));
 
             var result = await _sut.PlaceBulkOrderFromExcel(request) as ObjectResult;

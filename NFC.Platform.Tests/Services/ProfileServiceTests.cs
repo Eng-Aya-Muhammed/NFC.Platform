@@ -107,7 +107,7 @@ namespace NFC.Platform.Tests.Services
         // ── SynchronizeLinksAsync ─────────────────────────────────────────────────
 
         [Fact]
-        public async Task SynchronizeLinksAsync_AddsNewCustomLinks_WhileIgnoringStandardPlatforms()
+        public async Task SynchronizeLinksAsync_AddsAllLinksAsCustom()
         {
             // Arrange
             var userId = Guid.NewGuid();
@@ -130,10 +130,10 @@ namespace NFC.Platform.Tests.Services
 
             // Assert
             Assert.True(result.IsSuccess);
-            Assert.Equal(2, userProfile.CustomLinks.Count);
+            Assert.Equal(3, userProfile.CustomLinks.Count);
             Assert.Contains(userProfile.CustomLinks, l => l.Url == "https://custom1.com");
             Assert.Contains(userProfile.CustomLinks, l => l.Url == "https://custom2.com");
-            Assert.DoesNotContain(userProfile.CustomLinks, l => l.Url == PlatformConstants.LinkedIn);
+            Assert.Contains(userProfile.CustomLinks, l => l.Url == PlatformConstants.LinkedIn);
 
             await _unitOfWork.Received(1).SaveChangesAsync();
         }
@@ -173,6 +173,37 @@ namespace NFC.Platform.Tests.Services
             // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(404, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task UpdateProfileAsync_ReturnsConflict_WhenSubdomainAlreadyTaken()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var user = new User 
+            { 
+                Id = userId, 
+                TenantId = Guid.NewGuid(), 
+                UserProfile = new UserProfile { Id = Guid.NewGuid(), Subdomain = "old-subdomain" }
+            };
+            var mockQuery = new List<User> { user }.AsQueryable().BuildMock();
+            _userRepo.GetQueryable().Returns(mockQuery);
+
+            var anotherProfile = new UserProfile { Id = Guid.NewGuid(), Subdomain = "taken-subdomain" };
+            var profiles = new List<UserProfile> { anotherProfile }.AsQueryable().BuildMock();
+            _userProfileRepo.GetQueryable().Returns(profiles);
+
+            _messageService.Get("SubdomainAlreadyTaken").Returns("The requested subdomain is already in use.");
+
+            var request = new UpdateMyProfileRequest { Subdomain = "taken-subdomain" };
+
+            // Act
+            var result = await _sut.UpdateProfileAsync(userId, request);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(409, result.StatusCode);
+            Assert.Equal("The requested subdomain is already in use.", result.Message);
         }
 
         [Fact]

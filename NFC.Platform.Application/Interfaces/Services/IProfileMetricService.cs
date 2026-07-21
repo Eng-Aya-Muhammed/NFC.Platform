@@ -16,8 +16,9 @@ namespace NFC.Platform.Application.Interfaces.Services
         Task<ServiceResult> RecordMetricAsync(Guid profileId, RecordMetricRequest request);
 
         /// <summary>
-        /// Resolves and returns a public profile using the physical card's unique activation code.
+        /// Resolves and returns a public profile using the profile's unique subdomain.
+        /// No card status check — the profile is accessible as long as the subdomain exists.
         /// </summary>
-        Task<ServiceResult<EmployeeDetailsDto>> ResolvePublicProfileAsync(string activationCode);
+        Task<ServiceResult<EmployeeDetailsDto>> ResolvePublicProfileAsync(string subdomain);
     }
 }

@@ -36,10 +36,6 @@ namespace NFC.Platform.Domain.Entities
 
         public string? BackDesignUrl { get; set; }
 
-        public string? DesignReferenceUrl { get; set; }
-        public string? LogoUrl { get; set; }
-        public string? DesignNotes { get; set; }
-
         public string? Notes { get; set; }
 
         public OrderStatus Status { get; set; } = OrderStatus.PendingReview;
@@ -65,6 +61,6 @@ namespace NFC.Platform.Domain.Entities
 
         public ICollection<CardOrderItem> Items { get; set; } = [];
 
-        public ICollection<Card> GeneratedCards { get; set; } = [];
+
     }
 }

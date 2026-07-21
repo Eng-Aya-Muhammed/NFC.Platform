@@ -309,89 +309,14 @@ namespace NFC.Platform.Application.Services;
                 _messageService.Get("RecordCreated"));
         }
 
-        public async Task<ServiceResult<CardOrderDto>> ReissueCardAsync(Guid cardId, ReissueCardRequest request)
-        {
-            var userId = _currentTenant.UserId;
-            if (!userId.HasValue)
-                return ServiceResult<CardOrderDto>.Unauthorized(_messageService.Get("UserNotAuthenticated"));
 
-            if (request.DeliveryMethod == DeliveryMethod.Courier && string.IsNullOrWhiteSpace(request.ShippingAddress))
-            {
-                return ServiceResult<CardOrderDto>.Fail(_messageService.Get("ShippingAddressRequired"), 422);
-            }
-
-            var card = await _unitOfWork.Repository<Card>()
-                .GetQueryable()
-                .Include(c => c.UserProfile)
-                    .ThenInclude(up => up!.Employee)
-                .Include(c => c.CardOrder)
-                .FirstOrDefaultAsync(c => c.Id == cardId && !c.IsDeleted);
-
-            if (card == null)
-                return ServiceResult<CardOrderDto>.NotFound(_messageService.Get("CardNotFound"));
-
-            if (!card.UserProfileId.HasValue || card.UserProfile == null)
-                return ServiceResult<CardOrderDto>.Fail(_messageService.Get("CardMustHaveProfileToReissue"), 422);
-
-            // Deactivate the old card
-            card.Status = CardStatus.Deactivated;
-
-            var cardType = card.CardOrder?.CardType ?? CardType.Plastic;
-
-            var pricing = await _unitOfWork.Repository<CardPricing>().GetQueryable()
-                .AsNoTracking()
-                .Where(p => p.CardType == cardType && p.IsActive && p.EffectiveFrom <= DateTime.UtcNow && (p.EffectiveTo == null || p.EffectiveTo > DateTime.UtcNow))
-                .OrderByDescending(p => p.EffectiveFrom)
-                .FirstOrDefaultAsync();
-
-            if (pricing == null)
-            {
-                return ServiceResult<CardOrderDto>.Fail(
-                    _messageService.Get("PricingNotConfigured") ?? $"Pricing is not configured for card type '{cardType}'.",
-                    500);
-            }
-
-            var reissueOrder = card.CardOrder != null
-                ? _mapper.Map<CardOrder>(card.CardOrder)
-                : new CardOrder { CardDesignType = CardDesignType.CustomArtwork };
-
-            reissueOrder.UserId = userId.Value;
-            reissueOrder.CardName = card.CardOrder?.CardName ?? $"Replacement - {card.UserProfile.FullName}";
-            reissueOrder.CardType = cardType;
-            reissueOrder.ParentOrderId = card.CardOrderId;
-            reissueOrder.Quantity = 1;
-            reissueOrder.Status = OrderStatus.PendingReview;
-            reissueOrder.UnitPrice = pricing.UnitPrice;
-            reissueOrder.Currency = pricing.Currency;
-            reissueOrder.TotalPrice = pricing.UnitPrice;
-            reissueOrder.DeliveryMethod = request.DeliveryMethod;
-            reissueOrder.ShippingAddress = request.ShippingAddress;
-            reissueOrder.Items = new List<CardOrderItem> { _mapper.Map<CardOrderItem>(card.UserProfile) };
-
-            await _unitOfWork.Repository<CardOrder>().AddAsync(reissueOrder);
-            await _unitOfWork.SaveChangesAsync();
-
-            // Reload with items for the response
-            var created = await _unitOfWork.Repository<CardOrder>()
-                .GetQueryable()
-                .AsNoTracking()
-                .Include(o => o.Items)
-                .FirstOrDefaultAsync(o => o.Id == reissueOrder.Id);
-
-            return ServiceResult<CardOrderDto>.Success(
-                _mapper.Map<CardOrderDto>(created),
-                _messageService.Get("RecordCreated"));
-        }
 
 
         public async Task<ServiceResult<EmployeeImportJob>> QueueEmployeeImportJobAsync(
             Microsoft.AspNetCore.Http.IFormFile file,
             CardType cardType,
             CardDesignType cardDesignType,
-            string? notes,
-            string? designReferenceUrl = null,
-            string? logoUrl = null,
-            string? designNotes = null)
+            string? notes)
         {
             var tenantId = _currentTenant.TenantId;
             var userId = _currentTenant.UserId;
@@ -399,11 +324,7 @@ namespace NFC.Platform.Application.Services;
             if (!tenantId.HasValue || !userId.HasValue)
                 return ServiceResult<EmployeeImportJob>.Unauthorized(_messageService.Get("Unauthorized") ?? "User is not authenticated.");
 
-            if (cardDesignType == CardDesignType.NeedCustomDesign && string.IsNullOrWhiteSpace(logoUrl))
-            {
-                return ServiceResult<EmployeeImportJob>.Fail(
-                    _messageService.Get("LogoRequiredForCustomDesign") ?? "Logo is required for custom design requests.", 422);
-            }
+
 
             if (file == null || file.Length == 0)
                 return ServiceResult<EmployeeImportJob>.Fail(_messageService.Get("NoFileUploaded") ?? "No file uploaded.", 400);
@@ -429,10 +350,7 @@ namespace NFC.Platform.Application.Services;
                 ExcelFilePublicId = uploadResult.PublicId,
                 CardType = cardType,
                 CardDesignType = cardDesignType,
-                Notes = notes,
-                DesignReferenceUrl = designReferenceUrl,
-                LogoUrl = logoUrl,
-                DesignNotes = designNotes
+                Notes = notes
             };
 
             await _unitOfWork.Repository<EmployeeImportJob>().AddAsync(job);
@@ -607,6 +525,17 @@ namespace NFC.Platform.Application.Services;
                     var newEmployeesList = new List<Employee>();
                     var newProfilesList = new List<UserProfile>();
 
+                    // Pre-load all existing subdomains once — avoids N+1 queries in the loop.
+                    // IgnoreQueryFilters: background job has no tenant context; uniqueness is global.
+                    var existingSlugs = new HashSet<string>(
+                        await _unitOfWork.Repository<UserProfile>()
+                            .GetQueryable()
+                            .IgnoreQueryFilters()
+                            .Where(p => p.Subdomain != null)
+                            .Select(p => p.Subdomain!)
+                            .ToListAsync(),
+                        StringComparer.OrdinalIgnoreCase);
+
                     foreach (var row in employeeRows)
                     {
                         UserProfile? userProfile = null;
@@ -635,6 +564,8 @@ namespace NFC.Platform.Application.Services;
                             userProfile = _mapper.Map<UserProfile>(row);
                             userProfile.CompanyName = company.Name;
                             userProfile.TenantId = job.TenantId;
+                            // In-memory slug generation — no extra DB queries
+                            userProfile.Subdomain = SubdomainHelper.GenerateUnique(row.Name, existingSlugs);
 
                             newEmployee.UserProfile = userProfile;
                             userProfile.Employee = newEmployee;
@@ -707,9 +638,6 @@ namespace NFC.Platform.Application.Services;
                         CardDesignType = job.CardDesignType,
                         Quantity = itemsToOrder.Count,
                         Notes = job.Notes,
-                        DesignReferenceUrl = job.DesignReferenceUrl,
-                        LogoUrl = job.LogoUrl,
-                        DesignNotes = job.DesignNotes,
                         UserId = job.UserId,
                         TenantId = job.TenantId,
                         Status = OrderStatus.PendingReview,

@@ -37,10 +37,7 @@ namespace NFC.Platform.Application.Interfaces.Services
         /// </summary>
         Task<ServiceResult<CardOrderDto>> CreateReorderAsync(Guid parentOrderId, ReorderRequest request);
 
-        /// <summary>
-        /// Reissues a lost/damaged card, deactivating the old card and placing a new order of quantity 1.
-        /// </summary>
-        Task<ServiceResult<CardOrderDto>> ReissueCardAsync(Guid cardId, ReissueCardRequest request);
+
 
 
         /// <summary>
@@ -56,11 +53,7 @@ namespace NFC.Platform.Application.Interfaces.Services
             IFormFile file,
             CardType cardType,
             CardDesignType cardDesignType,
-            string? notes,
-            string? designReferenceUrl = null,
-            string? logoUrl = null,
-            string? designNotes = null);
-
+            string? notes);
         /// <summary>
         /// Executes the employee import background job. Runs in Hangfire thread.
         /// </summary>

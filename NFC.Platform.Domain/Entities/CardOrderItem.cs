@@ -17,10 +17,6 @@ namespace NFC.Platform.Domain.Entities
         public string? Phone { get; set; }
         public string? Department { get; set; }
 
-        public string? ActivationCode { get; set; }
-
-        public Guid? LinkedCardId { get; set; }
-        public Card? LinkedCard { get; set; }
 
         public Guid? UserProfileId { get; set; }
         public UserProfile? UserProfile { get; set; }

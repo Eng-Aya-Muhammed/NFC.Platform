@@ -88,8 +88,7 @@ namespace NFC.Platform.Tests.Services
             {
                 Quantity = 1,
                 CardType = CardType.Plastic,
-                CardDesignType = CardDesignType.NeedCustomDesign,
-                LogoUrl = "https://cdn.example.com/logo.png"
+                CardDesignType = CardDesignType.NeedCustomDesign
             };
 
             // Act
@@ -108,20 +107,24 @@ namespace NFC.Platform.Tests.Services
             var mapper = Substitute.For<IMapper>();
             var messageService = Substitute.For<IMessageService>();
 
-            var cardRepo = Substitute.For<IGenericRepository<Card>>();
+            var profileRepo = Substitute.For<IGenericRepository<UserProfile>>();
             var templateRequestRepo = Substitute.For<IGenericRepository<TemplateRequest>>();
-            unitOfWork.Repository<Card>().Returns(cardRepo);
+            unitOfWork.Repository<UserProfile>().Returns(profileRepo);
             unitOfWork.Repository<TemplateRequest>().Returns(templateRequestRepo);
 
             var tenantId = Guid.NewGuid();
             var company = new Company { TenantId = tenantId };
             var employee = new Employee { Company = company };
-            var userProfile = new UserProfile { TenantId = tenantId, Employee = employee };
-            var card = new Card { Id = Guid.NewGuid(), Status = CardStatus.Active, UserProfile = userProfile, ActivationCode = "test-code" };
+            var userProfile = new UserProfile
+            {
+                TenantId = tenantId,
+                Subdomain = "test-subdomain",
+                Employee = employee
+            };
 
-            mapper.Map<EmployeeDetailsDto>(card.UserProfile).Returns(new EmployeeDetailsDto());
+            mapper.Map<EmployeeDetailsDto>(userProfile).Returns(new EmployeeDetailsDto());
 
-            cardRepo.GetQueryable().Returns(new List<Card> { card }.AsQueryable().BuildMock());
+            profileRepo.GetQueryable().Returns(new List<UserProfile> { userProfile }.AsQueryable().BuildMock());
 
             // Mock completed TemplateRequest queryable
             var completedRequest = new TemplateRequest
@@ -136,7 +139,7 @@ namespace NFC.Platform.Tests.Services
             var service = new ProfileMetricService(unitOfWork, messageService, mapper);
 
             // Act
-            var result = await service.ResolvePublicProfileAsync("test-code");
+            var result = await service.ResolvePublicProfileAsync("test-subdomain");
 
             // Assert
             Assert.True(result.IsSuccess);

@@ -202,6 +202,9 @@ namespace NFC.Platform.Tests.Services
             _employeeRepo.CountAsync(Arg.Any<Expression<Func<Employee, bool>>>()).Returns(5);
             _employeeRepo.FindAsync(Arg.Any<Expression<Func<Employee, bool>>>()).Returns(new List<Employee>());
 
+            // Allow GenerateUniqueAsync to check uniqueness (returns empty = no conflict)
+            _userProfileRepo.GetQueryable().Returns(new List<UserProfile>().AsQueryable().BuildMock());
+
             var request = new CreateEmployeeRequest
             {
                 Email = "new@onpoint.com",
@@ -211,11 +214,11 @@ namespace NFC.Platform.Tests.Services
                 ProfilePictureUrl = "http://test.com/pic.jpg",
                 Phone = "+965 1234 5678",
                 WhatsApp = "+965 8765 4321",
-                InstagramUrl = "https://instagram.com/new",
-                FacebookUrl = "https://facebook.com/new",
-                LinkedInUrl = "https://linkedin.com/new",
-                WebsiteUrl = "https://new.com",
-                CustomLinks = "https://github.com/new\r\nhttps://twitter.com/new"
+                Links = new List<NFC.Platform.Application.DTOs.Profile.CustomLinkInput>
+                {
+                    new NFC.Platform.Application.DTOs.Profile.CustomLinkInput { Title = "LinkedIn", Url = "https://linkedin.com/new" },
+                    new NFC.Platform.Application.DTOs.Profile.CustomLinkInput { Title = "GitHub", Url = "https://github.com/new" }
+                }
             };
 
             var mappedDto = new EmployeeDetailsDto { FullName = "New Employee" };
@@ -235,13 +238,7 @@ namespace NFC.Platform.Tests.Services
                 Phone = request.Phone,
                 WhatsApp = request.WhatsApp,
                 ContactEmail = request.Email,
-                CustomLinks = new List<ProfileLink>
-                {
-                    new ProfileLink { Title = "LinkedIn", Url = request.LinkedInUrl! },
-                    new ProfileLink { Title = "Facebook", Url = request.FacebookUrl! },
-                    new ProfileLink { Title = "Instagram", Url = request.InstagramUrl! },
-                    new ProfileLink { Title = "Website", Url = request.WebsiteUrl! }
-                }
+                CustomLinks = new List<ProfileLink>()
             });
             _mapper.Map<EmployeeDetailsDto>(Arg.Any<Employee>()).Returns(mappedDto);
             _messageService.Get("RecordCreated").Returns("Employee created.");
@@ -267,13 +264,9 @@ namespace NFC.Platform.Tests.Services
                 p.ProfilePictureUrl == request.ProfilePictureUrl &&
                 p.Phone == request.Phone &&
                 p.WhatsApp == request.WhatsApp &&
-                p.CustomLinks.Count == 6 &&
-                p.CustomLinks.Any(l => l.Title == "LinkedIn" && l.Url == request.LinkedInUrl) &&
-                p.CustomLinks.Any(l => l.Title == "Facebook" && l.Url == request.FacebookUrl) &&
-                p.CustomLinks.Any(l => l.Title == "Instagram" && l.Url == request.InstagramUrl) &&
-                p.CustomLinks.Any(l => l.Title == "Website" && l.Url == request.WebsiteUrl) &&
-                p.CustomLinks.Any(l => l.Title == "https://github.com/new" && l.Url == "https://github.com/new") &&
-                p.CustomLinks.Any(l => l.Title == "https://twitter.com/new" && l.Url == "https://twitter.com/new")));
+                p.CustomLinks.Count == 2 &&
+                p.CustomLinks.Any(l => l.Title == "LinkedIn" && l.Url == "https://linkedin.com/new") &&
+                p.CustomLinks.Any(l => l.Title == "GitHub" && l.Url == "https://github.com/new")));
 
             await _unitOfWork.Received(1).CommitTransactionAsync();
         }
@@ -296,6 +289,9 @@ namespace NFC.Platform.Tests.Services
 
             _employeeRepo.CountAsync(Arg.Any<Expression<Func<Employee, bool>>>()).Returns(0);
             _employeeRepo.FindAsync(Arg.Any<Expression<Func<Employee, bool>>>()).Returns(new List<Employee>());
+
+            // Allow GenerateUniqueAsync to check uniqueness (returns empty = no conflict)
+            _userProfileRepo.GetQueryable().Returns(new List<UserProfile>().AsQueryable().BuildMock());
 
             var cloudinaryUrl = "https://res.cloudinary.com/demo/image/upload/v1571218039/nfc-platform/no-tenant/no-user/profile-pics/employee-avatar.png";
             var request = new CreateEmployeeRequest
@@ -496,6 +492,41 @@ namespace NFC.Platform.Tests.Services
             Assert.True(result.IsSuccess);
             _employeeRepo.Received(1).Remove(employee);
             await _unitOfWork.Received(1).SaveChangesAsync();
+        }
+
+        [Fact]
+        public async Task UpdateEmployeeJobDetailsAsync_ReturnsConflict_WhenSubdomainAlreadyTaken()
+        {
+            // Arrange
+            var tenantId = Guid.NewGuid();
+            _currentTenant.TenantId.Returns(tenantId);
+            
+            var employeeId = Guid.NewGuid();
+            var employee = new Employee 
+            { 
+                Id = employeeId, 
+                TenantId = tenantId,
+                UserProfile = new UserProfile { Id = Guid.NewGuid(), Subdomain = "old-subdomain" }
+            };
+
+            var employees = new List<Employee> { employee }.AsQueryable().BuildMock();
+            _employeeRepo.GetQueryable().Returns(employees);
+
+            var anotherProfile = new UserProfile { Id = Guid.NewGuid(), Subdomain = "taken-subdomain" };
+            var profiles = new List<UserProfile> { anotherProfile }.AsQueryable().BuildMock();
+            _userProfileRepo.GetQueryable().Returns(profiles);
+
+            _messageService.Get("SubdomainAlreadyTaken").Returns("This subdomain is already taken.");
+
+            var request = new UpdateEmployeeRequest { Subdomain = "taken-subdomain" };
+
+            // Act
+            var result = await _sut.UpdateEmployeeJobDetailsAsync(employeeId, request);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(409, result.StatusCode);
+            Assert.Equal("This subdomain is already taken.", result.Message);
         }
     }
 }
