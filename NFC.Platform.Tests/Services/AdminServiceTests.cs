@@ -220,7 +220,7 @@ namespace NFC.Platform.Tests.Services
                 ReferenceImageUrl = "url",
                 Notes = "Original notes"
             };
-            _templateRequestRepo.GetByIdAsync(requestId).Returns(request);
+            _templateRequestRepo.GetQueryable().Returns(new List<TemplateRequest> { request }.AsQueryable().BuildMock());
 
             var resolveDto = new ResolveTemplateRequestDto
             {
@@ -547,7 +547,7 @@ namespace NFC.Platform.Tests.Services
         {
             // Arrange
             var id = Guid.NewGuid();
-            _templateRequestRepo.GetByIdAsync(id).Returns((TemplateRequest?)null);
+            _templateRequestRepo.GetQueryable().Returns(new List<TemplateRequest>().AsQueryable().BuildMock());
 
             // Act
             var result = await _sut.ResolveTemplateRequestAsync(id, new ResolveTemplateRequestDto());
@@ -555,6 +555,169 @@ namespace NFC.Platform.Tests.Services
             // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(404, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task ResolveTemplateRequestAsync_EnqueuesEmailNotification_WhenStatusCompleted()
+        {
+            // Arrange
+            var requestId = Guid.NewGuid();
+            var tenantId = Guid.NewGuid();
+            var user = new User { Email = "client@example.com" };
+            var templateRequest = new TemplateRequest
+            {
+                Id = requestId,
+                TenantId = tenantId,
+                TemplateName = "Golden Luxury",
+                Status = TemplateRequestStatus.Pending,
+                RequestedByUser = user
+            };
+
+            _templateRequestRepo.GetQueryable().Returns(new List<TemplateRequest> { templateRequest }.AsQueryable().BuildMock());
+            _companyRepo.GetQueryable().Returns(new List<Company>().AsQueryable().BuildMock());
+            _userProfileRepo.GetQueryable().Returns(new List<UserProfile>().AsQueryable().BuildMock());
+            _messageService.Get("RecordUpdated").Returns("Record updated successfully.");
+
+            var dto = new ResolveTemplateRequestDto
+            {
+                Status = TemplateRequestStatus.Completed,
+                StyleConfigJson = "{\"color\":\"#ffd700\"}"
+            };
+
+            // Act
+            var result = await _sut.ResolveTemplateRequestAsync(requestId, dto);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(TemplateRequestStatus.Completed, templateRequest.Status);
+            Assert.NotNull(templateRequest.ProducedTemplateId);
+
+            _backgroundJobClient.Received(1).Create(
+                Arg.Is<Hangfire.Common.Job>(j =>
+                    j.Method.Name == nameof(IEmailService.SendTemplateRequestApprovedEmailAsync)),
+                Arg.Any<Hangfire.States.IState>());
+        }
+
+        [Fact]
+        public async Task ResolveTemplateRequestAsync_DoesNotEnqueueEmail_WhenStatusNotCompleted()
+        {
+            // Arrange
+            var requestId = Guid.NewGuid();
+            var tenantId = Guid.NewGuid();
+            var user = new User { Email = "client@example.com" };
+            var templateRequest = new TemplateRequest
+            {
+                Id = requestId,
+                TenantId = tenantId,
+                TemplateName = "Rejected Template Request",
+                Status = TemplateRequestStatus.Pending,
+                RequestedByUser = user
+            };
+
+            _templateRequestRepo.GetQueryable().Returns(new List<TemplateRequest> { templateRequest }.AsQueryable().BuildMock());
+            _companyRepo.GetQueryable().Returns(new List<Company>().AsQueryable().BuildMock());
+            _userProfileRepo.GetQueryable().Returns(new List<UserProfile>().AsQueryable().BuildMock());
+            _messageService.Get("RecordUpdated").Returns("Record updated successfully.");
+
+            var dto = new ResolveTemplateRequestDto
+            {
+                Status = TemplateRequestStatus.Rejected,
+                Notes = "Inappropriate design logo"
+            };
+
+            // Act
+            var result = await _sut.ResolveTemplateRequestAsync(requestId, dto);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(TemplateRequestStatus.Rejected, templateRequest.Status);
+            Assert.Null(templateRequest.ProducedTemplateId);
+
+            // Verify email notification is NOT enqueued when rejected
+            _backgroundJobClient.DidNotReceive().Create(
+                Arg.Is<Hangfire.Common.Job>(j =>
+                    j.Method.Name == nameof(IEmailService.SendTemplateRequestApprovedEmailAsync)),
+                Arg.Any<Hangfire.States.IState>());
+        }
+
+        [Fact]
+        public async Task ResolveTemplateRequestAsync_AppliesTemplateToCompanyProfile_WhenCompanyExists()
+        {
+            // Arrange
+            var requestId = Guid.NewGuid();
+            var tenantId = Guid.NewGuid();
+            var company = new Company { Id = Guid.NewGuid(), TenantId = tenantId };
+            var user = new User { Email = "admin@company.com" };
+
+            var templateRequest = new TemplateRequest
+            {
+                Id = requestId,
+                TenantId = tenantId,
+                TemplateName = "Company Corporate Layout",
+                Status = TemplateRequestStatus.Pending,
+                RequestedByUser = user
+            };
+
+            _templateRequestRepo.GetQueryable().Returns(new List<TemplateRequest> { templateRequest }.AsQueryable().BuildMock());
+            _companyRepo.GetQueryable().Returns(new List<Company> { company }.AsQueryable().BuildMock());
+            _userProfileRepo.GetQueryable().Returns(new List<UserProfile>().AsQueryable().BuildMock());
+            _messageService.Get("RecordUpdated").Returns("Record updated successfully.");
+
+            var dto = new ResolveTemplateRequestDto
+            {
+                Status = TemplateRequestStatus.Completed,
+                StyleConfigJson = "{\"theme\":\"navy\"}"
+            };
+
+            // Act
+            var result = await _sut.ResolveTemplateRequestAsync(requestId, dto);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.NotNull(templateRequest.ProducedTemplateId);
+            Assert.Equal(templateRequest.ProducedTemplateId, company.ProfileTemplateId);
+            await _unitOfWork.Received(1).SaveChangesAsync();
+        }
+
+        [Fact]
+        public async Task ResolveTemplateRequestAsync_AppliesTemplateToUserProfile_WhenCompanyDoesNotExist()
+        {
+            // Arrange
+            var requestId = Guid.NewGuid();
+            var tenantId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
+            var user = new User { Id = userId, Email = "individual@example.com" };
+            var userProfile = new UserProfile { Id = Guid.NewGuid(), TenantId = tenantId, UserId = userId };
+
+            var templateRequest = new TemplateRequest
+            {
+                Id = requestId,
+                TenantId = tenantId,
+                RequestedByUserId = userId,
+                TemplateName = "Personal Artist Layout",
+                Status = TemplateRequestStatus.Pending,
+                RequestedByUser = user
+            };
+
+            _templateRequestRepo.GetQueryable().Returns(new List<TemplateRequest> { templateRequest }.AsQueryable().BuildMock());
+            _companyRepo.GetQueryable().Returns(new List<Company>().AsQueryable().BuildMock()); // No company
+            _userProfileRepo.GetQueryable().Returns(new List<UserProfile> { userProfile }.AsQueryable().BuildMock());
+            _messageService.Get("RecordUpdated").Returns("Record updated successfully.");
+
+            var dto = new ResolveTemplateRequestDto
+            {
+                Status = TemplateRequestStatus.Completed,
+                StyleConfigJson = "{\"theme\":\"minimalist\"}"
+            };
+
+            // Act
+            var result = await _sut.ResolveTemplateRequestAsync(requestId, dto);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.NotNull(templateRequest.ProducedTemplateId);
+            Assert.Equal(templateRequest.ProducedTemplateId, userProfile.ProfileTemplateId);
+            await _unitOfWork.Received(1).SaveChangesAsync();
         }
         // ── ReassignSubdomainAsync ────────────────────────────────────────────────
 

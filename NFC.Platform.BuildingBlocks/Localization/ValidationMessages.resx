@@ -235,4 +235,19 @@
   <data name="WhatsAppNewOtp" xml:space="preserve">
     <value>New pickup code! 🎉 Your new code is: *{0}*</value>
   </data>
+  <data name="EmailTemplateApprovedSubject" xml:space="preserve">
+    <value>Your Custom Card Template is Ready! 🎉</value>
+  </data>
+  <data name="EmailTemplateApprovedSubtitle" xml:space="preserve">
+    <value>Your Custom Template Request Has Been Approved</value>
+  </data>
+  <data name="EmailTemplateApprovedGreeting" xml:space="preserve">
+    <value>Hello,</value>
+  </data>
+  <data name="EmailTemplateApprovedBody" xml:space="preserve">
+    <value>Great news! Your custom card template request &lt;strong style="color:#1a1a2e;"&gt;{0}&lt;/strong&gt; has been approved and is now active on your account.</value>
+  </data>
+  <data name="EmailTemplateApprovedFooter" xml:space="preserve">
+    <value>© 2026 NFC Platform. All rights reserved.</value>
+  </data>
 </root>

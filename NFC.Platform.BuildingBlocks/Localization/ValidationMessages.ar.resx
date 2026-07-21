@@ -235,4 +235,19 @@
   <data name="WhatsAppNewOtp" xml:space="preserve">
     <value>كود استلام جديد! 🎉 كودك الجديد هو: *{0}*</value>
   </data>
+  <data name="EmailTemplateApprovedSubject" xml:space="preserve">
+    <value>تصميمك المخصص أصبح جاهزاً! 🎉</value>
+  </data>
+  <data name="EmailTemplateApprovedSubtitle" xml:space="preserve">
+    <value>تمت الموافقة على طلب التصميم المخصص الخاص بك</value>
+  </data>
+  <data name="EmailTemplateApprovedGreeting" xml:space="preserve">
+    <value>مرحباً،</value>
+  </data>
+  <data name="EmailTemplateApprovedBody" xml:space="preserve">
+    <value>بشرى سارة! طلب التصميم المخصص &lt;strong style="color:#1a1a2e;"&gt;{0}&lt;/strong&gt; تم اعتماده وأصبح مفعلاً الآن على حسابك.</value>
+  </data>
+  <data name="EmailTemplateApprovedFooter" xml:space="preserve">
+    <value>© 2026 NFC Platform. جميع الحقوق محفوظة.</value>
+  </data>
 </root>

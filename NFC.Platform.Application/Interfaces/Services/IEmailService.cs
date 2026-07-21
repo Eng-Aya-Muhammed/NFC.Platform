@@ -6,5 +6,6 @@ namespace NFC.Platform.Application.Interfaces.Services
         Task SendPasswordResetEmailAsync(string to, string resetLink, string culture);
         Task SendNewUserCredentialsEmailAsync(string to, string username, string password, string culture);
         Task SendOrderReadyOtpEmailAsync(string to, string otp, string cardName, string culture);
+        Task SendTemplateRequestApprovedEmailAsync(string to, string templateName, string culture);
     }
 }

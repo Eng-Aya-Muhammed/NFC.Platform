@@ -261,7 +261,12 @@ namespace NFC.Platform.Application.Services;
         public async Task<ServiceResult> ResolveTemplateRequestAsync(Guid id, ResolveTemplateRequestDto dto)
         {
             var requestRepo = _unitOfWork.Repository<TemplateRequest>();
-            var templateRequest = await requestRepo.GetByIdAsync(id);
+            var templateRequest = await requestRepo.GetQueryable()
+                .Include(r => r.RequestedByUser)
+                .Include(r => r.Tenant)
+                    .ThenInclude(t => t.Company)
+                        .ThenInclude(c => c!.AdminUser)
+                .FirstOrDefaultAsync(r => r.Id == id);
 
             if (templateRequest == null)
                 return ServiceResult.NotFound(_messageService.Get("RecordNotFound"));
@@ -320,6 +325,20 @@ namespace NFC.Platform.Application.Services;
 
                 await _unitOfWork.SaveChangesAsync();
                 await _unitOfWork.CommitTransactionAsync();
+
+                // Enqueue email notification to requesting user/admin when request is completed
+                if (dto.Status == TemplateRequestStatus.Completed)
+                {
+                    var recipientEmail = templateRequest.Tenant?.Company?.AdminUser?.Email ?? templateRequest.RequestedByUser?.Email;
+                    if (!string.IsNullOrWhiteSpace(recipientEmail))
+                    {
+                        var culture = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+                        if (string.IsNullOrWhiteSpace(culture)) culture = "ar";
+
+                        _backgroundJobClient.Enqueue<IEmailService>(x =>
+                            x.SendTemplateRequestApprovedEmailAsync(recipientEmail, templateRequest.TemplateName, culture));
+                    }
+                }
             }
             catch
             {
