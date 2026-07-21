@@ -262,4 +262,13 @@
   <data name="TooManyResetPasswordAttempts" xml:space="preserve">
     <value>لقد تجاوزت الحد الأقصى لمحاولات إعادة تعيين كلمة المرور. يرجى المحاولة مرة أخرى بعد {0} ثانية.</value>
   </data>
+  <data name="InvalidTenantClaim" xml:space="preserve">
+    <value>معرف الشركة غير صالح أو مفقود.</value>
+  </data>
+  <data name="TenantNotFound" xml:space="preserve">
+    <value>الشركة المرتبطة بهذا الحساب غير موجودة.</value>
+  </data>
+  <data name="TenantInactive" xml:space="preserve">
+    <value>الشركة المرتبطة بهذا الحساب غير مفعلة حالياً.</value>
+  </data>
 </root>

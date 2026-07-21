@@ -115,4 +115,10 @@
   <data name="EmailNewUserCredentialsBody" xml:space="preserve">
     <value>&lt;h3&gt;Welcome to NFC Platform!&lt;/h3&gt;&lt;p&gt;An administrator has created an account for you. Here are your login credentials:&lt;/p&gt;&lt;ul&gt;&lt;li&gt;&lt;strong&gt;Username:&lt;/strong&gt; {0}&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Temporary Password:&lt;/strong&gt; {1}&lt;/li&gt;&lt;/ul&gt;&lt;p&gt;Please log in and update your password immediately.&lt;/p&gt;</value>
   </data>
+  <data name="SubdomainAlreadyTaken" xml:space="preserve">
+    <value>This subdomain is already taken.</value>
+  </data>
+  <data name="PremiumDesc" xml:space="preserve">
+    <value>Premium plan features.</value>
+  </data>
 </root>

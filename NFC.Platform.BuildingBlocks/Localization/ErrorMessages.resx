@@ -262,4 +262,13 @@
   <data name="TooManyResetPasswordAttempts" xml:space="preserve">
     <value>Too many password reset attempts. Please try again in {0} seconds.</value>
   </data>
+  <data name="InvalidTenantClaim" xml:space="preserve">
+    <value>Invalid or missing Tenant ID claim.</value>
+  </data>
+  <data name="TenantNotFound" xml:space="preserve">
+    <value>The tenant associated with this account does not exist.</value>
+  </data>
+  <data name="TenantInactive" xml:space="preserve">
+    <value>The tenant associated with this account is currently inactive.</value>
+  </data>
 </root>

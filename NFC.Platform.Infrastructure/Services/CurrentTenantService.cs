@@ -114,7 +114,7 @@ namespace NFC.Platform.Infrastructure.Services
                     return;
                 }
 
-                throw new ForbiddenException("Invalid or missing Tenant ID claim.");
+                throw new ForbiddenException("InvalidTenantClaim");
             }
 
             _cachedTenantId = tenantId;
@@ -127,29 +127,21 @@ namespace NFC.Platform.Infrastructure.Services
                 var options = scope.ServiceProvider.GetRequiredService<DbContextOptions<ApplicationDbContext>>();
                 var interceptor = scope.ServiceProvider.GetRequiredService<AuditableEntitySaveChangesInterceptor>();
 
-                using var validationContext = new ApplicationDbContext(options, interceptor, new FakeCurrentTenant());
-                // IgnoreQueryFilters is used as a best practice to ensure the query isn't intercepted.
+                // We pass 'this' (the current service) instead of a Fake class!
+                using var validationContext = new ApplicationDbContext(options, interceptor, this);
+                
                 var tenant = validationContext.Set<Tenant>()
                     .IgnoreQueryFilters()
                     .FirstOrDefaultAsync(t => t.Id == tenantId)
-                    .GetAwaiter().GetResult() ?? throw new ForbiddenException("The tenant associated with this account does not exist.");
+                    .GetAwaiter().GetResult() ?? throw new ForbiddenException("TenantNotFound");
+                    
                 if (!tenant.IsActive)
                 {
-                    throw new ForbiddenException("The tenant associated with this account is currently inactive.");
+                    throw new ForbiddenException("TenantInactive");
                 }
             }
 
             _isTenantValidated = true;
-        }
-
-        private sealed class FakeCurrentTenant : ICurrentTenant
-        {
-            public Guid? TenantId => null;
-            public Guid? UserId => null;
-            public string? Email => null;
-            public bool IsAuthenticated => false;
-            public bool IsSuperAdmin => false;
-            public void SetCurrentTenant(Guid tenantId, Guid userId) { }
         }
     }
 }

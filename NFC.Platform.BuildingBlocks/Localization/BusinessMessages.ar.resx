@@ -115,4 +115,10 @@
   <data name="EmailNewUserCredentialsBody" xml:space="preserve">
     <value>&lt;h3&gt;مرحباً بك في منصة NFC!&lt;/h3&gt;&lt;p&gt;قام مسؤول النظام بإنشاء حساب لك. إليك بيانات تسجيل الدخول الخاصة بك:&lt;/p&gt;&lt;ul&gt;&lt;li&gt;&lt;strong&gt;اسم المستخدم:&lt;/strong&gt; {0}&lt;/li&gt;&lt;li&gt;&lt;strong&gt;كلمة المرور المؤقتة:&lt;/strong&gt; {1}&lt;/li&gt;&lt;/ul&gt;&lt;p&gt;يرجى تسجيل الدخول وتغيير كلمة المرور الخاصة بك فوراً.&lt;/p&gt;</value>
   </data>
+  <data name="SubdomainAlreadyTaken" xml:space="preserve">
+    <value>هذا النطاق الفرعي محجوز مسبقاً.</value>
+  </data>
+  <data name="PremiumDesc" xml:space="preserve">
+    <value>مميزات الباقة المميزة.</value>
+  </data>
 </root>
