@@ -30,6 +30,7 @@ namespace NFC.Platform.Tests.Services
         private readonly IGenericRepository<CardOrder> _orderRepo;
         private readonly IGenericRepository<ProfileMetric> _metricRepo;
         private readonly IGenericRepository<UserProfile> _profileRepo;
+        private readonly IGenericRepository<CardTemplate> _cardTemplateRepo;
 
         private readonly CompanyService _sut;
 
@@ -47,6 +48,7 @@ namespace NFC.Platform.Tests.Services
             _orderRepo = Substitute.For<IGenericRepository<CardOrder>>();
             _metricRepo = Substitute.For<IGenericRepository<ProfileMetric>>();
             _profileRepo = Substitute.For<IGenericRepository<UserProfile>>();
+            _cardTemplateRepo = Substitute.For<IGenericRepository<CardTemplate>>();
 
             _unitOfWork.Repository<Company>().Returns(_companyRepo);
             _unitOfWork.Repository<UserSubscription>().Returns(_subscriptionRepo);
@@ -55,6 +57,7 @@ namespace NFC.Platform.Tests.Services
             _unitOfWork.Repository<CardOrder>().Returns(_orderRepo);
             _unitOfWork.Repository<ProfileMetric>().Returns(_metricRepo);
             _unitOfWork.Repository<UserProfile>().Returns(_profileRepo);
+            _unitOfWork.Repository<CardTemplate>().Returns(_cardTemplateRepo);
 
             _sut = new CompanyService(_unitOfWork, _mapper, _messageService, _currentTenant);
         }
@@ -477,7 +480,7 @@ namespace NFC.Platform.Tests.Services
         {
             // Arrange
             _currentTenant.TenantId.Returns((Guid?)null);
-            var request = new UpdateCompanyTemplateRequest { ProfileTemplateId = Guid.NewGuid() };
+            var request = Guid.NewGuid();
 
             // Act
             var result = await _sut.UpdateCompanyTemplateAsync(request);
@@ -495,7 +498,7 @@ namespace NFC.Platform.Tests.Services
             _currentTenant.TenantId.Returns(tenantId);
             _companyRepo.GetQueryable().Returns(new List<Company>().BuildMock());
             _messageService.Get("RecordNotFound").Returns("Record not found.");
-            var request = new UpdateCompanyTemplateRequest { ProfileTemplateId = Guid.NewGuid() };
+            var request = Guid.NewGuid();
 
             // Act
             var result = await _sut.UpdateCompanyTemplateAsync(request);
@@ -516,15 +519,33 @@ namespace NFC.Platform.Tests.Services
             var queryable = new List<Company> { company }.BuildMock();
             _companyRepo.GetQueryable().Returns(queryable);
 
+            var templateId = Guid.NewGuid();
+            var request = templateId;
+
+            // Mock CardTemplate repository
+            var template = new CardTemplate { Id = templateId, IsActive = true, IsDeleted = false };
+            _cardTemplateRepo.GetQueryable().Returns(new List<CardTemplate> { template }.AsQueryable().BuildMock());
+
             // Mock subscription repository to prevent EF async query provider error in GetSubscriptionRemainingDaysAsync
-            var queryableSub = new List<UserSubscription>().BuildMock();
+            var sub = new UserSubscription
+            {
+                TenantId = tenantId,
+                IsActive = true,
+                EndDate = DateTime.UtcNow.AddDays(30),
+                TemplateChangesUsed = 1,
+                SubscriptionPlan = new SubscriptionPlan
+                {
+                    MaxTemplateChanges = 5,
+                    PlanTemplates = new List<SubscriptionPlanTemplate> { new() { CardTemplateId = templateId } }
+                }
+            };
+            var queryableSub = new List<UserSubscription> { sub }.AsQueryable().BuildMock();
             _subscriptionRepo.GetQueryable().Returns(queryableSub);
 
-            var templateId = Guid.NewGuid();
-            var request = new UpdateCompanyTemplateRequest { ProfileTemplateId = templateId };
             var dto = new CompanyProfileDto { Id = company.Id, Name = "OnPoint", ProfileTemplateId = templateId };
 
             _mapper.Map<CompanyProfileDto>(company).Returns(dto);
+            _messageService.Get(Arg.Any<string>()).Returns(x => x.Arg<string>());
 
             // Act
             var result = await _sut.UpdateCompanyTemplateAsync(request);
@@ -533,6 +554,7 @@ namespace NFC.Platform.Tests.Services
             Assert.True(result.IsSuccess);
             Assert.Equal(200, result.StatusCode);
             Assert.Equal(templateId, company.ProfileTemplateId);
+            Assert.Equal(2, sub.TemplateChangesUsed); // Incremented
             await _unitOfWork.Received(1).SaveChangesAsync();
         }
     }

@@ -50,6 +50,12 @@ namespace NFC.Platform.Infrastructure.Repositories
         }
 
         /// <inheritdoc />
+        public async Task AddRangeAsync(IEnumerable<T> entities)
+        {
+            await _dbSet.AddRangeAsync(entities);
+        }
+
+        /// <inheritdoc />
         public void Update(T entity)
         {
             _dbSet.Attach(entity);
@@ -62,6 +68,18 @@ namespace NFC.Platform.Infrastructure.Repositories
             // Soft Delete implementation: Set IsDeleted to true and trigger entity update state.
             entity.IsDeleted = true;
             Update(entity);
+        }
+
+        /// <inheritdoc />
+        public void HardRemove(T entity)
+        {
+            _dbSet.Remove(entity);
+        }
+
+        /// <inheritdoc />
+        public void HardRemoveRange(IEnumerable<T> entities)
+        {
+            _dbSet.RemoveRange(entities);
         }
 
         /// <inheritdoc />

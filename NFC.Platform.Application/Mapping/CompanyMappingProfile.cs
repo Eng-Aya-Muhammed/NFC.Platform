@@ -17,12 +17,6 @@ namespace NFC.Platform.Application.Mapping
 
             CreateMap<UpdateCompanyProfileRequest, Company>();
 
-            // Template update — only map non-null overrides; null means "keep existing"
-            CreateMap<UpdateCompanyTemplateRequest, Company>()
-                .ForMember(dest => dest.ProfileTemplateId, opt => opt.Condition(src => src.ProfileTemplateId != null))
-                // Navigation and non-template fields are ignored
-                .ForAllMembers(opt => opt.Condition((src, dest, srcMember) =>
-                    srcMember != null));
-        }
+    }
     }
 }

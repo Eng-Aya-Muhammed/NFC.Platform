@@ -21,7 +21,6 @@ namespace NFC.Platform.Tests.Services
         private readonly IMessageService _messageService;
         private readonly IMapper _mapper;
         private readonly IGenericRepository<UserProfile> _profileRepo;
-        private readonly IGenericRepository<TemplateRequest> _templateRequestRepo;
         private readonly ProfileMetricService _sut;
 
         public ProfileBrandingTests()
@@ -31,10 +30,8 @@ namespace NFC.Platform.Tests.Services
             _mapper = Substitute.For<IMapper>();
 
             _profileRepo = Substitute.For<IGenericRepository<UserProfile>>();
-            _templateRequestRepo = Substitute.For<IGenericRepository<TemplateRequest>>();
 
             _unitOfWork.Repository<UserProfile>().Returns(_profileRepo);
-            _unitOfWork.Repository<TemplateRequest>().Returns(_templateRequestRepo);
 
             // Configure Mapper to map UserProfile to EmployeeDetailsDto basic fields
             _mapper.Map<EmployeeDetailsDto>(Arg.Any<UserProfile>()).Returns(callInfo =>
@@ -89,20 +86,9 @@ namespace NFC.Platform.Tests.Services
             };
 
 
-            // Set up template request mock containing the company logo
-            var templateRequest = new TemplateRequest
-            {
-                TenantId = profile.TenantId,
-                Status = TemplateRequestStatus.Completed,
-                LogoUrl = "https://cdn.example.com/techcorp-logo.png",
-                CreatedAt = DateTime.UtcNow
-            };
 
             var profileQueryable = new List<UserProfile> { profile }.AsQueryable().BuildMock();
             _profileRepo.GetQueryable().Returns(profileQueryable);
-
-            var requestQueryable = new List<TemplateRequest> { templateRequest }.AsQueryable().BuildMock();
-            _templateRequestRepo.GetQueryable().Returns(requestQueryable);
 
             // Act
             var result = await _sut.ResolvePublicProfileAsync("emp-subdomain");
@@ -111,7 +97,7 @@ namespace NFC.Platform.Tests.Services
             Assert.True(result.IsSuccess);
             Assert.NotNull(result.Data);
             Assert.Equal("Alice Smith", result.Data.FullName);
-            Assert.Equal("https://cdn.example.com/techcorp-logo.png", result.Data.LogoUrl);
+            Assert.Null(result.Data.LogoUrl);
             Assert.Equal("modern-dark", result.Data.Layout);
             Assert.Equal(companyTemplate.StyleConfigJson, result.Data.StyleConfigJson);
         }
@@ -141,9 +127,6 @@ namespace NFC.Platform.Tests.Services
 
             var profileQueryable = new List<UserProfile> { profile }.AsQueryable().BuildMock();
             _profileRepo.GetQueryable().Returns(profileQueryable);
-
-            var requestQueryable = new List<TemplateRequest>().AsQueryable().BuildMock();
-            _templateRequestRepo.GetQueryable().Returns(requestQueryable);
 
             // Act
             var result = await _sut.ResolvePublicProfileAsync("ind-subdomain");
@@ -175,9 +158,6 @@ namespace NFC.Platform.Tests.Services
             var profileQueryable = new List<UserProfile> { profile }.AsQueryable().BuildMock();
             _profileRepo.GetQueryable().Returns(profileQueryable);
 
-            var requestQueryable = new List<TemplateRequest>().AsQueryable().BuildMock();
-            _templateRequestRepo.GetQueryable().Returns(requestQueryable);
-
             // Act
             var result = await _sut.ResolvePublicProfileAsync("default-subdomain");
 
@@ -186,7 +166,7 @@ namespace NFC.Platform.Tests.Services
             Assert.NotNull(result.Data);
             Assert.Equal("Bob Vance", result.Data.FullName);
             Assert.Null(result.Data.LogoUrl);
-            Assert.Equal("classic", result.Data.Layout); // Fallback layout
+            Assert.Null(result.Data.Layout); // Fallback removed
             Assert.Null(result.Data.StyleConfigJson);
         }
     }

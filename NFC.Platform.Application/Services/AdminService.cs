@@ -1,4 +1,4 @@
-namespace NFC.Platform.Application.Services;
+﻿namespace NFC.Platform.Application.Services;
 
     public class AdminService : IAdminService
     {
@@ -386,10 +386,50 @@ namespace NFC.Platform.Application.Services;
             if (template == null)
                 return ServiceResult.NotFound(_messageService.Get("RecordNotFound"));
 
-            template.IsActive = !template.IsActive;
-            await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.BeginTransactionAsync();
+            try
+            {
+                // 1. Soft-delete the template
+                template.IsDeleted = true;
+                template.IsActive = false;
 
-            return ServiceResult.Success(_messageService.Get("RecordUpdated"));
+                // 2. Null out UserProfile.ProfileTemplateId for all profiles using this template
+                var affectedProfiles = await _unitOfWork.Repository<UserProfile>()
+                    .GetQueryable()
+                    .Where(p => p.ProfileTemplateId == id)
+                    .ToListAsync();
+
+                foreach (var profile in affectedProfiles)
+                    profile.ProfileTemplateId = null;
+
+                // 3. Null out Company.ProfileTemplateId for companies using this template
+                var affectedCompanies = await _unitOfWork.Repository<Company>()
+                    .GetQueryable()
+                    .Where(c => c.ProfileTemplateId == id)
+                    .ToListAsync();
+
+                foreach (var company in affectedCompanies)
+                    company.ProfileTemplateId = null;
+
+                // 4. Remove all plan-template assignments for this template
+                var planAssignments = await _unitOfWork.Repository<SubscriptionPlanTemplate>()
+                    .GetQueryable()
+                    .Where(pt => pt.CardTemplateId == id)
+                    .ToListAsync();
+
+                foreach (var assignment in planAssignments)
+                    _unitOfWork.Repository<SubscriptionPlanTemplate>().Remove(assignment);
+
+                await _unitOfWork.SaveChangesAsync();
+                await _unitOfWork.CommitTransactionAsync();
+            }
+            catch
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                throw;
+            }
+
+            return ServiceResult.Success(_messageService.Get("TemplateDeletedAndProfilesCleared"));
         }
 
         public async Task<ServiceResult<PagedResult<TenantSummaryDto>>> GetTenantsPagedAsync(PaginationRequest request)
@@ -547,7 +587,7 @@ namespace NFC.Platform.Application.Services;
             var exists = await _unitOfWork.Repository<UserProfile>()
                 .GetQueryable()
                 .IgnoreQueryFilters()
-                .AnyAsync(p => p.Subdomain == normalized && p.Id != profileId);
+                .AnyAsync(p => p.Subdomain == normalized && p.Id != profileId && !p.IsDeleted);
 
             if (exists)
                 return ServiceResult.Fail(
@@ -558,5 +598,173 @@ namespace NFC.Platform.Application.Services;
 
             return ServiceResult.Success(_messageService.Get("RecordUpdated"));
         }
-    }
 
+        // ── Subscription Plan Management ─────────────────────────────────────────
+
+        public async Task<ServiceResult<SubscriptionPlanDto>> CreatePlanAsync(CreateSubscriptionPlanRequest request)
+        {
+            var plan = _mapper.Map<SubscriptionPlan>(request);
+            await _unitOfWork.Repository<SubscriptionPlan>().AddAsync(plan);
+
+            // Assign initial templates if provided
+            if (request.TemplateIds?.Count > 0)
+            {
+                foreach (var templateId in request.TemplateIds.Distinct())
+                {
+                    var assignment = new SubscriptionPlanTemplate
+                    {
+                        SubscriptionPlanId = plan.Id,
+                        CardTemplateId = templateId
+                    };
+                    await _unitOfWork.Repository<SubscriptionPlanTemplate>().AddAsync(assignment);
+                }
+            }
+
+            await _unitOfWork.SaveChangesAsync();
+
+            // Reload with PlanTemplates for DTO
+            var created = await _unitOfWork.Repository<SubscriptionPlan>()
+                .GetQueryable()
+                .AsNoTracking()
+                .Include(p => p.PlanTemplates)
+                    .ThenInclude(pt => pt.CardTemplate)
+                .FirstOrDefaultAsync(p => p.Id == plan.Id);
+
+            var dto = _mapper.Map<SubscriptionPlanDto>(created);
+            dto.Name = _messageService.Get(dto.Name);
+            dto.Description = _messageService.Get(dto.Description);
+
+            return ServiceResult<SubscriptionPlanDto>.Success(dto, _messageService.Get("RecordCreated"));
+        }
+
+        public async Task<ServiceResult<SubscriptionPlanDto>> UpdatePlanAsync(Guid planId, UpdateSubscriptionPlanRequest request)
+        {
+            var plan = await _unitOfWork.Repository<SubscriptionPlan>()
+                .GetQueryable()
+                .Include(p => p.PlanTemplates)
+                    .ThenInclude(pt => pt.CardTemplate)
+                .FirstOrDefaultAsync(p => p.Id == planId);
+
+            if (plan == null)
+                return ServiceResult<SubscriptionPlanDto>.NotFound(_messageService.Get("RecordNotFound"));
+
+            // Patch — apply only non-null fields
+            if (request.Name != null)                        plan.Name = request.Name;
+            if (request.Description != null)                 plan.Description = request.Description;
+            if (request.Price.HasValue)                      plan.Price = request.Price.Value;
+            if (request.DurationInDays.HasValue)             plan.DurationInDays = request.DurationInDays.Value;
+            if (request.MaxEmployees.HasValue)               plan.MaxEmployees = request.MaxEmployees.Value;
+            if (request.MaxTemplateChanges.HasValue)         plan.MaxTemplateChanges = request.MaxTemplateChanges.Value;
+            if (request.MaxCustomDesignRequests.HasValue)    plan.MaxCustomDesignRequests = request.MaxCustomDesignRequests.Value;
+
+            if (request.TemplateIds != null)
+            {
+                // Hard delete existing to avoid unique constraint violations
+                _unitOfWork.Repository<SubscriptionPlanTemplate>().HardRemoveRange(plan.PlanTemplates);
+                
+                // Add new
+                var newTemplates = request.TemplateIds.Select(tid => new SubscriptionPlanTemplate
+                {
+                    SubscriptionPlanId = plan.Id,
+                    CardTemplateId = tid
+                }).ToList();
+                
+                await _unitOfWork.Repository<SubscriptionPlanTemplate>().AddRangeAsync(newTemplates);
+            }
+
+            await _unitOfWork.SaveChangesAsync();
+
+            var dto = _mapper.Map<SubscriptionPlanDto>(plan);
+            dto.Name = _messageService.Get(dto.Name);
+            dto.Description = _messageService.Get(dto.Description);
+
+            return ServiceResult<SubscriptionPlanDto>.Success(dto, _messageService.Get("RecordUpdated"));
+        }
+
+        public async Task<ServiceResult> DeletePlanAsync(Guid planId)
+        {
+            // Block deletion if any tenant currently has an active subscription on this plan
+            var hasActive = await _unitOfWork.Repository<UserSubscription>()
+                .GetQueryable()
+                .AnyAsync(s => s.SubscriptionPlanId == planId && s.IsActive && s.EndDate >= DateTime.UtcNow);
+
+            if (hasActive)
+                return ServiceResult.Fail(_messageService.Get("PlanHasActiveSubscriptions"), 409);
+
+            var plan = await _unitOfWork.Repository<SubscriptionPlan>().GetByIdAsync(planId);
+            if (plan == null)
+                return ServiceResult.NotFound(_messageService.Get("RecordNotFound"));
+
+            plan.IsDeleted = true;
+            await _unitOfWork.SaveChangesAsync();
+
+            return ServiceResult.Success(_messageService.Get("RecordUpdated"));
+        }
+
+        // ── Plan Template Assignment ──────────────────────────────────────────────
+
+        public async Task<ServiceResult<IReadOnlyList<CardTemplateSummaryDto>>> GetPlanTemplatesAsync(Guid planId)
+        {
+            var assignments = await _unitOfWork.Repository<SubscriptionPlanTemplate>()
+                .GetQueryable()
+                .AsNoTracking()
+                .Include(pt => pt.CardTemplate)
+                .Where(pt => pt.SubscriptionPlanId == planId && !pt.CardTemplate.IsDeleted)
+                .OrderBy(pt => pt.CardTemplate.DisplayOrder)
+                .ToListAsync();
+
+            var dtos = assignments
+                .Select(pt => _mapper.Map<CardTemplateSummaryDto>(pt.CardTemplate))
+                .ToList();
+
+            return ServiceResult<IReadOnlyList<CardTemplateSummaryDto>>.Success(dtos);
+        }
+
+        public async Task<ServiceResult> AssignTemplateAsync(Guid planId, Guid templateId)
+        {
+            // Verify plan exists
+            var planExists = await _unitOfWork.Repository<SubscriptionPlan>()
+                .GetQueryable().AnyAsync(p => p.Id == planId && !p.IsDeleted);
+            if (!planExists)
+                return ServiceResult.NotFound(_messageService.Get("RecordNotFound"));
+
+            // Verify template exists and is active
+            var templateExists = await _unitOfWork.Repository<CardTemplate>()
+                .GetQueryable().AnyAsync(t => t.Id == templateId && t.IsActive && !t.IsDeleted);
+            if (!templateExists)
+                return ServiceResult.NotFound(_messageService.Get("RecordNotFound"));
+
+            // Check for duplicate
+            var alreadyAssigned = await _unitOfWork.Repository<SubscriptionPlanTemplate>()
+                .GetQueryable()
+                .AnyAsync(pt => pt.SubscriptionPlanId == planId && pt.CardTemplateId == templateId);
+            if (alreadyAssigned)
+                return ServiceResult.Fail(_messageService.Get("TemplateAlreadyAssigned"), 409);
+
+            var assignment = new SubscriptionPlanTemplate
+            {
+                SubscriptionPlanId = planId,
+                CardTemplateId = templateId
+            };
+
+            await _unitOfWork.Repository<SubscriptionPlanTemplate>().AddAsync(assignment);
+            await _unitOfWork.SaveChangesAsync();
+
+            return ServiceResult.Success(_messageService.Get("RecordCreated"));
+        }
+
+        public async Task<ServiceResult> UnassignTemplateAsync(Guid planId, Guid templateId)
+        {
+            var assignment = await _unitOfWork.Repository<SubscriptionPlanTemplate>()
+                .GetQueryable()
+                .FirstOrDefaultAsync(pt => pt.SubscriptionPlanId == planId && pt.CardTemplateId == templateId);
+
+            if (assignment == null)
+                return ServiceResult.NotFound(_messageService.Get("RecordNotFound"));
+
+            _unitOfWork.Repository<SubscriptionPlanTemplate>().HardRemove(assignment);
+            await _unitOfWork.SaveChangesAsync();
+
+            return ServiceResult.Success(_messageService.Get("TemplateUnassigned"));
+        }
+    }

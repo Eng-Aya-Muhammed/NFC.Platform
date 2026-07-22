@@ -14,6 +14,8 @@ namespace NFC.Platform.Infrastructure.Configurations
             builder.Property(s => s.StartDate).IsRequired();
             builder.Property(s => s.EndDate).IsRequired();
             builder.Property(s => s.IsActive).IsRequired();
+            builder.Property(s => s.TemplateChangesUsed).IsRequired().HasDefaultValue(0);
+            builder.Property(s => s.CustomDesignRequestsUsed).IsRequired().HasDefaultValue(0);
 
             builder.Property(s => s.TenantId).IsRequired();
             builder.HasIndex(s => s.TenantId);

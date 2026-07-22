@@ -1,6 +1,4 @@
-using System;
-using NFC.Platform.Domain.Common;
-using NFC.Platform.Domain.Enums;
+
 
 namespace NFC.Platform.Domain.Entities
 {

@@ -17,6 +17,6 @@ namespace NFC.Platform.Application.Interfaces.Services
         /// Sets the individual user's digital profile template and optional branding overrides.
         /// Available via PATCH /api/user/profile/template.
         /// </summary>
-        Task<ServiceResult<EmployeeDetailsDto>> UpdateProfileTemplateAsync(Guid userId, UpdateUserProfileTemplateRequest request);
+        Task<ServiceResult<EmployeeDetailsDto>> UpdateProfileTemplateAsync(Guid userId, Guid? templateId);
     }
 }

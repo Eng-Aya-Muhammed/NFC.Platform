@@ -108,32 +108,6 @@ namespace NFC.Platform.Tests.Controllers
         }
 
         [Fact]
-        public async Task UpdateTemplate_CallsService_AndReturnsOk_OnSuccess()
-        {
-            var request = new UpdateCompanyTemplateRequest();
-            var dto = new CompanyProfileDto();
-            _companyService.UpdateCompanyTemplateAsync(request).Returns(ServiceResult<CompanyProfileDto>.Success(dto));
-
-            var result = await _sut.UpdateTemplate(request) as OkObjectResult;
-
-            Assert.NotNull(result);
-            Assert.Equal(200, result.StatusCode);
-            await _companyService.Received(1).UpdateCompanyTemplateAsync(request);
-        }
-
-        [Fact]
-        public async Task UpdateTemplate_ReturnsError_OnFailure()
-        {
-            var request = new UpdateCompanyTemplateRequest();
-            _companyService.UpdateCompanyTemplateAsync(request).Returns(ServiceResult<CompanyProfileDto>.Fail("Error", 400));
-
-            var result = await _sut.UpdateTemplate(request) as ObjectResult;
-
-            Assert.NotNull(result);
-            Assert.Equal(400, result.StatusCode);
-        }
-
-        [Fact]
         public async Task ChangePassword_CallsService_AndReturnsOk_OnSuccess()
         {
             var request = new CompanyChangePasswordRequest();
@@ -176,7 +150,6 @@ namespace NFC.Platform.Tests.Controllers
         [InlineData(nameof(CompanyController.GetDashboard))]
         [InlineData(nameof(CompanyController.GetProfile))]
         [InlineData(nameof(CompanyController.UpdateProfile))]
-        [InlineData(nameof(CompanyController.UpdateTemplate))]
         public void NonSensitiveCompanyEndpoints_ShouldNotHaveRateLimiting(string methodName)
         {
             var method = typeof(CompanyController).GetMethod(methodName);
@@ -184,6 +157,30 @@ namespace NFC.Platform.Tests.Controllers
 
             var attr = method.GetCustomAttributes(typeof(EnableRateLimitingAttribute), true);
             Assert.Empty(attr);
+        }
+        [Fact]
+        public async Task ApplyCompanyPublicProfileTemplate_ReturnsOk_OnSuccess()
+        {
+            var templateId = Guid.NewGuid();
+            _companyService.UpdateCompanyTemplateAsync(templateId).Returns(ServiceResult<CompanyProfileDto>.Success(new CompanyProfileDto()));
+
+            var result = await _sut.ApplyCompanyPublicProfileTemplate(templateId) as OkObjectResult;
+
+            Assert.NotNull(result);
+            Assert.Equal(200, result.StatusCode);
+            await _companyService.Received(1).UpdateCompanyTemplateAsync(templateId);
+        }
+
+        [Fact]
+        public async Task RemoveCompanyPublicProfileTemplate_ReturnsOk_OnSuccess()
+        {
+            _companyService.UpdateCompanyTemplateAsync(null).Returns(ServiceResult<CompanyProfileDto>.Success(new CompanyProfileDto()));
+
+            var result = await _sut.RemoveCompanyPublicProfileTemplate() as OkObjectResult;
+
+            Assert.NotNull(result);
+            Assert.Equal(200, result.StatusCode);
+            await _companyService.Received(1).UpdateCompanyTemplateAsync(null);
         }
     }
 }

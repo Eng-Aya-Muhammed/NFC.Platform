@@ -74,27 +74,33 @@ namespace NFC.Platform.API.Controllers
             {
                 return StatusCode(result.StatusCode, result);
             }
+
             return Ok(result);
         }
 
         /// <summary>
-        /// Sets the individual user's digital profile template and optional brand color overrides.
-        /// Applies to the user's public profile page at GET /c/{code}.
+        /// Applies a specific digital card template to the authenticated user's public profile.
         /// </summary>
-        [HttpPatch("template")]
-        public async Task<IActionResult> UpdateProfileTemplate([FromBody] UpdateUserProfileTemplateRequest request)
+        [HttpPost("template/{templateId:guid}")]
+        public async Task<IActionResult> ApplyPublicProfileTemplate([FromRoute] Guid templateId)
         {
             var userId = _currentTenant.UserId;
-            if (!userId.HasValue)
-            {
-                return Unauthorized("User is not authenticated.");
-            }
+            if (!userId.HasValue) return Unauthorized("User is not authenticated.");
+            var result = await _profileService.UpdateProfileTemplateAsync(userId.Value, templateId);
+            if (!result.IsSuccess) return StatusCode(result.StatusCode, result);
+            return Ok(result);
+        }
 
-            var result = await _profileService.UpdateProfileTemplateAsync(userId.Value, request);
-            if (!result.IsSuccess)
-            {
-                return StatusCode(result.StatusCode, result);
-            }
+        /// <summary>
+        /// Removes the specific digital card template from the authenticated user's public profile, reverting to the default.
+        /// </summary>
+        [HttpDelete("template")]
+        public async Task<IActionResult> RemovePublicProfileTemplate()
+        {
+            var userId = _currentTenant.UserId;
+            if (!userId.HasValue) return Unauthorized("User is not authenticated.");
+            var result = await _profileService.UpdateProfileTemplateAsync(userId.Value, null);
+            if (!result.IsSuccess) return StatusCode(result.StatusCode, result);
             return Ok(result);
         }
     }

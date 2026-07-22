@@ -6,6 +6,7 @@ using AutoMapper;
 using MockQueryable.NSubstitute;
 using NFC.Platform.Application.DTOs;
 using NFC.Platform.Application.DTOs.Admin;
+using NFC.Platform.Application.DTOs.Subscription;
 using NFC.Platform.Application.DTOs.Template;
 using NFC.Platform.Application.DTOs.Upload;
 using NFC.Platform.Application.Interfaces.Repositories;
@@ -320,23 +321,6 @@ namespace NFC.Platform.Tests.Services
         }
 
         // ── DeleteTemplateAsync ───────────────────────────────────────────────────
-
-        [Fact]
-        public async Task DeleteTemplateAsync_TogglesIsActiveStatus()
-        {
-            // Arrange
-            var templateId = Guid.NewGuid();
-            var template = new CardTemplate { Id = templateId, IsActive = true };
-            _cardTemplateRepo.GetByIdAsync(templateId).Returns(template);
-
-            // Act
-            var result = await _sut.DeleteTemplateAsync(templateId);
-
-            // Assert
-            Assert.True(result.IsSuccess);
-            Assert.False(template.IsActive);
-            await _unitOfWork.Received(1).SaveChangesAsync();
-        }
 
         // ── GetTenantsPagedAsync ──────────────────────────────────────────────────
 
@@ -920,6 +904,199 @@ namespace NFC.Platform.Tests.Services
                 Arg.Any<Hangfire.States.IState>());
         }
 
+        // ── Plan Management ───────────────────────────────────────────────────────
+
+        [Fact]
+        public async Task CreatePlanAsync_ValidRequest_ReturnsSuccess()
+        {
+            // Arrange
+            var request = new CreateSubscriptionPlanRequest
+            {
+                Name = "Business",
+                Description = "Business plan",
+                Price = 199m,
+                DurationInDays = 365,
+                MaxEmployees = 50,
+                MaxTemplateChanges = 5,
+                MaxCustomDesignRequests = 2
+            };
+
+            var planRepo = Substitute.For<IGenericRepository<SubscriptionPlan>>();
+            var planTemplateRepo = Substitute.For<IGenericRepository<SubscriptionPlanTemplate>>();
+
+            _unitOfWork.Repository<SubscriptionPlan>().Returns(planRepo);
+            _unitOfWork.Repository<SubscriptionPlanTemplate>().Returns(planTemplateRepo);
+
+            var plan = new SubscriptionPlan { Id = Guid.NewGuid(), Name = request.Name };
+            _mapper.Map<SubscriptionPlan>(request).Returns(plan);
+
+            planRepo.GetQueryable().Returns(new List<SubscriptionPlan> { plan }.AsQueryable().BuildMock());
+            _mapper.Map<SubscriptionPlanDto>(Arg.Any<SubscriptionPlan>()).Returns(new SubscriptionPlanDto { Name = plan.Name });
+            _messageService.Get(Arg.Any<string>()).Returns(x => x.Arg<string>());
+
+            // Act
+            var result = await _sut.CreatePlanAsync(request);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            await planRepo.Received(1).AddAsync(Arg.Any<SubscriptionPlan>());
+        }
+
+        [Fact]
+        public async Task DeletePlanAsync_WithActiveSubscriptions_Returns409()
+        {
+            // Arrange
+            var planId = Guid.NewGuid();
+            var activeSub = new UserSubscription
+            {
+                SubscriptionPlanId = planId,
+                IsActive = true,
+                EndDate = DateTime.UtcNow.AddDays(30)
+            };
+
+            _subscriptionRepo.GetQueryable()
+                .Returns(new List<UserSubscription> { activeSub }.AsQueryable().BuildMock());
+            _messageService.Get("PlanHasActiveSubscriptions").Returns("Cannot delete a plan that has active subscriptions.");
+
+            // Act
+            var result = await _sut.DeletePlanAsync(planId);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(409, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task DeletePlanAsync_NoActiveSubscriptions_Succeeds()
+        {
+            // Arrange
+            var planId = Guid.NewGuid();
+            var plan = new SubscriptionPlan { Id = planId };
+            var planRepo = Substitute.For<IGenericRepository<SubscriptionPlan>>();
+            _unitOfWork.Repository<SubscriptionPlan>().Returns(planRepo);
+
+            _subscriptionRepo.GetQueryable()
+                .Returns(new List<UserSubscription>().AsQueryable().BuildMock());
+            planRepo.GetByIdAsync(planId).Returns(plan);
+            _messageService.Get(Arg.Any<string>()).Returns(x => x.Arg<string>());
+
+            // Act
+            var result = await _sut.DeletePlanAsync(planId);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.True(plan.IsDeleted);
+        }
+
+        [Fact]
+        public async Task AssignTemplateAsync_Duplicate_Returns409()
+        {
+            // Arrange
+            var planId = Guid.NewGuid();
+            var templateId = Guid.NewGuid();
+
+            var planRepo = Substitute.For<IGenericRepository<SubscriptionPlan>>();
+            var planTemplateRepo = Substitute.For<IGenericRepository<SubscriptionPlanTemplate>>();
+            _unitOfWork.Repository<SubscriptionPlan>().Returns(planRepo);
+            _unitOfWork.Repository<SubscriptionPlanTemplate>().Returns(planTemplateRepo);
+
+            planRepo.GetQueryable().Returns(new List<SubscriptionPlan>
+                { new() { Id = planId } }.AsQueryable().BuildMock());
+
+            _cardTemplateRepo.GetQueryable().Returns(new List<CardTemplate>
+                { new() { Id = templateId, IsActive = true, IsDeleted = false } }.AsQueryable().BuildMock());
+
+            planTemplateRepo.GetQueryable().Returns(new List<SubscriptionPlanTemplate>
+                { new() { SubscriptionPlanId = planId, CardTemplateId = templateId } }.AsQueryable().BuildMock());
+
+            _messageService.Get("TemplateAlreadyAssigned").Returns("Already assigned.");
+
+            // Act
+            var result = await _sut.AssignTemplateAsync(planId, templateId);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(409, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task AssignTemplateAsync_New_Succeeds()
+        {
+            // Arrange
+            var planId = Guid.NewGuid();
+            var templateId = Guid.NewGuid();
+
+            var planRepo = Substitute.For<IGenericRepository<SubscriptionPlan>>();
+            var planTemplateRepo = Substitute.For<IGenericRepository<SubscriptionPlanTemplate>>();
+            _unitOfWork.Repository<SubscriptionPlan>().Returns(planRepo);
+            _unitOfWork.Repository<SubscriptionPlanTemplate>().Returns(planTemplateRepo);
+
+            planRepo.GetQueryable().Returns(new List<SubscriptionPlan>
+                { new() { Id = planId } }.AsQueryable().BuildMock());
+            _cardTemplateRepo.GetQueryable().Returns(new List<CardTemplate>
+                { new() { Id = templateId, IsActive = true, IsDeleted = false } }.AsQueryable().BuildMock());
+            planTemplateRepo.GetQueryable().Returns(new List<SubscriptionPlanTemplate>().AsQueryable().BuildMock());
+            _messageService.Get(Arg.Any<string>()).Returns(x => x.Arg<string>());
+
+            // Act
+            var result = await _sut.AssignTemplateAsync(planId, templateId);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            await planTemplateRepo.Received(1).AddAsync(Arg.Is<SubscriptionPlanTemplate>(
+                pt => pt.SubscriptionPlanId == planId && pt.CardTemplateId == templateId));
+        }
+
+        [Fact]
+        public async Task DeleteTemplateAsync_NullsOutUserAndCompanyProfiles()
+        {
+            // Arrange
+            var templateId = Guid.NewGuid();
+            var template = new CardTemplate { Id = templateId, IsActive = true, IsDeleted = false };
+
+            var profile1 = new UserProfile { ProfileTemplateId = templateId };
+            var profile2 = new UserProfile { ProfileTemplateId = templateId };
+            var company1 = new Company { ProfileTemplateId = templateId };
+
+            var planTemplateRepo = Substitute.For<IGenericRepository<SubscriptionPlanTemplate>>();
+            _unitOfWork.Repository<SubscriptionPlanTemplate>().Returns(planTemplateRepo);
+
+            _cardTemplateRepo.GetByIdAsync(templateId).Returns(template);
+            _userProfileRepo.GetQueryable().Returns(new List<UserProfile> { profile1, profile2 }.AsQueryable().BuildMock());
+            _companyRepo.GetQueryable().Returns(new List<Company> { company1 }.AsQueryable().BuildMock());
+            planTemplateRepo.GetQueryable().Returns(new List<SubscriptionPlanTemplate>().AsQueryable().BuildMock());
+            _messageService.Get("TemplateDeletedAndProfilesCleared").Returns("Deleted.");
+
+            // Act
+            var result = await _sut.DeleteTemplateAsync(templateId);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.True(template.IsDeleted);
+            Assert.False(template.IsActive);
+            Assert.Null(profile1.ProfileTemplateId);
+            Assert.Null(profile2.ProfileTemplateId);
+            Assert.Null(company1.ProfileTemplateId);
+        }
+
+        [Fact]
+        public async Task UnassignTemplateAsync_NotFound_Returns404()
+        {
+            // Arrange
+            var planId = Guid.NewGuid();
+            var templateId = Guid.NewGuid();
+
+            var planTemplateRepo = Substitute.For<IGenericRepository<SubscriptionPlanTemplate>>();
+            _unitOfWork.Repository<SubscriptionPlanTemplate>().Returns(planTemplateRepo);
+            planTemplateRepo.GetQueryable().Returns(new List<SubscriptionPlanTemplate>().AsQueryable().BuildMock());
+            _messageService.Get("RecordNotFound").Returns("Not found.");
+
+            // Act
+            var result = await _sut.UnassignTemplateAsync(planId, templateId);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(404, result.StatusCode);
+        }
     }
 }
-

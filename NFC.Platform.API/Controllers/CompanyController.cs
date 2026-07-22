@@ -42,21 +42,6 @@ namespace NFC.Platform.API.Controllers
             return Ok(result);
         }
 
-        /// <summary>
-        /// Sets the company's digital profile template.
-        /// Applies to all employee public profile pages at GET /c/{code}.
-        /// </summary>
-        [HttpPatch("template")]
-        public async Task<IActionResult> UpdateTemplate([FromBody] UpdateCompanyTemplateRequest request)
-        {
-            var result = await _companyService.UpdateCompanyTemplateAsync(request);
-            if (!result.IsSuccess)
-            {
-                return StatusCode(result.StatusCode, result);
-            }
-            return Ok(result);
-        }
-
         [HttpPost("change-password")]
         [EnableRateLimiting("ChangePasswordPolicy")]
         public async Task<IActionResult> ChangePassword([FromBody] CompanyChangePasswordRequest request)
@@ -66,6 +51,28 @@ namespace NFC.Platform.API.Controllers
             {
                 return StatusCode(result.StatusCode, result);
             }
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// Applies a specific digital card template to the company's public profile (overrides employee defaults).
+        /// </summary>
+        [HttpPost("template/{templateId:guid}")]
+        public async Task<IActionResult> ApplyCompanyPublicProfileTemplate([FromRoute] Guid templateId)
+        {
+            var result = await _companyService.UpdateCompanyTemplateAsync(templateId);
+            if (!result.IsSuccess) return StatusCode(result.StatusCode, result);
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// Removes the specific digital card template from the company's public profile.
+        /// </summary>
+        [HttpDelete("template")]
+        public async Task<IActionResult> RemoveCompanyPublicProfileTemplate()
+        {
+            var result = await _companyService.UpdateCompanyTemplateAsync(null);
+            if (!result.IsSuccess) return StatusCode(result.StatusCode, result);
             return Ok(result);
         }
     }

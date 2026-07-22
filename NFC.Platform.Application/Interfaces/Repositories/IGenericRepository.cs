@@ -42,6 +42,13 @@ namespace NFC.Platform.Application.Interfaces.Repositories
         Task AddAsync(T entity);
 
         /// <summary>
+        /// Adds a collection of entities to the data set.
+        /// </summary>
+        /// <param name="entities">The entities to add.</param>
+        /// <returns>A task representing the async addition.</returns>
+        Task AddRangeAsync(IEnumerable<T> entities);
+
+        /// <summary>
         /// Marks an existing entity as modified.
         /// </summary>
         /// <param name="entity">The entity to update.</param>
@@ -52,6 +59,18 @@ namespace NFC.Platform.Application.Interfaces.Repositories
         /// </summary>
         /// <param name="entity">The entity to soft delete.</param>
         void Remove(T entity);
+
+        /// <summary>
+        /// Physically deletes an entity from the database.
+        /// </summary>
+        /// <param name="entity">The entity to delete.</param>
+        void HardRemove(T entity);
+
+        /// <summary>
+        /// Physically deletes a collection of entities from the database.
+        /// </summary>
+        /// <param name="entities">The entities to delete.</param>
+        void HardRemoveRange(IEnumerable<T> entities);
 
         /// <summary>
         /// Counts the number of entities matching an optional filter.

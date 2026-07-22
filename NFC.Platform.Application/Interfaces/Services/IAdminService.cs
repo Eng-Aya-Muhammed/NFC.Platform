@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using NFC.Platform.Application.DTOs;
 using NFC.Platform.Application.DTOs.Admin;
+using NFC.Platform.Application.DTOs.Subscription;
 using NFC.Platform.Application.DTOs.Template;
 using NFC.Platform.BuildingBlocks.Results;
 using NFC.Platform.Domain.Enums;
@@ -27,5 +29,15 @@ namespace NFC.Platform.Application.Interfaces.Services
         // ── Subdomain management (Super Admin) ───────────────────────────────────
         Task<ServiceResult<PagedResult<ProfileSubdomainSummaryDto>>> GetAllProfileSubdomainsAsync(PaginationRequest request, string? search);
         Task<ServiceResult> ReassignSubdomainAsync(Guid profileId, string newSubdomain);
+
+        // ── Subscription Plan Management (Super Admin) ────────────────────────────
+        Task<ServiceResult<SubscriptionPlanDto>> CreatePlanAsync(CreateSubscriptionPlanRequest request);
+        Task<ServiceResult<SubscriptionPlanDto>> UpdatePlanAsync(Guid planId, UpdateSubscriptionPlanRequest request);
+        Task<ServiceResult> DeletePlanAsync(Guid planId);
+
+        // ── Plan Template Assignment (Super Admin) ────────────────────────────────
+        Task<ServiceResult<IReadOnlyList<CardTemplateSummaryDto>>> GetPlanTemplatesAsync(Guid planId);
+        Task<ServiceResult> AssignTemplateAsync(Guid planId, Guid templateId);
+        Task<ServiceResult> UnassignTemplateAsync(Guid planId, Guid templateId);
     }
 }

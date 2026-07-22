@@ -21,3 +21,4 @@ global using NFC.Platform.BuildingBlocks.Common.Constants;
 global using NFC.Platform.BuildingBlocks.Common.Helpers;
 global using NFC.Platform.BuildingBlocks.Results;
 global using NFC.Platform.Domain.Enums;
+global using NFC.Platform.Application.DTOs.Subscription;

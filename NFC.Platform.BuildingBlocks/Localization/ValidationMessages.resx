@@ -250,4 +250,25 @@
   <data name="EmailTemplateApprovedFooter" xml:space="preserve">
     <value>© 2026 NFC Platform. All rights reserved.</value>
   </data>
+  <data name="TemplateNotAllowedInPlan" xml:space="preserve">
+    <value>This template is not available in your current subscription plan.</value>
+  </data>
+  <data name="TemplateChangeLimitReached" xml:space="preserve">
+    <value>You have reached the maximum number of template changes allowed in your subscription.</value>
+  </data>
+  <data name="CustomDesignRequestLimitReached" xml:space="preserve">
+    <value>You have reached the maximum number of custom design requests allowed in your subscription.</value>
+  </data>
+  <data name="PlanHasActiveSubscriptions" xml:space="preserve">
+    <value>Cannot delete a plan that has active subscriptions.</value>
+  </data>
+  <data name="TemplateAlreadyAssigned" xml:space="preserve">
+    <value>This template is already assigned to the plan.</value>
+  </data>
+  <data name="TemplateUnassigned" xml:space="preserve">
+    <value>Template removed from plan successfully.</value>
+  </data>
+  <data name="TemplateDeletedAndProfilesCleared" xml:space="preserve">
+    <value>Template deleted successfully. Affected profiles have been reset to the default template.</value>
+  </data>
 </root>

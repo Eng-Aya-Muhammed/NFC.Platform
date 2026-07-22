@@ -26,6 +26,8 @@ namespace NFC.Platform.Tests.Services
 
         private readonly IGenericRepository<User> _userRepo;
         private readonly IGenericRepository<UserProfile> _userProfileRepo;
+        private readonly IGenericRepository<CardTemplate> _cardTemplateRepo;
+        private readonly IGenericRepository<UserSubscription> _subscriptionRepo;
 
         private readonly ProfileService _sut;
 
@@ -37,9 +39,13 @@ namespace NFC.Platform.Tests.Services
 
             _userRepo = Substitute.For<IGenericRepository<User>>();
             _userProfileRepo = Substitute.For<IGenericRepository<UserProfile>>();
+            _cardTemplateRepo = Substitute.For<IGenericRepository<CardTemplate>>();
+            _subscriptionRepo = Substitute.For<IGenericRepository<UserSubscription>>();
 
             _unitOfWork.Repository<User>().Returns(_userRepo);
             _unitOfWork.Repository<UserProfile>().Returns(_userProfileRepo);
+            _unitOfWork.Repository<CardTemplate>().Returns(_cardTemplateRepo);
+            _unitOfWork.Repository<UserSubscription>().Returns(_subscriptionRepo);
 
             _sut = new ProfileService(_unitOfWork, _mapper, _messageService);
         }
@@ -102,6 +108,34 @@ namespace NFC.Platform.Tests.Services
             // Assert
             Assert.True(result.IsSuccess);
             await _unitOfWork.Received(1).SaveChangesAsync();
+        }
+
+        [Fact]
+        public async Task UpdateProfileAsync_AlsoUpdatesCustomLinks_WhenLinksAreProvided()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var userProfile = new UserProfile { Id = Guid.NewGuid(), FullName = "Old Name", CustomLinks = [] };
+            var user = new User { Id = userId, UserProfile = userProfile };
+            var mockQuery = new List<User> { user }.AsQueryable().BuildMock();
+            _userRepo.GetQueryable().Returns(mockQuery);
+
+            var request = new UpdateMyProfileRequest 
+            { 
+                FullName = "New Name",
+                Links = [ new NFC.Platform.Application.DTOs.Profile.CustomLinkInput { Title = "Website", Url = "https://example.com" } ]
+            };
+
+            _mapper.Map(request, user.UserProfile).Returns(user.UserProfile);
+            _mapper.Map<EmployeeDetailsDto>(user).Returns(new EmployeeDetailsDto { FullName = "New Name" });
+
+            // Act
+            var result = await _sut.UpdateProfileAsync(userId, request);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Single(userProfile.CustomLinks);
+            Assert.Equal("https://example.com", userProfile.CustomLinks.First().Url);
         }
 
         // ── SynchronizeLinksAsync ─────────────────────────────────────────────────
@@ -270,13 +304,15 @@ namespace NFC.Platform.Tests.Services
         }
 
         [Fact]
-        public async Task UpdateProfileTemplateAsync_ReturnsNotFound_WhenUserDoesNotExist()
+        public async Task UpdateProfileTemplateAsync_TemplateDoesNotExist_ReturnsNotFound()
         {
             // Arrange
             var userId = Guid.NewGuid();
-            _userRepo.GetQueryable().Returns(new List<User>().AsQueryable().BuildMock());
-            _messageService.Get("RecordNotFound").Returns("Record not found.");
-            var request = new UpdateUserProfileTemplateRequest { ProfileTemplateId = Guid.NewGuid() };
+            var templateId = Guid.NewGuid();
+            var request = templateId;
+
+            _cardTemplateRepo.GetQueryable().Returns(new List<CardTemplate>().AsQueryable().BuildMock());
+            _messageService.Get("RecordNotFound").Returns("Not found");
 
             // Act
             var result = await _sut.UpdateProfileTemplateAsync(userId, request);
@@ -287,44 +323,137 @@ namespace NFC.Platform.Tests.Services
         }
 
         [Fact]
-        public async Task UpdateProfileTemplateAsync_CreatesNewProfile_WhenUserProfileIsNull()
+        public async Task UpdateProfileTemplateAsync_SubscriptionExpired_ReturnsFail()
         {
             // Arrange
             var userId = Guid.NewGuid();
-            var user = new User { Id = userId, TenantId = Guid.NewGuid(), UserProfile = null };
-            var mockQuery = new List<User> { user }.AsQueryable().BuildMock();
-            _userRepo.GetQueryable().Returns(mockQuery);
-
+            var tenantId = Guid.NewGuid();
             var templateId = Guid.NewGuid();
-            var request = new UpdateUserProfileTemplateRequest { ProfileTemplateId = templateId };
-            var expectedDto = new EmployeeDetailsDto { Id = userId, Layout = "classic" };
-            _mapper.Map<EmployeeDetailsDto>(user).Returns(expectedDto);
+            var request = templateId;
+
+            var template = new CardTemplate { Id = templateId, IsActive = true, IsDeleted = false };
+            _cardTemplateRepo.GetQueryable().Returns(new List<CardTemplate> { template }.AsQueryable().BuildMock());
+
+            var user = new User { Id = userId, TenantId = tenantId, UserProfile = new UserProfile() };
+            _userRepo.GetQueryable().Returns(new List<User> { user }.AsQueryable().BuildMock());
+
+            _subscriptionRepo.GetQueryable().Returns(new List<UserSubscription>().AsQueryable().BuildMock());
+            _messageService.Get("SubscriptionExpiredOrMissing").Returns("Missing sub");
 
             // Act
             var result = await _sut.UpdateProfileTemplateAsync(userId, request);
 
             // Assert
-            Assert.True(result.IsSuccess);
-            Assert.NotNull(user.UserProfile);
-            Assert.Equal(templateId, user.UserProfile.ProfileTemplateId);
-            await _userProfileRepo.Received(1).AddAsync(Arg.Any<UserProfile>());
-            await _unitOfWork.Received(2).SaveChangesAsync(); // One for create, one for save template ID
+            Assert.False(result.IsSuccess);
+            Assert.Equal(400, result.StatusCode);
+            Assert.Equal("Missing sub", result.Message);
         }
 
         [Fact]
-        public async Task UpdateProfileTemplateAsync_UpdatesTemplate_WhenUserProfileExists()
+        public async Task UpdateProfileTemplateAsync_TemplateNotAllowed_ReturnsFail()
         {
             // Arrange
             var userId = Guid.NewGuid();
-            var profile = new UserProfile { UserId = userId };
-            var user = new User { Id = userId, UserProfile = profile };
-            var mockQuery = new List<User> { user }.AsQueryable().BuildMock();
-            _userRepo.GetQueryable().Returns(mockQuery);
-
+            var tenantId = Guid.NewGuid();
             var templateId = Guid.NewGuid();
-            var request = new UpdateUserProfileTemplateRequest { ProfileTemplateId = templateId };
-            var expectedDto = new EmployeeDetailsDto { Id = userId, Layout = "classic" };
-            _mapper.Map<EmployeeDetailsDto>(user).Returns(expectedDto);
+            var request = templateId;
+
+            var template = new CardTemplate { Id = templateId, IsActive = true, IsDeleted = false };
+            _cardTemplateRepo.GetQueryable().Returns(new List<CardTemplate> { template }.AsQueryable().BuildMock());
+
+            var user = new User { Id = userId, TenantId = tenantId, UserProfile = new UserProfile() };
+            _userRepo.GetQueryable().Returns(new List<User> { user }.AsQueryable().BuildMock());
+
+            var sub = new UserSubscription
+            {
+                TenantId = tenantId,
+                IsActive = true,
+                EndDate = DateTime.UtcNow.AddDays(30),
+                SubscriptionPlan = new SubscriptionPlan
+                {
+                    PlanTemplates = new List<SubscriptionPlanTemplate>() // Empty = no templates allowed
+                }
+            };
+            _subscriptionRepo.GetQueryable().Returns(new List<UserSubscription> { sub }.AsQueryable().BuildMock());
+            _messageService.Get("TemplateNotAllowedInPlan").Returns("Not allowed");
+
+            // Act
+            var result = await _sut.UpdateProfileTemplateAsync(userId, request);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(403, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task UpdateProfileTemplateAsync_LimitReached_ReturnsFail()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var tenantId = Guid.NewGuid();
+            var templateId = Guid.NewGuid();
+            var request = templateId;
+
+            var template = new CardTemplate { Id = templateId, IsActive = true, IsDeleted = false };
+            _cardTemplateRepo.GetQueryable().Returns(new List<CardTemplate> { template }.AsQueryable().BuildMock());
+
+            var user = new User { Id = userId, TenantId = tenantId, UserProfile = new UserProfile() };
+            _userRepo.GetQueryable().Returns(new List<User> { user }.AsQueryable().BuildMock());
+
+            var sub = new UserSubscription
+            {
+                TenantId = tenantId,
+                IsActive = true,
+                EndDate = DateTime.UtcNow.AddDays(30),
+                TemplateChangesUsed = 5,
+                SubscriptionPlan = new SubscriptionPlan
+                {
+                    MaxTemplateChanges = 5,
+                    PlanTemplates = new List<SubscriptionPlanTemplate> { new() { CardTemplateId = templateId } }
+                }
+            };
+            _subscriptionRepo.GetQueryable().Returns(new List<UserSubscription> { sub }.AsQueryable().BuildMock());
+            _messageService.Get("TemplateChangeLimitReached").Returns("Limit reached");
+
+            // Act
+            var result = await _sut.UpdateProfileTemplateAsync(userId, request);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(400, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task UpdateProfileTemplateAsync_Valid_UpdatesTemplateAndIncrementsCounter()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var tenantId = Guid.NewGuid();
+            var templateId = Guid.NewGuid();
+            var request = templateId;
+
+            var template = new CardTemplate { Id = templateId, IsActive = true, IsDeleted = false };
+            _cardTemplateRepo.GetQueryable().Returns(new List<CardTemplate> { template }.AsQueryable().BuildMock());
+
+            var profile = new UserProfile { UserId = userId, ProfileTemplateId = null };
+            var user = new User { Id = userId, TenantId = tenantId, UserProfile = profile };
+            _userRepo.GetQueryable().Returns(new List<User> { user }.AsQueryable().BuildMock());
+
+            var sub = new UserSubscription
+            {
+                TenantId = tenantId,
+                IsActive = true,
+                EndDate = DateTime.UtcNow.AddDays(30),
+                TemplateChangesUsed = 2,
+                SubscriptionPlan = new SubscriptionPlan
+                {
+                    MaxTemplateChanges = 5,
+                    PlanTemplates = new List<SubscriptionPlanTemplate> { new() { CardTemplateId = templateId } }
+                }
+            };
+            _subscriptionRepo.GetQueryable().Returns(new List<UserSubscription> { sub }.AsQueryable().BuildMock());
+            _mapper.Map<EmployeeDetailsDto>(user).Returns(new EmployeeDetailsDto { Id = userId });
+            _messageService.Get(Arg.Any<string>()).Returns(x => x.Arg<string>());
 
             // Act
             var result = await _sut.UpdateProfileTemplateAsync(userId, request);
@@ -332,6 +461,7 @@ namespace NFC.Platform.Tests.Services
             // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(templateId, profile.ProfileTemplateId);
+            Assert.Equal(3, sub.TemplateChangesUsed); // Incremented
             await _unitOfWork.Received(1).SaveChangesAsync();
         }
     }

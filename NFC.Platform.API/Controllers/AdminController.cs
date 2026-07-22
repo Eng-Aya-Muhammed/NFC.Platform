@@ -205,5 +205,62 @@ namespace NFC.Platform.API.Controllers
             }
             return Ok(result);
         }
+
+        // ── Subscription Plan Management ──────────────────────────────────────────
+
+        /// <summary>Creates a new subscription plan with optional initial template assignments.</summary>
+        [HttpPost("plans")]
+        public async Task<IActionResult> CreatePlan([FromBody] CreateSubscriptionPlanRequest request)
+        {
+            var result = await _adminService.CreatePlanAsync(request);
+            if (!result.IsSuccess) return StatusCode(result.StatusCode, result);
+            return Ok(result);
+        }
+
+        /// <summary>Updates an existing subscription plan (patch semantics — only provided fields are applied).</summary>
+        [HttpPut("plans/{planId:guid}")]
+        public async Task<IActionResult> UpdatePlan([FromRoute] Guid planId, [FromBody] UpdateSubscriptionPlanRequest request)
+        {
+            var result = await _adminService.UpdatePlanAsync(planId, request);
+            if (!result.IsSuccess) return StatusCode(result.StatusCode, result);
+            return Ok(result);
+        }
+
+        /// <summary>Soft-deletes a subscription plan. Blocked if any tenant has an active subscription on this plan.</summary>
+        [HttpDelete("plans/{planId:guid}")]
+        public async Task<IActionResult> DeletePlan([FromRoute] Guid planId)
+        {
+            var result = await _adminService.DeletePlanAsync(planId);
+            if (!result.IsSuccess) return StatusCode(result.StatusCode, result);
+            return Ok(result);
+        }
+
+        // ── Plan Template Assignment ───────────────────────────────────────────────
+
+        /// <summary>Returns all templates currently assigned to a plan.</summary>
+        [HttpGet("plans/{planId:guid}/templates")]
+        public async Task<IActionResult> GetPlanTemplates([FromRoute] Guid planId)
+        {
+            var result = await _adminService.GetPlanTemplatesAsync(planId);
+            return Ok(result);
+        }
+
+        /// <summary>Assigns a template to a subscription plan.</summary>
+        [HttpPost("plans/{planId:guid}/templates/{templateId:guid}")]
+        public async Task<IActionResult> AssignTemplate([FromRoute] Guid planId, [FromRoute] Guid templateId)
+        {
+            var result = await _adminService.AssignTemplateAsync(planId, templateId);
+            if (!result.IsSuccess) return StatusCode(result.StatusCode, result);
+            return Ok(result);
+        }
+
+        /// <summary>Removes a template assignment from a subscription plan. Does not affect users currently using the template.</summary>
+        [HttpDelete("plans/{planId:guid}/templates/{templateId:guid}")]
+        public async Task<IActionResult> UnassignTemplate([FromRoute] Guid planId, [FromRoute] Guid templateId)
+        {
+            var result = await _adminService.UnassignTemplateAsync(planId, templateId);
+            if (!result.IsSuccess) return StatusCode(result.StatusCode, result);
+            return Ok(result);
+        }
     }
 }

@@ -1,10 +1,4 @@
-using System;
-using System.Linq;
-using System.Threading.Tasks;
-using System.Collections.Generic;
-using Microsoft.EntityFrameworkCore;
-using NFC.Platform.Application.Interfaces.Repositories;
-using NFC.Platform.Domain.Entities;
+
 
 namespace NFC.Platform.Application.Extensions
 {

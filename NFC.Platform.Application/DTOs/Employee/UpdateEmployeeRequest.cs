@@ -15,7 +15,7 @@ public class UpdateEmployeeRequest
     public string? Phone { get; set; }
     public string? WhatsApp { get; set; }
 
-    public System.Collections.Generic.List<Profile.CustomLinkInput> Links { get; set; } = [];
+    public List<Profile.CustomLinkInput> Links { get; set; } = [];
 
     public string? Subdomain { get; set; }
 }

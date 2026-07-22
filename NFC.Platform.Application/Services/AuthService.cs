@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 
 namespace NFC.Platform.Application.Services;
 
@@ -27,11 +27,11 @@ namespace NFC.Platform.Application.Services;
             var query = userRepo.GetQueryable();
             if (query != null && query.Provider is Microsoft.EntityFrameworkCore.Query.IAsyncQueryProvider)
             {
-                user = await query.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Email == request.Email);
+                user = await query.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Email == request.Email && !u.IsDeleted);
             }
             else
             {
-                var matchedUsers = await userRepo.FindAsync(u => u.Email == request.Email);
+                var matchedUsers = await userRepo.FindAsync(u => u.Email == request.Email && !u.IsDeleted);
                 user = matchedUsers.Count > 0 ? matchedUsers[0] : null;
             }
 
@@ -56,11 +56,11 @@ namespace NFC.Platform.Application.Services;
             var query = userRepo.GetQueryable();
             if (query != null && query.Provider is Microsoft.EntityFrameworkCore.Query.IAsyncQueryProvider)
             {
-                userExists = await query.IgnoreQueryFilters().AnyAsync(u => u.Email == request.Email);
+                userExists = await query.IgnoreQueryFilters().AnyAsync(u => u.Email == request.Email && !u.IsDeleted);
             }
             else
             {
-                var existingUsers = await userRepo.FindAsync(u => u.Email == request.Email);
+                var existingUsers = await userRepo.FindAsync(u => u.Email == request.Email && !u.IsDeleted);
                 userExists = existingUsers.Count > 0;
             }
 
@@ -163,7 +163,7 @@ namespace NFC.Platform.Application.Services;
             var query = userRepo.GetQueryable();
             if (query != null && query.Provider is Microsoft.EntityFrameworkCore.Query.IAsyncQueryProvider)
             {
-                user = await query.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Id == token.UserId);
+                user = await query.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Id == token.UserId && !u.IsDeleted);
             }
             else
             {
@@ -205,11 +205,11 @@ namespace NFC.Platform.Application.Services;
             var query = userRepo.GetQueryable();
             if (query != null && query.Provider is Microsoft.EntityFrameworkCore.Query.IAsyncQueryProvider)
             {
-                user = await query.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Email == request.Email);
+                user = await query.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Email == request.Email && !u.IsDeleted);
             }
             else
             {
-                var matchedUsers = await userRepo.FindAsync(u => u.Email == request.Email);
+                var matchedUsers = await userRepo.FindAsync(u => u.Email == request.Email && !u.IsDeleted);
                 user = matchedUsers.Count > 0 ? matchedUsers[0] : null;
             }
 
@@ -246,11 +246,11 @@ namespace NFC.Platform.Application.Services;
             var query = userRepo.GetQueryable();
             if (query != null && query.Provider is Microsoft.EntityFrameworkCore.Query.IAsyncQueryProvider)
             {
-                user = await query.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.PasswordResetToken == request.Token);
+                user = await query.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.PasswordResetToken == request.Token && !u.IsDeleted);
             }
             else
             {
-                var matchedUsers = await userRepo.FindAsync(u => u.PasswordResetToken == request.Token);
+                var matchedUsers = await userRepo.FindAsync(u => u.PasswordResetToken == request.Token && !u.IsDeleted);
                 user = matchedUsers.Count > 0 ? matchedUsers[0] : null;
             }
 
@@ -283,11 +283,11 @@ namespace NFC.Platform.Application.Services;
             var query = userRepo.GetQueryable();
             if (query != null && query.Provider is Microsoft.EntityFrameworkCore.Query.IAsyncQueryProvider)
             {
-                userExists = await query.IgnoreQueryFilters().AnyAsync(u => u.Email == request.Email);
+                userExists = await query.IgnoreQueryFilters().AnyAsync(u => u.Email == request.Email && !u.IsDeleted);
             }
             else
             {
-                var existingUsers = await userRepo.FindAsync(u => u.Email == request.Email);
+                var existingUsers = await userRepo.FindAsync(u => u.Email == request.Email && !u.IsDeleted);
                 userExists = existingUsers.Count > 0;
             }
 

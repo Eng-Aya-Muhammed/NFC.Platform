@@ -6,7 +6,7 @@ namespace NFC.Platform.Application.Services;
         IMessageService messageService,
         ICurrentTenant currentTenant,
         IExcelParser excelParser,
-        FluentValidation.IValidator<CreateCardOrderRequest> validator,
+        IValidator<CreateCardOrderRequest> validator,
         IStorageService storageService,
         IBackgroundJobClient backgroundJobClient) : ICardOrderService
     {

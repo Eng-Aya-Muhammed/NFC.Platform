@@ -38,3 +38,5 @@ global using System.ComponentModel.DataAnnotations;
 global using NFC.Platform.Application.Validators.Admin;
 global using Microsoft.Extensions.Configuration;
 global using System.Globalization;
+global using NFC.Platform.Application.DTOs.Subscription;
+global using NFC.Platform.Domain.Constants;

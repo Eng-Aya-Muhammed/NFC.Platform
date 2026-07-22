@@ -24,6 +24,7 @@ namespace NFC.Platform.Tests.Services
         private readonly ICurrentTenant _currentTenant;
 
         private readonly IGenericRepository<TemplateRequest> _templateRequestRepo;
+        private readonly IGenericRepository<UserSubscription> _subscriptionRepo;
 
         private readonly TemplateRequestService _sut;
 
@@ -35,7 +36,10 @@ namespace NFC.Platform.Tests.Services
             _currentTenant = Substitute.For<ICurrentTenant>();
 
             _templateRequestRepo = Substitute.For<IGenericRepository<TemplateRequest>>();
+            _subscriptionRepo = Substitute.For<IGenericRepository<UserSubscription>>();
+            
             _unitOfWork.Repository<TemplateRequest>().Returns(_templateRequestRepo);
+            _unitOfWork.Repository<UserSubscription>().Returns(_subscriptionRepo);
 
             _sut = new TemplateRequestService(_unitOfWork, _mapper, _messageService, _currentTenant);
         }
@@ -76,7 +80,36 @@ namespace NFC.Platform.Tests.Services
         }
 
         [Fact]
-        public async Task CreateRequestAsync_ReturnsSuccess_AndSetsStatusToPending()
+        public async Task CreateRequestAsync_ReturnsFail_WhenLimitReached()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var tenantId = Guid.NewGuid();
+            _currentTenant.TenantId.Returns(tenantId);
+            var request = new CreateTemplateRequest { TemplateName = "Premium Blue" };
+
+            var activeSub = new UserSubscription
+            {
+                TenantId = tenantId,
+                IsActive = true,
+                EndDate = DateTime.UtcNow.AddDays(30),
+                CustomDesignRequestsUsed = 2,
+                SubscriptionPlan = new SubscriptionPlan { MaxCustomDesignRequests = 2 }
+            };
+
+            _subscriptionRepo.GetQueryable().Returns(new List<UserSubscription> { activeSub }.AsQueryable().BuildMock());
+            _messageService.Get("CustomDesignRequestLimitReached").Returns("Limit reached");
+
+            // Act
+            var result = await _sut.CreateRequestAsync(userId, request);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(400, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task CreateRequestAsync_ReturnsSuccess_AndIncrementsCounter()
         {
             // Arrange
             var userId = Guid.NewGuid();
@@ -91,6 +124,15 @@ namespace NFC.Platform.Tests.Services
                 Notes = "Make it pop"
             };
 
+            var activeSub = new UserSubscription
+            {
+                TenantId = tenantId,
+                IsActive = true,
+                EndDate = DateTime.UtcNow.AddDays(30),
+                CustomDesignRequestsUsed = 1,
+                SubscriptionPlan = new SubscriptionPlan { MaxCustomDesignRequests = 5 }
+            };
+
             var dto = new TemplateRequestDto { TemplateName = "Premium Blue", Status = "Pending" };
 
             var createdQueryable = new List<TemplateRequest>
@@ -98,6 +140,7 @@ namespace NFC.Platform.Tests.Services
                 new() { Id = Guid.NewGuid(), Status = TemplateRequestStatus.Pending, RequestedByUser = new User() }
             }.AsQueryable().BuildMock();
 
+            _subscriptionRepo.GetQueryable().Returns(new List<UserSubscription> { activeSub }.AsQueryable().BuildMock());
             _templateRequestRepo.GetQueryable().Returns(createdQueryable);
             _mapper.Map<TemplateRequest>(request).Returns(new TemplateRequest
             {
@@ -116,6 +159,8 @@ namespace NFC.Platform.Tests.Services
             Assert.True(result.IsSuccess);
             Assert.Equal(200, result.StatusCode);
             Assert.Equal("Pending", result.Data!.Status);
+            Assert.Equal(2, activeSub.CustomDesignRequestsUsed); // Incremented
+
             await _templateRequestRepo.Received(1).AddAsync(Arg.Is<TemplateRequest>(r =>
                 r.RequestedByUserId == userId &&
                 r.Status == TemplateRequestStatus.Pending &&

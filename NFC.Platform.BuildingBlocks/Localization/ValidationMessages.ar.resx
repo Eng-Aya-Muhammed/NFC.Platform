@@ -250,4 +250,25 @@
   <data name="EmailTemplateApprovedFooter" xml:space="preserve">
     <value>© 2026 NFC Platform. جميع الحقوق محفوظة.</value>
   </data>
+  <data name="TemplateNotAllowedInPlan" xml:space="preserve">
+    <value>هذا القالب غير متاح ضمن باقتك الحالية.</value>
+  </data>
+  <data name="TemplateChangeLimitReached" xml:space="preserve">
+    <value>لقد استنفدت الحد الأقصى لعدد مرات تغيير القالب في اشتراكك الحالي.</value>
+  </data>
+  <data name="CustomDesignRequestLimitReached" xml:space="preserve">
+    <value>لقد استنفدت الحد الأقصى لعدد طلبات التصميم المخصص في اشتراكك الحالي.</value>
+  </data>
+  <data name="PlanHasActiveSubscriptions" xml:space="preserve">
+    <value>لا يمكن حذف باقة لديها اشتراكات نشطة.</value>
+  </data>
+  <data name="TemplateAlreadyAssigned" xml:space="preserve">
+    <value>هذا القالب مُضاف بالفعل إلى هذه الباقة.</value>
+  </data>
+  <data name="TemplateUnassigned" xml:space="preserve">
+    <value>تمت إزالة القالب من الباقة بنجاح.</value>
+  </data>
+  <data name="TemplateDeletedAndProfilesCleared" xml:space="preserve">
+    <value>تم حذف القالب بنجاح. تمت إعادة تعيين الملفات الشخصية المتأثرة إلى القالب الافتراضي.</value>
+  </data>
 </root>

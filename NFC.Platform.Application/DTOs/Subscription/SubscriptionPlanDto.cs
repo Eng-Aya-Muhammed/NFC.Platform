@@ -1,4 +1,6 @@
-using System;
+﻿using System;
+using System.Collections.Generic;
+using NFC.Platform.Application.DTOs.Template;
 
 namespace NFC.Platform.Application.DTOs
 {
@@ -10,5 +12,13 @@ namespace NFC.Platform.Application.DTOs
         public decimal Price { get; set; }
         public int DurationInDays { get; set; }
         public int MaxEmployees { get; set; }
+
+        /// <summary>SubscriptionConstants.UnlimitedQuota = unlimited.</summary>
+        public int MaxTemplateChanges { get; set; }
+
+        /// <summary>SubscriptionConstants.UnlimitedQuota = unlimited.</summary>
+        public int MaxCustomDesignRequests { get; set; }
+
+        public IReadOnlyList<CardTemplateSummaryDto> AllowedTemplates { get; set; } = [];
     }
 }

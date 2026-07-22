@@ -156,46 +156,33 @@ namespace NFC.Platform.Tests.Controllers
             Assert.NotNull(result);
             Assert.Equal(400, result.StatusCode);
         }
-
         [Fact]
-        public async Task UpdateProfileTemplate_ReturnsUnauthorized_WhenUserIdIsNull()
-        {
-            _currentTenant.UserId.Returns((Guid?)null);
-
-            var result = await _sut.UpdateProfileTemplate(new UpdateUserProfileTemplateRequest()) as UnauthorizedObjectResult;
-
-            Assert.NotNull(result);
-            Assert.Equal(401, result.StatusCode);
-        }
-
-        [Fact]
-        public async Task UpdateProfileTemplate_CallsService_AndReturnsOk_OnSuccess()
+        public async Task ApplyPublicProfileTemplate_ReturnsOk_OnSuccess()
         {
             var userId = Guid.NewGuid();
+            var templateId = Guid.NewGuid();
             _currentTenant.UserId.Returns(userId);
-            var request = new UpdateUserProfileTemplateRequest();
-            var dto = new EmployeeDetailsDto();
-            _profileService.UpdateProfileTemplateAsync(userId, request).Returns(ServiceResult<EmployeeDetailsDto>.Success(dto));
+            _profileService.UpdateProfileTemplateAsync(userId, templateId).Returns(ServiceResult<EmployeeDetailsDto>.Success(new EmployeeDetailsDto()));
 
-            var result = await _sut.UpdateProfileTemplate(request) as OkObjectResult;
+            var result = await _sut.ApplyPublicProfileTemplate(templateId) as OkObjectResult;
 
             Assert.NotNull(result);
             Assert.Equal(200, result.StatusCode);
-            await _profileService.Received(1).UpdateProfileTemplateAsync(userId, request);
+            await _profileService.Received(1).UpdateProfileTemplateAsync(userId, templateId);
         }
 
         [Fact]
-        public async Task UpdateProfileTemplate_ReturnsError_OnFailure()
+        public async Task RemovePublicProfileTemplate_ReturnsOk_OnSuccess()
         {
             var userId = Guid.NewGuid();
             _currentTenant.UserId.Returns(userId);
-            var request = new UpdateUserProfileTemplateRequest();
-            _profileService.UpdateProfileTemplateAsync(userId, request).Returns(ServiceResult<EmployeeDetailsDto>.Fail("Error", 400));
+            _profileService.UpdateProfileTemplateAsync(userId, null).Returns(ServiceResult<EmployeeDetailsDto>.Success(new EmployeeDetailsDto()));
 
-            var result = await _sut.UpdateProfileTemplate(request) as ObjectResult;
+            var result = await _sut.RemovePublicProfileTemplate() as OkObjectResult;
 
             Assert.NotNull(result);
-            Assert.Equal(400, result.StatusCode);
+            Assert.Equal(200, result.StatusCode);
+            await _profileService.Received(1).UpdateProfileTemplateAsync(userId, null);
         }
     }
 }

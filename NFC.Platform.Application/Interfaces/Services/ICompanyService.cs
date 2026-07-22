@@ -16,6 +16,6 @@ namespace NFC.Platform.Application.Interfaces.Services
         /// Sets the company's digital profile template.
         /// Available via PATCH /api/company/template.
         /// </summary>
-        Task<ServiceResult<CompanyProfileDto>> UpdateCompanyTemplateAsync(UpdateCompanyTemplateRequest request);
+        Task<ServiceResult<CompanyProfileDto>> UpdateCompanyTemplateAsync(Guid? templateId);
     }
 }

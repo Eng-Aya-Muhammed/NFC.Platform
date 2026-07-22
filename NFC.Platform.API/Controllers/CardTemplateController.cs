@@ -1,4 +1,9 @@
-
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using NFC.Platform.Application.Interfaces.Services;
+using System;
+using System.Threading.Tasks;
+using NFC.Platform.BuildingBlocks.Common.Helpers;
 
 namespace NFC.Platform.API.Controllers
 {
