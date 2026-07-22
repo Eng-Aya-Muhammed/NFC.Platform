@@ -42,10 +42,15 @@ namespace NFC.Platform.Infrastructure.Seeders
                 }
             };
 
+            var planNames = plans.Select(p => p.Name).ToList();
+            var existingPlans = await _context.SubscriptionPlans
+                .Where(p => planNames.Contains(p.Name))
+                .Select(p => p.Name)
+                .ToListAsync();
+
             foreach (var plan in plans)
             {
-                var exists = await _context.SubscriptionPlans.AnyAsync(p => p.Name == plan.Name);
-                if (!exists)
+                if (!existingPlans.Contains(plan.Name))
                 {
                     _context.SubscriptionPlans.Add(plan);
                 }

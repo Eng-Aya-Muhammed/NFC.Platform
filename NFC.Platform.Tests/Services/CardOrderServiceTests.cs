@@ -823,6 +823,9 @@ namespace NFC.Platform.Tests.Services
             Assert.Equal(1, job.Imported);
             Assert.Equal(0, job.Skipped);
             Assert.NotNull(job.CardOrderId);
+
+            await employeeRepo.Received(1).AddRangeAsync(Arg.Is<System.Collections.Generic.IEnumerable<Employee>>(e => e.Count() == 1));
+            await _userProfileRepo.Received(1).AddRangeAsync(Arg.Is<System.Collections.Generic.IEnumerable<UserProfile>>(p => p.Count() == 1));
             await _unitOfWork.Received(1).CommitTransactionAsync();
         }
 

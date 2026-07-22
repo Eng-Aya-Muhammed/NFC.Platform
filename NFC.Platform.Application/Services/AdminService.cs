@@ -1,4 +1,4 @@
-﻿namespace NFC.Platform.Application.Services;
+namespace NFC.Platform.Application.Services;
 
     public class AdminService : IAdminService
     {
@@ -443,21 +443,29 @@
 
             var pagedTenants = await query.ToPagedResultAsync(request, t => t);
 
+            var tenantIds = pagedTenants.Items.Select(t => t.Id).ToList();
+
+            var activeSubscriptions = await _unitOfWork.Repository<UserSubscription>()
+                .GetQueryable()
+                .AsNoTracking()
+                .Include(us => us.SubscriptionPlan)
+                .Where(us => tenantIds.Contains(us.TenantId) && us.IsActive)
+                .ToListAsync();
+
+            var activeSubByTenant = activeSubscriptions
+                .GroupBy(us => us.TenantId)
+                .ToDictionary(
+                    g => g.Key, 
+                    g => g.OrderByDescending(us => us.EndDate).FirstOrDefault()
+                );
+
             var tenantSummaryDtos = new List<TenantSummaryDto>();
             foreach (var tenant in pagedTenants.Items)
             {
                 var dto = _mapper.Map<TenantSummaryDto>(tenant);
                 dto.AccountType = tenant.Company != null ? "Company" : "Individual";
 
-                var activeSub = await _unitOfWork.Repository<UserSubscription>()
-                    .GetQueryable()
-                    .AsNoTracking()
-                    .Include(us => us.SubscriptionPlan)
-                    .Where(us => us.TenantId == tenant.Id && us.IsActive)
-                    .OrderByDescending(us => us.EndDate)
-                    .FirstOrDefaultAsync();
-
-                if (activeSub != null)
+                if (activeSubByTenant.TryGetValue(tenant.Id, out var activeSub) && activeSub != null)
                 {
                     dto.ActivePlanName = activeSub.SubscriptionPlan?.Name;
                     dto.SubscriptionExpiry = activeSub.EndDate;
@@ -609,15 +617,13 @@
             // Assign initial templates if provided
             if (request.TemplateIds?.Count > 0)
             {
-                foreach (var templateId in request.TemplateIds.Distinct())
+                var assignments = request.TemplateIds.Distinct().Select(templateId => new SubscriptionPlanTemplate
                 {
-                    var assignment = new SubscriptionPlanTemplate
-                    {
-                        SubscriptionPlanId = plan.Id,
-                        CardTemplateId = templateId
-                    };
-                    await _unitOfWork.Repository<SubscriptionPlanTemplate>().AddAsync(assignment);
-                }
+                    SubscriptionPlanId = plan.Id,
+                    CardTemplateId = templateId
+                }).ToList();
+
+                await _unitOfWork.Repository<SubscriptionPlanTemplate>().AddRangeAsync(assignments);
             }
 
             await _unitOfWork.SaveChangesAsync();

@@ -586,14 +586,8 @@ namespace NFC.Platform.Application.Services;
                     // Bulk insert new records in a single save roundtrip
                     if (newEmployeesList.Count > 0)
                     {
-                        foreach (var emp in newEmployeesList)
-                        {
-                            await _unitOfWork.Repository<Employee>().AddAsync(emp);
-                        }
-                        foreach (var prof in newProfilesList)
-                        {
-                            await _unitOfWork.Repository<UserProfile>().AddAsync(prof);
-                        }
+                        await _unitOfWork.Repository<Employee>().AddRangeAsync(newEmployeesList);
+                        await _unitOfWork.Repository<UserProfile>().AddRangeAsync(newProfilesList);
                         await _unitOfWork.SaveChangesAsync();
                     }
 
