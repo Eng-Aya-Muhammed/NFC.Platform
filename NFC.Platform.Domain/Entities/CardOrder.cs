@@ -14,9 +14,9 @@ namespace NFC.Platform.Domain.Entities
 
         public string CardName { get; set; } = string.Empty;
 
-        public CardType? CardType { get; set; }
+        public CardType CardType { get; set; }
 
-        public CardDesignType? CardDesignType { get; set; }
+        public CardDesignType CardDesignType { get; set; }
 
         /// <summary>
         /// For reorders: the parent order whose design/template is being reused.

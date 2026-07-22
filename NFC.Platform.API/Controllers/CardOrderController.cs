@@ -1,14 +1,27 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using NFC.Platform.Application.DTOs;
+using NFC.Platform.Application.DTOs.CardOrder;
+using NFC.Platform.Application.Interfaces.Services;
+using NFC.Platform.Domain.Enums;
 using NFC.Platform.BuildingBlocks.Localization;
-using NFC.Platform.API.Models;
+using NFC.Platform.BuildingBlocks.Results;
+
 
 namespace NFC.Platform.API.Controllers
 {
     [ApiController]
     [Route("api/card-orders")]
     [Authorize]
-    public class CardOrderController(ICardOrderService cardOrderService, IMessageService messageService) : ControllerBase
+    public class CardOrderController(
+        ICardOrderService cardOrderService, 
+        ICardPricingService cardPricingService,
+        IEmployeeImportService employeeImportService,
+        IMessageService messageService) : ControllerBase
     {
         private readonly ICardOrderService _cardOrderService = cardOrderService ?? throw new ArgumentNullException(nameof(cardOrderService));
+        private readonly ICardPricingService _cardPricingService = cardPricingService ?? throw new ArgumentNullException(nameof(cardPricingService));
+        private readonly IEmployeeImportService _employeeImportService = employeeImportService ?? throw new ArgumentNullException(nameof(employeeImportService));
         private readonly IMessageService _messageService = messageService ?? throw new ArgumentNullException(nameof(messageService));
 
         /// <summary>
@@ -17,9 +30,9 @@ namespace NFC.Platform.API.Controllers
         /// </summary>
         [HttpGet("pricing")]
         [HttpGet("/api/order-draft/pricing")]
-        public async Task<IActionResult> GetPricing([FromQuery] string cardType = "plastic", [FromQuery] int quantity = 1)
+        public async Task<IActionResult> GetPricing([FromQuery] CardType cardType = CardType.Plastic, [FromQuery] int quantity = 1)
         {
-            var result = await _cardOrderService.GetOrderPricingAsync(cardType, quantity);
+            var result = await _cardPricingService.CalculateOrderPricingAsync(cardType, quantity);
             return Ok(result);
         }
 
@@ -30,7 +43,7 @@ namespace NFC.Platform.API.Controllers
         [HttpGet("/api/pricing/config")]
         public async Task<IActionResult> GetActivePricingCatalog()
         {
-            var result = await _cardOrderService.GetActivePricingCatalogAsync();
+            var result = await _cardPricingService.GetActiveCatalogAsync();
             return Ok(result);
         }
 
@@ -41,7 +54,7 @@ namespace NFC.Platform.API.Controllers
         [HttpGet]
         public async Task<IActionResult> GetPaged([FromQuery] PaginationRequest request, [FromQuery] string? status = null)
         {
-            var result = await _cardOrderService.GetPagedAsync(request, status);
+            var result = await _cardOrderService.GetPagedOrdersAsync(request, status);
             return Ok(result);
         }
 
@@ -51,7 +64,7 @@ namespace NFC.Platform.API.Controllers
         [HttpGet("{id:guid}")]
         public async Task<IActionResult> GetById([FromRoute] Guid id)
         {
-            var result = await _cardOrderService.GetByIdAsync(id);
+            var result = await _cardOrderService.GetOrderByIdAsync(id);
             if (!result.IsSuccess)
                 return StatusCode(result.StatusCode, result);
 
@@ -64,7 +77,7 @@ namespace NFC.Platform.API.Controllers
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateCardOrderRequest request)
         {
-            var result = await _cardOrderService.CreateAsync(request);
+            var result = await _cardOrderService.CreateOrderAsync(request);
             if (!result.IsSuccess)
                 return StatusCode(result.StatusCode, result);
 
@@ -91,7 +104,7 @@ namespace NFC.Platform.API.Controllers
         [HttpDelete("{id:guid}")]
         public async Task<IActionResult> Delete([FromRoute] Guid id)
         {
-            var result = await _cardOrderService.DeleteAsync(id);
+            var result = await _cardOrderService.DeleteOrderAsync(id);
             if (!result.IsSuccess)
                 return StatusCode(result.StatusCode, result);
 
@@ -105,38 +118,13 @@ namespace NFC.Platform.API.Controllers
         [HttpGet("/api/orders/{id:guid}/employees-import-status")]
         public async Task<IActionResult> GetEmployeesImportStatus([FromRoute] Guid id)
         {
-            var result = await _cardOrderService.GetEmployeesImportStatusAsync(id);
+            var result = await _employeeImportService.GetImportStatusAsync(id);
             if (!result.IsSuccess)
                 return StatusCode(result.StatusCode, result);
 
             return Ok(result);
         }
 
-        /// <summary>
-        /// Handles bulk card ordering and Excel directory import for employees.
-        /// </summary>
-        [HttpPost("~/api/company/orders/bulk")]
-        [Consumes("multipart/form-data")]
-        public async Task<IActionResult> PlaceBulkOrderFromExcel([FromForm] ImportEmployeesAndOrderCardsRequest request)
-        {
-            if (request == null || request.File == null)
-            {
-                return BadRequest(_messageService.Get("NoFileUploaded"));
-            }
-
-            var result = await _cardOrderService.QueueEmployeeImportJobAsync(
-                request.File,
-                request.CardType,
-                request.CardDesignType,
-                request.Notes);
-
-            if (!result.IsSuccess)
-            {
-                return StatusCode(result.StatusCode, result);
-            }
-
-            return StatusCode(202, result); // 202 Accepted
-        }
 
         /// <summary>
         /// Resends the delivery OTP for an order belonging to the current tenant.
@@ -145,7 +133,7 @@ namespace NFC.Platform.API.Controllers
         [HttpPost("{id:guid}/resend-otp")]
         public async Task<IActionResult> ResendDeliveryOtp([FromRoute] Guid id)
         {
-            var result = await _cardOrderService.ResendDeliveryOtpAsync(id);
+            var result = await _cardOrderService.ResendOrderOtpAsync(id);
             if (!result.IsSuccess)
             {
                 return StatusCode(result.StatusCode, result);
@@ -154,4 +142,3 @@ namespace NFC.Platform.API.Controllers
         }
     }
 }
-

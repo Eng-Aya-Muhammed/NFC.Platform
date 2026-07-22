@@ -7,6 +7,7 @@ using NFC.Platform.Infrastructure.Repositories;
 using NFC.Platform.Infrastructure.Seeders;
 using NFC.Platform.Infrastructure.Services;
 using NFC.Platform.Application.Interfaces.Services;
+using NFC.Platform.Application.DTOs.Settings;
 using Hangfire;
 
 namespace NFC.Platform.Infrastructure.Extensions
@@ -51,6 +52,9 @@ namespace NFC.Platform.Infrastructure.Extensions
             // Twilio WhatsApp Registration
             services.Configure<TwilioSettings>(configuration.GetSection("TwilioSettings"));
             services.AddScoped<IWhatsAppService, WhatsAppService>();
+
+            // OTP Configuration
+            services.Configure<OtpSettings>(configuration.GetSection("OtpSettings"));
 
             // QR Code Generator — Singleton: QRCoder is stateless; one instance per app lifetime is sufficient.
 

@@ -1,5 +1,3 @@
-﻿using Microsoft.EntityFrameworkCore;
-
 namespace NFC.Platform.Application.Services;
 
     public class AuthService(

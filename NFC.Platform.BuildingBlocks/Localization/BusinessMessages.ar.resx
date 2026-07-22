@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
@@ -59,66 +59,72 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="DuplicateEmail" xml:space="preserve">
-    <value>البريد الإلكتروني مسجل بالفعل.</value>
+    <value>Ø§Ù„Ø¨Ø±ÙŠØ¯ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ Ù…Ø³Ø¬Ù„ Ø¨Ø§Ù„ÙØ¹Ù„.</value>
   </data>
   <data name="CardAlreadyAssigned" xml:space="preserve">
-    <value>بطاقة NFC معينة بالفعل لعميل آخر.</value>
+    <value>Ø¨Ø·Ø§Ù‚Ø© NFC Ù…Ø¹ÙŠÙ†Ø© Ø¨Ø§Ù„ÙØ¹Ù„ Ù„Ø¹Ù…ÙŠÙ„ Ø¢Ø®Ø±.</value>
   </data>
   <data name="InsufficientBalance" xml:space="preserve">
-    <value>الرصيد غير كافٍ لإجراء هذه العملية.</value>
+    <value>Ø§Ù„Ø±ØµÙŠØ¯ ØºÙŠØ± ÙƒØ§ÙÙ Ù„Ø¥Ø¬Ø±Ø§Ø¡ Ù‡Ø°Ù‡ Ø§Ù„Ø¹Ù…Ù„ÙŠØ©.</value>
   </data>
   <data name="InactiveAccount" xml:space="preserve">
-    <value>الحساب غير نشط.</value>
+    <value>Ø§Ù„Ø­Ø³Ø§Ø¨ ØºÙŠØ± Ù†Ø´Ø·.</value>
   </data>
   <data name="CardNotFound" xml:space="preserve">
-    <value>بطاقة NFC غير موجودة أو غير صالحة.</value>
+    <value>Ø¨Ø·Ø§Ù‚Ø© NFC ØºÙŠØ± Ù…ÙˆØ¬ÙˆØ¯Ø© Ø£Ùˆ ØºÙŠØ± ØµØ§Ù„Ø­Ø©.</value>
   </data>
   <data name="InvalidCardStatus" xml:space="preserve">
-    <value>حالة بطاقة NFC غير صالحة لهذه العملية.</value>
+    <value>Ø­Ø§Ù„Ø© Ø¨Ø·Ø§Ù‚Ø© NFC ØºÙŠØ± ØµØ§Ù„Ø­Ø© Ù„Ù‡Ø°Ù‡ Ø§Ù„Ø¹Ù…Ù„ÙŠØ©.</value>
   </data>
   <data name="OrderAlreadyPaid" xml:space="preserve">
-    <value>تم دفع قيمة الطلب بالفعل.</value>
+    <value>ØªÙ… Ø¯ÙØ¹ Ù‚ÙŠÙ…Ø© Ø§Ù„Ø·Ù„Ø¨ Ø¨Ø§Ù„ÙØ¹Ù„.</value>
   </data>
   <data name="CardExpired" xml:space="preserve">
-    <value>انتهت صلاحية بطاقة NFC.</value>
+    <value>Ø§Ù†ØªÙ‡Øª ØµÙ„Ø§Ø­ÙŠØ© Ø¨Ø·Ø§Ù‚Ø© NFC.</value>
   </data>
   <data name="PremiumAnnual" xml:space="preserve">
-    <value>البريميوم - سنوي</value>
+    <value>Ø§Ù„Ø¨Ø±ÙŠÙ…ÙŠÙˆÙ… - Ø³Ù†ÙˆÙŠ</value>
   </data>
   <data name="Premium3Years" xml:space="preserve">
-    <value>البريميوم - 3 سنوات</value>
+    <value>Ø§Ù„Ø¨Ø±ÙŠÙ…ÙŠÙˆÙ… - 3 Ø³Ù†ÙˆØ§Øª</value>
   </data>
   <data name="Premium5Years" xml:space="preserve">
-    <value>البريميوم - 5 سنوات</value>
+    <value>Ø§Ù„Ø¨Ø±ÙŠÙ…ÙŠÙˆÙ… - 5 Ø³Ù†ÙˆØ§Øª</value>
   </data>
   <data name="PremiumDescription" xml:space="preserve">
-    <value>اختر الباقة المناسبة لحجم فريقك واحتياجات بطاقات NFC.</value>
+    <value>Ø§Ø®ØªØ± Ø§Ù„Ø¨Ø§Ù‚Ø© Ø§Ù„Ù…Ù†Ø§Ø³Ø¨Ø© Ù„Ø­Ø¬Ù… ÙØ±ÙŠÙ‚Ùƒ ÙˆØ§Ø­ØªÙŠØ§Ø¬Ø§Øª Ø¨Ø·Ø§Ù‚Ø§Øª NFC.</value>
   </data>
   <data name="HasActiveSubscription" xml:space="preserve">
-    <value>لديك اشتراك نشط بالفعل. يرجى استخدام خيار التجديد بدلاً من ذلك.</value>
+    <value>Ù„Ø¯ÙŠÙƒ Ø§Ø´ØªØ±Ø§Ùƒ Ù†Ø´Ø· Ø¨Ø§Ù„ÙØ¹Ù„. ÙŠØ±Ø¬Ù‰ Ø§Ø³ØªØ®Ø¯Ø§Ù… Ø®ÙŠØ§Ø± Ø§Ù„ØªØ¬Ø¯ÙŠØ¯ Ø¨Ø¯Ù„Ø§Ù‹ Ù…Ù† Ø°Ù„Ùƒ.</value>
   </data>
   <data name="NoActiveSubscriptionToRenew" xml:space="preserve">
-    <value>لا يوجد اشتراك نشط لتجديده. يرجى الاشتراك أولاً.</value>
+    <value>Ù„Ø§ ÙŠÙˆØ¬Ø¯ Ø§Ø´ØªØ±Ø§Ùƒ Ù†Ø´Ø· Ù„ØªØ¬Ø¯ÙŠØ¯Ù‡. ÙŠØ±Ø¬Ù‰ Ø§Ù„Ø§Ø´ØªØ±Ø§Ùƒ Ø£ÙˆÙ„Ø§Ù‹.</value>
   </data>
   <data name="CustomCategory" xml:space="preserve">
-    <value>مخصص</value>
+    <value>Ù…Ø®ØµØµ</value>
   </data>
   <data name="EmailPasswordResetSubject" xml:space="preserve">
-    <value>منصة NFC - إعادة تعيين كلمة المرور الخاصة بك</value>
+    <value>Ù…Ù†ØµØ© NFC - Ø¥Ø¹Ø§Ø¯Ø© ØªØ¹ÙŠÙŠÙ† ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± Ø§Ù„Ø®Ø§ØµØ© Ø¨Ùƒ</value>
   </data>
   <data name="EmailPasswordResetBody" xml:space="preserve">
-    <value>&lt;h3&gt;طلب إعادة تعيين كلمة المرور&lt;/h3&gt;&lt;p&gt;لقد طلبت إعادة تعيين كلمة المرور الخاصة بك. يرجى الضغط على الرابط أدناه لتعيين كلمة مرور جديدة:&lt;/p&gt;&lt;p&gt;&lt;a href="{0}" style="background:#007bff;color:white;padding:10px 20px;text-decoration:none;border-radius:5px;display:inline-block;"&gt;إعادة تعيين كلمة المرور&lt;/a&gt;&lt;/p&gt;&lt;p&gt;إذا لم تكن أنت من قام بهذا الطلب، يرجى تجاهل هذا البريد الإلكتروني.&lt;/p&gt;</value>
+    <value>&lt;h3&gt;Ø·Ù„Ø¨ Ø¥Ø¹Ø§Ø¯Ø© ØªØ¹ÙŠÙŠÙ† ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ±&lt;/h3&gt;&lt;p&gt;Ù„Ù‚Ø¯ Ø·Ù„Ø¨Øª Ø¥Ø¹Ø§Ø¯Ø© ØªØ¹ÙŠÙŠÙ† ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± Ø§Ù„Ø®Ø§ØµØ© Ø¨Ùƒ. ÙŠØ±Ø¬Ù‰ Ø§Ù„Ø¶ØºØ· Ø¹Ù„Ù‰ Ø§Ù„Ø±Ø§Ø¨Ø· Ø£Ø¯Ù†Ø§Ù‡ Ù„ØªØ¹ÙŠÙŠÙ† ÙƒÙ„Ù…Ø© Ù…Ø±ÙˆØ± Ø¬Ø¯ÙŠØ¯Ø©:&lt;/p&gt;&lt;p&gt;&lt;a href="{0}" style="background:#007bff;color:white;padding:10px 20px;text-decoration:none;border-radius:5px;display:inline-block;"&gt;Ø¥Ø¹Ø§Ø¯Ø© ØªØ¹ÙŠÙŠÙ† ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ±&lt;/a&gt;&lt;/p&gt;&lt;p&gt;Ø¥Ø°Ø§ Ù„Ù… ØªÙƒÙ† Ø£Ù†Øª Ù…Ù† Ù‚Ø§Ù… Ø¨Ù‡Ø°Ø§ Ø§Ù„Ø·Ù„Ø¨ØŒ ÙŠØ±Ø¬Ù‰ ØªØ¬Ø§Ù‡Ù„ Ù‡Ø°Ø§ Ø§Ù„Ø¨Ø±ÙŠØ¯ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ.&lt;/p&gt;</value>
   </data>
   <data name="EmailNewUserCredentialsSubject" xml:space="preserve">
-    <value>منصة NFC - بيانات اعتماد حسابك</value>
+    <value>Ù…Ù†ØµØ© NFC - Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ø¹ØªÙ…Ø§Ø¯ Ø­Ø³Ø§Ø¨Ùƒ</value>
   </data>
   <data name="EmailNewUserCredentialsBody" xml:space="preserve">
-    <value>&lt;h3&gt;مرحباً بك في منصة NFC!&lt;/h3&gt;&lt;p&gt;قام مسؤول النظام بإنشاء حساب لك. إليك بيانات تسجيل الدخول الخاصة بك:&lt;/p&gt;&lt;ul&gt;&lt;li&gt;&lt;strong&gt;اسم المستخدم:&lt;/strong&gt; {0}&lt;/li&gt;&lt;li&gt;&lt;strong&gt;كلمة المرور المؤقتة:&lt;/strong&gt; {1}&lt;/li&gt;&lt;/ul&gt;&lt;p&gt;يرجى تسجيل الدخول وتغيير كلمة المرور الخاصة بك فوراً.&lt;/p&gt;</value>
+    <value>&lt;h3&gt;Ù…Ø±Ø­Ø¨Ø§Ù‹ Ø¨Ùƒ ÙÙŠ Ù…Ù†ØµØ© NFC!&lt;/h3&gt;&lt;p&gt;Ù‚Ø§Ù… Ù…Ø³Ø¤ÙˆÙ„ Ø§Ù„Ù†Ø¸Ø§Ù… Ø¨Ø¥Ù†Ø´Ø§Ø¡ Ø­Ø³Ø§Ø¨ Ù„Ùƒ. Ø¥Ù„ÙŠÙƒ Ø¨ÙŠØ§Ù†Ø§Øª ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„ Ø§Ù„Ø®Ø§ØµØ© Ø¨Ùƒ:&lt;/p&gt;&lt;ul&gt;&lt;li&gt;&lt;strong&gt;Ø§Ø³Ù… Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…:&lt;/strong&gt; {0}&lt;/li&gt;&lt;li&gt;&lt;strong&gt;ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± Ø§Ù„Ù…Ø¤Ù‚ØªØ©:&lt;/strong&gt; {1}&lt;/li&gt;&lt;/ul&gt;&lt;p&gt;ÙŠØ±Ø¬Ù‰ ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„ ÙˆØªØºÙŠÙŠØ± ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± Ø§Ù„Ø®Ø§ØµØ© Ø¨Ùƒ ÙÙˆØ±Ø§Ù‹.&lt;/p&gt;</value>
   </data>
   <data name="SubdomainAlreadyTaken" xml:space="preserve">
-    <value>هذا النطاق الفرعي محجوز مسبقاً.</value>
+    <value>Ù‡Ø°Ø§ Ø§Ù„Ù†Ø·Ø§Ù‚ Ø§Ù„ÙØ±Ø¹ÙŠ Ù…Ø­Ø¬ÙˆØ² Ù…Ø³Ø¨Ù‚Ø§Ù‹.</value>
   </data>
   <data name="PremiumDesc" xml:space="preserve">
-    <value>مميزات الباقة المميزة.</value>
+    <value>Ù…Ù…ÙŠØ²Ø§Øª Ø§Ù„Ø¨Ø§Ù‚Ø© Ø§Ù„Ù…Ù…ÙŠØ²Ø©.</value>
+  </data>
+  <data name="DefaultBulkOrderName" xml:space="preserve">
+    <value>طلب مجمع - {0}</value>
+  </data>
+  <data name="DefaultCardOrderName" xml:space="preserve">
+    <value>طلب بطاقة - {0}</value>
   </data>
 </root>

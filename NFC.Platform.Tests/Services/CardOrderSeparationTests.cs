@@ -1,21 +1,5 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Threading.Tasks;
-using AutoMapper;
-using FluentValidation;
-using Microsoft.EntityFrameworkCore;
-using NFC.Platform.Application.DTOs.CardOrder;
-using NFC.Platform.Application.Interfaces.Repositories;
-using NFC.Platform.Application.Services;
-using NFC.Platform.BuildingBlocks.Localization;
-using NFC.Platform.BuildingBlocks.Results;
-using NFC.Platform.Domain.Entities;
-using NFC.Platform.Domain.Enums;
-using MockQueryable.NSubstitute;
-using NSubstitute;
-using Xunit;
+using Microsoft.Extensions.Options;
+using NFC.Platform.Application.DTOs.Settings;
 
 namespace NFC.Platform.Tests.Services
 {
@@ -41,7 +25,6 @@ namespace NFC.Platform.Tests.Services
             var currentTenant = Substitute.For<ICurrentTenant>();
             var excelParser = Substitute.For<IExcelParser>();
             var validator = Substitute.For<IValidator<CreateCardOrderRequest>>();
-            var storageService = Substitute.For<NFC.Platform.Application.Interfaces.Services.IStorageService>();
             var backgroundJobClient = Substitute.For<Hangfire.IBackgroundJobClient>();
 
             var orderRepo = Substitute.For<IGenericRepository<CardOrder>>();
@@ -53,7 +36,13 @@ namespace NFC.Platform.Tests.Services
             validator.ValidateAsync(Arg.Any<CreateCardOrderRequest>(), default)
                 .Returns(Task.FromResult(validationResult));
 
-            currentTenant.UserId.Returns(Guid.NewGuid());
+            var userId = Guid.NewGuid();
+            currentTenant.UserId.Returns(userId);
+
+            var currentUser = new User { Id = userId, AccountType = AccountType.Individual };
+            var userRepo = Substitute.For<IGenericRepository<User>>();
+            userRepo.GetQueryable().Returns(new List<User> { currentUser }.AsQueryable().BuildMock());
+            unitOfWork.Repository<User>().Returns(userRepo);
 
             var pricing = new CardPricing
             {
@@ -74,15 +63,22 @@ namespace NFC.Platform.Tests.Services
             mapper.Map<CardOrder>(Arg.Any<CreateCardOrderRequest>()).Returns(order);
             orderRepo.GetQueryable().Returns(new List<CardOrder> { order }.AsQueryable().BuildMock());
 
+            var cardPricingService = Substitute.For<ICardPricingService>();
+            var pricingResponse = new NFC.Platform.Application.DTOs.CardOrder.OrderPricingResponseDto { UnitPrice = 8.5m, TotalPrice = 8.5m };
+            cardPricingService.CalculateOrderPricingAsync(Arg.Any<CardType>(), Arg.Any<int>()).Returns(NFC.Platform.BuildingBlocks.Results.ServiceResult<NFC.Platform.Application.DTOs.CardOrder.OrderPricingResponseDto>.Success(pricingResponse));
+
+            var otpSettingsOptions = Substitute.For<IOptions<OtpSettings>>();
+            otpSettingsOptions.Value.Returns(new OtpSettings { CooldownSeconds = 60, MaxResendAttempts = 5 });
+
             var service = new CardOrderService(
                 unitOfWork,
                 mapper,
                 messageService,
                 currentTenant,
-                excelParser,
+                cardPricingService,
                 validator,
-                storageService,
-                backgroundJobClient);
+                backgroundJobClient,
+                otpSettingsOptions);
 
             var request = new CreateCardOrderRequest
             {
@@ -92,7 +88,7 @@ namespace NFC.Platform.Tests.Services
             };
 
             // Act
-            var result = await service.CreateAsync(request);
+            var result = await service.CreateOrderAsync(request);
 
             // Assert
             Assert.True(result.IsSuccess);

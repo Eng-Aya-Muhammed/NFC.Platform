@@ -1,19 +1,5 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Threading.Tasks;
-using AutoMapper;
-using MockQueryable.NSubstitute;
-using NFC.Platform.Application.DTOs;
-using NFC.Platform.Application.Interfaces.Repositories;
-using NFC.Platform.Application.Services;
-using NFC.Platform.BuildingBlocks.Common.Helpers;
-using NFC.Platform.BuildingBlocks.Localization;
-using NFC.Platform.Domain.Entities;
-using NFC.Platform.Domain.Enums;
-using NSubstitute;
-using Xunit;
+using Microsoft.Extensions.Options;
+using NFC.Platform.Application.DTOs.Settings;
 
 namespace NFC.Platform.Tests.Services
 {
@@ -24,6 +10,7 @@ namespace NFC.Platform.Tests.Services
         private readonly IMessageService _messageService;
         private readonly ICurrentTenant _currentTenant;
         private readonly IExcelParser _excelParser;
+        private readonly IOptions<OtpSettings> _otpSettingsOptions;
 
         private readonly IGenericRepository<CardOrder> _orderRepo;
 
@@ -31,9 +18,9 @@ namespace NFC.Platform.Tests.Services
         private readonly IGenericRepository<EmployeeImportJob> _jobRepo;
         private readonly IGenericRepository<CardPricing> _cardPricingRepo;
         private readonly IGenericRepository<UserProfile> _userProfileRepo;
-        private readonly NFC.Platform.Application.Interfaces.Services.IStorageService _storageService;
-        private readonly Hangfire.IBackgroundJobClient _backgroundJobClient;
 
+        private readonly Hangfire.IBackgroundJobClient _backgroundJobClient;
+        private readonly ICardPricingService _cardPricingService;
         private readonly CardOrderService _sut;
 
         public CardOrderServiceTests()
@@ -43,6 +30,9 @@ namespace NFC.Platform.Tests.Services
             _messageService = Substitute.For<IMessageService>();
             _currentTenant = Substitute.For<ICurrentTenant>();
             _excelParser = Substitute.For<IExcelParser>();
+            
+            _otpSettingsOptions = Substitute.For<IOptions<OtpSettings>>();
+            _otpSettingsOptions.Value.Returns(new OtpSettings { CooldownSeconds = 60, MaxResendAttempts = 5 });
 
             _orderRepo = Substitute.For<IGenericRepository<CardOrder>>();
 
@@ -74,7 +64,7 @@ namespace NFC.Platform.Tests.Services
             validator.ValidateAsync(Arg.Any<CreateCardOrderRequest>(), default)
                 .Returns(Task.FromResult(validationResult));
 
-            _storageService = Substitute.For<NFC.Platform.Application.Interfaces.Services.IStorageService>();
+
             _backgroundJobClient = Substitute.For<Hangfire.IBackgroundJobClient>();
 
             _messageService.Get(default!, default!).ReturnsForAnyArgs(x => (string)x[0]);
@@ -94,7 +84,11 @@ namespace NFC.Platform.Tests.Services
                 };
             });
 
-            _sut = new CardOrderService(_unitOfWork, _mapper, _messageService, _currentTenant, _excelParser, validator, _storageService, _backgroundJobClient);
+            _cardPricingService = Substitute.For<ICardPricingService>();
+            _cardPricingService.CalculateOrderPricingAsync(Arg.Any<CardType>(), Arg.Any<int>())
+                .Returns(ServiceResult<OrderPricingResponseDto>.Success(new OrderPricingResponseDto { UnitPrice = 4.5m, TotalPrice = 4.5m, Currency = "KWD" }));
+
+            _sut = new CardOrderService(_unitOfWork, _mapper, _messageService, _currentTenant, _cardPricingService, validator, _backgroundJobClient, _otpSettingsOptions);
         }
 
         // ── GetByIdAsync ──────────────────────────────────────────────────────────
@@ -109,7 +103,7 @@ namespace NFC.Platform.Tests.Services
             _messageService.Get("RecordNotFound").Returns("Record not found.");
 
             // Act
-            var result = await _sut.GetByIdAsync(id);
+            var result = await _sut.GetOrderByIdAsync(id);
 
             // Assert
             Assert.False(result.IsSuccess);
@@ -128,7 +122,7 @@ namespace NFC.Platform.Tests.Services
             _mapper.Map<CardOrderDto>(order).Returns(dto);
 
             // Act
-            var result = await _sut.GetByIdAsync(id);
+            var result = await _sut.GetOrderByIdAsync(id);
 
             // Assert
             Assert.True(result.IsSuccess);
@@ -151,7 +145,7 @@ namespace NFC.Platform.Tests.Services
             _mapper.Map<CardOrderDto>(Arg.Any<CardOrder>()).Returns(new CardOrderDto());
 
             // Act
-            var result = await _sut.GetPagedAsync(request, null);
+            var result = await _sut.GetPagedOrdersAsync(request, null);
 
             // Assert
             Assert.True(result.IsSuccess);
@@ -175,7 +169,7 @@ namespace NFC.Platform.Tests.Services
             _mapper.Map<CardOrderDto>(Arg.Any<CardOrder>()).Returns(new CardOrderDto());
 
             // Act
-            var result = await _sut.GetPagedAsync(request, "Encoding");
+            var result = await _sut.GetPagedOrdersAsync(request, "Encoding");
 
             // Assert
             Assert.True(result.IsSuccess);
@@ -193,45 +187,13 @@ namespace NFC.Platform.Tests.Services
             var request = new CreateCardOrderRequest { Quantity = 10 };
 
             // Act
-            var result = await _sut.CreateAsync(request);
+            var result = await _sut.CreateOrderAsync(request);
 
             // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(401, result.StatusCode);
         }
 
-        [Fact]
-        public async Task CreateAsync_ReturnsSuccess_AndLeavesCardTypeNull_WhenNoCardTypeProvided()
-        {
-            // Arrange
-            var userId = Guid.NewGuid();
-            _currentTenant.UserId.Returns(userId);
-
-            var request = new CreateCardOrderRequest { Quantity = 5 };
-            var order = new CardOrder { Id = Guid.NewGuid(), Quantity = 5, Items = [] };
-            _mapper.Map<CardOrder>(request).Returns(order);
-
-            var createdQueryable = new List<CardOrder> { order }.AsQueryable().BuildMock();
-            _orderRepo.GetQueryable().Returns(createdQueryable);
-
-            var dto = new CardOrderDto { Quantity = 5 };
-            _mapper.Map<CardOrderDto>(order).Returns(dto);
-            _messageService.Get("RecordCreated").Returns("Record created.");
-            _messageService.Get("DefaultCardOrderName", Arg.Any<object[]>()).Returns(x => $"طلب كروت - {((object[])x[1])[0]}");
-
-            // Act
-            var result = await _sut.CreateAsync(request);
-
-            // Assert
-            Assert.True(result.IsSuccess);
-            Assert.Equal(200, result.StatusCode);
-            Assert.Equal($"طلب كروت - 5", order.CardName);
-            Assert.Null(order.CardType);
-            Assert.Null(order.CardDesignType);
-            Assert.Equal(0, order.UnitPrice);
-            Assert.Equal(0, order.TotalPrice);
-            await _orderRepo.Received(1).AddAsync(order);
-        }
 
         [Fact]
         public async Task CreateAsync_CalculatesPricing_WhenCardTypeIsProvided()
@@ -244,14 +206,19 @@ namespace NFC.Platform.Tests.Services
             var order = new CardOrder { Id = Guid.NewGuid(), Quantity = 5, CardType = CardType.Metal, Items = [] };
             _mapper.Map<CardOrder>(request).Returns(order);
 
+            var currentUser = new User { Id = userId, AccountType = AccountType.Individual };
+            _unitOfWork.Repository<User>().GetQueryable().Returns(new List<User> { currentUser }.AsQueryable().BuildMock());
+
             var createdQueryable = new List<CardOrder> { order }.AsQueryable().BuildMock();
             _orderRepo.GetQueryable().Returns(createdQueryable);
 
             var dto = new CardOrderDto { Quantity = 5, CardType = CardType.Metal };
             _mapper.Map<CardOrderDto>(order).Returns(dto);
+            var pricingResp = new OrderPricingResponseDto { UnitPrice = 8.5m, TotalPrice = 42.5m };
+            _cardPricingService.CalculateOrderPricingAsync(Arg.Any<CardType>(), Arg.Any<int>()).Returns(ServiceResult<OrderPricingResponseDto>.Success(pricingResp));
 
             // Act
-            var result = await _sut.CreateAsync(request);
+            var result = await _sut.CreateOrderAsync(request);
 
             // Assert
             Assert.True(result.IsSuccess);
@@ -261,91 +228,95 @@ namespace NFC.Platform.Tests.Services
         }
 
         [Fact]
-        public async Task CreateAsync_Returns422_WhenDeliveryIsCourierAndNoShippingAddress()
-        {
-            // Arrange
-            _currentTenant.UserId.Returns(Guid.NewGuid());
-            var request = new CreateCardOrderRequest 
-            { 
-                Quantity = 5, 
-                DeliveryMethod = DeliveryMethod.Courier, 
-                ShippingAddress = null 
-            };
-
-            // Act
-            var result = await _sut.CreateAsync(request);
-
-            // Assert
-            Assert.False(result.IsSuccess);
-            Assert.Equal(422, result.StatusCode);
-        }
-
-        [Fact]
-        public async Task CreateAsync_ReturnsSuccess_WhenDeliveryIsCourierWithShippingAddress()
+        public async Task CreateAsync_QueuesHangfireJob_WhenCompanyAdmin_AndExcelDataUrlProvided()
         {
             // Arrange
             var userId = Guid.NewGuid();
             _currentTenant.UserId.Returns(userId);
+            _currentTenant.TenantId.Returns(Guid.NewGuid());
 
             var request = new CreateCardOrderRequest 
             { 
-                Quantity = 5, 
-                DeliveryMethod = DeliveryMethod.Courier, 
-                ShippingAddress = "123 Main St, Kuwait" 
+                Quantity = 10, 
+                CardType = CardType.Plastic,
+                ExcelDataUrl = "https://example.com/employees.xlsx" 
             };
-            var order = new CardOrder 
-            { 
-                Id = Guid.NewGuid(), 
-                Quantity = 5, 
-                DeliveryMethod = DeliveryMethod.Courier, 
-                ShippingAddress = "123 Main St, Kuwait", 
-                Items = [] 
-            };
-            _mapper.Map<CardOrder>(request).Returns(order);
-            _orderRepo.GetQueryable().Returns(new List<CardOrder> { order }.AsQueryable().BuildMock());
-            _mapper.Map<CardOrderDto>(order).Returns(new CardOrderDto());
+            
+            // Mock pricing
+            var pricing = new CardPricing { CardType = CardType.Plastic, UnitPrice = 5, IsActive = true, EffectiveFrom = DateTime.UtcNow.AddDays(-1) };
+            _unitOfWork.Repository<CardPricing>().GetQueryable().Returns(new List<CardPricing> { pricing }.AsQueryable().BuildMock());
+
+            // Mock User to return CompanyAdmin
+            var currentUser = new User { Id = userId, AccountType = AccountType.CompanyAdmin };
+            _unitOfWork.Repository<User>().GetQueryable().Returns(new List<User> { currentUser }.AsQueryable().BuildMock());
+            
+            // Mock Order retrieval for returning DTO
+            var orderRepo = Substitute.For<IGenericRepository<CardOrder>>();
+            orderRepo.GetQueryable().Returns(new List<CardOrder> { new CardOrder { Id = Guid.NewGuid(), Items = [] } }.AsQueryable().BuildMock());
+            _unitOfWork.Repository<CardOrder>().Returns(orderRepo);
+            
+            _mapper.Map<CardOrder>(request).Returns(new CardOrder { Quantity = request.Quantity, CardType = request.CardType, CardDesignType = request.CardDesignType, ExcelDataUrl = request.ExcelDataUrl });
+            _mapper.Map<CardOrderDto>(Arg.Any<CardOrder>()).Returns(new CardOrderDto());
 
             // Act
-            var result = await _sut.CreateAsync(request);
+            var result = await _sut.CreateOrderAsync(request);
 
             // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(200, result.StatusCode);
-            Assert.Equal("123 Main St, Kuwait", order.ShippingAddress);
-            Assert.Equal(DeliveryMethod.Courier, order.DeliveryMethod);
+            
+            // Verify EmployeeImportJob was added
+            await _unitOfWork.Repository<EmployeeImportJob>().Received(1).AddAsync(Arg.Is<EmployeeImportJob>(j => 
+                j.ExcelFileUrl == "https://example.com/employees.xlsx" && 
+                j.UserId == userId));
+                
+            // Verify Hangfire enqueue
+            _backgroundJobClient.Received(1).Create(Arg.Any<Hangfire.Common.Job>(), Arg.Any<Hangfire.States.EnqueuedState>());
         }
 
         [Fact]
-        public async Task CreateAsync_ReturnsSuccess_WhenDeliveryIsPickupWithNoShippingAddress()
+        public async Task CreateAsync_DoesNotQueueHangfireJob_WhenIndividualUser_AndExcelDataUrlProvided()
         {
             // Arrange
             var userId = Guid.NewGuid();
             _currentTenant.UserId.Returns(userId);
+            _currentTenant.TenantId.Returns(Guid.NewGuid());
 
             var request = new CreateCardOrderRequest 
             { 
-                Quantity = 5, 
-                DeliveryMethod = DeliveryMethod.Pickup, 
-                ShippingAddress = null 
+                Quantity = 1, 
+                CardType = CardType.Plastic,
+                ExcelDataUrl = "https://example.com/individual_should_not_use_this.xlsx" 
             };
-            var order = new CardOrder 
-            { 
-                Id = Guid.NewGuid(), 
-                Quantity = 5, 
-                DeliveryMethod = DeliveryMethod.Pickup, 
-                ShippingAddress = null, 
-                Items = [] 
-            };
-            _mapper.Map<CardOrder>(request).Returns(order);
-            _orderRepo.GetQueryable().Returns(new List<CardOrder> { order }.AsQueryable().BuildMock());
-            _mapper.Map<CardOrderDto>(order).Returns(new CardOrderDto());
+            
+            // Mock pricing
+            var pricing = new CardPricing { CardType = CardType.Plastic, UnitPrice = 5, IsActive = true, EffectiveFrom = DateTime.UtcNow.AddDays(-1) };
+            _unitOfWork.Repository<CardPricing>().GetQueryable().Returns(new List<CardPricing> { pricing }.AsQueryable().BuildMock());
+
+            // Mock User to return Individual
+            var currentUser = new User { Id = userId, AccountType = AccountType.Individual };
+            _unitOfWork.Repository<User>().GetQueryable().Returns(new List<User> { currentUser }.AsQueryable().BuildMock());
+            
+            // Mock Order retrieval for returning DTO
+            var orderRepo = Substitute.For<IGenericRepository<CardOrder>>();
+            orderRepo.GetQueryable().Returns(new List<CardOrder> { new CardOrder { Id = Guid.NewGuid(), Items = [] } }.AsQueryable().BuildMock());
+            _unitOfWork.Repository<CardOrder>().Returns(orderRepo);
+            
+            _mapper.Map<CardOrder>(request).Returns(new CardOrder { Quantity = request.Quantity, CardType = request.CardType, CardDesignType = request.CardDesignType, ExcelDataUrl = request.ExcelDataUrl });
+            _mapper.Map<CardOrderDto>(Arg.Any<CardOrder>()).Returns(new CardOrderDto());
 
             // Act
-            var result = await _sut.CreateAsync(request);
+            var result = await _sut.CreateOrderAsync(request);
 
             // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(200, result.StatusCode);
+            
+            // Verify EmployeeImportJob was NOT added
+            await _unitOfWork.Repository<EmployeeImportJob>().DidNotReceive().AddAsync(Arg.Any<EmployeeImportJob>());
+                
+            // Verify Hangfire enqueue was NOT called
+            _backgroundJobClient.DidNotReceive().Create(Arg.Any<Hangfire.Common.Job>(), Arg.Any<Hangfire.States.EnqueuedState>());
         }
 
         [Fact]
@@ -385,634 +356,32 @@ namespace NFC.Platform.Tests.Services
             _messageService.Get("RecordNotFound").Returns("Record not found.");
 
             // Act
-            var result = await _sut.DeleteAsync(id);
+            var result = await _sut.DeleteOrderAsync(id);
 
             // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(404, result.StatusCode);
         }
 
-        [Fact]
-        public async Task DeleteAsync_ReturnsSuccess_AndRemovesOrder()
-        {
-            // Arrange
-            var id = Guid.NewGuid();
-            var order = new CardOrder { Id = id };
-            _orderRepo.GetByIdAsync(id).Returns(order);
-            _messageService.Get("RecordDeleted").Returns("Record deleted.");
 
-            // Act
-            var result = await _sut.DeleteAsync(id);
 
-            // Assert
-            Assert.True(result.IsSuccess);
-            _orderRepo.Received(1).Remove(order);
-            await _unitOfWork.Received(1).SaveChangesAsync();
-        }
 
-        // ── Bulk Ingestion / Background Jobs ──────────────────────────────────────
 
-        [Fact]
-        public async Task QueueEmployeeImportJobAsync_ReturnsUnauthorized_WhenUserNotAuthenticated()
-        {
-            // Arrange
-            _currentTenant.TenantId.Returns((Guid?)null);
-            var file = Substitute.For<Microsoft.AspNetCore.Http.IFormFile>();
 
-            // Act
-            var result = await _sut.QueueEmployeeImportJobAsync(file, CardType.Plastic, CardDesignType.CustomArtwork, null);
 
-            // Assert
-            Assert.False(result.IsSuccess);
-            Assert.Equal(401, result.StatusCode);
-        }
 
-        [Fact]
-        public async Task QueueEmployeeImportJobAsync_ReturnsBadRequest_WhenFileNullOrEmpty()
-        {
-            // Arrange
-            _currentTenant.TenantId.Returns(Guid.NewGuid());
-            _currentTenant.UserId.Returns(Guid.NewGuid());
 
-            // Act
-            var result = await _sut.QueueEmployeeImportJobAsync(null!, CardType.Plastic, CardDesignType.CustomArtwork, null);
 
-            // Assert
-            Assert.False(result.IsSuccess);
-            Assert.Equal(400, result.StatusCode);
-            Assert.Contains("NoFileUploaded", result.Message);
-        }
 
-        [Fact]
-        public async Task QueueEmployeeImportJobAsync_ReturnsBadRequest_WhenExtensionInvalid()
-        {
-            // Arrange
-            _currentTenant.TenantId.Returns(Guid.NewGuid());
-            _currentTenant.UserId.Returns(Guid.NewGuid());
 
-            var file = Substitute.For<Microsoft.AspNetCore.Http.IFormFile>();
-            file.FileName.Returns("test.txt");
-            file.Length.Returns(100);
 
-            // Act
-            var result = await _sut.QueueEmployeeImportJobAsync(file, CardType.Plastic, CardDesignType.CustomArtwork, null);
 
-            // Assert
-            Assert.False(result.IsSuccess);
-            Assert.Equal(400, result.StatusCode);
-            Assert.Contains("ExcelFilesOnly", result.Message);
-        }
 
-        [Fact]
-        public async Task QueueEmployeeImportJobAsync_ReturnsSuccess_QueuesJobAndEnqueuesHangfire()
-        {
-            // Arrange
-            _currentTenant.TenantId.Returns(Guid.NewGuid());
-            _currentTenant.UserId.Returns(Guid.NewGuid());
 
-            var file = Substitute.For<Microsoft.AspNetCore.Http.IFormFile>();
-            file.FileName.Returns("import.xlsx");
-            file.Length.Returns(100);
 
-            var uploadResult = new NFC.Platform.Application.DTOs.Upload.UploadResultDto
-            {
-                SecureUrl = "https://cloudinary.com/raw/import.xlsx",
-                PublicId = "cloudinary-id"
-            };
-            _storageService.UploadRawFileAsync(file, "employee-imports").Returns(Task.FromResult(uploadResult));
-            _messageService.Get("RecordCreated").Returns("Success message");
 
-            // Act
-            var result = await _sut.QueueEmployeeImportJobAsync(file, CardType.Plastic, CardDesignType.CustomArtwork, "Notes test");
 
-            // Assert
-            Assert.True(result.IsSuccess);
-            Assert.NotNull(result.Data);
-            Assert.Equal("import.xlsx", result.Data.FileName);
-            Assert.Equal(EmployeeImportJobStatus.Pending, result.Data.Status);
-            await _jobRepo.Received(1).AddAsync(Arg.Any<EmployeeImportJob>());
-            await _unitOfWork.Received(1).SaveChangesAsync();
-            _backgroundJobClient.Received(1).Create(
-                Arg.Is<Hangfire.Common.Job>(j => j.Method.Name == "ProcessEmployeeImportJobAsync"),
-                Arg.Any<Hangfire.States.IState>());
-        }
 
-        [Fact]
-        public async Task ProcessEmployeeImportJobAsync_ExitsEarly_WhenJobNotFound()
-        {
-            // Arrange
-            var jobId = Guid.NewGuid();
-            var jobQueryable = new List<EmployeeImportJob>().BuildMock();
-            _jobRepo.GetQueryable().Returns(jobQueryable);
-
-            // Act
-            await _sut.ProcessEmployeeImportJobAsync(jobId);
-
-            // Assert
-            await _unitOfWork.DidNotReceive().SaveChangesAsync();
-        }
-
-        [Fact]
-        public async Task ProcessEmployeeImportJobAsync_ExitsEarly_WhenJobNotPending()
-        {
-            // Arrange
-            var jobId = Guid.NewGuid();
-            var job = new EmployeeImportJob { Id = jobId, Status = EmployeeImportJobStatus.Processing };
-            var jobQueryable = new List<EmployeeImportJob> { job }.BuildMock();
-            _jobRepo.GetQueryable().Returns(jobQueryable);
-
-            // Act
-            await _sut.ProcessEmployeeImportJobAsync(jobId);
-
-            // Assert
-            await _unitOfWork.DidNotReceive().SaveChangesAsync();
-        }
-
-        [Fact]
-        public async Task ProcessEmployeeImportJobAsync_FailsJob_WhenDownloadThrows()
-        {
-            // Arrange
-            var jobId = Guid.NewGuid();
-            var job = new EmployeeImportJob
-            {
-                Id = jobId,
-                Status = EmployeeImportJobStatus.Pending,
-                ExcelFileUrl = "invalid-url-format"
-            };
-            var jobQueryable = new List<EmployeeImportJob> { job }.BuildMock();
-            _jobRepo.GetQueryable().Returns(jobQueryable);
-
-            // Act
-            await _sut.ProcessEmployeeImportJobAsync(jobId);
-
-            // Assert
-            Assert.Equal(EmployeeImportJobStatus.Failed, job.Status);
-            Assert.Contains("FailedToDownloadExcel", job.ErrorsJson);
-            await _unitOfWork.Received(2).SaveChangesAsync();
-        }
-
-        [Fact]
-        public async Task ProcessEmployeeImportJobAsync_FailsJob_WhenExcelParserThrows()
-        {
-            // Arrange
-            using var server = new TestHttpServer(new byte[] { 1, 2, 3 });
-            var jobId = Guid.NewGuid();
-            var job = new EmployeeImportJob
-            {
-                Id = jobId,
-                Status = EmployeeImportJobStatus.Pending,
-                ExcelFileUrl = server.Url + "import.xlsx",
-                TenantId = Guid.NewGuid()
-            };
-
-            var jobQueryable = new List<EmployeeImportJob> { job }.BuildMock();
-            _jobRepo.GetQueryable().Returns(jobQueryable);
-
-            _excelParser.ParseEmployeesFromExcel(Arg.Any<Stream>()).Returns(_ => throw new Exception("Parser corrupt"));
-
-            // Act
-            await _sut.ProcessEmployeeImportJobAsync(jobId);
-
-            // Assert
-            Assert.Equal(EmployeeImportJobStatus.Failed, job.Status);
-            Assert.Contains("FailedToParseExcel", job.ErrorsJson);
-        }
-
-        [Fact]
-        public async Task ProcessEmployeeImportJobAsync_FailsJob_WhenExcelIsEmpty()
-        {
-            // Arrange
-            using var server = new TestHttpServer(new byte[] { 1, 2, 3 });
-            var jobId = Guid.NewGuid();
-            var job = new EmployeeImportJob
-            {
-                Id = jobId,
-                Status = EmployeeImportJobStatus.Pending,
-                ExcelFileUrl = server.Url + "import.xlsx",
-                TenantId = Guid.NewGuid()
-            };
-
-            var jobQueryable = new List<EmployeeImportJob> { job }.BuildMock();
-            _jobRepo.GetQueryable().Returns(jobQueryable);
-
-            _excelParser.ParseEmployeesFromExcel(Arg.Any<Stream>()).Returns(new List<ExcelEmployeeImportDto>());
-
-            // Act
-            await _sut.ProcessEmployeeImportJobAsync(jobId);
-
-            // Assert
-            Assert.Equal(EmployeeImportJobStatus.Failed, job.Status);
-            Assert.Contains("NoValidEmployeeRows", job.ErrorsJson);
-        }
-
-        [Fact]
-        public async Task ProcessEmployeeImportJobAsync_FailsJob_WhenRowValidationFails()
-        {
-            // Arrange
-            using var server = new TestHttpServer(new byte[] { 1, 2, 3 });
-            var jobId = Guid.NewGuid();
-            var job = new EmployeeImportJob
-            {
-                Id = jobId,
-                Status = EmployeeImportJobStatus.Pending,
-                ExcelFileUrl = server.Url + "import.xlsx",
-                TenantId = Guid.NewGuid()
-            };
-
-            var jobQueryable = new List<EmployeeImportJob> { job }.BuildMock();
-            _jobRepo.GetQueryable().Returns(jobQueryable);
-
-            var rows = new List<ExcelEmployeeImportDto>
-            {
-                new ExcelEmployeeImportDto { Name = "", Email = "invalid-email" }
-            };
-            _excelParser.ParseEmployeesFromExcel(Arg.Any<Stream>()).Returns(rows);
-
-            // Act
-            await _sut.ProcessEmployeeImportJobAsync(jobId);
-
-            // Assert
-            Assert.Equal(EmployeeImportJobStatus.Failed, job.Status);
-            Assert.Contains("ImportRowNameRequired", job.ErrorsJson);
-            Assert.Contains("ImportRowEmailInvalid", job.ErrorsJson);
-        }
-
-        [Fact]
-        public async Task ProcessEmployeeImportJobAsync_FailsJob_WhenCompanyNotFound()
-        {
-            // Arrange
-            using var server = new TestHttpServer(new byte[] { 1, 2, 3 });
-            var jobId = Guid.NewGuid();
-            var job = new EmployeeImportJob
-            {
-                Id = jobId,
-                Status = EmployeeImportJobStatus.Pending,
-                ExcelFileUrl = server.Url + "import.xlsx",
-                TenantId = Guid.NewGuid()
-            };
-
-            var jobQueryable = new List<EmployeeImportJob> { job }.BuildMock();
-            _jobRepo.GetQueryable().Returns(jobQueryable);
-
-            var rows = new List<ExcelEmployeeImportDto>
-            {
-                new ExcelEmployeeImportDto { Name = "John Doe", Email = "john@example.com" }
-            };
-            _excelParser.ParseEmployeesFromExcel(Arg.Any<Stream>()).Returns(rows);
-
-            var companyRepo = Substitute.For<IGenericRepository<Company>>();
-            companyRepo.GetQueryable().Returns(new List<Company>().BuildMock());
-            _unitOfWork.Repository<Company>().Returns(companyRepo);
-
-            // Act
-            await _sut.ProcessEmployeeImportJobAsync(jobId);
-
-            // Assert
-            Assert.Equal(EmployeeImportJobStatus.Failed, job.Status);
-            Assert.Contains("CompanyNotFound", job.ErrorsJson);
-        }
-
-        [Fact]
-        public async Task ProcessEmployeeImportJobAsync_FailsJob_WhenSubscriptionExpiredOrMissing()
-        {
-            // Arrange
-            using var server = new TestHttpServer(new byte[] { 1, 2, 3 });
-            var jobId = Guid.NewGuid();
-            var job = new EmployeeImportJob
-            {
-                Id = jobId,
-                Status = EmployeeImportJobStatus.Pending,
-                ExcelFileUrl = server.Url + "import.xlsx",
-                TenantId = Guid.NewGuid()
-            };
-
-            var jobQueryable = new List<EmployeeImportJob> { job }.BuildMock();
-            _jobRepo.GetQueryable().Returns(jobQueryable);
-
-            var rows = new List<ExcelEmployeeImportDto>
-            {
-                new ExcelEmployeeImportDto { Name = "John Doe", Email = "john@example.com" }
-            };
-            _excelParser.ParseEmployeesFromExcel(Arg.Any<Stream>()).Returns(rows);
-
-            var companyRepo = Substitute.For<IGenericRepository<Company>>();
-            companyRepo.GetQueryable().Returns(new List<Company> { new Company { TenantId = job.TenantId } }.BuildMock());
-            _unitOfWork.Repository<Company>().Returns(companyRepo);
-
-            var subRepo = Substitute.For<IGenericRepository<UserSubscription>>();
-            subRepo.GetQueryable().Returns(new List<UserSubscription>().BuildMock());
-            _unitOfWork.Repository<UserSubscription>().Returns(subRepo);
-
-            // Act
-            await _sut.ProcessEmployeeImportJobAsync(jobId);
-
-            // Assert
-            Assert.Equal(EmployeeImportJobStatus.Failed, job.Status);
-            Assert.Contains("SubscriptionExpiredOrMissing", job.ErrorsJson);
-        }
-
-        [Fact]
-        public async Task ProcessEmployeeImportJobAsync_FailsJob_WhenMaxLimitReached()
-        {
-            // Arrange
-            using var server = new TestHttpServer(new byte[] { 1, 2, 3 });
-            var jobId = Guid.NewGuid();
-            var job = new EmployeeImportJob
-            {
-                Id = jobId,
-                Status = EmployeeImportJobStatus.Pending,
-                ExcelFileUrl = server.Url + "import.xlsx",
-                TenantId = Guid.NewGuid()
-            };
-
-            var jobQueryable = new List<EmployeeImportJob> { job }.BuildMock();
-            _jobRepo.GetQueryable().Returns(jobQueryable);
-
-            var rows = new List<ExcelEmployeeImportDto>
-            {
-                new ExcelEmployeeImportDto { Name = "John Doe", Email = "john@example.com" }
-            };
-            _excelParser.ParseEmployeesFromExcel(Arg.Any<Stream>()).Returns(rows);
-
-            var companyRepo = Substitute.For<IGenericRepository<Company>>();
-            companyRepo.GetQueryable().Returns(new List<Company> { new Company { TenantId = job.TenantId } }.BuildMock());
-            _unitOfWork.Repository<Company>().Returns(companyRepo);
-
-            var plan = new SubscriptionPlan { MaxEmployees = 1 };
-            var activeSub = new UserSubscription { TenantId = job.TenantId, IsActive = true, EndDate = DateTime.UtcNow.AddDays(10), SubscriptionPlan = plan };
-            var subRepo = Substitute.For<IGenericRepository<UserSubscription>>();
-            subRepo.GetQueryable().Returns(new List<UserSubscription> { activeSub }.BuildMock());
-            _unitOfWork.Repository<UserSubscription>().Returns(subRepo);
-
-            var employeeRepo = Substitute.For<IGenericRepository<Employee>>();
-            employeeRepo.CountAsync(Arg.Any<System.Linq.Expressions.Expression<Func<Employee, bool>>>()).Returns(Task.FromResult(1));
-            employeeRepo.GetQueryable().Returns(new List<Employee>().BuildMock());
-            _unitOfWork.Repository<Employee>().Returns(employeeRepo);
-
-            var userRepo = Substitute.For<IGenericRepository<User>>();
-            userRepo.GetQueryable().Returns(new List<User>().BuildMock());
-            _unitOfWork.Repository<User>().Returns(userRepo);
-
-            // Act
-            await _sut.ProcessEmployeeImportJobAsync(jobId);
-
-            // Assert
-            Assert.Equal(EmployeeImportJobStatus.Failed, job.Status);
-            Assert.Contains("MaxEmployeesLimitReached", job.ErrorsJson);
-        }
-
-        [Fact]
-        public async Task ProcessEmployeeImportJobAsync_Succeeds_WhenValidInputs()
-        {
-            // Arrange
-            using var server = new TestHttpServer(new byte[] { 1, 2, 3 });
-            var jobId = Guid.NewGuid();
-            var job = new EmployeeImportJob
-            {
-                Id = jobId,
-                Status = EmployeeImportJobStatus.Pending,
-                ExcelFileUrl = server.Url + "import.xlsx",
-                TenantId = Guid.NewGuid(),
-                CardType = CardType.Plastic,
-                CardDesignType = CardDesignType.CustomArtwork
-            };
-
-            var jobQueryable = new List<EmployeeImportJob> { job }.BuildMock();
-            _jobRepo.GetQueryable().Returns(jobQueryable);
-
-            var rows = new List<ExcelEmployeeImportDto>
-            {
-                new ExcelEmployeeImportDto { Name = "John Doe", Email = "john@example.com", JobTitle = "Engineer", Department = "IT" }
-            };
-            _excelParser.ParseEmployeesFromExcel(Arg.Any<Stream>()).Returns(rows);
-
-            var company = new Company { Id = Guid.NewGuid(), Name = "OnPoint", TenantId = job.TenantId };
-            var companyRepo = Substitute.For<IGenericRepository<Company>>();
-            companyRepo.GetQueryable().Returns(new List<Company> { company }.BuildMock());
-            _unitOfWork.Repository<Company>().Returns(companyRepo);
-
-            var plan = new SubscriptionPlan { MaxEmployees = 10 };
-            var activeSub = new UserSubscription { TenantId = job.TenantId, IsActive = true, EndDate = DateTime.UtcNow.AddDays(10), SubscriptionPlan = plan };
-            var subRepo = Substitute.For<IGenericRepository<UserSubscription>>();
-            subRepo.GetQueryable().Returns(new List<UserSubscription> { activeSub }.BuildMock());
-            _unitOfWork.Repository<UserSubscription>().Returns(subRepo);
-
-            var employeeRepo = Substitute.For<IGenericRepository<Employee>>();
-            employeeRepo.CountAsync(Arg.Any<System.Linq.Expressions.Expression<Func<Employee, bool>>>()).Returns(Task.FromResult(0));
-            employeeRepo.GetQueryable().Returns(new List<Employee>().BuildMock());
-            _unitOfWork.Repository<Employee>().Returns(employeeRepo);
-
-            var userRepo = Substitute.For<IGenericRepository<User>>();
-            userRepo.GetQueryable().Returns(new List<User>().BuildMock());
-            _unitOfWork.Repository<User>().Returns(userRepo);
-
-
-            var mappedEmployee = new Employee { Id = Guid.NewGuid(), Email = "john@example.com" };
-            var mappedProfile = new UserProfile { Id = Guid.NewGuid() };
-            var mappedItem = new CardOrderItem { UserProfileId = mappedProfile.Id };
-
-            _mapper.Map<Employee>(Arg.Any<ExcelEmployeeImportDto>()).Returns(mappedEmployee);
-            _mapper.Map<UserProfile>(Arg.Any<ExcelEmployeeImportDto>()).Returns(mappedProfile);
-            _mapper.Map<CardOrderItem>(Arg.Any<ExcelEmployeeImportDto>()).Returns(mappedItem);
-
-            // Act
-            await _sut.ProcessEmployeeImportJobAsync(jobId);
-
-            // Assert
-            Assert.Equal(EmployeeImportJobStatus.Completed, job.Status);
-            Assert.Equal(1, job.Imported);
-            Assert.Equal(0, job.Skipped);
-            Assert.NotNull(job.CardOrderId);
-
-            await employeeRepo.Received(1).AddRangeAsync(Arg.Is<System.Collections.Generic.IEnumerable<Employee>>(e => e.Count() == 1));
-            await _userProfileRepo.Received(1).AddRangeAsync(Arg.Is<System.Collections.Generic.IEnumerable<UserProfile>>(p => p.Count() == 1));
-            await _unitOfWork.Received(1).CommitTransactionAsync();
-        }
-
-        private sealed class TestHttpServer : IDisposable
-        {
-            private readonly System.Net.HttpListener _listener;
-            public string Url { get; }
-            private readonly byte[] _responseBytes;
-
-            public TestHttpServer(byte[] responseBytes)
-            {
-                _responseBytes = responseBytes;
-                _listener = new System.Net.HttpListener();
-                var port = GetFreePort();
-                Url = $"http://localhost:{port}/";
-                _listener.Prefixes.Add(Url);
-                _listener.Start();
-                _listener.BeginGetContext(OnRequest, null);
-            }
-
-            private void OnRequest(IAsyncResult ar)
-            {
-                try
-                {
-                    var context = _listener.EndGetContext(ar);
-                    context.Response.ContentType = "application/octet-stream";
-                    context.Response.ContentLength64 = _responseBytes.Length;
-                    context.Response.OutputStream.Write(_responseBytes, 0, _responseBytes.Length);
-                    context.Response.OutputStream.Close();
-                    _listener.BeginGetContext(OnRequest, null);
-                }
-                catch
-                {
-                }
-            }
-
-            private static int GetFreePort()
-            {
-                var l = new System.Net.Sockets.TcpListener(System.Net.IPAddress.Loopback, 0);
-                l.Start();
-                var port = ((System.Net.IPEndPoint)l.LocalEndpoint).Port;
-                l.Stop();
-                return port;
-            }
-
-            public void Dispose()
-            {
-                try
-                {
-                    _listener.Stop();
-                    _listener.Close();
-                }
-                catch { }
-            }
-        }
-
-        // ── CardPricing Database Tests ────────────────────────────────────────────
-
-        [Fact]
-        public async Task GetOrderPricingAsync_QueriesDatabase_WhenValidCardTypePassed()
-        {
-            // Arrange
-            var pricing = new CardPricing
-            {
-                CardType = CardType.Metal,
-                UnitPrice = 8.5m,
-                Currency = "KWD",
-                IsActive = true,
-                EffectiveFrom = DateTime.UtcNow.AddDays(-1)
-            };
-            var pricingsList = new List<CardPricing> { pricing };
-            var mockQueryable = pricingsList.AsQueryable().BuildMock();
-            _cardPricingRepo.GetQueryable().Returns(mockQueryable);
-
-            // Act
-            var result = await _sut.GetOrderPricingAsync("metal", 5);
-
-            // Assert
-            Assert.True(result.IsSuccess);
-            Assert.Equal(8.5m, result.Data!.UnitPrice);
-            Assert.Equal(42.5m, result.Data!.TotalPrice);
-            Assert.Equal("KWD", result.Data!.Currency);
-        }
-
-        [Fact]
-        public async Task GetOrderPricingAsync_ReturnsFailure_WhenInvalidCardTypePassed()
-        {
-            // Act
-            var result = await _sut.GetOrderPricingAsync("invalid_material", 5);
-
-            // Assert
-            Assert.False(result.IsSuccess);
-            Assert.Equal(400, result.StatusCode);
-        }
-
-        [Fact]
-        public async Task CreateAsync_SavesPricingSnapshotOnOrder()
-        {
-            // Arrange
-            var pricing = new CardPricing
-            {
-                CardType = CardType.Plastic,
-                UnitPrice = 4.5m,
-                Currency = "KWD",
-                IsActive = true,
-                EffectiveFrom = DateTime.UtcNow.AddDays(-1)
-            };
-            var pricingsList = new List<CardPricing> { pricing };
-            var mockQueryable = pricingsList.AsQueryable().BuildMock();
-            _cardPricingRepo.GetQueryable().Returns(mockQueryable);
-
-            _currentTenant.UserId.Returns(Guid.NewGuid());
-
-            var request = new CreateCardOrderRequest
-            {
-                CardType = CardType.Plastic,
-                Quantity = 10,
-                CardName = "Test Plastic Order"
-            };
-
-            var mappedOrder = new CardOrder
-            {
-                CardType = CardType.Plastic,
-                Quantity = 10,
-                CardName = "Test Plastic Order"
-            };
-
-            _mapper.Map<CardOrder>(request).Returns(mappedOrder);
-            _mapper.Map<CardOrderDto>(Arg.Any<CardOrder>()).Returns(new CardOrderDto());
-
-            var savedOrders = new List<CardOrder>();
-            _orderRepo.AddAsync(Arg.Do<CardOrder>(o => savedOrders.Add(o))).Returns(Task.CompletedTask);
-
-            // Set up get queryable for reloading
-            var mockOrderQueryable = savedOrders.AsQueryable().BuildMock();
-            _orderRepo.GetQueryable().Returns(mockOrderQueryable);
-
-            // Act
-            var result = await _sut.CreateAsync(request);
-
-            // Assert
-            Assert.True(result.IsSuccess);
-            Assert.Single(savedOrders);
-            var savedOrder = savedOrders[0];
-            Assert.Equal(4.5m, savedOrder.UnitPrice);
-            Assert.Equal("KWD", savedOrder.Currency);
-            Assert.Equal(45.0m, savedOrder.TotalPrice);
-        }
-
-        [Fact]
-        public async Task GetOrderPricingAsync_ReturnsPricing_ForValidCardTypes()
-        {
-            // Act
-            var resultPlastic = await _sut.GetOrderPricingAsync("plastic", 10);
-            var resultMetal = await _sut.GetOrderPricingAsync("metal", 5);
-
-            // Assert
-            Assert.True(resultPlastic.IsSuccess);
-            Assert.Equal(45.0m, resultPlastic.Data!.TotalPrice);
-            Assert.True(resultMetal.IsSuccess);
-            Assert.Equal(42.5m, resultMetal.Data!.TotalPrice);
-        }
-
-        [Fact]
-        public async Task GetOrderPricingAsync_Returns400_ForInvalidCardType()
-        {
-            // Act
-            var result = await _sut.GetOrderPricingAsync("gold_plated_diamond", 10);
-
-            // Assert
-            Assert.False(result.IsSuccess);
-            Assert.Equal(400, result.StatusCode);
-        }
-
-        [Fact]
-        public async Task GetOrderPricingAsync_Returns500_WhenPricingNotConfigured()
-        {
-            // Arrange
-            _cardPricingRepo.GetQueryable().Returns(new List<CardPricing>().AsQueryable().BuildMock());
-
-            // Act
-            var result = await _sut.GetOrderPricingAsync("plastic", 10);
-
-            // Assert
-            Assert.False(result.IsSuccess);
-            Assert.Equal(500, result.StatusCode);
-        }
 
         [Fact]
         public async Task CreateReorderAsync_ReturnsUnauthorized_WhenUserIdIsNull()
@@ -1067,27 +436,7 @@ namespace NFC.Platform.Tests.Services
             Assert.Equal(422, result.StatusCode);
         }
 
-        [Fact]
-        public async Task CreateReorderAsync_Returns500_WhenPricingNotConfigured()
-        {
-            // Arrange
-            var parentId = Guid.NewGuid();
-            _currentTenant.UserId.Returns(Guid.NewGuid());
-            var parentOrder = new CardOrder { Id = parentId, CardType = CardType.Plastic };
-            _orderRepo.GetQueryable().Returns(new List<CardOrder> { parentOrder }.AsQueryable().BuildMock());
-            
-            // Empty pricing
-            _cardPricingRepo.GetQueryable().Returns(new List<CardPricing>().AsQueryable().BuildMock());
 
-            var request = new ReorderRequest { Quantity = 5, AssignmentScope = AssignmentScope.Individual };
-
-            // Act
-            var result = await _sut.CreateReorderAsync(parentId, request);
-
-            // Assert
-            Assert.False(result.IsSuccess);
-            Assert.Equal(500, result.StatusCode);
-        }
 
         [Fact]
         public async Task CreateReorderAsync_ReturnsSuccess_WhenReorderIsValid()
@@ -1270,433 +619,15 @@ namespace NFC.Platform.Tests.Services
             await _unitOfWork.Received(1).SaveChangesAsync();
         }
 
-        [Fact]
-        public async Task CreateReorderAsync_Returns422_WhenAllEmployeesQuantityMismatch()
-        {
-            // Arrange
-            var parentId = Guid.NewGuid();
-            _currentTenant.UserId.Returns(Guid.NewGuid());
-            var parentOrder = new CardOrder { Id = parentId, CardType = CardType.Plastic };
-            _orderRepo.GetQueryable().Returns(new List<CardOrder> { parentOrder }.AsQueryable().BuildMock());
 
-            var request = new ReorderRequest
-            {
-                AssignmentScope = AssignmentScope.AllEmployees,
-                Quantity = 5
-            };
 
-            var employees = new List<Employee>
-            {
-                new Employee { Id = Guid.NewGuid(), FullName = "Emp 1", IsDeleted = false, UserProfile = new UserProfile() }
-            };
 
-            var employeeRepo = Substitute.For<IGenericRepository<Employee>>();
-            employeeRepo.GetQueryable().Returns(employees.AsQueryable().BuildMock());
-            _unitOfWork.Repository<Employee>().Returns(employeeRepo);
 
-            // Act
-            var result = await _sut.CreateReorderAsync(parentId, request);
 
-            // Assert
-            Assert.False(result.IsSuccess);
-            Assert.Equal(422, result.StatusCode);
-            Assert.Contains("EmployeeCountMismatch", result.Message);
-        }
 
 
 
-        [Fact]
-        public async Task GetEmployeesImportStatusAsync_ReturnsJobStatus_WhenJobExists()
-        {
-            // Arrange
-            var jobId = Guid.NewGuid();
-            var job = new EmployeeImportJob
-            {
-                Id = jobId,
-                Status = EmployeeImportJobStatus.Completed,
-                TotalRows = 10,
-                Imported = 8,
-                Skipped = 2
-            };
-            _jobRepo.GetQueryable().Returns(new List<EmployeeImportJob> { job }.AsQueryable().BuildMock());
-            _mapper.Map<EmployeesImportStatusDto>(job).Returns(new EmployeesImportStatusDto
-            {
-                Status = job.Status.ToString(),
-                TotalRows = job.TotalRows,
-                Imported = job.Imported,
-                Skipped = job.Skipped,
-                Errors = new List<string>()
-            });
 
-            // Act
-            var result = await _sut.GetEmployeesImportStatusAsync(jobId);
-
-            // Assert
-            Assert.True(result.IsSuccess);
-            Assert.Equal("Completed", result.Data!.Status);
-            Assert.Equal(10, result.Data.TotalRows);
-            Assert.Equal(8, result.Data.Imported);
-            Assert.Equal(2, result.Data.Skipped);
-        }
-
-        [Fact]
-        public async Task GetEmployeesImportStatusAsync_FallsBackToCardOrder_WhenJobDoesNotExist()
-        {
-            // Arrange
-            var orderId = Guid.NewGuid();
-            _jobRepo.GetQueryable().Returns(new List<EmployeeImportJob>().AsQueryable().BuildMock());
-
-            var order = new CardOrder { Id = orderId, Quantity = 5, Items = new List<CardOrderItem> { new CardOrderItem(), new CardOrderItem() } };
-            _orderRepo.GetQueryable().Returns(new List<CardOrder> { order }.AsQueryable().BuildMock());
-
-            var expectedDto = new EmployeesImportStatusDto { TotalRows = 5 };
-            _mapper.Map<EmployeesImportStatusDto>(order).Returns(expectedDto);
-
-            // Act
-            var result = await _sut.GetEmployeesImportStatusAsync(orderId);
-
-            // Assert
-            Assert.True(result.IsSuccess);
-            Assert.Equal("Completed", result.Data!.Status);
-            Assert.Equal(5, result.Data.TotalRows);
-        }
-
-        [Fact]
-        public async Task GetEmployeesImportStatusAsync_ReturnsNotFound_WhenNeitherExists()
-        {
-            // Arrange
-            var id = Guid.NewGuid();
-            _jobRepo.GetQueryable().Returns(new List<EmployeeImportJob>().AsQueryable().BuildMock());
-            _orderRepo.GetQueryable().Returns(new List<CardOrder>().AsQueryable().BuildMock());
-
-            // Act
-            var result = await _sut.GetEmployeesImportStatusAsync(id);
-
-            // Assert
-            Assert.False(result.IsSuccess);
-            Assert.Equal(404, result.StatusCode);
-        }
-
-        [Fact]
-        public async Task GetActivePricingCatalogAsync_ReturnsOnlyActivePricing()
-        {
-            // Arrange
-            var pricings = new List<CardPricing>
-            {
-                new CardPricing { IsActive = true, EffectiveFrom = DateTime.UtcNow.AddDays(-1), EffectiveTo = null },
-                new CardPricing { IsActive = false, EffectiveFrom = DateTime.UtcNow.AddDays(-5), EffectiveTo = DateTime.UtcNow.AddDays(-1) }
-            };
-            _cardPricingRepo.GetQueryable().Returns(pricings.AsQueryable().BuildMock());
-
-            var dtos = new List<CardPricingDto> { new CardPricingDto() };
-            _mapper.Map<IReadOnlyList<CardPricingDto>>(Arg.Is<List<CardPricing>>(l => l.Count == 1)).Returns(dtos);
-
-            // Act
-            var result = await _sut.GetActivePricingCatalogAsync();
-
-            // Assert
-            Assert.True(result.IsSuccess);
-            Assert.Single(result.Data!);
-        }
-
-        [Fact]
-        public async Task GetEmployeesImportStatusAsync_DeserializesErrorsJson_WhenJobContainsErrors()
-        {
-            // Arrange
-            var jobId = Guid.NewGuid();
-            var job = new EmployeeImportJob
-            {
-                Id = jobId,
-                Status = EmployeeImportJobStatus.Completed,
-                TotalRows = 10,
-                Imported = 8,
-                Skipped = 2,
-                ErrorsJson = "[\"Error 1\",\"Error 2\"]"
-            };
-            _jobRepo.GetQueryable().Returns(new List<EmployeeImportJob> { job }.AsQueryable().BuildMock());
-            _mapper.Map<EmployeesImportStatusDto>(job).Returns(new EmployeesImportStatusDto
-            {
-                Status = job.Status.ToString(),
-                TotalRows = job.TotalRows,
-                Imported = job.Imported,
-                Skipped = job.Skipped,
-                Errors = new List<string> { "Error 1", "Error 2" }
-            });
-
-            // Act
-            var result = await _sut.GetEmployeesImportStatusAsync(jobId);
-
-            // Assert
-            Assert.True(result.IsSuccess);
-            Assert.Equal("Completed", result.Data!.Status);
-            Assert.Equal(2, result.Data.Errors.Count);
-            Assert.Contains("Error 1", result.Data.Errors);
-            Assert.Contains("Error 2", result.Data.Errors);
-        }
-
-        [Fact]
-        public async Task CreateReorderAsync_CopiesCustomDesignFields_WhenParentOrderIsNeedCustomDesign()
-        {
-            // Arrange
-            var parentId = Guid.NewGuid();
-            _currentTenant.UserId.Returns(Guid.NewGuid());
-            var parentOrder = new CardOrder
-            {
-                Id = parentId,
-                CardType = CardType.Plastic,
-                CardName = "Custom Parent Card",
-                CardDesignType = CardDesignType.NeedCustomDesign
-            };
-            _orderRepo.GetQueryable().Returns(new List<CardOrder> { parentOrder }.AsQueryable().BuildMock());
-
-            var request = new ReorderRequest { Quantity = 2, AssignmentScope = AssignmentScope.Individual };
-
-            // Act
-            var result = await _sut.CreateReorderAsync(parentId, request);
-
-            // Assert
-            Assert.True(result.IsSuccess);
-            await _orderRepo.Received(1).AddAsync(Arg.Is<CardOrder>(o =>
-                o.ParentOrderId == parentId &&
-                o.CardDesignType == CardDesignType.NeedCustomDesign
-            ));
-        }
-
-        [Fact]
-        public async Task ProcessEmployeeImportJobAsync_CopiesCustomDesignFields_WhenJobIsNeedCustomDesign()
-        {
-            // Arrange
-            using var server = new TestHttpServer(new byte[] { 1, 2, 3 });
-            var jobId = Guid.NewGuid();
-            var job = new EmployeeImportJob
-            {
-                Id = jobId,
-                Status = EmployeeImportJobStatus.Pending,
-                ExcelFileUrl = server.Url + "import.xlsx",
-                TenantId = Guid.NewGuid(),
-                CardType = CardType.Plastic,
-                CardDesignType = CardDesignType.NeedCustomDesign
-            };
-
-            var jobQueryable = new List<EmployeeImportJob> { job }.BuildMock();
-            _jobRepo.GetQueryable().Returns(jobQueryable);
-
-            var rows = new List<ExcelEmployeeImportDto>
-            {
-                new ExcelEmployeeImportDto { Name = "John Doe", Email = "john@example.com", JobTitle = "Engineer", Department = "IT" }
-            };
-            _excelParser.ParseEmployeesFromExcel(Arg.Any<Stream>()).Returns(rows);
-
-            var company = new Company { Id = Guid.NewGuid(), Name = "OnPoint", TenantId = job.TenantId };
-            var companyRepo = Substitute.For<IGenericRepository<Company>>();
-            companyRepo.GetQueryable().Returns(new List<Company> { company }.BuildMock());
-            _unitOfWork.Repository<Company>().Returns(companyRepo);
-
-            var plan = new SubscriptionPlan { MaxEmployees = 10 };
-            var activeSub = new UserSubscription { TenantId = job.TenantId, IsActive = true, EndDate = DateTime.UtcNow.AddDays(10), SubscriptionPlan = plan };
-            var subRepo = Substitute.For<IGenericRepository<UserSubscription>>();
-            subRepo.GetQueryable().Returns(new List<UserSubscription> { activeSub }.BuildMock());
-            _unitOfWork.Repository<UserSubscription>().Returns(subRepo);
-
-            var employeeRepo = Substitute.For<IGenericRepository<Employee>>();
-            employeeRepo.CountAsync(Arg.Any<System.Linq.Expressions.Expression<Func<Employee, bool>>>()).Returns(Task.FromResult(0));
-            employeeRepo.GetQueryable().Returns(new List<Employee>().BuildMock());
-            _unitOfWork.Repository<Employee>().Returns(employeeRepo);
-
-            var userRepo = Substitute.For<IGenericRepository<User>>();
-            userRepo.GetQueryable().Returns(new List<User>().BuildMock());
-            _unitOfWork.Repository<User>().Returns(userRepo);
-
-
-            var mappedEmployee = new Employee { Id = Guid.NewGuid(), Email = "john@example.com" };
-            var mappedProfile = new UserProfile { Id = Guid.NewGuid() };
-            var mappedItem = new CardOrderItem { UserProfileId = mappedProfile.Id };
-
-            _mapper.Map<Employee>(Arg.Any<ExcelEmployeeImportDto>()).Returns(mappedEmployee);
-            _mapper.Map<UserProfile>(Arg.Any<ExcelEmployeeImportDto>()).Returns(mappedProfile);
-            _mapper.Map<CardOrderItem>(Arg.Any<ExcelEmployeeImportDto>()).Returns(mappedItem);
-
-            // Act
-            await _sut.ProcessEmployeeImportJobAsync(jobId);
-
-            // Assert
-            Assert.Equal(EmployeeImportJobStatus.Completed, job.Status);
-            await _orderRepo.Received(1).AddAsync(Arg.Is<CardOrder>(o =>
-                o.CardDesignType == CardDesignType.NeedCustomDesign
-            ));
-            await _unitOfWork.Received(1).CommitTransactionAsync();
-        }
-
-        [Fact]
-        public async Task CreateAsync_SavesSpecificEmployeeItems_WhenAssignmentScopeIsSpecificEmployees()
-        {
-            // Arrange
-            var userId = Guid.NewGuid();
-            _currentTenant.UserId.Returns(userId);
-
-            var empId1 = Guid.NewGuid();
-            var empId2 = Guid.NewGuid();
-            var request = new CreateCardOrderRequest
-            {
-                Quantity = 2,
-                AssignmentScope = AssignmentScope.SpecificEmployees,
-                EmployeeIds = new List<Guid> { empId1, empId2 }
-            };
-
-            var order = new CardOrder { Id = Guid.NewGuid(), Quantity = 2, Items = [] };
-            _mapper.Map<CardOrder>(request).Returns(order);
-
-            var mockEmployees = new List<Employee>
-            {
-                new Employee { Id = empId1, FullName = "Emp 1", UserProfile = new UserProfile { Id = Guid.NewGuid() } },
-                new Employee { Id = empId2, FullName = "Emp 2", UserProfile = new UserProfile { Id = Guid.NewGuid() } }
-            };
-            var employeeRepo = Substitute.For<IGenericRepository<Employee>>();
-            employeeRepo.GetQueryable().Returns(mockEmployees.AsQueryable().BuildMock());
-            _unitOfWork.Repository<Employee>().Returns(employeeRepo);
-
-            var item1 = new CardOrderItem { EmployeeName = "Emp 1", UserProfileId = mockEmployees[0].UserProfile!.Id };
-            var item2 = new CardOrderItem { EmployeeName = "Emp 2", UserProfileId = mockEmployees[1].UserProfile!.Id };
-            _mapper.Map<CardOrderItem>(mockEmployees[0]).Returns(item1);
-            _mapper.Map<CardOrderItem>(mockEmployees[1]).Returns(item2);
-
-            _orderRepo.GetQueryable().Returns(new List<CardOrder> { order }.AsQueryable().BuildMock());
-            _mapper.Map<CardOrderDto>(order).Returns(new CardOrderDto());
-
-            // Act
-            var result = await _sut.CreateAsync(request);
-
-            // Assert
-            Assert.True(result.IsSuccess);
-            Assert.Equal(200, result.StatusCode);
-            Assert.Equal(2, order.Items.Count);
-            Assert.Contains(order.Items, i => i.EmployeeName == "Emp 1");
-            Assert.Contains(order.Items, i => i.EmployeeName == "Emp 2");
-        }
-
-        [Fact]
-        public async Task CreateAsync_SavesAllEmployeeItems_WhenAssignmentScopeIsAllEmployees()
-        {
-            // Arrange
-            var userId = Guid.NewGuid();
-            _currentTenant.UserId.Returns(userId);
-
-            var request = new CreateCardOrderRequest
-            {
-                Quantity = 2,
-                AssignmentScope = AssignmentScope.AllEmployees
-            };
-
-            var order = new CardOrder { Id = Guid.NewGuid(), Quantity = 2, Items = [] };
-            _mapper.Map<CardOrder>(request).Returns(order);
-
-            var mockEmployees = new List<Employee>
-            {
-                new Employee { Id = Guid.NewGuid(), FullName = "Emp 1", IsDeleted = false, UserProfile = new UserProfile { Id = Guid.NewGuid() } },
-                new Employee { Id = Guid.NewGuid(), FullName = "Emp 2", IsDeleted = false, UserProfile = new UserProfile { Id = Guid.NewGuid() } }
-            };
-            var employeeRepo = Substitute.For<IGenericRepository<Employee>>();
-            employeeRepo.GetQueryable().Returns(mockEmployees.AsQueryable().BuildMock());
-            _unitOfWork.Repository<Employee>().Returns(employeeRepo);
-
-            var item1 = new CardOrderItem { EmployeeName = "Emp 1", UserProfileId = mockEmployees[0].UserProfile!.Id };
-            var item2 = new CardOrderItem { EmployeeName = "Emp 2", UserProfileId = mockEmployees[1].UserProfile!.Id };
-            _mapper.Map<CardOrderItem>(mockEmployees[0]).Returns(item1);
-            _mapper.Map<CardOrderItem>(mockEmployees[1]).Returns(item2);
-
-            _orderRepo.GetQueryable().Returns(new List<CardOrder> { order }.AsQueryable().BuildMock());
-            _mapper.Map<CardOrderDto>(order).Returns(new CardOrderDto());
-
-            // Act
-            var result = await _sut.CreateAsync(request);
-
-            // Assert
-            Assert.True(result.IsSuccess);
-            Assert.Equal(200, result.StatusCode);
-            Assert.Equal(2, order.Items.Count);
-        }
-
-        [Fact]
-        public async Task CreateAsync_FailsWith422_WhenSpecificEmployeesQuantityMismatch()
-        {
-            // Arrange
-            var userId = Guid.NewGuid();
-            _currentTenant.UserId.Returns(userId);
-
-            var request = new CreateCardOrderRequest
-            {
-                Quantity = 5,
-                AssignmentScope = AssignmentScope.SpecificEmployees,
-                EmployeeIds = new List<Guid> { Guid.NewGuid() }
-            };
-
-            // Act
-            var result = await _sut.CreateAsync(request);
-
-            // Assert
-            Assert.False(result.IsSuccess);
-            Assert.Equal(422, result.StatusCode);
-            Assert.Contains("EmployeeCountMismatch", result.Errors[0]);
-        }
-
-        [Fact]
-        public async Task CreateAsync_FailsWith422_WhenEmployeeNotFound()
-        {
-            // Arrange
-            var userId = Guid.NewGuid();
-            _currentTenant.UserId.Returns(userId);
-
-            var request = new CreateCardOrderRequest
-            {
-                Quantity = 1,
-                AssignmentScope = AssignmentScope.SpecificEmployees,
-                EmployeeIds = new List<Guid> { Guid.NewGuid() }
-            };
-
-            var employeeRepo = Substitute.For<IGenericRepository<Employee>>();
-            employeeRepo.GetQueryable().Returns(new List<Employee>().AsQueryable().BuildMock());
-            _unitOfWork.Repository<Employee>().Returns(employeeRepo);
-
-            // Act
-            var result = await _sut.CreateAsync(request);
-
-            // Assert
-            Assert.False(result.IsSuccess);
-            Assert.Equal(422, result.StatusCode);
-            Assert.Contains("EmployeesNotFound", result.Errors[0]);
-        }
-
-        [Fact]
-        public async Task CreateAsync_FailsWith422_WhenEmployeeMissingProfile()
-        {
-            // Arrange
-            var userId = Guid.NewGuid();
-            _currentTenant.UserId.Returns(userId);
-
-            var empId = Guid.NewGuid();
-            var request = new CreateCardOrderRequest
-            {
-                Quantity = 1,
-                AssignmentScope = AssignmentScope.SpecificEmployees,
-                EmployeeIds = new List<Guid> { empId }
-            };
-
-            var mockEmployees = new List<Employee>
-            {
-                new Employee { Id = empId, FullName = "Emp 1", UserProfile = null }
-            };
-            var employeeRepo = Substitute.For<IGenericRepository<Employee>>();
-            employeeRepo.GetQueryable().Returns(mockEmployees.AsQueryable().BuildMock());
-            _unitOfWork.Repository<Employee>().Returns(employeeRepo);
-
-            // Act
-            var result = await _sut.CreateAsync(request);
-
-            // Assert
-            Assert.False(result.IsSuccess);
-            Assert.Equal(422, result.StatusCode);
-            Assert.Contains("EmployeesMissingProfile", result.Errors[0]);
-        }
 
         [Fact]
         public async Task CreateReorderAsync_RegressionTest_UsesSharedHelperToBuildItems()
@@ -1750,7 +681,7 @@ namespace NFC.Platform.Tests.Services
             _messageService.Get("RecordNotFound").Returns("Record not found.");
 
             // Act
-            var result = await _sut.ResendDeliveryOtpAsync(Guid.NewGuid());
+            var result = await _sut.ResendOrderOtpAsync(Guid.NewGuid());
 
             // Assert
             Assert.False(result.IsSuccess);
@@ -1775,7 +706,7 @@ namespace NFC.Platform.Tests.Services
             _messageService.Get("RecordNotFound").Returns("Record not found.");
 
             // Act
-            var result = await _sut.ResendDeliveryOtpAsync(order.Id);
+            var result = await _sut.ResendOrderOtpAsync(order.Id);
 
             // Assert — Must return 404 Not Found to prevent cross-tenant enumeration
             Assert.False(result.IsSuccess);
@@ -1799,7 +730,7 @@ namespace NFC.Platform.Tests.Services
             _messageService.Get("OrderNotReadyForDelivery").Returns("Order not ready.");
 
             // Act
-            var result = await _sut.ResendDeliveryOtpAsync(order.Id);
+            var result = await _sut.ResendOrderOtpAsync(order.Id);
 
             // Assert
             Assert.False(result.IsSuccess);
@@ -1824,7 +755,7 @@ namespace NFC.Platform.Tests.Services
             _messageService.Get("OtpCooldownActive").Returns("Please wait 60 seconds.");
 
             // Act
-            var result = await _sut.ResendDeliveryOtpAsync(order.Id);
+            var result = await _sut.ResendOrderOtpAsync(order.Id);
 
             // Assert
             Assert.False(result.IsSuccess);
@@ -1850,7 +781,7 @@ namespace NFC.Platform.Tests.Services
             _messageService.Get("OtpResendLimitReached").Returns("Limit reached.");
 
             // Act
-            var result = await _sut.ResendDeliveryOtpAsync(order.Id);
+            var result = await _sut.ResendOrderOtpAsync(order.Id);
 
             // Assert
             Assert.False(result.IsSuccess);
@@ -1886,7 +817,7 @@ namespace NFC.Platform.Tests.Services
             _messageService.Get("WhatsAppNewOtp", Arg.Any<object[]>()).Returns("New pickup code!");
 
             // Act
-            var result = await _sut.ResendDeliveryOtpAsync(order.Id);
+            var result = await _sut.ResendOrderOtpAsync(order.Id);
 
             // Assert
             Assert.True(result.IsSuccess);

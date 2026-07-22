@@ -1,9 +1,3 @@
-using System.Threading.Tasks;
-using Microsoft.Extensions.Options;
-using NFC.Platform.BuildingBlocks.Settings;
-using NFC.Platform.Infrastructure.Services;
-using Xunit;
-
 namespace NFC.Platform.Tests.Services
 {
     public class WhatsAppServiceTests

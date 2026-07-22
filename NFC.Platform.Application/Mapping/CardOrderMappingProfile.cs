@@ -38,15 +38,21 @@ namespace NFC.Platform.Application.Mapping
             CreateMap<CardPricing, CardPricingDto>();
 
             CreateMap<CreateCardOrderRequest, CardOrder>()
-                .ForMember(dest => dest.Status, opt => opt.Ignore())
-                .ForMember(dest => dest.TotalPrice, opt => opt.Ignore())
+                .ForMember(dest => dest.CardName, opt => opt.MapFrom(src => string.IsNullOrWhiteSpace(src.CardName) ? null : src.CardName))
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.TenantId, opt => opt.Ignore())
+                .ForMember(dest => dest.Tenant, opt => opt.Ignore())
                 .ForMember(dest => dest.UserId, opt => opt.Ignore())
-                .ForMember(dest => dest.TenantId, opt => opt.Ignore())
-                .ForMember(dest => dest.Items, opt => opt.MapFrom(src => src.Items));
-
-            CreateMap<CreateCardOrderItemRequest, CardOrderItem>()
-                .ForMember(dest => dest.TenantId, opt => opt.Ignore())
-                .ForMember(dest => dest.CardOrderId, opt => opt.Ignore());
+                .ForMember(dest => dest.User, opt => opt.Ignore())
+                .ForMember(dest => dest.Status, opt => opt.Ignore())
+                .ForMember(dest => dest.UnitPrice, opt => opt.Ignore())
+                .ForMember(dest => dest.TotalPrice, opt => opt.Ignore())
+                .ForMember(dest => dest.Currency, opt => opt.Ignore())
+                .ForMember(dest => dest.ParentOrderId, opt => opt.Ignore())
+                .ForMember(dest => dest.ParentOrder, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.Items, opt => opt.Ignore());
 
             // Excel import mappings to avoid manual mapping in CardOrderService
             CreateMap<ExcelEmployeeImportDto, Employee>()

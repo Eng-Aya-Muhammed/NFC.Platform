@@ -11,7 +11,7 @@ using NFC.Platform.Application.Interfaces.Services;
 using NFC.Platform.BuildingBlocks.Common.Helpers;
 using NFC.Platform.BuildingBlocks.Common.Constants;
 using NFC.Platform.Domain.Enums;
-using NFC.Platform.API.Models;
+
 using NFC.Platform.BuildingBlocks.Localization;
 
 namespace NFC.Platform.API.Controllers

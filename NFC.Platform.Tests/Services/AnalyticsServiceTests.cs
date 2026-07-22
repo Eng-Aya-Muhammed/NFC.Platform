@@ -1,18 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using MockQueryable.NSubstitute;
-using NFC.Platform.Application.DTOs.Analytics;
-using NFC.Platform.Application.Interfaces.Repositories;
-using NFC.Platform.Application.Interfaces.Services;
-using NFC.Platform.Application.Services;
-using NFC.Platform.BuildingBlocks.Localization;
-using NFC.Platform.Domain.Entities;
-using NFC.Platform.Domain.Enums;
-using NSubstitute;
-using Xunit;
-
 namespace NFC.Platform.Tests.Services
 {
     public class AnalyticsServiceTests

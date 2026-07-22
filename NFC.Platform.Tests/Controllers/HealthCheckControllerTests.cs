@@ -1,16 +1,3 @@
-using System;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Infrastructure;
-using NFC.Platform.API.Controllers;
-using NFC.Platform.BuildingBlocks.Common.Helpers;
-using NFC.Platform.Infrastructure.Contexts;
-using NFC.Platform.Infrastructure.Interceptors;
-using NSubstitute;
-using Xunit;
-
 namespace NFC.Platform.Tests.Controllers
 {
     public class HealthCheckControllerTests

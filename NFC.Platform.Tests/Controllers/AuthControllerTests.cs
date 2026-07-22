@@ -1,16 +1,3 @@
-using System;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using NFC.Platform.API.Controllers;
-using NFC.Platform.Application.DTOs.Auth;
-using NFC.Platform.Application.Interfaces.Services;
-using NFC.Platform.BuildingBlocks.Common.Constants;
-using NFC.Platform.BuildingBlocks.Results;
-using NSubstitute;
-using Xunit;
-
 namespace NFC.Platform.Tests.Controllers
 {
     public class AuthControllerTests

@@ -1,5 +1,3 @@
-using System.Text.Json;
-
 namespace NFC.Platform.Application.Services;
 
 public class ProfileMetricService(IUnitOfWork unitOfWork, IMessageService messageService, IMapper mapper) : IProfileMetricService

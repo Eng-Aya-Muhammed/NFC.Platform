@@ -1,21 +1,3 @@
-using System;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using NFC.Platform.API.Controllers;
-using NFC.Platform.API.Models;
-using NFC.Platform.Application.DTOs;
-using NFC.Platform.Application.DTOs.CardOrder;
-using NFC.Platform.Application.Interfaces.Services;
-using NFC.Platform.Domain.Enums;
-using NFC.Platform.BuildingBlocks.Common.Constants;
-using NFC.Platform.BuildingBlocks.Results;
-using NFC.Platform.BuildingBlocks.Localization;
-using NSubstitute;
-using Xunit;
-
 namespace NFC.Platform.Tests.Controllers
 {
     public class EmployeeControllerTests

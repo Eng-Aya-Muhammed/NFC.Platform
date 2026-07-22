@@ -1,12 +1,3 @@
-using System.Globalization;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Options;
-using NFC.Platform.Application.DTOs.Settings;
-using NFC.Platform.BuildingBlocks.Localization;
-using NFC.Platform.Infrastructure.Services;
-using NSubstitute;
-using Xunit;
-
 namespace NFC.Platform.Tests.Services
 {
     public class EmailServiceTests

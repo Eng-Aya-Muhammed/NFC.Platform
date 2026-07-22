@@ -1,47 +1,54 @@
-using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using NFC.Platform.Domain.Enums;
 
 namespace NFC.Platform.Application.DTOs.CardOrder;
 
+/// <summary>
+/// Request payload for creating a new CardOrder.
+/// Mirrors the single-page card design form in the UI.
+/// </summary>
+public class CreateCardOrderRequest
+{
+    // ── Step 1: Design Type ──────────────────────────────────────────────────
     /// <summary>
-    /// Request payload for creating a new CardOrder.
+    /// Whether the customer has their own design (CustomArtwork)
+    /// or needs the design team to create one (NeedCustomDesign).
     /// </summary>
-    public class CreateCardOrderRequest
-    {
-        [StringLength(200)]
-        public string? CardName { get; set; }
+    [Required]
+    public CardDesignType CardDesignType { get; set; }
 
-        public CardType? CardType { get; set; }
+    // ── Step 2: Card Info ────────────────────────────────────────────────────
+    [StringLength(200)]
+    public string? CardName { get; set; }
 
-        public CardDesignType? CardDesignType { get; set; }
+    // ── Step 3: Files (Cloudinary URLs already uploaded by the frontend) ─────
+    /// <summary>
+    /// Cloudinary URL of the Excel file containing employee data.
+    /// Only processed for CompanyAdmin users — ignored for Individual accounts.
+    /// </summary>
+    public string? ExcelDataUrl { get; set; }
 
+    /// <summary>
+    /// Front design file URL (PDF / PNG / AI).
+    /// Required when CardDesignType = CustomArtwork.
+    /// </summary>
+    public string? FrontDesignUrl { get; set; }
 
+    /// <summary>
+    /// Back design file URL (PDF / PNG / AI).
+    /// Required when CardDesignType = CustomArtwork.
+    /// </summary>
+    public string? BackDesignUrl { get; set; }
 
-        [Required]
-        [Range(1, 10000)]
-        public int Quantity { get; set; }
+    // ── Step 4: Card Material ────────────────────────────────────────────────
+    [Required]
+    public CardType CardType { get; set; }
 
-        public string? ExcelDataUrl { get; set; }
-        public string? FrontDesignUrl { get; set; }
-        public string? BackDesignUrl { get; set; }
-        public string? Notes { get; set; }
-        public DeliveryMethod DeliveryMethod { get; set; } = DeliveryMethod.Pickup;
+    // ── Step 5: Quantity ─────────────────────────────────────────────────────
+    [Required]
+    [Range(1, 10000)]
+    public int Quantity { get; set; }
 
-        /// <summary>
-        /// Delivery address. Required when DeliveryMethod = Courier.
-        /// </summary>
-        [StringLength(500)]
-        public string? ShippingAddress { get; set; }
-
-        public AssignmentScope? AssignmentScope { get; set; }
-        public List<Guid>? EmployeeIds { get; set; }
-
-        /// <summary>
-        /// Optional list of specific employees to order cards for.
-        /// If empty, the order is treated as a bulk order (quantity only).
-        /// </summary>
-        public List<CreateCardOrderItemRequest> Items { get; set; } = [];
-    }
-
+    // ── Step 6: Notes ────────────────────────────────────────────────────────
+    public string? Notes { get; set; }
+}

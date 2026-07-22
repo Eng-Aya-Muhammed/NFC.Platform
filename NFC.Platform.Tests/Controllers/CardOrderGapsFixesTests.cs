@@ -1,19 +1,5 @@
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using FluentValidation;
-using NFC.Platform.Application.DTOs.CardOrder;
-using NFC.Platform.Application.Validators.CardOrder;
-using NFC.Platform.BuildingBlocks.Localization;
-using NFC.Platform.Domain.Entities;
-using NFC.Platform.Domain.Enums;
-using NFC.Platform.Application.Services;
-using NFC.Platform.Application.Interfaces.Repositories;
-using NSubstitute;
-using Xunit;
-using Microsoft.EntityFrameworkCore;
-using NFC.Platform.BuildingBlocks.Results;
-using NFC.Platform.Application.DTOs.Admin;
+using Microsoft.Extensions.Options;
+using NFC.Platform.Application.DTOs.Settings;
 
 namespace NFC.Platform.Tests.Controllers
 {
@@ -34,6 +20,7 @@ namespace NFC.Platform.Tests.Controllers
         {
             var request = new CreateCardOrderRequest
             {
+                CardType = CardType.Plastic,
                 CardDesignType = CardDesignType.CustomArtwork,
                 FrontDesignUrl = "https://cdn.example.com/front.png",
                 BackDesignUrl = "https://cdn.example.com/back.png",
@@ -55,6 +42,7 @@ namespace NFC.Platform.Tests.Controllers
             // Arrange
             var request = new CreateCardOrderRequest
             {
+                CardType = CardType.Plastic,
                 CardDesignType = CardDesignType.CustomArtwork,
                 FrontDesignUrl = "https://cdn.example.com/front.png",
                 Quantity = 1
@@ -88,13 +76,15 @@ namespace NFC.Platform.Tests.Controllers
             validator.ValidateAsync(Arg.Any<CreateCardOrderRequest>(), default)
                 .Returns(Task.FromResult(validationResult));
 
-            var storageService = Substitute.For<NFC.Platform.Application.Interfaces.Services.IStorageService>();
+            var cardPricingService = Substitute.For<ICardPricingService>();
             var backgroundJobClient = Substitute.For<Hangfire.IBackgroundJobClient>();
-            var service = new CardOrderService(unitOfWork, mapper, messageService, currentTenant, excelParser, validator, storageService, backgroundJobClient);
+            var otpSettingsOptions = Substitute.For<IOptions<OtpSettings>>();
+            otpSettingsOptions.Value.Returns(new OtpSettings { CooldownSeconds = 60, MaxResendAttempts = 5 });
+            var service = new CardOrderService(unitOfWork, mapper, messageService, currentTenant, cardPricingService, validator, backgroundJobClient, otpSettingsOptions);
             var request = new CreateCardOrderRequest { Quantity = 1 };
 
             // Act
-            var result = await service.CreateAsync(request);
+            var result = await service.CreateOrderAsync(request);
 
             // Assert
             Assert.False(result.IsSuccess);

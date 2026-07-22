@@ -12,8 +12,8 @@ namespace NFC.Platform.Infrastructure.Configurations
             builder.HasKey(o => o.Id);
 
             builder.Property(o => o.CardName).IsRequired().HasMaxLength(200);
-            builder.Property(o => o.CardType).IsRequired(false);
-            builder.Property(o => o.CardDesignType).IsRequired(false);
+            builder.Property(o => o.CardType).IsRequired();
+            builder.Property(o => o.CardDesignType).IsRequired();
             builder.Property(o => o.Quantity).IsRequired();
 
             builder.Property(o => o.ExcelDataUrl).HasMaxLength(1000);

@@ -1,11 +1,3 @@
-using System;
-using System.IO;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using NFC.Platform.API.Controllers;
-using NFC.Platform.Application.DTOs.Upload;
-
 namespace NFC.Platform.Tests.Controllers
 {
     public class UploadControllerTests
