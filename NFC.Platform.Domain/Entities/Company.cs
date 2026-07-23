@@ -18,7 +18,7 @@ namespace NFC.Platform.Domain.Entities
         public Guid AdminUserId { get; set; }
         public User AdminUser { get; set; } = null!;
 
-        // ── Digital profile branding ─────────────────────────────────────────
+        //  Digital profile branding 
 
         /// <summary>
         /// FK to the CardTemplate that defines the digital profile layout for all company employees.

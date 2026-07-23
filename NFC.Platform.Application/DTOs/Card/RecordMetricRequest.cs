@@ -1,5 +1,4 @@
-using System;
-using System.ComponentModel.DataAnnotations;
+﻿using System;
 using NFC.Platform.Domain.Enums;
 
 namespace NFC.Platform.Application.DTOs.Card;
@@ -9,7 +8,6 @@ namespace NFC.Platform.Application.DTOs.Card;
 /// </summary>
 public class RecordMetricRequest
 {
-    [Required]
     public InteractionType InteractionType { get; set; }
 
     public Guid? ProfileLinkId { get; set; }

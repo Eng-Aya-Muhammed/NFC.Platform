@@ -46,7 +46,7 @@ namespace NFC.Platform.Application.Services;
                 await _unitOfWork.SaveChangesAsync();
             }
 
-            // â”€â”€ Subdomain update (slugify + global uniqueness check) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            //  Subdomain update (slugify + global uniqueness check) 
             if (!string.IsNullOrWhiteSpace(request.Subdomain))
             {
                 var normalized = SubdomainHelper.Slugify(request.Subdomain);

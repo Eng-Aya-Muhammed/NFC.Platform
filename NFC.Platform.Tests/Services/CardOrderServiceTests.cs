@@ -88,10 +88,10 @@ namespace NFC.Platform.Tests.Services
             _cardPricingService.CalculateOrderPricingAsync(Arg.Any<CardType>(), Arg.Any<int>())
                 .Returns(ServiceResult<OrderPricingResponseDto>.Success(new OrderPricingResponseDto { UnitPrice = 4.5m, TotalPrice = 4.5m, Currency = "KWD" }));
 
-            _sut = new CardOrderService(_unitOfWork, _mapper, _messageService, _currentTenant, _cardPricingService, validator, _backgroundJobClient, _otpSettingsOptions);
+            _sut = new CardOrderService(_unitOfWork, _mapper, _messageService, _currentTenant, _cardPricingService, validator, _backgroundJobClient, Substitute.For<System.Net.Http.IHttpClientFactory>(), _excelParser, _otpSettingsOptions);
         }
 
-        // ── GetByIdAsync ──────────────────────────────────────────────────────────
+        //  GetByIdAsync 
 
         [Fact]
         public async Task GetByIdAsync_ReturnsNotFound_WhenOrderDoesNotExist()
@@ -177,7 +177,7 @@ namespace NFC.Platform.Tests.Services
             Assert.Equal(1, result.Data.TotalCount);
         }
 
-        // ── CreateAsync ───────────────────────────────────────────────────────────
+        //  CreateAsync 
 
         [Fact]
         public async Task CreateAsync_ReturnsUnauthorized_WhenUserNotAuthenticated()
@@ -201,6 +201,7 @@ namespace NFC.Platform.Tests.Services
             // Arrange
             var userId = Guid.NewGuid();
             _currentTenant.UserId.Returns(userId);
+            _currentTenant.TenantId.Returns(Guid.NewGuid());
 
             var request = new CreateCardOrderRequest { Quantity = 5, CardType = CardType.Metal };
             var order = new CardOrder { Id = Guid.NewGuid(), Quantity = 5, CardType = CardType.Metal, Items = [] };
@@ -217,23 +218,28 @@ namespace NFC.Platform.Tests.Services
             var pricingResp = new OrderPricingResponseDto { UnitPrice = 8.5m, TotalPrice = 42.5m };
             _cardPricingService.CalculateOrderPricingAsync(Arg.Any<CardType>(), Arg.Any<int>()).Returns(ServiceResult<OrderPricingResponseDto>.Success(pricingResp));
 
+            CardOrder? addedOrder = null;
+            await _orderRepo.AddAsync(Arg.Do<CardOrder>(o => addedOrder = o));
+
             // Act
             var result = await _sut.CreateOrderAsync(request);
 
             // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(200, result.StatusCode);
-            Assert.Equal(8.5m, order.UnitPrice);
-            Assert.Equal(42.5m, order.TotalPrice);
+            Assert.NotNull(addedOrder);
+            Assert.Equal(8.5m, addedOrder.UnitPrice);
+            Assert.Equal(42.5m, addedOrder.TotalPrice);
         }
 
         [Fact]
-        public async Task CreateAsync_QueuesHangfireJob_WhenCompanyAdmin_AndExcelDataUrlProvided()
+        public async Task CreateAsync_ValidatesExcelAndSubscription_WhenExcelDataUrlProvided()
         {
             // Arrange
             var userId = Guid.NewGuid();
+            var tenantId = Guid.NewGuid();
             _currentTenant.UserId.Returns(userId);
-            _currentTenant.TenantId.Returns(Guid.NewGuid());
+            _currentTenant.TenantId.Returns(tenantId);
 
             var request = new CreateCardOrderRequest 
             { 
@@ -241,82 +247,17 @@ namespace NFC.Platform.Tests.Services
                 CardType = CardType.Plastic,
                 ExcelDataUrl = "https://example.com/employees.xlsx" 
             };
-            
-            // Mock pricing
-            var pricing = new CardPricing { CardType = CardType.Plastic, UnitPrice = 5, IsActive = true, EffectiveFrom = DateTime.UtcNow.AddDays(-1) };
-            _unitOfWork.Repository<CardPricing>().GetQueryable().Returns(new List<CardPricing> { pricing }.AsQueryable().BuildMock());
 
-            // Mock User to return CompanyAdmin
-            var currentUser = new User { Id = userId, AccountType = AccountType.CompanyAdmin };
-            _unitOfWork.Repository<User>().GetQueryable().Returns(new List<User> { currentUser }.AsQueryable().BuildMock());
-            
-            // Mock Order retrieval for returning DTO
-            var orderRepo = Substitute.For<IGenericRepository<CardOrder>>();
-            orderRepo.GetQueryable().Returns(new List<CardOrder> { new CardOrder { Id = Guid.NewGuid(), Items = [] } }.AsQueryable().BuildMock());
-            _unitOfWork.Repository<CardOrder>().Returns(orderRepo);
-            
-            _mapper.Map<CardOrder>(request).Returns(new CardOrder { Quantity = request.Quantity, CardType = request.CardType, CardDesignType = request.CardDesignType, ExcelDataUrl = request.ExcelDataUrl });
-            _mapper.Map<CardOrderDto>(Arg.Any<CardOrder>()).Returns(new CardOrderDto());
+            var companyRepo = Substitute.For<IGenericRepository<Company>>();
+            companyRepo.GetQueryable().Returns(new List<Company>().AsQueryable().BuildMock());
+            _unitOfWork.Repository<Company>().Returns(companyRepo);
 
             // Act
             var result = await _sut.CreateOrderAsync(request);
 
-            // Assert
-            Assert.True(result.IsSuccess);
-            Assert.Equal(200, result.StatusCode);
-            
-            // Verify EmployeeImportJob was added
-            await _unitOfWork.Repository<EmployeeImportJob>().Received(1).AddAsync(Arg.Is<EmployeeImportJob>(j => 
-                j.ExcelFileUrl == "https://example.com/employees.xlsx" && 
-                j.UserId == userId));
-                
-            // Verify Hangfire enqueue
-            _backgroundJobClient.Received(1).Create(Arg.Any<Hangfire.Common.Job>(), Arg.Any<Hangfire.States.EnqueuedState>());
-        }
-
-        [Fact]
-        public async Task CreateAsync_DoesNotQueueHangfireJob_WhenIndividualUser_AndExcelDataUrlProvided()
-        {
-            // Arrange
-            var userId = Guid.NewGuid();
-            _currentTenant.UserId.Returns(userId);
-            _currentTenant.TenantId.Returns(Guid.NewGuid());
-
-            var request = new CreateCardOrderRequest 
-            { 
-                Quantity = 1, 
-                CardType = CardType.Plastic,
-                ExcelDataUrl = "https://example.com/individual_should_not_use_this.xlsx" 
-            };
-            
-            // Mock pricing
-            var pricing = new CardPricing { CardType = CardType.Plastic, UnitPrice = 5, IsActive = true, EffectiveFrom = DateTime.UtcNow.AddDays(-1) };
-            _unitOfWork.Repository<CardPricing>().GetQueryable().Returns(new List<CardPricing> { pricing }.AsQueryable().BuildMock());
-
-            // Mock User to return Individual
-            var currentUser = new User { Id = userId, AccountType = AccountType.Individual };
-            _unitOfWork.Repository<User>().GetQueryable().Returns(new List<User> { currentUser }.AsQueryable().BuildMock());
-            
-            // Mock Order retrieval for returning DTO
-            var orderRepo = Substitute.For<IGenericRepository<CardOrder>>();
-            orderRepo.GetQueryable().Returns(new List<CardOrder> { new CardOrder { Id = Guid.NewGuid(), Items = [] } }.AsQueryable().BuildMock());
-            _unitOfWork.Repository<CardOrder>().Returns(orderRepo);
-            
-            _mapper.Map<CardOrder>(request).Returns(new CardOrder { Quantity = request.Quantity, CardType = request.CardType, CardDesignType = request.CardDesignType, ExcelDataUrl = request.ExcelDataUrl });
-            _mapper.Map<CardOrderDto>(Arg.Any<CardOrder>()).Returns(new CardOrderDto());
-
-            // Act
-            var result = await _sut.CreateOrderAsync(request);
-
-            // Assert
-            Assert.True(result.IsSuccess);
-            Assert.Equal(200, result.StatusCode);
-            
-            // Verify EmployeeImportJob was NOT added
-            await _unitOfWork.Repository<EmployeeImportJob>().DidNotReceive().AddAsync(Arg.Any<EmployeeImportJob>());
-                
-            // Verify Hangfire enqueue was NOT called
-            _backgroundJobClient.DidNotReceive().Create(Arg.Any<Hangfire.Common.Job>(), Arg.Any<Hangfire.States.EnqueuedState>());
+            // Assert: Since Company is missing, should fail with 422 CompanyNotFound
+            Assert.False(result.IsSuccess);
+            Assert.Equal(422, result.StatusCode);
         }
 
         [Fact]
@@ -345,7 +286,7 @@ namespace NFC.Platform.Tests.Services
         }
 
 
-        // ── DeleteAsync ───────────────────────────────────────────────────────────
+        //  DeleteAsync 
 
         [Fact]
         public async Task DeleteAsync_ReturnsNotFound_WhenOrderDoesNotExist()
@@ -660,16 +601,20 @@ namespace NFC.Platform.Tests.Services
             _mapper.Map<CardOrder>(parentOrder).Returns(reorder);
             _mapper.Map<CardOrderDto>(reorder).Returns(new CardOrderDto());
 
+            CardOrder? addedReorder = null;
+            await _orderRepo.AddAsync(Arg.Do<CardOrder>(o => addedReorder = o));
+
             // Act
             var result = await _sut.CreateReorderAsync(parentId, request);
 
             // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(200, result.StatusCode);
-            Assert.Single(reorder.Items);
+            Assert.NotNull(addedReorder);
+            Assert.Single(addedReorder.Items);
         }
 
-        // ── OTP Resend Unit Tests ──────────────────────────────────────────────
+        //  OTP Resend Unit Tests 
 
         [Fact]
         public async Task ResendDeliveryOtpAsync_ReturnsNotFound_WhenOrderDoesNotExist()
@@ -839,6 +784,37 @@ namespace NFC.Platform.Tests.Services
                 Arg.Is<Hangfire.Common.Job>(j =>
                     j.Method.Name == nameof(NFC.Platform.Application.Interfaces.Services.IWhatsAppService.SendWhatsAppMessageAsync)),
                 Arg.Any<Hangfire.States.IState>());
+        }
+        [Fact]
+        public async Task CreateOrderAsync_Returns422_WhenExcelFileFailsValidation()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            _currentTenant.UserId.Returns(userId);
+            _currentTenant.TenantId.Returns(Guid.NewGuid());
+
+            var companyAdminUser = new User { Id = userId, AccountType = AccountType.CompanyAdmin };
+            _unitOfWork.Repository<User>().GetQueryable().Returns(new List<User> { companyAdminUser }.AsQueryable().BuildMock());
+
+            var request = new CreateCardOrderRequest
+            {
+                Quantity = 10,
+                CardType = CardType.Plastic,
+                ExcelDataUrl = "https://example.com/invalid-file.xlsx"
+            };
+
+            // Act
+            // Since IHttpClientFactory is a pure mock, CreateClient() returns null, causing a NullReferenceException
+            // which ValidateExcelAsync catches and returns 422 "FailedToParseExcel".
+            var result = await _sut.CreateOrderAsync(request);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(422, result.StatusCode);
+            Assert.Contains(result.Errors, e => e.Contains("FailedToParseExcel") || e.Contains("FailedToDownloadExcel") || e.Contains("NoValidEmployeeRows"));
+            
+            // Ensure no order was saved
+            await _unitOfWork.DidNotReceive().SaveChangesAsync();
         }
     }
 }

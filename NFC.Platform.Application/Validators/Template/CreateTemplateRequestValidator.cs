@@ -18,11 +18,15 @@ namespace NFC.Platform.Application.Validators.Template;
 
             RuleFor(x => x.LogoUrl)
                 .MaximumLength(1000)
-                .WithMessage(x => messageService.Get("MaxLength", messageService.Get("LogoUrl"), 1000));
+                .WithMessage(x => messageService.Get("MaxLength", messageService.Get("LogoUrl"), 1000))
+                .MustBeValidUrl()
+                .WithMessage(x => messageService.Get("InvalidUrlFormat", "Logo URL"));
 
             RuleFor(x => x.ReferenceImageUrl)
                 .MaximumLength(1000)
-                .WithMessage(x => messageService.Get("MaxLength", messageService.Get("ReferenceImageUrl"), 1000));
+                .WithMessage(x => messageService.Get("MaxLength", messageService.Get("ReferenceImageUrl"), 1000))
+                .MustBeValidUrl()
+                .WithMessage(x => messageService.Get("InvalidUrlFormat", "Reference Image URL"));
 
             RuleFor(x => x.Notes)
                 .MaximumLength(1000)

@@ -14,6 +14,6 @@ namespace NFC.Platform.Application.DTOs.Company;
         public string Phone { get; set; } = string.Empty;
         public int SubscriptionRemainingDays { get; set; }
 
-        // ── Digital profile branding ──────────────────────────────────────────
+        //  Digital profile branding 
         public Guid? ProfileTemplateId { get; set; }
     }

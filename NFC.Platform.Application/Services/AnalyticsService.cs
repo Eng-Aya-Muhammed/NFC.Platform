@@ -9,7 +9,7 @@ namespace NFC.Platform.Application.Services;
         private readonly IMessageService _messageService = messageService ?? throw new ArgumentNullException(nameof(messageService));
         private readonly ICurrentTenant _currentTenant = currentTenant ?? throw new ArgumentNullException(nameof(currentTenant));
 
-        // ── User: Summary ────────────────────────────────────────────────────────
+        //  User: Summary 
 
         public async Task<ServiceResult<UserAnalyticsSummaryDto>> GetUserAnalyticsSummaryAsync()
         {
@@ -70,7 +70,7 @@ namespace NFC.Platform.Application.Services;
             return ServiceResult<UserAnalyticsSummaryDto>.Success(dto);
         }
 
-        // ── User: Time-Series ─────────────────────────────────────────────────────
+        //  User: Time-Series 
 
         public async Task<ServiceResult<UserAnalyticsTimeSeriesDto>> GetUserAnalyticsTimeSeriesAsync(string granularity)
         {
@@ -129,7 +129,7 @@ namespace NFC.Platform.Application.Services;
             });
         }
 
-        // ── Company: Leaderboard ──────────────────────────────────────────────────
+        //  Company: Leaderboard 
 
         public async Task<ServiceResult<List<EmployeeLeaderboardEntryDto>>> GetCompanyLeaderboardAsync()
         {
@@ -199,7 +199,7 @@ namespace NFC.Platform.Application.Services;
             return ServiceResult<List<EmployeeLeaderboardEntryDto>>.Success(leaderboard);
         }
 
-        // ── Helpers ───────────────────────────────────────────────────────────────
+        //  Helpers 
 
         private TimeSeriesDataPointDto BuildDataPoint(string label, List<ProfileMetric>? metrics)
         {

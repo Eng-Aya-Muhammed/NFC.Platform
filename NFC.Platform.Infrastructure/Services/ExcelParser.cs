@@ -56,11 +56,20 @@ namespace NFC.Platform.Infrastructure.Services
                 var name = nameCol < reader.FieldCount ? reader.GetValue(nameCol)?.ToString()?.Trim() : null;
                 var email = emailCol < reader.FieldCount ? reader.GetValue(emailCol)?.ToString()?.Trim() : null;
 
-                if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(email)) continue;
-
                 var phone = phoneCol < reader.FieldCount ? reader.GetValue(phoneCol)?.ToString()?.Trim() : null;
                 var jobTitle = jobTitleCol < reader.FieldCount ? reader.GetValue(jobTitleCol)?.ToString()?.Trim() : null;
                 var department = departmentCol < reader.FieldCount ? reader.GetValue(departmentCol)?.ToString()?.Trim() : null;
+
+                bool isCompletelyEmptyRow = string.IsNullOrWhiteSpace(name) && 
+                                            string.IsNullOrWhiteSpace(email) &&
+                                            string.IsNullOrWhiteSpace(phone) &&
+                                            string.IsNullOrWhiteSpace(jobTitle) &&
+                                            string.IsNullOrWhiteSpace(department);
+
+                if (isCompletelyEmptyRow) 
+                {
+                    continue; // Skip only if the entire row is completely blank
+                }
 
                 rows.Add(new ExcelEmployeeImportDto
                 {

@@ -18,11 +18,10 @@ public class EmployeeDetailsDto
 
     public System.Collections.Generic.List<ProfileLinkDto> Links { get; set; } = [];
 
-    public Guid? CardId { get; set; }
     public Guid ProfileId { get; set; }
     public string? Subdomain { get; set; }
 
-    // ── Digital profile branding ──────────────────────────────────────────────
+    //  Digital profile branding 
     /// <summary>
     /// Company logo (for employee profiles) or null for individual profiles.
     /// </summary>

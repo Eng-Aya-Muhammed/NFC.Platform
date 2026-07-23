@@ -34,7 +34,7 @@ namespace NFC.Platform.Tests.Services
             _sut = new AnalyticsService(_unitOfWork, _messageService, _currentTenant);
         }
 
-        // ── GetUserAnalyticsSummaryAsync ──────────────────────────────────────────
+        //  GetUserAnalyticsSummaryAsync 
 
         [Fact]
         public async Task GetUserAnalyticsSummaryAsync_ReturnsUnauthorized_WhenUserIdIsNull()
@@ -112,7 +112,7 @@ namespace NFC.Platform.Tests.Services
             Assert.Equal(6, result.Data.MonthlyViews.Count);
         }
 
-        // ── GetUserAnalyticsTimeSeriesAsync ───────────────────────────────────────
+        //  GetUserAnalyticsTimeSeriesAsync 
 
         [Fact]
         public async Task GetUserAnalyticsTimeSeriesAsync_ReturnsUnauthorized_WhenUserIdIsNull()
@@ -198,7 +198,7 @@ namespace NFC.Platform.Tests.Services
             Assert.Equal(6, result.Data.DataPoints.Count);
         }
 
-        // ── GetCompanyLeaderboardAsync ────────────────────────────────────────────
+        //  GetCompanyLeaderboardAsync 
 
         [Fact]
         public async Task GetCompanyLeaderboardAsync_ReturnsUnauthorized_WhenTenantIdIsNull()

@@ -10,7 +10,7 @@ namespace NFC.Platform.Domain.Entities
         public decimal Price { get; set; }
         public int DurationInDays { get; set; }
 
-        // ── Limits ───────────────────────────────────────────────────────────
+        //  Limits 
         public int MaxEmployees { get; set; }
 
         /// <summary>
@@ -25,7 +25,7 @@ namespace NFC.Platform.Domain.Entities
         /// </summary>
         public int MaxCustomDesignRequests { get; set; } = SubscriptionConstants.UnlimitedQuota;
 
-        // ── Template Access (M2M) ─────────────────────────────────────────────
+        //  Template Access (M2M) 
         public ICollection<SubscriptionPlanTemplate> PlanTemplates { get; set; } = [];
     }
 }

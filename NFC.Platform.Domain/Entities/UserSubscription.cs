@@ -18,7 +18,7 @@ namespace NFC.Platform.Domain.Entities
         public DateTime EndDate { get; set; }
         public bool IsActive { get; set; } = true;
 
-        // ── Per-period usage counters (reset to 0 on each new subscription row) ─────
+        //  Per-period usage counters (reset to 0 on each new subscription row) 
 
         /// <summary>How many times the tenant has switched their card template this period.</summary>
         public int TemplateChangesUsed { get; set; } = 0;

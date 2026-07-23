@@ -30,7 +30,9 @@ namespace NFC.Platform.Application.Validators.Employee;
 
             RuleFor(x => x.ProfilePictureUrl)
                 .MaximumLength(1000)
-                .WithMessage(x => messageService.Get("MaxLength", "ProfilePictureUrl", 1000));
+                .WithMessage(x => messageService.Get("MaxLength", "ProfilePictureUrl", 1000))
+                .MustBeValidUrl()
+                .WithMessage(x => messageService.Get("InvalidUrlFormat", "Profile Picture URL"));
 
             RuleFor(x => x.Phone)
                 .MaximumLength(50)

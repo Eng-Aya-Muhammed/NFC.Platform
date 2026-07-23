@@ -38,6 +38,7 @@ namespace NFC.Platform.Tests.Services
 
             var userId = Guid.NewGuid();
             currentTenant.UserId.Returns(userId);
+            currentTenant.TenantId.Returns(Guid.NewGuid());
 
             var currentUser = new User { Id = userId, AccountType = AccountType.Individual };
             var userRepo = Substitute.For<IGenericRepository<User>>();
@@ -78,6 +79,8 @@ namespace NFC.Platform.Tests.Services
                 cardPricingService,
                 validator,
                 backgroundJobClient,
+                Substitute.For<System.Net.Http.IHttpClientFactory>(),
+                Substitute.For<NFC.Platform.Application.Interfaces.Services.IExcelParser>(),
                 otpSettingsOptions);
 
             var request = new CreateCardOrderRequest

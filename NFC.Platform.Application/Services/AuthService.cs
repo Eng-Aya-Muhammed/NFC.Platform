@@ -329,7 +329,7 @@ namespace NFC.Platform.Application.Services;
             return ServiceResult<UserDto>.Success(userDto, _messageService.Get("UserCreated"));
         }
 
-        // ─── Private Helper ───────────────────────────────────────────────────
+        //  Private Helper 
 
         private async Task<ServiceResult<AuthDto>> GenerateAuthResponseAsync(User user, string? message = null)
         {

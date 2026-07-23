@@ -17,7 +17,7 @@ namespace NFC.Platform.Infrastructure.Migrations
                 maxLength: 100,
                 nullable: true);
 
-            // ── Backfill: generate a unique slug for every existing profile ────────────
+            //  Backfill: generate a unique slug for every existing profile 
             // Uses a cursor loop so each slug is checked against already-assigned ones
             // in the same batch before the unique index is created.
             migrationBuilder.Sql(@"

@@ -103,7 +103,7 @@ namespace NFC.Platform.Application.Services;
 
             order.Status = dto.Status;
 
-            // ── OTP notification when order is ready for delivery ──────────────────────
+            //  OTP notification when order is ready for delivery 
             if (dto.Status == OrderStatus.ReadyForDelivery)
             {
                 var recipient = order.Tenant?.Company?.AdminUser ?? order.User;
@@ -559,7 +559,7 @@ namespace NFC.Platform.Application.Services;
             return ServiceResult.Success(_messageService.Get("RecordUpdated"));
         }
 
-        // â”€â”€ Subdomain management (Super Admin) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        //  Subdomain management (Super Admin) 
 
         public async Task<ServiceResult<PagedResult<ProfileSubdomainSummaryDto>>> GetAllProfileSubdomainsAsync(
             PaginationRequest request, string? search)
@@ -607,7 +607,7 @@ namespace NFC.Platform.Application.Services;
             return ServiceResult.Success(_messageService.Get("RecordUpdated"));
         }
 
-        // ── Subscription Plan Management ─────────────────────────────────────────
+        //  Subscription Plan Management 
 
         public async Task<ServiceResult<SubscriptionPlanDto>> CreatePlanAsync(CreateSubscriptionPlanRequest request)
         {
@@ -707,7 +707,7 @@ namespace NFC.Platform.Application.Services;
             return ServiceResult.Success(_messageService.Get("RecordUpdated"));
         }
 
-        // ── Plan Template Assignment ──────────────────────────────────────────────
+        //  Plan Template Assignment 
 
         public async Task<ServiceResult<IReadOnlyList<CardTemplateSummaryDto>>> GetPlanTemplatesAsync(Guid planId)
         {

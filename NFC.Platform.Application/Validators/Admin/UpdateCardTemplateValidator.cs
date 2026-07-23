@@ -23,6 +23,10 @@ namespace NFC.Platform.Application.Validators.Admin
             RuleFor(x => x.StyleConfigJson)
                 .NotEmpty()
                 .WithMessage(x => messageService.Get("RequiredField", "StyleConfig"));
+
+            RuleFor(x => x.ThumbnailUrl)
+                .MustBeValidUrl()
+                .WithMessage(x => messageService.Get("InvalidUrlFormat", "Thumbnail URL"));
         }
     }
 }

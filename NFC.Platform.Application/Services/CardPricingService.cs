@@ -20,7 +20,7 @@ public class CardPricingService(
         if (pricing == null)
         {
             return ServiceResult<OrderPricingResponseDto>.Fail(
-                _messageService.Get("PricingNotConfigured") ?? $"Pricing is not configured for card type '{cardType}'.",
+                _messageService.Get("PricingNotConfigured", cardType.ToString()) ?? $"Pricing is not configured for card type '{cardType}'.",
                 500);
         }
 

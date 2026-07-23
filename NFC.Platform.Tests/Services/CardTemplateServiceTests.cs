@@ -27,7 +27,7 @@ namespace NFC.Platform.Tests.Services
             _sut = new CardTemplateService(_unitOfWork, _mapper);
         }
 
-        // ── GetActiveTemplatesAsync ───────────────────────────────────────────────
+        //  GetActiveTemplatesAsync 
 
         [Fact]
         public async Task GetActiveTemplatesAsync_ReturnsEmptyList_WhenNoTemplatesExist()

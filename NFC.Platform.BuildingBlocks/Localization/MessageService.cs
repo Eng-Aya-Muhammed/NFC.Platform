@@ -37,35 +37,37 @@ namespace NFC.Platform.BuildingBlocks.Localization
                 return string.Empty;
             }
 
+            bool hasArgs = args != null && args.Length > 0;
+
             // 1. Search in Success Messages
-            var successResult = _successLocalizer[key, args];
-            if (!successResult.ResourceNotFound)
+            var successResult = hasArgs ? _successLocalizer[key, args] : _successLocalizer[key];
+            if (successResult != null && !successResult.ResourceNotFound)
             {
                 return successResult.Value;
             }
 
             // 2. Search in Error Messages
-            var errorResult = _errorLocalizer[key, args];
-            if (!errorResult.ResourceNotFound)
+            var errorResult = hasArgs ? _errorLocalizer[key, args] : _errorLocalizer[key];
+            if (errorResult != null && !errorResult.ResourceNotFound)
             {
                 return errorResult.Value;
             }
 
             // 3. Search in Validation Messages
-            var validationResult = _validationLocalizer[key, args];
-            if (!validationResult.ResourceNotFound)
+            var validationResult = hasArgs ? _validationLocalizer[key, args] : _validationLocalizer[key];
+            if (validationResult != null && !validationResult.ResourceNotFound)
             {
                 return validationResult.Value;
             }
 
             // 4. Search in Business Messages
-            var businessResult = _businessLocalizer[key, args];
-            if (!businessResult.ResourceNotFound)
+            var businessResult = hasArgs ? _businessLocalizer[key, args] : _businessLocalizer[key];
+            if (businessResult != null && !businessResult.ResourceNotFound)
             {
                 return businessResult.Value;
             }
 
-            return args != null && args.Length > 0 ? string.Format(key, args) : key;
+            return hasArgs ? string.Format(key, args) : key;
         }
     }
 }

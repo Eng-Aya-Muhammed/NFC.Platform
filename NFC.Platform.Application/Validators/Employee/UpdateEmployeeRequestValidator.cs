@@ -38,18 +38,10 @@ public class UpdateEmployeeRequestValidator : AbstractValidator<UpdateEmployeeRe
 
         RuleForEach(x => x.Links).ChildRules(link => {
             link.RuleFor(l => l.Url)
-                .Must(LinkMustBeWebUrl)
-                .WithMessage(x => messageService.Get("InvalidUrl"));
+                .MustBeValidUrl()
+                .WithMessage(x => messageService.Get("InvalidUrlFormat", "URL"));
         });
     }
 
-    private static bool LinkMustBeWebUrl(string? link)
-    {
-        if (string.IsNullOrWhiteSpace(link))
-            return true;
-
-        return Uri.TryCreate(link, UriKind.Absolute, out var result) 
-            && (result.Scheme == Uri.UriSchemeHttp || result.Scheme == Uri.UriSchemeHttps);
-    }
 }
 

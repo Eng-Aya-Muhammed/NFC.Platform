@@ -26,16 +26,16 @@ namespace NFC.Platform.Application.Interfaces.Services
         Task<ServiceResult> UpdateTenantStatusAsync(Guid id, UpdateTenantStatusDto dto);
         Task<ServiceResult> UpdateCardPricingAsync(UpdateCardPricingDto dto);
 
-        // ── Subdomain management (Super Admin) ───────────────────────────────────
+        //  Subdomain management (Super Admin) 
         Task<ServiceResult<PagedResult<ProfileSubdomainSummaryDto>>> GetAllProfileSubdomainsAsync(PaginationRequest request, string? search);
         Task<ServiceResult> ReassignSubdomainAsync(Guid profileId, string newSubdomain);
 
-        // ── Subscription Plan Management (Super Admin) ────────────────────────────
+        //  Subscription Plan Management (Super Admin) 
         Task<ServiceResult<SubscriptionPlanDto>> CreatePlanAsync(CreateSubscriptionPlanRequest request);
         Task<ServiceResult<SubscriptionPlanDto>> UpdatePlanAsync(Guid planId, UpdateSubscriptionPlanRequest request);
         Task<ServiceResult> DeletePlanAsync(Guid planId);
 
-        // ── Plan Template Assignment (Super Admin) ────────────────────────────────
+        //  Plan Template Assignment (Super Admin) 
         Task<ServiceResult<IReadOnlyList<CardTemplateSummaryDto>>> GetPlanTemplatesAsync(Guid planId);
         Task<ServiceResult> AssignTemplateAsync(Guid planId, Guid templateId);
         Task<ServiceResult> UnassignTemplateAsync(Guid planId, Guid templateId);

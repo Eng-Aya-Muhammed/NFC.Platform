@@ -179,7 +179,7 @@ namespace NFC.Platform.API.Controllers
 
 
 
-        // ── Subdomain management ──────────────────────────────────────────────────
+        //  Subdomain management 
 
         /// <summary>
         /// Lists all profile subdomains across all tenants with optional search by name or subdomain.
@@ -206,7 +206,7 @@ namespace NFC.Platform.API.Controllers
             return Ok(result);
         }
 
-        // ── Subscription Plan Management ──────────────────────────────────────────
+        //  Subscription Plan Management 
 
         /// <summary>Creates a new subscription plan with optional initial template assignments.</summary>
         [HttpPost("plans")]
@@ -235,7 +235,7 @@ namespace NFC.Platform.API.Controllers
             return Ok(result);
         }
 
-        // ── Plan Template Assignment ───────────────────────────────────────────────
+        //  Plan Template Assignment 
 
         /// <summary>Returns all templates currently assigned to a plan.</summary>
         [HttpGet("plans/{planId:guid}/templates")]

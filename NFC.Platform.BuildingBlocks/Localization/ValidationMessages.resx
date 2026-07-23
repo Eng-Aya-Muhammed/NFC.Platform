@@ -269,6 +269,12 @@
     <value>Template removed from plan successfully.</value>
   </data>
   <data name="TemplateDeletedAndProfilesCleared" xml:space="preserve">
-    <value>Template deleted successfully. Affected profiles have been reset to the default template.</value>
+    <value>Template deleted successfully. Affected profiles have been unlinked from the template.</value>
+  </data>
+  <data name="CardTypeRequired" xml:space="preserve">
+    <value>Card material type is required.</value>
+  </data>
+  <data name="QuantityRequired" xml:space="preserve">
+    <value>Quantity must be between 1 and 10000.</value>
   </data>
 </root>

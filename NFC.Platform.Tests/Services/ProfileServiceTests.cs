@@ -32,7 +32,7 @@ namespace NFC.Platform.Tests.Services
             _sut = new ProfileService(_unitOfWork, _mapper, _messageService);
         }
 
-        // ── GetProfileAsync ───────────────────────────────────────────────────────
+        //  GetProfileAsync 
 
         [Fact]
         public async Task GetProfileAsync_ReturnsNotFound_WhenUserDoesNotExist()
@@ -69,7 +69,7 @@ namespace NFC.Platform.Tests.Services
             Assert.Equal("John Doe", result.Data!.FullName);
         }
 
-        // ── UpdateProfileAsync ────────────────────────────────────────────────────
+        //  UpdateProfileAsync 
 
         [Fact]
         public async Task UpdateProfileAsync_UpdatesUserProfileFields()
@@ -120,7 +120,7 @@ namespace NFC.Platform.Tests.Services
             Assert.Equal("https://example.com", userProfile.CustomLinks.First().Url);
         }
 
-        // ── SynchronizeLinksAsync ─────────────────────────────────────────────────
+        //  SynchronizeLinksAsync 
 
         [Fact]
         public async Task SynchronizeLinksAsync_AddsAllLinksAsCustom()

@@ -28,7 +28,7 @@ namespace NFC.Platform.Tests.Services
             _sut = new TemplateRequestService(_unitOfWork, _mapper, _messageService, _currentTenant);
         }
 
-        // ── CreateRequestAsync ────────────────────────────────────────────────────
+        //  CreateRequestAsync 
 
         [Fact]
         public async Task CreateRequestAsync_ReturnsUnauthorized_WhenTenantNotAuthenticated()
@@ -152,7 +152,7 @@ namespace NFC.Platform.Tests.Services
             await _unitOfWork.Received(1).SaveChangesAsync();
         }
 
-        // ── GetTenantRequestsAsync ────────────────────────────────────────────────
+        //  GetTenantRequestsAsync 
 
         [Fact]
         public async Task GetTenantRequestsAsync_ReturnsEmptyList_WhenNoRequestsExist()
@@ -197,7 +197,7 @@ namespace NFC.Platform.Tests.Services
             Assert.Equal("Second", result.Data![0].TemplateName);
         }
 
-        // ── GetRequestByIdAsync ───────────────────────────────────────────────────
+        //  GetRequestByIdAsync 
 
         [Fact]
         public async Task GetRequestByIdAsync_ReturnsNotFound_WhenRequestDoesNotExist()

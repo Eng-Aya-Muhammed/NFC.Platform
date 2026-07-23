@@ -80,7 +80,7 @@ namespace NFC.Platform.Tests.Controllers
             var backgroundJobClient = Substitute.For<Hangfire.IBackgroundJobClient>();
             var otpSettingsOptions = Substitute.For<IOptions<OtpSettings>>();
             otpSettingsOptions.Value.Returns(new OtpSettings { CooldownSeconds = 60, MaxResendAttempts = 5 });
-            var service = new CardOrderService(unitOfWork, mapper, messageService, currentTenant, cardPricingService, validator, backgroundJobClient, otpSettingsOptions);
+            var service = new CardOrderService(unitOfWork, mapper, messageService, currentTenant, cardPricingService, validator, backgroundJobClient, Substitute.For<System.Net.Http.IHttpClientFactory>(), Substitute.For<NFC.Platform.Application.Interfaces.Services.IExcelParser>(), otpSettingsOptions);
             var request = new CreateCardOrderRequest { Quantity = 1 };
 
             // Act

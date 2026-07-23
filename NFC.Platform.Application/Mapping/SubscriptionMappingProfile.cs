@@ -10,16 +10,16 @@ namespace NFC.Platform.Application.Mapping
     {
         public SubscriptionMappingProfile()
         {
-            // ── SubscriptionPlan → SubscriptionPlanDto ────────────────────────
+            //  SubscriptionPlan → SubscriptionPlanDto 
             CreateMap<SubscriptionPlan, SubscriptionPlanDto>()
                 .ForMember(d => d.AllowedTemplates,
                     opt => opt.MapFrom(src =>
                         src.PlanTemplates.Select(pt => pt.CardTemplate)));
 
-            // ── CardTemplate → CardTemplateSummaryDto (embedded in plan) ──────
+            //  CardTemplate → CardTemplateSummaryDto (embedded in plan) 
             CreateMap<CardTemplate, CardTemplateSummaryDto>();
 
-            // ── UserSubscription → UserSubscriptionDto ────────────────────────
+            //  UserSubscription → UserSubscriptionDto 
             CreateMap<UserSubscription, UserSubscriptionDto>()
                 .ForMember(d => d.PlanName,
                     opt => opt.MapFrom(src =>
@@ -39,7 +39,7 @@ namespace NFC.Platform.Application.Mapping
                             ? (src.EndDate - DateTime.UtcNow).Days
                             : 0));
 
-            // ── Request → Entity ──────────────────────────────────────────────
+            //  Request → Entity 
             CreateMap<RenewSubscriptionRequest, UserSubscription>();
             CreateMap<SubscribeRequest, UserSubscription>();
             CreateMap<CreateSubscriptionPlanRequest, SubscriptionPlan>()

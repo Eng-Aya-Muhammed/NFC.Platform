@@ -179,11 +179,15 @@ namespace NFC.Platform.Infrastructure.Contexts
                     {
                         if (tenantEntity.TenantId == Guid.Empty)
                         {
-                            if (!tenantId.HasValue)
+                            var actualValue = entry.Property("TenantId").CurrentValue;
+                            if (actualValue != null)
                             {
-                                throw new InvalidOperationException("Cannot save tenant-scoped entity: current TenantId is not set.");
+                                if (!tenantId.HasValue)
+                                {
+                                    throw new InvalidOperationException("Cannot save tenant-scoped entity: current TenantId is not set.");
+                                }
+                                tenantEntity.TenantId = tenantId.Value;
                             }
-                            tenantEntity.TenantId = tenantId.Value;
                         }
                     }
                     else if (entry.State == EntityState.Modified)

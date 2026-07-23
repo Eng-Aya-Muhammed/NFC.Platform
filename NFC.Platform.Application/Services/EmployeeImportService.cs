@@ -38,35 +38,42 @@ public class EmployeeImportService(
 
         try
         {
-            // 1. Download file
-            using var httpClient = new System.Net.Http.HttpClient();
-            byte[] fileBytes;
-            try
-            {
-                fileBytes = await httpClient.GetByteArrayAsync(job.ExcelFileUrl);
-            }
-            catch (Exception ex)
-            {
-                var pattern = _messageService.Get("FailedToDownloadExcel");
-                errors.Add(string.Format(pattern, ex.Message));
-                await FailJobAsync(job, errors);
-                return;
-            }
-
-            using var stream = new System.IO.MemoryStream(fileBytes);
-
-            // 2. Parse Excel
+            // 1. Get rows — use pre-parsed data if available, otherwise download & parse
             List<ExcelEmployeeImportDto> employeeRows;
-            try
+
+            if (!string.IsNullOrWhiteSpace(job.PreParsedRowsJson))
             {
-                employeeRows = _excelParser.ParseEmployeesFromExcel(stream);
+                employeeRows = System.Text.Json.JsonSerializer.Deserialize<List<ExcelEmployeeImportDto>>(job.PreParsedRowsJson)
+                               ?? new List<ExcelEmployeeImportDto>();
             }
-            catch (Exception ex)
+            else
             {
-                var pattern = _messageService.Get("FailedToParseExcel");
-                errors.Add(string.Format(pattern, ex.Message));
-                await FailJobAsync(job, errors);
-                return;
+                using var httpClient = new System.Net.Http.HttpClient();
+                byte[] fileBytes;
+                try
+                {
+                    fileBytes = await httpClient.GetByteArrayAsync(job.ExcelFileUrl);
+                }
+                catch (Exception ex)
+                {
+                    var pattern = _messageService.Get("FailedToDownloadExcel");
+                    errors.Add(string.Format(pattern, ex.Message));
+                    await FailJobAsync(job, errors);
+                    return;
+                }
+
+                using var stream = new System.IO.MemoryStream(fileBytes);
+                try
+                {
+                    employeeRows = _excelParser.ParseEmployeesFromExcel(stream);
+                }
+                catch (Exception ex)
+                {
+                    var pattern = _messageService.Get("FailedToParseExcel");
+                    errors.Add(string.Format(pattern, ex.Message));
+                    await FailJobAsync(job, errors);
+                    return;
+                }
             }
 
             if (employeeRows == null || employeeRows.Count == 0)

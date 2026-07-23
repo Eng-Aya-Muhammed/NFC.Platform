@@ -1,5 +1,4 @@
-using System.ComponentModel.DataAnnotations;
-using NFC.Platform.Domain.Enums;
+﻿using NFC.Platform.Domain.Enums;
 
 namespace NFC.Platform.Application.DTOs.CardOrder;
 
@@ -9,22 +8,20 @@ namespace NFC.Platform.Application.DTOs.CardOrder;
 /// </summary>
 public class CreateCardOrderRequest
 {
-    // ── Step 1: Design Type ──────────────────────────────────────────────────
+    //  Step 1: Design Type 
     /// <summary>
     /// Whether the customer has their own design (CustomArtwork)
     /// or needs the design team to create one (NeedCustomDesign).
     /// </summary>
-    [Required]
     public CardDesignType CardDesignType { get; set; }
 
-    // ── Step 2: Card Info ────────────────────────────────────────────────────
-    [StringLength(200)]
+    //  Step 2: Card Info 
     public string? CardName { get; set; }
 
-    // ── Step 3: Files (Cloudinary URLs already uploaded by the frontend) ─────
+    //  Step 3: Files (Cloudinary URLs already uploaded by the frontend) 
     /// <summary>
     /// Cloudinary URL of the Excel file containing employee data.
-    /// Only processed for CompanyAdmin users — ignored for Individual accounts.
+    /// Only processed for CompanyAdmin users â€” ignored for Individual accounts.
     /// </summary>
     public string? ExcelDataUrl { get; set; }
 
@@ -40,15 +37,14 @@ public class CreateCardOrderRequest
     /// </summary>
     public string? BackDesignUrl { get; set; }
 
-    // ── Step 4: Card Material ────────────────────────────────────────────────
-    [Required]
+    //  Step 4: Card Material 
     public CardType CardType { get; set; }
 
-    // ── Step 5: Quantity ─────────────────────────────────────────────────────
-    [Required]
-    [Range(1, 10000)]
+    //  Step 5: Quantity 
     public int Quantity { get; set; }
 
-    // ── Step 6: Notes ────────────────────────────────────────────────────────
+    //  Step 6: Notes 
     public string? Notes { get; set; }
 }
+
+

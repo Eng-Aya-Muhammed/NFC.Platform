@@ -39,7 +39,7 @@ namespace NFC.Platform.Tests.Services
             _sut = new ProfileMetricService(_unitOfWork, _messageService, _mapper);
         }
 
-        // ── ResolvePublicProfileAsync ─────────────────────────────────────────────
+        //  ResolvePublicProfileAsync 
 
         [Fact]
         public async Task ResolvePublicProfileAsync_ReturnsNotFound_WhenSubdomainIsNull()
@@ -121,7 +121,7 @@ namespace NFC.Platform.Tests.Services
             Assert.Equal("LinkedIn", result.Data!.Links[0].Title);
         }
 
-        // ── RecordMetricAsync ─────────────────────────────────────────────────────
+        //  RecordMetricAsync 
 
         [Fact]
         public async Task RecordMetricAsync_ReturnsNotFound_WhenProfileDoesNotExist()

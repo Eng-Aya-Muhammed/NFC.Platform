@@ -29,6 +29,12 @@ namespace NFC.Platform.Domain.Entities
         public int Skipped { get; set; }
         public string? ErrorsJson { get; set; }
 
+        /// <summary>
+        /// Rows already parsed and validated during order creation.
+        /// When set, the Hangfire job skips the download + parse step.
+        /// </summary>
+        public string? PreParsedRowsJson { get; set; }
+
         public Guid? CardOrderId { get; set; }
         public CardOrder? CardOrder { get; set; }
     }

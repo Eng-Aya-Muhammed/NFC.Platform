@@ -64,7 +64,7 @@ namespace NFC.Platform.Tests.Services
             _sut = new AdminService(_unitOfWork, _mapper, _messageService, _storageService, _backgroundJobClient);
         }
 
-        // ── GetOrdersPagedAsync ───────────────────────────────────────────────────
+        //  GetOrdersPagedAsync 
 
         [Fact]
         public async Task GetOrdersPagedAsync_ReturnsAllOrders_WhenNoStatusFilterPassed()
@@ -117,7 +117,7 @@ namespace NFC.Platform.Tests.Services
             Assert.Equal(OrderStatus.UnderReview, result.Data.Items.First().Status);
         }
 
-        // ── GetOrderByIdAsync ─────────────────────────────────────────────────────
+        //  GetOrderByIdAsync 
 
         [Fact]
         public async Task GetOrderByIdAsync_ReturnsNotFound_WhenOrderDoesNotExist()
@@ -157,7 +157,7 @@ namespace NFC.Platform.Tests.Services
             Assert.Equal("Special Order", result.Data!.CardName);
         }
 
-        // ── UpdateOrderStatusAsync ────────────────────────────────────────────────
+        //  UpdateOrderStatusAsync 
 
         [Fact]
         public async Task UpdateOrderStatusAsync_UpdatesStatusAndTracking_WhenOrderExists()
@@ -184,7 +184,7 @@ namespace NFC.Platform.Tests.Services
             await _unitOfWork.Received(1).SaveChangesAsync();
         }
 
-        // ── ResolveTemplateRequestAsync ───────────────────────────────────────────
+        //  ResolveTemplateRequestAsync 
 
         [Fact]
         public async Task ResolveTemplateRequestAsync_CreatesCustomTemplate_WhenApproved()
@@ -225,7 +225,7 @@ namespace NFC.Platform.Tests.Services
             await _unitOfWork.Received(1).SaveChangesAsync();
         }
 
-        // ── CreateTemplateAsync ───────────────────────────────────────────────────
+        //  CreateTemplateAsync 
 
         [Fact]
         public async Task CreateTemplateAsync_SavesTemplateAndReturnsDto()
@@ -261,7 +261,7 @@ namespace NFC.Platform.Tests.Services
             await _unitOfWork.Received(1).SaveChangesAsync();
         }
 
-        // ── UpdateTemplateAsync ───────────────────────────────────────────────────
+        //  UpdateTemplateAsync 
 
         [Fact]
         public async Task UpdateTemplateAsync_ReturnsNotFound_WhenTemplateDoesNotExist()
@@ -299,9 +299,9 @@ namespace NFC.Platform.Tests.Services
             await _unitOfWork.Received(1).SaveChangesAsync();
         }
 
-        // ── DeleteTemplateAsync ───────────────────────────────────────────────────
+        //  DeleteTemplateAsync 
 
-        // ── GetTenantsPagedAsync ──────────────────────────────────────────────────
+        //  GetTenantsPagedAsync 
 
         [Fact]
         public async Task GetTenantsPagedAsync_ReturnsPagedTenantsWithSubscriptions()
@@ -336,7 +336,7 @@ namespace NFC.Platform.Tests.Services
             Assert.True(item.DaysRemaining > 0);
         }
 
-        // ── UpdateTenantStatusAsync ───────────────────────────────────────────────
+        //  UpdateTenantStatusAsync 
 
         [Fact]
         public async Task UpdateTenantStatusAsync_TogglesTenantActiveState()
@@ -357,7 +357,7 @@ namespace NFC.Platform.Tests.Services
             await _unitOfWork.Received(1).SaveChangesAsync();
         }
 
-        // ── UpdateCardPricingAsync ────────────────────────────────────────────────
+        //  UpdateCardPricingAsync 
 
         [Theory]
         [InlineData(null)]
@@ -682,7 +682,7 @@ namespace NFC.Platform.Tests.Services
             Assert.Equal(templateRequest.ProducedTemplateId, userProfile.ProfileTemplateId);
             await _unitOfWork.Received(1).SaveChangesAsync();
         }
-        // ── ReassignSubdomainAsync ────────────────────────────────────────────────
+        //  ReassignSubdomainAsync 
 
         [Fact]
         public async Task ReassignSubdomainAsync_ReturnsNotFound_WhenProfileDoesNotExist()
@@ -746,7 +746,7 @@ namespace NFC.Platform.Tests.Services
             await _unitOfWork.Received(1).SaveChangesAsync();
         }
 
-        // ── OTP Expiration & Resend Unit Tests ────────────────────────────────────
+        //  OTP Expiration & Resend Unit Tests 
 
         [Fact]
         public async Task VerifyDeliveryOtpAsync_ReturnsFail_WhenOtpHasExpired()
@@ -883,7 +883,7 @@ namespace NFC.Platform.Tests.Services
                 Arg.Any<Hangfire.States.IState>());
         }
 
-        // ── Plan Management ───────────────────────────────────────────────────────
+        //  Plan Management 
 
         [Fact]
         public async Task CreatePlanAsync_ValidRequest_ReturnsSuccess()

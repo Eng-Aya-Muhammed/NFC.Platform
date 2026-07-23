@@ -1,6 +1,5 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
 using NFC.Platform.Domain.Enums;
 
 namespace NFC.Platform.Application.DTOs.CardOrder;
@@ -11,14 +10,11 @@ namespace NFC.Platform.Application.DTOs.CardOrder;
 /// </summary>
 public class ReorderRequest
 {
-    [Required]
-    [Range(1, 10000)]
     public int Quantity { get; set; }
 
     /// <summary>
     /// Assignment scope (AllEmployees, SpecificEmployees, or Individual).
     /// </summary>
-    [Required]
     public AssignmentScope AssignmentScope { get; set; } = AssignmentScope.AllEmployees;
 
     /// <summary>
@@ -29,6 +25,5 @@ public class ReorderRequest
 
     public DeliveryMethod DeliveryMethod { get; set; } = DeliveryMethod.Pickup;
 
-    [StringLength(500)]
     public string? ShippingAddress { get; set; }
 }
