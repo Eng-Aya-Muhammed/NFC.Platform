@@ -17,9 +17,9 @@ namespace NFC.Platform.API.Controllers
         /// Returns aggregated profile interaction totals for the authenticated user.
         /// </summary>
         [HttpGet("summary")]
-        public async Task<IActionResult> GetUserAnalyticsSummary()
+        public async Task<IActionResult> GetUserAnalyticsSummary(CancellationToken cancellationToken)
         {
-            var result = await _analyticsService.GetUserAnalyticsSummaryAsync();
+            var result = await _analyticsService.GetUserAnalyticsSummaryAsync(cancellationToken);
             if (!result.IsSuccess)
                 return StatusCode(result.StatusCode, result);
 
@@ -31,9 +31,9 @@ namespace NFC.Platform.API.Controllers
         /// Query param: granularity = "daily" (last 30 days) or "monthly" (last 6 months, default).
         /// </summary>
         [HttpGet("time-series")]
-        public async Task<IActionResult> GetUserAnalyticsTimeSeries([FromQuery] string granularity = "monthly")
+        public async Task<IActionResult> GetUserAnalyticsTimeSeries([FromQuery] string granularity = "monthly", CancellationToken cancellationToken = default)
         {
-            var result = await _analyticsService.GetUserAnalyticsTimeSeriesAsync(granularity);
+            var result = await _analyticsService.GetUserAnalyticsTimeSeriesAsync(granularity, cancellationToken);
             if (!result.IsSuccess)
                 return StatusCode(result.StatusCode, result);
 
@@ -46,9 +46,9 @@ namespace NFC.Platform.API.Controllers
         /// </summary>
         [HttpGet("/api/company/analytics/leaderboard")]
         [Authorize(Policy = AppPolicies.CompanyAdminOnly)]
-        public async Task<IActionResult> GetCompanyLeaderboard()
+        public async Task<IActionResult> GetCompanyLeaderboard(CancellationToken cancellationToken)
         {
-            var result = await _analyticsService.GetCompanyLeaderboardAsync();
+            var result = await _analyticsService.GetCompanyLeaderboardAsync(cancellationToken);
             if (!result.IsSuccess)
                 return StatusCode(result.StatusCode, result);
 
@@ -56,3 +56,4 @@ namespace NFC.Platform.API.Controllers
         }
     }
 }
+

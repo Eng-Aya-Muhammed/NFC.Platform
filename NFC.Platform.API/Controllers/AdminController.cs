@@ -11,9 +11,9 @@ namespace NFC.Platform.API.Controllers
         /// Retrieves all orders across all tenants with optional status filtering and paging.
         /// </summary>
         [HttpGet("orders")]
-        public async Task<IActionResult> GetOrdersPaged([FromQuery] PaginationRequest request, [FromQuery] OrderStatus? status, [FromQuery(Name = "company_id")] Guid? companyId)
+        public async Task<IActionResult> GetOrdersPaged([FromQuery] PaginationRequest request, [FromQuery] OrderStatus? status, [FromQuery(Name = "company_id")] Guid? companyId, CancellationToken cancellationToken)
         {
-            var result = await _adminService.GetOrdersPagedAsync(request, status, companyId);
+            var result = await _adminService.GetOrdersPagedAsync(request, status, companyId, cancellationToken);
             return Ok(result);
         }
 
@@ -81,9 +81,9 @@ namespace NFC.Platform.API.Controllers
         /// </summary>
         [HttpGet("template-requests")]
         [HttpGet("custom-design-requests")]
-        public async Task<IActionResult> GetTemplateRequestsPaged([FromQuery] PaginationRequest request, [FromQuery] TemplateRequestStatus? status)
+        public async Task<IActionResult> GetTemplateRequestsPaged([FromQuery] PaginationRequest request, [FromQuery] TemplateRequestStatus? status, CancellationToken cancellationToken)
         {
-            var result = await _adminService.GetTemplateRequestsPagedAsync(request, status);
+            var result = await _adminService.GetTemplateRequestsPagedAsync(request, status, cancellationToken);
             return Ok(result);
         }
 
@@ -143,9 +143,9 @@ namespace NFC.Platform.API.Controllers
         /// Lists all system tenants (individuals and companies) with active subscription tiers.
         /// </summary>
         [HttpGet("tenants")]
-        public async Task<IActionResult> GetTenantsPaged([FromQuery] PaginationRequest request)
+        public async Task<IActionResult> GetTenantsPaged([FromQuery] PaginationRequest request, CancellationToken cancellationToken)
         {
-            var result = await _adminService.GetTenantsPagedAsync(request);
+            var result = await _adminService.GetTenantsPagedAsync(request, cancellationToken);
             return Ok(result);
         }
 
@@ -186,9 +186,9 @@ namespace NFC.Platform.API.Controllers
         /// Used for oversight and conflict detection.
         /// </summary>
         [HttpGet("subdomains")]
-        public async Task<IActionResult> GetAllSubdomains([FromQuery] PaginationRequest request, [FromQuery] string? search)
+        public async Task<IActionResult> GetAllSubdomains([FromQuery] PaginationRequest request, [FromQuery] string? search, CancellationToken cancellationToken)
         {
-            var result = await _adminService.GetAllProfileSubdomainsAsync(request, search);
+            var result = await _adminService.GetAllProfileSubdomainsAsync(request, search, cancellationToken);
             return Ok(result);
         }
 
@@ -264,3 +264,4 @@ namespace NFC.Platform.API.Controllers
         }
     }
 }
+

@@ -28,7 +28,7 @@ namespace NFC.Platform.Tests.Controllers
             var dto = new UserAnalyticsSummaryDto();
             _analyticsService.GetUserAnalyticsSummaryAsync().Returns(ServiceResult<UserAnalyticsSummaryDto>.Success(dto));
 
-            var result = await _sut.GetUserAnalyticsSummary() as OkObjectResult;
+            var result = await _sut.GetUserAnalyticsSummary(CancellationToken.None) as OkObjectResult;
 
             Assert.NotNull(result);
             Assert.Equal(200, result.StatusCode);
@@ -40,7 +40,7 @@ namespace NFC.Platform.Tests.Controllers
         {
             _analyticsService.GetUserAnalyticsSummaryAsync().Returns(ServiceResult<UserAnalyticsSummaryDto>.Fail("Error", 400));
 
-            var result = await _sut.GetUserAnalyticsSummary() as ObjectResult;
+            var result = await _sut.GetUserAnalyticsSummary(CancellationToken.None) as ObjectResult;
 
             Assert.NotNull(result);
             Assert.Equal(400, result.StatusCode);
@@ -76,7 +76,7 @@ namespace NFC.Platform.Tests.Controllers
             var list = new List<EmployeeLeaderboardEntryDto>();
             _analyticsService.GetCompanyLeaderboardAsync().Returns(ServiceResult<List<EmployeeLeaderboardEntryDto>>.Success(list));
 
-            var result = await _sut.GetCompanyLeaderboard() as OkObjectResult;
+            var result = await _sut.GetCompanyLeaderboard(CancellationToken.None) as OkObjectResult;
 
             Assert.NotNull(result);
             Assert.Equal(200, result.StatusCode);
@@ -88,7 +88,7 @@ namespace NFC.Platform.Tests.Controllers
         {
             _analyticsService.GetCompanyLeaderboardAsync().Returns(ServiceResult<List<EmployeeLeaderboardEntryDto>>.Fail("Error", 400));
 
-            var result = await _sut.GetCompanyLeaderboard() as ObjectResult;
+            var result = await _sut.GetCompanyLeaderboard(CancellationToken.None) as ObjectResult;
 
             Assert.NotNull(result);
             Assert.Equal(400, result.StatusCode);
@@ -107,3 +107,4 @@ namespace NFC.Platform.Tests.Controllers
         }
     }
 }
+

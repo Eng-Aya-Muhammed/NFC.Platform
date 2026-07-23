@@ -130,4 +130,7 @@
   <data name="InvalidUrlFormat" xml:space="preserve">
     <value>{0} غير صالح. يجب أن يكون رابطاً صحيحاً.</value>
   </data>
+  <data name="InvalidPhoneFormat" xml:space="preserve">
+    <value>يجب أن يكون رقم الهاتف بصيغة دولية صحيحة (مثال: 1234567890+).</value>
+  </data>
 </root>

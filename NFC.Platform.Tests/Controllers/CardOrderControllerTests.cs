@@ -200,5 +200,30 @@ namespace NFC.Platform.Tests.Controllers
             Assert.NotNull(result);
             Assert.Equal(404, result.StatusCode);
         }
+        [Fact]
+        public async Task ResendDeliveryOtp_ReturnsOk_WhenSuccess()
+        {
+            var id = Guid.NewGuid();
+            _cardOrderService.ResendOrderOtpAsync(id).Returns(ServiceResult<bool>.Success(true));
+
+            var result = await _sut.ResendDeliveryOtp(id) as OkObjectResult;
+
+            Assert.NotNull(result);
+            Assert.Equal(200, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task ResendDeliveryOtp_ReturnsBadRequest_WhenFail()
+        {
+            var id = Guid.NewGuid();
+            _cardOrderService.ResendOrderOtpAsync(id).Returns(ServiceResult<bool>.Fail("Error"));
+
+            var result = await _sut.ResendDeliveryOtp(id) as ObjectResult;
+
+            Assert.NotNull(result);
+            Assert.Equal(400, result.StatusCode);
+        }
     }
 }
+
+

@@ -184,6 +184,31 @@ namespace NFC.Platform.Tests.Services
             await _unitOfWork.Received(1).SaveChangesAsync();
         }
 
+        [Fact]
+        public async Task UpdateOrderStatusAsync_ReturnsError_WhenStatusTransitionIsInvalid()
+        {
+            // Arrange
+            var orderId = Guid.NewGuid();
+            // Order is already Shipped
+            var order = new CardOrder { Id = orderId, Status = OrderStatus.Delivered };
+            var mockQueryable = new List<CardOrder> { order }.AsQueryable().BuildMock();
+            _orderRepo.GetQueryable().Returns(mockQueryable);
+
+            // Try to move backward to PendingReview
+            var updateDto = new UpdateOrderStatusDto
+            {
+                Status = OrderStatus.PendingReview
+            };
+
+            // Act
+            var result = await _sut.UpdateOrderStatusAsync(orderId, updateDto);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(422, result.StatusCode);
+            _messageService.Received(1).Get("InvalidStatusTransition", Arg.Any<string>(), Arg.Any<string>());
+        }
+
         //  ResolveTemplateRequestAsync 
 
         [Fact]

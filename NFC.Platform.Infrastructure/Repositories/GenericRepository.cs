@@ -26,7 +26,7 @@ namespace NFC.Platform.Infrastructure.Repositories
         }
 
         /// <inheritdoc />
-        public async Task<T?> GetByIdAsync(Guid id)
+        public async Task<T?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
         {
             return await _dbSet.FindAsync(id);
         }
@@ -83,11 +83,11 @@ namespace NFC.Platform.Infrastructure.Repositories
         }
 
         /// <inheritdoc />
-        public async Task<int> CountAsync(Expression<Func<T, bool>>? predicate = null)
+        public async Task<int> CountAsync(Expression<Func<T, bool>>? predicate = null, CancellationToken cancellationToken = default)
         {
             return predicate != null 
-                ? await _dbSet.CountAsync(predicate) 
-                : await _dbSet.CountAsync();
+                ? await _dbSet.CountAsync(predicate, cancellationToken) 
+                : await _dbSet.CountAsync(cancellationToken);
         }
 
         /// <inheritdoc />
@@ -97,3 +97,5 @@ namespace NFC.Platform.Infrastructure.Repositories
         }
     }
 }
+
+

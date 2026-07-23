@@ -19,7 +19,7 @@ namespace NFC.Platform.Application.Interfaces.Repositories
         /// </summary>
         /// <param name="id">The unique identifier of the entity.</param>
         /// <returns>A task representing the async lookup, yielding the entity if found, otherwise null.</returns>
-        Task<T?> GetByIdAsync(Guid id);
+        Task<T?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Retrieves all entities.
@@ -77,7 +77,7 @@ namespace NFC.Platform.Application.Interfaces.Repositories
         /// </summary>
         /// <param name="predicate">An optional filter condition.</param>
         /// <returns>A task representing the async count operation, yielding the matching count.</returns>
-        Task<int> CountAsync(Expression<Func<T, bool>>? predicate = null);
+        Task<int> CountAsync(Expression<Func<T, bool>>? predicate = null, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Exposes the underlying dataset as an IQueryable query builder for custom service filtering.
@@ -86,3 +86,5 @@ namespace NFC.Platform.Application.Interfaces.Repositories
         IQueryable<T> GetQueryable();
     }
 }
+
+

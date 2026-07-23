@@ -30,11 +30,11 @@ public class UpdateEmployeeRequestValidator : AbstractValidator<UpdateEmployeeRe
 
         RuleFor(x => x.Phone)
             .MaximumLength(50)
-            .WithMessage(x => messageService.Get("MaxLength", messageService.Get("Phone"), 50));
+            .WithMessage(x => messageService.Get("MaxLength", messageService.Get("Phone"), 50)).MustBeValidPhoneNumber().WithMessage(_ => messageService.Get("InvalidPhoneFormat"));
 
         RuleFor(x => x.WhatsApp)
             .MaximumLength(50)
-            .WithMessage(x => messageService.Get("MaxLength", messageService.Get("WhatsApp"), 50));
+            .WithMessage(x => messageService.Get("MaxLength", messageService.Get("WhatsApp"), 50)).MustBeValidPhoneNumber().WithMessage(_ => messageService.Get("InvalidPhoneFormat"));
 
         RuleForEach(x => x.Links).ChildRules(link => {
             link.RuleFor(l => l.Url)
@@ -44,4 +44,6 @@ public class UpdateEmployeeRequestValidator : AbstractValidator<UpdateEmployeeRe
     }
 
 }
+
+
 

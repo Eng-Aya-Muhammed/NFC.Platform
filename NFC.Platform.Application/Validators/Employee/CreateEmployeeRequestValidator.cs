@@ -36,12 +36,17 @@ namespace NFC.Platform.Application.Validators.Employee;
 
             RuleFor(x => x.Phone)
                 .MaximumLength(50)
-                .WithMessage(x => messageService.Get("MaxLength", "Phone", 50));
+                .WithMessage(x => messageService.Get("MaxLength", "Phone", 50))
+                .MustBeValidPhoneNumber()
+                .WithMessage(_ => messageService.Get("InvalidPhoneFormat"));
 
             RuleFor(x => x.WhatsApp)
                 .MaximumLength(50)
-                .WithMessage(x => messageService.Get("MaxLength", "WhatsApp", 50));
+                .WithMessage(x => messageService.Get("MaxLength", "WhatsApp", 50))
+                .MustBeValidPhoneNumber()
+                .WithMessage(_ => messageService.Get("InvalidPhoneFormat"));
 
         }
     }
+
 

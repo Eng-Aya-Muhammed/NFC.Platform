@@ -22,7 +22,7 @@ namespace NFC.Platform.Application.Services;
             _backgroundJobClient  = backgroundJobClient  ?? throw new ArgumentNullException(nameof(backgroundJobClient));
         }
 
-        public async Task<ServiceResult<PagedResult<AdminOrderSummaryDto>>> GetOrdersPagedAsync(PaginationRequest request, OrderStatus? statusFilter, Guid? companyId = null)
+        public async Task<ServiceResult<PagedResult<AdminOrderSummaryDto>>> GetOrdersPagedAsync(PaginationRequest request, OrderStatus? statusFilter, Guid? companyId = null, CancellationToken cancellationToken = default)
         {
             var query = _unitOfWork.Repository<CardOrder>()
                 .GetQueryable()
@@ -42,7 +42,7 @@ namespace NFC.Platform.Application.Services;
                 query = query.Where(o => o.Tenant.Company != null && o.Tenant.Company.Id == companyId.Value);
             }
 
-            var pagedResult = await query.ToPagedResultAsync(request, o => _mapper.Map<AdminOrderSummaryDto>(o));
+            var pagedResult = await query.ToPagedResultAsync(request,o => _mapper.Map<AdminOrderSummaryDto>(o),cancellationToken);
             return ServiceResult<PagedResult<AdminOrderSummaryDto>>.Success(pagedResult);
         }
 
@@ -229,7 +229,7 @@ namespace NFC.Platform.Application.Services;
         private static string GenerateOtp()
             => Random.Shared.Next(100000, 999999).ToString();
 
-        private bool IsValidStatusTransition(OrderStatus current, OrderStatus next)
+        private static bool IsValidStatusTransition(OrderStatus current, OrderStatus next)
         {
             // Rejected is allowed from PendingReview or UnderReview only
             if (next == OrderStatus.Rejected)
@@ -240,7 +240,7 @@ namespace NFC.Platform.Application.Services;
         }
 
 
-        public async Task<ServiceResult<PagedResult<TemplateRequestDto>>> GetTemplateRequestsPagedAsync(PaginationRequest request, TemplateRequestStatus? status = null)
+        public async Task<ServiceResult<PagedResult<TemplateRequestDto>>> GetTemplateRequestsPagedAsync(PaginationRequest request, TemplateRequestStatus? status = null, CancellationToken cancellationToken = default)
         {
             var query = _unitOfWork.Repository<TemplateRequest>()
                 .GetQueryable()
@@ -254,7 +254,7 @@ namespace NFC.Platform.Application.Services;
                 query = query.Where(tr => tr.Status == status.Value);
             }
 
-            var pagedResult = await query.ToPagedResultAsync(request, tr => _mapper.Map<TemplateRequestDto>(tr));
+            var pagedResult = await query.ToPagedResultAsync(request, tr => _mapper.Map<TemplateRequestDto>(tr), cancellationToken);
             return ServiceResult<PagedResult<TemplateRequestDto>>.Success(pagedResult);
         }
 
@@ -432,7 +432,7 @@ namespace NFC.Platform.Application.Services;
             return ServiceResult.Success(_messageService.Get("TemplateDeletedAndProfilesCleared"));
         }
 
-        public async Task<ServiceResult<PagedResult<TenantSummaryDto>>> GetTenantsPagedAsync(PaginationRequest request)
+        public async Task<ServiceResult<PagedResult<TenantSummaryDto>>> GetTenantsPagedAsync(PaginationRequest request, CancellationToken cancellationToken = default)
         {
             var query = _unitOfWork.Repository<Tenant>()
                 .GetQueryable()
@@ -441,7 +441,7 @@ namespace NFC.Platform.Application.Services;
                 .OrderByDescending(t => t.CreatedAt)
                 .AsQueryable();
 
-            var pagedTenants = await query.ToPagedResultAsync(request, t => t);
+            var pagedTenants = await query.ToPagedResultAsync(request, t => t, cancellationToken);
 
             var tenantIds = pagedTenants.Items.Select(t => t.Id).ToList();
 
@@ -450,7 +450,7 @@ namespace NFC.Platform.Application.Services;
                 .AsNoTracking()
                 .Include(us => us.SubscriptionPlan)
                 .Where(us => tenantIds.Contains(us.TenantId) && us.IsActive)
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
 
             var activeSubByTenant = activeSubscriptions
                 .GroupBy(us => us.TenantId)
@@ -562,7 +562,7 @@ namespace NFC.Platform.Application.Services;
         //  Subdomain management (Super Admin) 
 
         public async Task<ServiceResult<PagedResult<ProfileSubdomainSummaryDto>>> GetAllProfileSubdomainsAsync(
-            PaginationRequest request, string? search)
+            PaginationRequest request, string? search, CancellationToken cancellationToken = default)
         {
             var query = _unitOfWork.Repository<UserProfile>()
                 .GetQueryable()
@@ -774,3 +774,4 @@ namespace NFC.Platform.Application.Services;
             return ServiceResult.Success(_messageService.Get("TemplateUnassigned"));
         }
     }
+

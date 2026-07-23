@@ -33,7 +33,7 @@ namespace NFC.Platform.Tests.Controllers
 
             _adminService.GetOrdersPagedAsync(request, status, companyId).Returns(expectedResult);
 
-            var result = await _sut.GetOrdersPaged(request, status, companyId) as OkObjectResult;
+            var result = await _sut.GetOrdersPaged(request, status, companyId, CancellationToken.None) as OkObjectResult;
 
             Assert.NotNull(result);
             Assert.Equal(200, result.StatusCode);
@@ -49,7 +49,7 @@ namespace NFC.Platform.Tests.Controllers
 
             _adminService.GetOrdersPagedAsync(request, null, null).Returns(expectedResult);
 
-            var result = await _sut.GetOrdersPaged(request, null, null) as OkObjectResult;
+            var result = await _sut.GetOrdersPaged(request, null, null, CancellationToken.None) as OkObjectResult;
 
             Assert.NotNull(result);
             Assert.Equal(200, result.StatusCode);
@@ -65,7 +65,7 @@ namespace NFC.Platform.Tests.Controllers
 
             _adminService.GetTemplateRequestsPagedAsync(request, null).Returns(expectedResult);
 
-            var result = await _sut.GetTemplateRequestsPaged(request, null) as OkObjectResult;
+            var result = await _sut.GetTemplateRequestsPaged(request, null, CancellationToken.None) as OkObjectResult;
 
             Assert.NotNull(result);
             Assert.Equal(200, result.StatusCode);
@@ -133,7 +133,7 @@ namespace NFC.Platform.Tests.Controllers
 
             _adminService.GetTemplateRequestsPagedAsync(request, status).Returns(expectedResult);
 
-            var result = await _sut.GetTemplateRequestsPaged(request, status) as OkObjectResult;
+            var result = await _sut.GetTemplateRequestsPaged(request, status, CancellationToken.None) as OkObjectResult;
 
             Assert.NotNull(result);
             Assert.Equal(200, result.StatusCode);
@@ -238,7 +238,7 @@ namespace NFC.Platform.Tests.Controllers
             var paged = PagedResult<TenantSummaryDto>.Create(new List<TenantSummaryDto>(), 0, 1, 10);
             _adminService.GetTenantsPagedAsync(request).Returns(ServiceResult<PagedResult<TenantSummaryDto>>.Success(paged));
 
-            var result = await _sut.GetTenantsPaged(request) as OkObjectResult;
+            var result = await _sut.GetTenantsPaged(request, CancellationToken.None) as OkObjectResult;
 
             Assert.NotNull(result);
             Assert.Equal(200, result.StatusCode);
@@ -294,6 +294,146 @@ namespace NFC.Platform.Tests.Controllers
             Assert.NotNull(result);
             Assert.Equal(400, result.StatusCode);
         }
+        [Fact]
+        public async Task VerifyDeliveryOtp_ReturnsOk_WhenValid()
+        {
+            var id = Guid.NewGuid();
+            var request = new VerifyDeliveryOtpRequest { Otp = "123456" };
+            _adminService.VerifyDeliveryOtpAsync(id, request.Otp).Returns(ServiceResult<bool>.Success(true));
 
+            var result = await _sut.VerifyDeliveryOtp(id, request) as OkObjectResult;
+
+            Assert.NotNull(result);
+            Assert.Equal(200, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task VerifyDeliveryOtp_ReturnsBadRequest_WhenInvalid()
+        {
+            var id = Guid.NewGuid();
+            var request = new VerifyDeliveryOtpRequest { Otp = "123456" };
+            _adminService.VerifyDeliveryOtpAsync(id, request.Otp).Returns(ServiceResult<bool>.Fail("Invalid OTP"));
+
+            var result = await _sut.VerifyDeliveryOtp(id, request) as ObjectResult;
+
+            Assert.NotNull(result);
+            Assert.Equal(400, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task ResendDeliveryOtp_ReturnsOk_WhenSuccess()
+        {
+            var id = Guid.NewGuid();
+            _adminService.ResendDeliveryOtpAsync(id).Returns(ServiceResult<bool>.Success(true));
+
+            var result = await _sut.ResendDeliveryOtp(id) as OkObjectResult;
+
+            Assert.NotNull(result);
+            Assert.Equal(200, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task GetAllSubdomains_ReturnsOk_WithData()
+        {
+            var request = new PaginationRequest();
+            var pagedData = PagedResult<ProfileSubdomainSummaryDto>.Create(new List<ProfileSubdomainSummaryDto>(), 0, 1, 10);
+            _adminService.GetAllProfileSubdomainsAsync(request, null, CancellationToken.None).Returns(ServiceResult<PagedResult<ProfileSubdomainSummaryDto>>.Success(pagedData));
+
+            var result = await _sut.GetAllSubdomains(request, null, CancellationToken.None) as OkObjectResult;
+
+            Assert.NotNull(result);
+            Assert.Equal(200, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task ReassignSubdomain_ReturnsOk_WhenSuccess()
+        {
+            var id = Guid.NewGuid();
+            var dto = new ReassignSubdomainDto { Subdomain = "test" };
+            _adminService.ReassignSubdomainAsync(id, dto.Subdomain).Returns(ServiceResult<bool>.Success(true));
+
+            var result = await _sut.ReassignSubdomain(id, dto) as OkObjectResult;
+
+            Assert.NotNull(result);
+            Assert.Equal(200, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task CreatePlan_ReturnsOk_WhenSuccess()
+        {
+            var request = new CreateSubscriptionPlanRequest();
+            _adminService.CreatePlanAsync(request).Returns(ServiceResult<SubscriptionPlanDto>.Success(new SubscriptionPlanDto()));
+
+            var result = await _sut.CreatePlan(request) as OkObjectResult;
+
+            Assert.NotNull(result);
+            Assert.Equal(200, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task UpdatePlan_ReturnsOk_WhenSuccess()
+        {
+            var id = Guid.NewGuid();
+            var request = new UpdateSubscriptionPlanRequest();
+            _adminService.UpdatePlanAsync(id, request).Returns(ServiceResult<SubscriptionPlanDto>.Success(new SubscriptionPlanDto()));
+
+            var result = await _sut.UpdatePlan(id, request) as OkObjectResult;
+
+            Assert.NotNull(result);
+            Assert.Equal(200, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task DeletePlan_ReturnsOk_WhenSuccess()
+        {
+            var id = Guid.NewGuid();
+            _adminService.DeletePlanAsync(id).Returns(ServiceResult<bool>.Success(true));
+
+            var result = await _sut.DeletePlan(id) as OkObjectResult;
+
+            Assert.NotNull(result);
+            Assert.Equal(200, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task GetPlanTemplates_ReturnsOk_WithData()
+        {
+            var id = Guid.NewGuid();
+            _adminService.GetPlanTemplatesAsync(id).Returns(ServiceResult<IReadOnlyList<CardTemplateSummaryDto>>.Success(new List<CardTemplateSummaryDto>()));
+
+            var result = await _sut.GetPlanTemplates(id) as OkObjectResult;
+
+            Assert.NotNull(result);
+            Assert.Equal(200, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task AssignTemplate_ReturnsOk_WhenSuccess()
+        {
+            var planId = Guid.NewGuid();
+            var templateId = Guid.NewGuid();
+            _adminService.AssignTemplateAsync(planId, templateId).Returns(ServiceResult<bool>.Success(true));
+
+            var result = await _sut.AssignTemplate(planId, templateId) as OkObjectResult;
+
+            Assert.NotNull(result);
+            Assert.Equal(200, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task UnassignTemplate_ReturnsOk_WhenSuccess()
+        {
+            var planId = Guid.NewGuid();
+            var templateId = Guid.NewGuid();
+            _adminService.UnassignTemplateAsync(planId, templateId).Returns(ServiceResult<bool>.Success(true));
+
+            var result = await _sut.UnassignTemplate(planId, templateId) as OkObjectResult;
+
+            Assert.NotNull(result);
+            Assert.Equal(200, result.StatusCode);
+        }
     }
 }
+
+
+

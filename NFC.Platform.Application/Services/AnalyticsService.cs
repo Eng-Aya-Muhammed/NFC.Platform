@@ -11,7 +11,7 @@ namespace NFC.Platform.Application.Services;
 
         //  User: Summary 
 
-        public async Task<ServiceResult<UserAnalyticsSummaryDto>> GetUserAnalyticsSummaryAsync()
+        public async Task<ServiceResult<UserAnalyticsSummaryDto>> GetUserAnalyticsSummaryAsync(CancellationToken cancellationToken = default)
         {
             var userId = _currentTenant.UserId;
             if (!userId.HasValue)
@@ -21,7 +21,7 @@ namespace NFC.Platform.Application.Services;
             var profile = await _unitOfWork.Repository<UserProfile>()
                 .GetQueryable()
                 .AsNoTracking()
-                .FirstOrDefaultAsync(p => p.UserId == userId.Value);
+                .FirstOrDefaultAsync(p => p.UserId == userId.Value, cancellationToken);
 
             if (profile == null)
                 return ServiceResult<UserAnalyticsSummaryDto>.NotFound(_messageService.Get("ProfileNotFound"));
@@ -29,9 +29,9 @@ namespace NFC.Platform.Application.Services;
             var metricRepo = _unitOfWork.Repository<ProfileMetric>();
 
             // Sequential aggregation queries
-            var viewsCount = await metricRepo.CountAsync(m => m.UserProfileId == profile.Id && m.InteractionType == InteractionType.ProfileView);
-            var savesCount = await metricRepo.CountAsync(m => m.UserProfileId == profile.Id && m.InteractionType == InteractionType.ContactSaved);
-            var clicksCount = await metricRepo.CountAsync(m => m.UserProfileId == profile.Id && m.InteractionType == InteractionType.LinkClick);
+            var viewsCount = await metricRepo.CountAsync(m => m.UserProfileId == profile.Id && m.InteractionType == InteractionType.ProfileView, cancellationToken);
+            var savesCount = await metricRepo.CountAsync(m => m.UserProfileId == profile.Id && m.InteractionType == InteractionType.ContactSaved, cancellationToken);
+            var clicksCount = await metricRepo.CountAsync(m => m.UserProfileId == profile.Id && m.InteractionType == InteractionType.LinkClick, cancellationToken);
 
 
             // Last 6 months of views, broken down monthly
@@ -44,7 +44,7 @@ namespace NFC.Platform.Application.Services;
                          && m.CreatedAt >= sixMonthsAgo)
                 .GroupBy(m => new { m.CreatedAt.Year, m.CreatedAt.Month })
                 .Select(g => new { g.Key.Year, g.Key.Month, Count = g.Count() })
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
 
             var monthlyViews = new List<MonthlyMetricDto>();
             for (var i = 5; i >= 0; i--)
@@ -72,7 +72,7 @@ namespace NFC.Platform.Application.Services;
 
         //  User: Time-Series 
 
-        public async Task<ServiceResult<UserAnalyticsTimeSeriesDto>> GetUserAnalyticsTimeSeriesAsync(string granularity)
+        public async Task<ServiceResult<UserAnalyticsTimeSeriesDto>> GetUserAnalyticsTimeSeriesAsync(string granularity, CancellationToken cancellationToken = default)
         {
             var userId = _currentTenant.UserId;
             if (!userId.HasValue)
@@ -81,7 +81,7 @@ namespace NFC.Platform.Application.Services;
             var profile = await _unitOfWork.Repository<UserProfile>()
                 .GetQueryable()
                 .AsNoTracking()
-                .FirstOrDefaultAsync(p => p.UserId == userId.Value);
+                .FirstOrDefaultAsync(p => p.UserId == userId.Value, cancellationToken);
 
             if (profile == null)
                 return ServiceResult<UserAnalyticsTimeSeriesDto>.NotFound(_messageService.Get("ProfileNotFound"));
@@ -94,7 +94,7 @@ namespace NFC.Platform.Application.Services;
                 .GetQueryable()
                 .AsNoTracking()
                 .Where(m => m.UserProfileId == profile.Id && m.CreatedAt >= cutoff)
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
 
             List<TimeSeriesDataPointDto> dataPoints;
 
@@ -131,7 +131,7 @@ namespace NFC.Platform.Application.Services;
 
         //  Company: Leaderboard 
 
-        public async Task<ServiceResult<List<EmployeeLeaderboardEntryDto>>> GetCompanyLeaderboardAsync()
+        public async Task<ServiceResult<List<EmployeeLeaderboardEntryDto>>> GetCompanyLeaderboardAsync(CancellationToken cancellationToken = default)
         {
             var tenantId = _currentTenant.TenantId;
             if (!tenantId.HasValue)
@@ -142,7 +142,7 @@ namespace NFC.Platform.Application.Services;
                 .GetQueryable()
                 .AsNoTracking()
                 .Where(e => e.TenantId == tenantId.Value && !e.IsDeleted)
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
 
             if (employees.Count == 0)
                 return ServiceResult<List<EmployeeLeaderboardEntryDto>>.Success([]);
@@ -154,7 +154,7 @@ namespace NFC.Platform.Application.Services;
                 .GetQueryable()
                 .AsNoTracking()
                 .Where(p => p.EmployeeId.HasValue && employeeIds.Contains(p.EmployeeId.Value))
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
 
             var profileIds = profiles.Select(p => p.Id).ToList();
 
@@ -164,7 +164,7 @@ namespace NFC.Platform.Application.Services;
                     .GetQueryable()
                     .AsNoTracking()
                     .Where(m => profileIds.Contains(m.UserProfileId))
-                    .ToListAsync()
+                    .ToListAsync(cancellationToken)
                 : [];
 
             var metricsByProfile = metrics.GroupBy(m => m.UserProfileId).ToDictionary(g => g.Key, g => g.ToList());
@@ -201,7 +201,7 @@ namespace NFC.Platform.Application.Services;
 
         //  Helpers 
 
-        private TimeSeriesDataPointDto BuildDataPoint(string label, List<ProfileMetric>? metrics)
+        private static TimeSeriesDataPointDto BuildDataPoint(string label, List<ProfileMetric>? metrics)
         {
             if (metrics == null || metrics.Count == 0)
                 return new TimeSeriesDataPointDto { Label = label };

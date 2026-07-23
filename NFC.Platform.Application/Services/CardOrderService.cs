@@ -363,9 +363,9 @@ public class CardOrderService(
     private List<string> ValidateExcelRows(List<ExcelEmployeeImportDto> rows)
     {
         var errors = new List<string>();
-        var emailRegex = new System.Text.RegularExpressions.Regex(
+        var emailRegex = new Regex(
             @"^[^@\s]+@[^@\s]+\.[^@\s]+$",
-            System.Text.RegularExpressions.RegexOptions.Compiled | System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            RegexOptions.Compiled | RegexOptions.IgnoreCase);
         var uniqueEmails = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         for (int i = 0; i < rows.Count; i++)

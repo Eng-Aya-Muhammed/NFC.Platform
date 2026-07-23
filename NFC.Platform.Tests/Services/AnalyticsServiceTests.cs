@@ -68,6 +68,31 @@ namespace NFC.Platform.Tests.Services
             Assert.Equal("ProfileNotFound", result.Message);
         }
 
+
+        [Fact]
+        public async Task GetUserAnalyticsSummaryAsync_PropagatesCancellationToken()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var profileId = Guid.NewGuid();
+            _currentTenant.UserId.Returns(userId);
+
+            var profile = new UserProfile { Id = profileId, UserId = userId };
+            _profileRepo.GetQueryable().Returns(new List<UserProfile> { profile }.AsQueryable().BuildMock());
+            _metricRepo.GetQueryable().Returns(new List<ProfileMetric>().AsQueryable().BuildMock());
+
+            using var cts = new CancellationTokenSource();
+            
+            // Act
+            await _sut.GetUserAnalyticsSummaryAsync(cts.Token);
+
+            // Assert
+            // Verify that CountAsync was called with our specific CancellationToken
+            await _metricRepo.Received(3).CountAsync(
+                Arg.Any<System.Linq.Expressions.Expression<Func<ProfileMetric, bool>>>(), 
+                cts.Token);
+        }
+
         [Fact]
         public async Task GetUserAnalyticsSummaryAsync_ReturnsSummaryData_WhenProfileExists()
         {
@@ -78,6 +103,7 @@ namespace NFC.Platform.Tests.Services
 
             var profile = new UserProfile { Id = profileId, UserId = userId };
             _profileRepo.GetQueryable().Returns(new List<UserProfile> { profile }.AsQueryable().BuildMock());
+            _metricRepo.GetQueryable().Returns(new List<ProfileMetric>().AsQueryable().BuildMock());
 
             _metricRepo.CountAsync(Arg.Any<System.Linq.Expressions.Expression<Func<ProfileMetric, bool>>>())
                 .Returns(x =>
@@ -154,6 +180,7 @@ namespace NFC.Platform.Tests.Services
 
             var profile = new UserProfile { Id = profileId, UserId = userId };
             _profileRepo.GetQueryable().Returns(new List<UserProfile> { profile }.AsQueryable().BuildMock());
+            _metricRepo.GetQueryable().Returns(new List<ProfileMetric>().AsQueryable().BuildMock());
 
             var metrics = new List<ProfileMetric>
             {
@@ -181,6 +208,7 @@ namespace NFC.Platform.Tests.Services
 
             var profile = new UserProfile { Id = profileId, UserId = userId };
             _profileRepo.GetQueryable().Returns(new List<UserProfile> { profile }.AsQueryable().BuildMock());
+            _metricRepo.GetQueryable().Returns(new List<ProfileMetric>().AsQueryable().BuildMock());
 
             var metrics = new List<ProfileMetric>
             {
@@ -281,3 +309,4 @@ namespace NFC.Platform.Tests.Services
         }
     }
 }
+
