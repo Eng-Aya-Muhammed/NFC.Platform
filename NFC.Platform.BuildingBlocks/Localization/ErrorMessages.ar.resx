@@ -188,16 +188,16 @@
     <value>فشل في تحميل ملف الإكسيل</value>
   </data>
   <data name="ImportRowNameRequired" xml:space="preserve">
-    <value>الاسم مطلوب</value>
+    <value>الاسم مطلوب (صف {0})</value>
   </data>
   <data name="ImportRowEmailRequired" xml:space="preserve">
-    <value>البريد الإلكتروني مطلوب</value>
+    <value>البريد الإلكتروني مطلوب (صف {0})</value>
   </data>
   <data name="ImportRowEmailInvalid" xml:space="preserve">
-    <value>البريد الإلكتروني غير صحيح</value>
+    <value>البريد الإلكتروني غير صحيح (صف {0}): {1}</value>
   </data>
   <data name="ImportRowEmailDuplicate" xml:space="preserve">
-    <value>البريد الإلكتروني مكرر في الملف</value>
+    <value>البريد الإلكتروني مكرر في الملف (صف {0}): {1}</value>
   </data>
   <data name="ImportExecutionFailed" xml:space="preserve">
     <value>فشل في تنفيذ الاستيراد</value>

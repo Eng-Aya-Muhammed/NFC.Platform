@@ -243,6 +243,7 @@ namespace NFC.Platform.Tests.Services
                     currentTenant,
                     cardPricingService,
                     validator,
+                    Substitute.For<IValidator<UpdateCardOrderRequest>>(),
                     backgroundJobClient,
                     employeeService,
                     otpSettingsOptions
@@ -331,6 +332,7 @@ namespace NFC.Platform.Tests.Services
                 currentTenant,
                 cardPricingService,
                 validator,
+                Substitute.For<IValidator<UpdateCardOrderRequest>>(),
                 backgroundJobClient,
                 Substitute.For<IEmployeeService>(),
                 otpSettingsOptions

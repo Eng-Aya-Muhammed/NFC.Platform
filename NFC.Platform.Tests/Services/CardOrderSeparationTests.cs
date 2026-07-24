@@ -82,11 +82,11 @@ namespace NFC.Platform.Tests.Services
                 currentTenant,
                 cardPricingService,
                 validator,
+                Substitute.For<IValidator<UpdateCardOrderRequest>>(),
                 backgroundJobClient,
                 Substitute.For<IEmployeeService>(),
-                otpSettingsOptions);
-
-            var request = new CreateCardOrderRequest
+                otpSettingsOptions
+            );  var request = new CreateCardOrderRequest
             {
                 Quantity = 1,
                 CardType = CardType.Plastic,

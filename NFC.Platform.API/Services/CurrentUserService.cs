@@ -55,7 +55,7 @@ namespace NFC.Platform.API.Services
                 var user = _httpContextAccessor.HttpContext?.User;
                 if (user == null) return [];
 
-                return user.FindAll(ClaimTypes.Role)
+                return user.FindAll(System.Security.Claims.ClaimTypes.Role)
                     .Concat(user.FindAll(AppClaims.Role))
                     .Select(c => c.Value)
                     .Distinct();

@@ -7,6 +7,7 @@ public class CardOrderService(
     ICurrentTenant currentTenant,
     ICardPricingService cardPricingService,
     IValidator<CreateCardOrderRequest> validator,
+    IValidator<UpdateCardOrderRequest> updateValidator,
     IBackgroundJobClient backgroundJobClient,
     IEmployeeService employeeService,
     IOptions<OtpSettings> otpSettings) : ICardOrderService
@@ -17,6 +18,7 @@ public class CardOrderService(
     private readonly ICurrentTenant _currentTenant = currentTenant ?? throw new ArgumentNullException(nameof(currentTenant));
     private readonly ICardPricingService _cardPricingService = cardPricingService ?? throw new ArgumentNullException(nameof(cardPricingService));
     private readonly IValidator<CreateCardOrderRequest> _validator = validator ?? throw new ArgumentNullException(nameof(validator));
+    private readonly IValidator<UpdateCardOrderRequest> _updateValidator = updateValidator ?? throw new ArgumentNullException(nameof(updateValidator));
     private readonly IBackgroundJobClient _backgroundJobClient = backgroundJobClient ?? throw new ArgumentNullException(nameof(backgroundJobClient));
     private readonly IEmployeeService _employeeService = employeeService ?? throw new ArgumentNullException(nameof(employeeService));
     private readonly OtpSettings _otpSettings = otpSettings?.Value ?? throw new ArgumentNullException(nameof(otpSettings));
@@ -166,6 +168,10 @@ public class CardOrderService(
 
     public async Task<ServiceResult<CardOrderDto>> UpdateOrderAsync(Guid id, UpdateCardOrderRequest request)
     {
+        var validationResult = await _updateValidator.ValidateAsync(request);
+        if (!validationResult.IsValid)
+            return ServiceResult<CardOrderDto>.Fail(validationResult.Errors.Select(e => e.ErrorMessage).ToList(), 422);
+
         var tenantId = _currentTenant.TenantId;
         if (!tenantId.HasValue)
             return ServiceResult<CardOrderDto>.Fail(_messageService.Get("InvalidTenantClaim"), 400);
@@ -223,7 +229,7 @@ public class CardOrderService(
 
             if (request.AssignmentScope.HasValue || (request.EmployeeIds != null && request.EmployeeIds.Count > 0))
             {
-                var quantityToUse = request.EmployeeIds != null ? request.EmployeeIds.Count : (request.Quantity ?? order.Quantity);
+                var quantityToUse = request.Quantity ?? order.Quantity;
 
                 var itemsResult = await BuildOrderItemsAsync(currentScope, request.EmployeeIds, quantityToUse);
                 if (!itemsResult.IsSuccess)
@@ -232,16 +238,43 @@ public class CardOrderService(
                     return ServiceResult<CardOrderDto>.Fail(itemsResult.Message ?? string.Join(", ", itemsResult.Errors), itemsResult.StatusCode);
                 }
 
-                foreach (var item in order.Items)
+                var newItems = itemsResult.Data ?? new List<CardOrderItem>();
+
+                var oldItems = order.Items.ToList();
+                foreach (var item in oldItems)
                 {
                     _unitOfWork.Repository<CardOrderItem>().Remove(item);
                 }
-                order.Items = itemsResult.Data ?? [];
-                
-                if (order.Quantity != order.Items.Count)
+
+                var itemRepo = _unitOfWork.Repository<CardOrderItem>();
+                foreach (var newItem in newItems)
                 {
-                    order.Quantity = order.Items.Count;
+                    newItem.CardOrderId = order.Id;
+                    newItem.TenantId = order.TenantId;
+                    await itemRepo.AddAsync(newItem);
+                }
+                
+                if (order.Quantity != newItems.Count)
+                {
+                    order.Quantity = newItems.Count;
                     recalculatePricing = true;
+                }
+            }
+
+            if (request.CardDesignType == CardDesignType.CustomArtwork || (request.CardDesignType == null && order.CardDesignType == CardDesignType.CustomArtwork))
+            {
+                var finalFrontUrl = request.FrontDesignUrl ?? order.FrontDesignUrl;
+                var finalBackUrl = request.BackDesignUrl ?? order.BackDesignUrl;
+
+                if (string.IsNullOrWhiteSpace(finalFrontUrl))
+                {
+                    await _unitOfWork.RollbackTransactionAsync();
+                    return ServiceResult<CardOrderDto>.Fail(_messageService.Get("FrontDesignRequired"), 400);
+                }
+                if (string.IsNullOrWhiteSpace(finalBackUrl))
+                {
+                    await _unitOfWork.RollbackTransactionAsync();
+                    return ServiceResult<CardOrderDto>.Fail(_messageService.Get("BackDesignRequired"), 400);
                 }
             }
 
@@ -346,9 +379,7 @@ public class CardOrderService(
             UnitPrice      = pricing.UnitPrice,
             TotalPrice     = pricing.TotalPrice,
             Currency       = pricing.Currency,
-            Status         = request.CardDesignType == CardDesignType.CustomArtwork
-                                 ? OrderStatus.PendingReview
-                                 : OrderStatus.AwaitingDesign,
+            Status         = OrderStatus.PendingReview,
         };
     }
 
@@ -407,10 +438,10 @@ public class CardOrderService(
                 return ServiceResult<List<CardOrderItem>>.Fail(
                     _messageService.Get("EmployeesNotFound", string.Join(", ", missingIds)), 422);
 
-            var employeesWithoutProfile = employees.Where(e => e.UserProfile == null).Select(e => e.Id).ToList();
+            var employeesWithoutProfile = employees.Where(e => e.UserProfile == null).Select(e => e.FullName).ToList();
             if (employeesWithoutProfile.Count > 0)
                 return ServiceResult<List<CardOrderItem>>.Fail(
-                    _messageService.Get("EmployeesMissingProfile", string.Join(", ", employeesWithoutProfile)), 422);
+                    _messageService.Get("EmployeesMissingProfile", string.Join("، ", employeesWithoutProfile)), 422);
 
             return ServiceResult<List<CardOrderItem>>.Success(
                 employees.Select(e => _mapper.Map<CardOrderItem>(e)).ToList());

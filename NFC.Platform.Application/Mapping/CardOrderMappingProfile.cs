@@ -96,6 +96,7 @@ namespace NFC.Platform.Application.Mapping
                 .ForMember(dest => dest.UserProfileId, opt => opt.MapFrom(src => src.UserProfile != null ? (Guid?)src.UserProfile.Id : null))
                 .ForMember(dest => dest.Phone, opt => opt.MapFrom(src => src.UserProfile != null ? src.UserProfile.Phone : null))
                 .ForMember(dest => dest.CardOrderId, opt => opt.Ignore())
+                .ForMember(dest => dest.UserProfile, opt => opt.Ignore()) // Ignore nav property
                 .ForMember(dest => dest.TenantId, opt => opt.MapFrom(src => src.TenantId));
 
             CreateMap<UserProfile, CardOrderItem>()
@@ -105,6 +106,7 @@ namespace NFC.Platform.Application.Mapping
                 .ForMember(dest => dest.Phone, opt => opt.MapFrom(src => src.Phone))
                 .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.Employee != null ? src.Employee.Email : src.ContactEmail))
                 .ForMember(dest => dest.CardOrderId, opt => opt.Ignore())
+                .ForMember(dest => dest.UserProfile, opt => opt.Ignore()) // Ignore nav property
                 .ForMember(dest => dest.TenantId, opt => opt.MapFrom(src => src.TenantId));
 
             CreateMap<CardOrder, EmployeesImportStatusDto>()

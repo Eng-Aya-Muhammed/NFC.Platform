@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Net;
 using System.Text.Json;
@@ -51,7 +52,9 @@ namespace NFC.Platform.BuildingBlocks.Middlewares
 
                 case BusinessException businessEx:
                     statusCode = (int)HttpStatusCode.BadRequest;
-                    message = _messageService.Get(businessEx.ErrorKey);
+                    message = businessEx.Args?.Length > 0
+                        ? _messageService.Get(businessEx.ErrorKey, businessEx.Args.Select(a => a?.ToString() ?? "").ToArray())
+                        : _messageService.Get(businessEx.ErrorKey);
                     break;
 
                 case ForbiddenException forbiddenEx:

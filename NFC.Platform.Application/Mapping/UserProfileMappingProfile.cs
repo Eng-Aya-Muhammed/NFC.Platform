@@ -63,6 +63,7 @@ public class UserProfileMappingProfile : Profile
             .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => src.Username))
             .ForMember(dest => dest.TenantId, opt => opt.MapFrom(src => src.TenantId))
             .ForMember(dest => dest.Id, opt => opt.Ignore())
+            .ForMember(dest => dest.User, opt => opt.Ignore())
             .ForMember(dest => dest.CustomLinks, opt => opt.Ignore());
 
         CreateMap<RecordMetricRequest, ProfileMetric>()

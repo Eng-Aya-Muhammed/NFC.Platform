@@ -280,7 +280,7 @@ public class EmployeeImportService(
 
                 if (pricing == null)
                 {
-                    throw new Exception($"Pricing is not configured for card type '{job.CardType}'.");
+                    throw new BusinessException("PricingNotConfigured", job.CardType.ToString());
                 }
 
                 var cardOrder = new CardOrder

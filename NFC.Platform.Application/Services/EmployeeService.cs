@@ -159,9 +159,9 @@ namespace NFC.Platform.Application.Services;
             try
             {
                 var httpClient = _httpClientFactory.CreateClient();
-                using var stream = await httpClient.GetStreamAsync(excelUrl);
+                var fileBytes = await httpClient.GetByteArrayAsync(excelUrl);
+                using var stream = new System.IO.MemoryStream(fileBytes);
                 var rows = _excelParser.ParseEmployeesFromExcel(stream);
-                
                 if (rows == null || rows.Count == 0)
                     return ServiceResult<List<ExcelEmployeeImportDto>>.Fail(_messageService.Get("NoValidEmployeeRows"), 422);
 
@@ -171,9 +171,9 @@ namespace NFC.Platform.Application.Services;
             {
                 return ServiceResult<List<ExcelEmployeeImportDto>>.Fail(_messageService.Get("FailedToDownloadExcel", excelUrl), 422);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                return ServiceResult<List<ExcelEmployeeImportDto>>.Fail(_messageService.Get("FailedToParseExcel", excelUrl), 422);
+                return ServiceResult<List<ExcelEmployeeImportDto>>.Fail($"{_messageService.Get("FailedToParseExcel", excelUrl)} - {ex.Message}", 422);
             }
         }
 
@@ -188,7 +188,7 @@ namespace NFC.Platform.Application.Services;
             for (int i = 0; i < rows.Count; i++)
             {
                 var row = rows[i];
-                var rowNum = i + 2;
+                var rowNum = i + 1;
 
                 if (string.IsNullOrWhiteSpace(row.Name))
                     errors.Add(_messageService.Get("ImportRowNameRequired", rowNum.ToString()));

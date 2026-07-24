@@ -21,7 +21,7 @@ public class CardPricingService(
         {
             return ServiceResult<OrderPricingResponseDto>.Fail(
                 _messageService.Get("PricingNotConfigured", cardType.ToString()) ?? $"Pricing is not configured for card type '{cardType}'.",
-                500);
+                400);
         }
 
         var dto = new OrderPricingResponseDto

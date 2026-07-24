@@ -94,11 +94,11 @@ namespace NFC.Platform.Infrastructure.Services
             }
 
             // 1. Resolve Admin status
-            var roles = httpContext.User.FindAll(ClaimTypes.Role)
+            var userRoles = httpContext.User.FindAll(System.Security.Claims.ClaimTypes.Role)
                 .Concat(httpContext.User.FindAll(AppClaims.Role))
                 .Select(c => c.Value);
 
-            _isAdmin = roles.Any(r => r.Equals(AppRole.Admin.ToString(), StringComparison.OrdinalIgnoreCase));
+            _isAdmin = userRoles.Any(r => r.Equals(AppRole.Admin.ToString(), StringComparison.OrdinalIgnoreCase));
 
             // 2. Resolve TenantId from claim
             var tenantIdStr = httpContext.User.FindFirstValue(AppClaims.TenantId)

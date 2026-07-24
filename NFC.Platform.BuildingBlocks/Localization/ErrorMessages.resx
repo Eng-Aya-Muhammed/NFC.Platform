@@ -188,16 +188,16 @@
     <value>Failed to download Excel file</value>
   </data>
   <data name="ImportRowNameRequired" xml:space="preserve">
-    <value>Name is required</value>
+    <value>Name is required (Row {0})</value>
   </data>
   <data name="ImportRowEmailRequired" xml:space="preserve">
-    <value>Email is required</value>
+    <value>Email is required (Row {0})</value>
   </data>
   <data name="ImportRowEmailInvalid" xml:space="preserve">
-    <value>Invalid email format</value>
+    <value>Invalid email format (Row {0}): {1}</value>
   </data>
   <data name="ImportRowEmailDuplicate" xml:space="preserve">
-    <value>Duplicate email found in file</value>
+    <value>Duplicate email found in file (Row {0}): {1}</value>
   </data>
   <data name="ImportExecutionFailed" xml:space="preserve">
     <value>Import execution failed</value>

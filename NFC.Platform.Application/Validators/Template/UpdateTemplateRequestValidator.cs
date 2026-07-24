@@ -1,0 +1,35 @@
+using FluentValidation;
+using NFC.Platform.Application.DTOs.Template;
+using NFC.Platform.BuildingBlocks.Localization;
+
+namespace NFC.Platform.Application.Validators.Template;
+
+public class UpdateTemplateRequestValidator : AbstractValidator<UpdateTemplateRequest>
+{
+    public UpdateTemplateRequestValidator(IMessageService messageService)
+    {
+        RuleFor(x => x.TemplateName)
+            .NotEmpty()
+            .WithMessage(x => messageService.Get("RequiredField", messageService.Get("TemplateName")))
+            .MinimumLength(3)
+            .WithMessage(x => messageService.Get("MinLength", messageService.Get("TemplateName"), 3))
+            .MaximumLength(150)
+            .WithMessage(x => messageService.Get("MaxLength", messageService.Get("TemplateName"), 150));
+
+        RuleFor(x => x.LogoUrl)
+            .MaximumLength(1000)
+            .WithMessage(x => messageService.Get("MaxLength", messageService.Get("LogoUrl"), 1000))
+            .MustBeValidUrl()
+            .WithMessage(x => messageService.Get("InvalidUrlFormat", "Logo URL"));
+
+        RuleFor(x => x.ReferenceImageUrl)
+            .MaximumLength(1000)
+            .WithMessage(x => messageService.Get("MaxLength", messageService.Get("ReferenceImageUrl"), 1000))
+            .MustBeValidUrl()
+            .WithMessage(x => messageService.Get("InvalidUrlFormat", "Reference Image URL"));
+
+        RuleFor(x => x.Notes)
+            .MaximumLength(1000)
+            .WithMessage(x => messageService.Get("MaxLength", messageService.Get("Notes"), 1000));
+    }
+}

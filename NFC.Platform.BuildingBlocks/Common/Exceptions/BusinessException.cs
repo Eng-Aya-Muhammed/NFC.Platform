@@ -12,10 +12,16 @@ namespace NFC.Platform.BuildingBlocks.Common.Exceptions
         /// </summary>
         public string ErrorKey { get; }
 
+        /// <summary>
+        /// Optional arguments to pass to the localization service for formatting.
+        /// </summary>
+        public object[] Args { get; }
+
         /// <param name="message">The exception message or localization key.</param>
         public BusinessException(string message) : base(message)
         {
             ErrorKey = message;
+            Args = [];
         }
 
         /// <param name="message">The exception message.</param>
@@ -23,6 +29,15 @@ namespace NFC.Platform.BuildingBlocks.Common.Exceptions
         public BusinessException(string message, string errorKey) : base(message)
         {
             ErrorKey = errorKey;
+            Args = [];
+        }
+
+        /// <param name="errorKey">The localization key.</param>
+        /// <param name="args">Arguments to format the localized message.</param>
+        public BusinessException(string errorKey, params object[] args) : base(errorKey)
+        {
+            ErrorKey = errorKey;
+            Args = args;
         }
     }
 }

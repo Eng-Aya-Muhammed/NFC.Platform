@@ -30,7 +30,7 @@ namespace NFC.Platform.Infrastructure.Authorization
                 return;
 
             // Admin overrides all permissions (God Mode)
-            if (context.User.HasClaim(c => c.Type == AppClaims.Role && c.Value == AppRole.Admin.ToString()))
+            if (context.User.IsInRole(AppRole.Admin.ToString()) || context.User.HasClaim(c => c.Type == AppClaims.Role && c.Value == AppRole.Admin.ToString()))
             {
                 context.Succeed(requirement);
                 return;

@@ -78,15 +78,14 @@ namespace NFC.Platform.Tests.Services
 
             _messageService.Get(default!, default!).ReturnsForAnyArgs(x => (string)x[0]);
 
-
-
             _cardPricingService = Substitute.For<ICardPricingService>();
             _cardPricingService.CalculateOrderPricingAsync(Arg.Any<CardType>(), Arg.Any<int>())
                 .Returns(ServiceResult<OrderPricingResponseDto>.Success(new OrderPricingResponseDto { UnitPrice = 4.5m, TotalPrice = 4.5m, Currency = "KWD" }));
 
-            _employeeService = Substitute.For<IEmployeeService>();
+            var updateValidator = new UpdateCardOrderRequestValidator(_messageService);
 
-            _sut = new CardOrderService(_unitOfWork, _mapper, _messageService, _currentTenant, _cardPricingService, validator, _backgroundJobClient, _employeeService, _otpSettingsOptions);
+            _employeeService = Substitute.For<IEmployeeService>();
+            _sut = new CardOrderService(_unitOfWork, _mapper, _messageService, _currentTenant, _cardPricingService, validator, updateValidator, _backgroundJobClient, _employeeService, _otpSettingsOptions);
         }
 
         //  GetByIdAsync 
@@ -493,6 +492,84 @@ namespace NFC.Platform.Tests.Services
             Assert.Equal(42.5m, order.TotalPrice);
             await _cardPricingService.Received(1).CalculateOrderPricingAsync(CardType.Metal, 5);
             await _unitOfWork.Received(1).SaveChangesAsync();
+        }
+
+        [Fact]
+        public async Task UpdateOrderAsync_ThrowsValidationError_WhenCustomArtworkMissingUrls()
+        {
+            // Arrange
+            var id = Guid.NewGuid();
+            var tenantId = Guid.NewGuid();
+            _currentTenant.TenantId.Returns((Guid?)tenantId);
+            
+            var order = new CardOrder
+            {
+                Id = id,
+                TenantId = tenantId,
+                Status = OrderStatus.PendingReview,
+                CardDesignType = CardDesignType.NeedCustomDesign,
+                Quantity = 5
+            };
+
+            var request = new UpdateCardOrderRequest
+            {
+                CardDesignType = CardDesignType.CustomArtwork,
+                Quantity = 5,
+                // Missing FrontDesignUrl and BackDesignUrl
+            };
+
+            var queryable = new List<CardOrder> { order }.AsQueryable().BuildMock();
+            _orderRepo.GetQueryable().Returns(queryable);
+            
+            _messageService.Get("FrontDesignRequired").Returns("Front Design Required");
+
+            // Act
+            var result = await _sut.UpdateOrderAsync(id, request);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(422, result.StatusCode);
+            Assert.Contains("Front Design Required", result.Message ?? string.Join(",", result.Errors));
+            await _unitOfWork.DidNotReceive().SaveChangesAsync();
+        }
+
+        [Fact]
+        public async Task UpdateOrderAsync_ThrowsEmployeeCountMismatch_WhenQuantityBypassed()
+        {
+            // Arrange
+            var id = Guid.NewGuid();
+            var tenantId = Guid.NewGuid();
+            _currentTenant.TenantId.Returns((Guid?)tenantId);
+            
+            var order = new CardOrder
+            {
+                Id = id,
+                TenantId = tenantId,
+                Status = OrderStatus.PendingReview,
+                Quantity = 5,
+                Items = new List<CardOrderItem>()
+            };
+
+            var request = new UpdateCardOrderRequest
+            {
+                Quantity = 10,
+                AssignmentScope = AssignmentScope.SpecificEmployees,
+                EmployeeIds = new List<Guid> { Guid.NewGuid(), Guid.NewGuid() } // Only 2 employees provided but Quantity is 10
+            };
+
+            var queryable = new List<CardOrder> { order }.AsQueryable().BuildMock();
+            _orderRepo.GetQueryable().Returns(queryable);
+
+            _messageService.Get("EmployeeCountMismatch").Returns("Mismatch");
+
+            // Act
+            var result = await _sut.UpdateOrderAsync(id, request);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(422, result.StatusCode);
+            Assert.Contains("Mismatch", result.Message ?? string.Join(",", result.Errors));
+            await _unitOfWork.DidNotReceive().SaveChangesAsync();
         }
 
 
