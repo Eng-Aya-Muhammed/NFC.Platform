@@ -237,5 +237,175 @@ namespace NFC.Platform.Tests.Services
             Assert.Equal(200, result.StatusCode);
             Assert.Equal("Premium", result.Data!.TemplateName);
         }
+        //  UpdateRequestAsync 
+
+        [Fact]
+        public async Task UpdateRequestAsync_ReturnsNotFound_WhenRequestDoesNotExist()
+        {
+            // Arrange
+            var id = Guid.NewGuid();
+            var emptyQueryable = new List<TemplateRequest>().AsQueryable().BuildMock();
+            _templateRequestRepo.GetQueryable().Returns(emptyQueryable);
+            _messageService.Get("RecordNotFound").Returns("Record not found.");
+
+            // Act
+            var result = await _sut.UpdateRequestAsync(id, Guid.NewGuid(), new UpdateTemplateRequest());
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(404, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task UpdateRequestAsync_ReturnsFail_WhenStatusIsNotPending()
+        {
+            // Arrange
+            var id = Guid.NewGuid();
+            var templateRequest = new TemplateRequest { Id = id, Status = TemplateRequestStatus.InProgress };
+            var queryable = new List<TemplateRequest> { templateRequest }.AsQueryable().BuildMock();
+            
+            _templateRequestRepo.GetQueryable().Returns(queryable);
+            _messageService.Get("TemplateRequestCannotBeUpdated").Returns("Cannot update.");
+
+            // Act
+            var result = await _sut.UpdateRequestAsync(id, Guid.NewGuid(), new UpdateTemplateRequest());
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(400, result.StatusCode);
+            Assert.Equal("Cannot update.", result.Message);
+        }
+
+        [Fact]
+        public async Task UpdateRequestAsync_ReturnsSuccess_WhenPending()
+        {
+            // Arrange
+            var id = Guid.NewGuid();
+            var userId = Guid.NewGuid();
+            var templateRequest = new TemplateRequest 
+            { 
+                Id = id, 
+                Status = TemplateRequestStatus.Pending,
+                TemplateName = "Old Name"
+            };
+            var queryable = new List<TemplateRequest> { templateRequest }.AsQueryable().BuildMock();
+            _templateRequestRepo.GetQueryable().Returns(queryable);
+            _messageService.Get("RecordUpdated").Returns("Updated.");
+
+            var request = new UpdateTemplateRequest { TemplateName = "New Name" };
+            var dto = new TemplateRequestDto { TemplateName = "New Name" };
+            
+            _mapper.When(x => x.Map(Arg.Any<UpdateTemplateRequest>(), Arg.Any<TemplateRequest>()))
+                   .Do(x => {
+                       var src = x.Arg<UpdateTemplateRequest>();
+                       var dest = x.Arg<TemplateRequest>();
+                       dest.TemplateName = src.TemplateName;
+                   });
+                   
+            _mapper.Map<TemplateRequestDto>(templateRequest).Returns(dto);
+
+            // Act
+            var result = await _sut.UpdateRequestAsync(id, userId, request);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(200, result.StatusCode);
+            Assert.Equal("New Name", templateRequest.TemplateName); // Verify entity was modified
+            await _unitOfWork.Received(1).SaveChangesAsync();
+        }
+
+        //  CancelRequestAsync 
+
+        [Fact]
+        public async Task CancelRequestAsync_ReturnsUnauthorized_WhenTenantNotAuthenticated()
+        {
+            // Arrange
+            _currentTenant.TenantId.Returns((Guid?)null);
+            _messageService.Get("Unauthorized").Returns("Unauthorized.");
+
+            // Act
+            var result = await _sut.CancelRequestAsync(Guid.NewGuid());
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(401, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task CancelRequestAsync_ReturnsNotFound_WhenRequestDoesNotExist()
+        {
+            // Arrange
+            var id = Guid.NewGuid();
+            _currentTenant.TenantId.Returns(Guid.NewGuid());
+            var emptyQueryable = new List<TemplateRequest>().AsQueryable().BuildMock();
+            _templateRequestRepo.GetQueryable().Returns(emptyQueryable);
+            _messageService.Get("RecordNotFound").Returns("Record not found.");
+
+            // Act
+            var result = await _sut.CancelRequestAsync(id);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(404, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task CancelRequestAsync_ReturnsFail_WhenStatusIsNotPending()
+        {
+            // Arrange
+            var id = Guid.NewGuid();
+            _currentTenant.TenantId.Returns(Guid.NewGuid());
+            var templateRequest = new TemplateRequest { Id = id, Status = TemplateRequestStatus.InProgress };
+            var queryable = new List<TemplateRequest> { templateRequest }.AsQueryable().BuildMock();
+            
+            _templateRequestRepo.GetQueryable().Returns(queryable);
+            _messageService.Get("TemplateRequestCannotBeCancelled").Returns("Cannot cancel.");
+
+            // Act
+            var result = await _sut.CancelRequestAsync(id);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(400, result.StatusCode);
+            Assert.Equal("Cannot cancel.", result.Message);
+        }
+
+        [Fact]
+        public async Task CancelRequestAsync_ReturnsSuccess_AndRefundsQuota_WhenPending()
+        {
+            // Arrange
+            var id = Guid.NewGuid();
+            var tenantId = Guid.NewGuid();
+            _currentTenant.TenantId.Returns(tenantId);
+            
+            var templateRequest = new TemplateRequest 
+            { 
+                Id = id, 
+                Status = TemplateRequestStatus.Pending
+            };
+            var queryable = new List<TemplateRequest> { templateRequest }.AsQueryable().BuildMock();
+            _templateRequestRepo.GetQueryable().Returns(queryable);
+
+            var activeSub = new UserSubscription
+            {
+                TenantId = tenantId,
+                IsActive = true,
+                EndDate = DateTime.UtcNow.AddDays(30),
+                CustomDesignRequestsUsed = 2
+            };
+            _subscriptionRepo.GetQueryable().Returns(new List<UserSubscription> { activeSub }.AsQueryable().BuildMock());
+            
+            _messageService.Get("TemplateRequestCancelled").Returns("Cancelled.");
+
+            // Act
+            var result = await _sut.CancelRequestAsync(id);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(200, result.StatusCode);
+            Assert.Equal(TemplateRequestStatus.Cancelled, templateRequest.Status);
+            Assert.Equal(1, activeSub.CustomDesignRequestsUsed); // Refunded
+            await _unitOfWork.Received(1).SaveChangesAsync();
+        }
     }
 }

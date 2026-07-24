@@ -16,7 +16,7 @@ public class EmployeeDetailsDto
     public string Phone { get; set; } = string.Empty;
     public string WhatsApp { get; set; } = string.Empty;
 
-    public System.Collections.Generic.List<ProfileLinkDto> Links { get; set; } = [];
+    public List<ProfileLinkDto> Links { get; set; } = [];
 
     public Guid ProfileId { get; set; }
     public string? Subdomain { get; set; }

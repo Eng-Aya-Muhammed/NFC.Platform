@@ -36,9 +36,14 @@ public interface ICardOrderService
     Task<ServiceResult<CardOrderDto>> CreateReorderAsync(Guid parentOrderId, ReorderRequest request);
 
     /// <summary>
-    /// Soft-deletes a CardOrder. Only allowed while Status = PendingReview.
+    /// Updates an existing order, including re-uploading Excel or modifying pricing factors.
     /// </summary>
-    Task<ServiceResult> DeleteOrderAsync(Guid id);
+    Task<ServiceResult<CardOrderDto>> UpdateOrderAsync(Guid id, UpdateCardOrderRequest request);
+
+    /// <summary>
+    /// Soft-cancels a CardOrder. Only allowed while Status = PendingReview.
+    /// </summary>
+    Task<ServiceResult> CancelOrderAsync(Guid id);
 
     /// <summary>
     /// Resends the delivery OTP for an order belonging to the current tenant/user.

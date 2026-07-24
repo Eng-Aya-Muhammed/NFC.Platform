@@ -86,5 +86,30 @@ namespace NFC.Platform.Application.Extensions
 
             return candidate;
         }
+
+        /// <summary>
+        /// Generates a unique subdomain slug by checking both a local hashset (for the current batch)
+        /// and querying the database (for existing records). Avoids loading all existing slugs into memory.
+        /// </summary>
+        public static async Task<string> GenerateUniqueHybridAsync(
+            string fullName,
+            IGenericRepository<UserProfile> repo,
+            HashSet<string> localCache)
+        {
+            var baseSlug = Slugify(fullName);
+            var candidate = baseSlug;
+            var counter = 1;
+
+            while (localCache.Contains(candidate) ||
+                   await repo.GetQueryable()
+                             .IgnoreQueryFilters()
+                             .AnyAsync(p => p.Subdomain == candidate))
+            {
+                candidate = $"{baseSlug}-{counter++}";
+            }
+
+            localCache.Add(candidate);
+            return candidate;
+        }
     }
 }

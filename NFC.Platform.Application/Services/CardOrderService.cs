@@ -1,7 +1,3 @@
-using Microsoft.Extensions.Options;
-using NFC.Platform.Application.DTOs.Settings;
-using NFC.Platform.Application.Extensions;
-
 namespace NFC.Platform.Application.Services;
 
 public class CardOrderService(
@@ -12,8 +8,7 @@ public class CardOrderService(
     ICardPricingService cardPricingService,
     IValidator<CreateCardOrderRequest> validator,
     IBackgroundJobClient backgroundJobClient,
-    IHttpClientFactory httpClientFactory,
-    IExcelParser excelParser,
+    IEmployeeService employeeService,
     IOptions<OtpSettings> otpSettings) : ICardOrderService
 {
     private readonly IUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
@@ -23,8 +18,7 @@ public class CardOrderService(
     private readonly ICardPricingService _cardPricingService = cardPricingService ?? throw new ArgumentNullException(nameof(cardPricingService));
     private readonly IValidator<CreateCardOrderRequest> _validator = validator ?? throw new ArgumentNullException(nameof(validator));
     private readonly IBackgroundJobClient _backgroundJobClient = backgroundJobClient ?? throw new ArgumentNullException(nameof(backgroundJobClient));
-    private readonly IHttpClientFactory _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
-    private readonly IExcelParser _excelParser = excelParser ?? throw new ArgumentNullException(nameof(excelParser));
+    private readonly IEmployeeService _employeeService = employeeService ?? throw new ArgumentNullException(nameof(employeeService));
     private readonly OtpSettings _otpSettings = otpSettings?.Value ?? throw new ArgumentNullException(nameof(otpSettings));
 
     // Queries
@@ -76,33 +70,67 @@ public class CardOrderService(
         if (!tenantId.HasValue)
             return ServiceResult<CardOrderDto>.Fail(_messageService.Get("InvalidTenantClaim"), 400);
 
-        var itemsToOrder = new List<CardOrderItem>();
-
-        if (!string.IsNullOrWhiteSpace(request.ExcelDataUrl))
+        await _unitOfWork.BeginTransactionAsync();
+        try
         {
-            var excelResult = await ProcessExcelOrderItemsAsync(request.ExcelDataUrl, tenantId.Value);
-            if (!excelResult.IsSuccess)
-                return ServiceResult<CardOrderDto>.Fail(excelResult.Errors, excelResult.StatusCode);
+            var itemsToOrder = new List<CardOrderItem>();
 
-            itemsToOrder = excelResult.Data ?? [];
+            if (request.AssignmentScope == AssignmentScope.ExcelUpload && !string.IsNullOrWhiteSpace(request.ExcelDataUrl))
+            {
+                var company = await _unitOfWork.Repository<Company>().GetQueryable().AsNoTracking().FirstOrDefaultAsync(c => c.TenantId == tenantId.Value);
+                if (company == null)
+                {
+                    await _unitOfWork.RollbackTransactionAsync();
+                    return ServiceResult<CardOrderDto>.Fail(_messageService.Get("CompanyNotFound"), 400);
+                }
+
+                var excelResult = await _employeeService.UpsertEmployeesFromExcelAsync(request.ExcelDataUrl, company.Id, tenantId.Value);
+                if (!excelResult.IsSuccess)
+                {
+                    await _unitOfWork.RollbackTransactionAsync();
+                    return ServiceResult<CardOrderDto>.Fail(excelResult.Message ?? string.Join(", ", excelResult.Errors), excelResult.StatusCode);
+                }
+                
+                request.EmployeeIds = excelResult.Data;
+            }
+
+            // We removed the auto-override so that BuildOrderItemsAsync can throw a mismatch error if needed.
+
+            var itemsResult = await BuildOrderItemsAsync(request.AssignmentScope, request.EmployeeIds, request.Quantity);
+            if (!itemsResult.IsSuccess)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                return ServiceResult<CardOrderDto>.Fail(itemsResult.Message ?? string.Join(", ", itemsResult.Errors), itemsResult.StatusCode);
+            }
+
+            itemsToOrder = itemsResult.Data ?? [];
             request.Quantity = itemsToOrder.Count;
+
+            var pricingResult = await _cardPricingService.CalculateOrderPricingAsync(request.CardType, request.Quantity);
+            if (!pricingResult.IsSuccess)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                return ServiceResult<CardOrderDto>.Fail(pricingResult.Message, pricingResult.StatusCode);
+            }
+
+            var order = BuildNewOrder(request, userId.Value, pricingResult.Data!);
+            if (itemsToOrder.Count > 0)
+            {
+                order.Items = itemsToOrder;
+            }
+
+            await _unitOfWork.Repository<CardOrder>().AddAsync(order);
+            await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.CommitTransactionAsync();
+
+            var created = await GetOrderWithItemsAsync(order.Id);
+            return ServiceResult<CardOrderDto>.Success(_mapper.Map<CardOrderDto>(created), _messageService.Get("RecordCreated"));
         }
-
-        var pricingResult = await _cardPricingService.CalculateOrderPricingAsync(request.CardType, request.Quantity);
-        if (!pricingResult.IsSuccess)
-            return ServiceResult<CardOrderDto>.Fail(pricingResult.Message, pricingResult.StatusCode);
-
-        var order = BuildNewOrder(request, userId.Value, pricingResult.Data!);
-        if (itemsToOrder.Count > 0)
+        catch
         {
-            order.Items = itemsToOrder;
+            await _unitOfWork.RollbackTransactionAsync();
+            throw;
         }
-
-        await _unitOfWork.Repository<CardOrder>().AddAsync(order);
-        await _unitOfWork.SaveChangesAsync();
-
-        var created = await GetOrderWithItemsAsync(order.Id);
-        return ServiceResult<CardOrderDto>.Success(_mapper.Map<CardOrderDto>(created), _messageService.Get("RecordCreated"));
     }
 
     public async Task<ServiceResult<CardOrderDto>> CreateReorderAsync(Guid parentOrderId, ReorderRequest request)
@@ -136,7 +164,117 @@ public class CardOrderService(
         return ServiceResult<CardOrderDto>.Success(_mapper.Map<CardOrderDto>(reorder), _messageService.Get("RecordCreated"));
     }
 
-    public async Task<ServiceResult> DeleteOrderAsync(Guid id)
+    public async Task<ServiceResult<CardOrderDto>> UpdateOrderAsync(Guid id, UpdateCardOrderRequest request)
+    {
+        var tenantId = _currentTenant.TenantId;
+        if (!tenantId.HasValue)
+            return ServiceResult<CardOrderDto>.Fail(_messageService.Get("InvalidTenantClaim"), 400);
+
+
+
+        var repo = _unitOfWork.Repository<CardOrder>();
+        var order = await repo.GetQueryable()
+            .Include(o => o.Items)
+            .FirstOrDefaultAsync(o => o.Id == id && o.TenantId == tenantId);
+
+        if (order == null)
+            return ServiceResult<CardOrderDto>.NotFound(_messageService.Get("RecordNotFound"));
+
+        if (order.Status != OrderStatus.PendingReview)
+            return ServiceResult<CardOrderDto>.Fail(_messageService.Get("OrderCannotBeUpdated"), 400);
+
+        await _unitOfWork.BeginTransactionAsync();
+        try
+        {
+            bool recalculatePricing = false;
+            
+            if (request.CardType.HasValue && request.CardType.Value != order.CardType)
+            {
+                order.CardType = request.CardType.Value;
+                recalculatePricing = true;
+            }
+            if (request.Quantity.HasValue && request.Quantity.Value != order.Quantity)
+            {
+                order.Quantity = request.Quantity.Value;
+                recalculatePricing = true;
+            }
+
+            if (request.AssignmentScope == AssignmentScope.ExcelUpload && !string.IsNullOrWhiteSpace(request.ExcelDataUrl))
+            {
+                var company = await _unitOfWork.Repository<Company>().GetQueryable().AsNoTracking().FirstOrDefaultAsync(c => c.TenantId == tenantId.Value);
+                if (company == null)
+                {
+                    await _unitOfWork.RollbackTransactionAsync();
+                    return ServiceResult<CardOrderDto>.Fail(_messageService.Get("CompanyNotFound"), 400);
+                }
+
+                var excelResult = await _employeeService.UpsertEmployeesFromExcelAsync(request.ExcelDataUrl, company.Id, tenantId.Value);
+                if (!excelResult.IsSuccess)
+                {
+                    await _unitOfWork.RollbackTransactionAsync();
+                    return ServiceResult<CardOrderDto>.Fail(excelResult.Message ?? string.Join(", ", excelResult.Errors), excelResult.StatusCode);
+                }
+                request.EmployeeIds = excelResult.Data;
+            }
+            
+            // We removed the auto-override so that BuildOrderItemsAsync can throw a mismatch error if needed.
+
+            var currentScope = request.AssignmentScope ?? (order.Items.Count > 0 ? AssignmentScope.SpecificEmployees : AssignmentScope.Individual);
+
+            if (request.AssignmentScope.HasValue || (request.EmployeeIds != null && request.EmployeeIds.Count > 0))
+            {
+                var quantityToUse = request.EmployeeIds != null ? request.EmployeeIds.Count : (request.Quantity ?? order.Quantity);
+
+                var itemsResult = await BuildOrderItemsAsync(currentScope, request.EmployeeIds, quantityToUse);
+                if (!itemsResult.IsSuccess)
+                {
+                    await _unitOfWork.RollbackTransactionAsync();
+                    return ServiceResult<CardOrderDto>.Fail(itemsResult.Message ?? string.Join(", ", itemsResult.Errors), itemsResult.StatusCode);
+                }
+
+                foreach (var item in order.Items)
+                {
+                    _unitOfWork.Repository<CardOrderItem>().Remove(item);
+                }
+                order.Items = itemsResult.Data ?? [];
+                
+                if (order.Quantity != order.Items.Count)
+                {
+                    order.Quantity = order.Items.Count;
+                    recalculatePricing = true;
+                }
+            }
+
+            _mapper.Map(request, order);
+
+            if (recalculatePricing)
+            {
+                var pricingResult = await _cardPricingService.CalculateOrderPricingAsync(order.CardType, order.Quantity);
+                if (!pricingResult.IsSuccess)
+                {
+                    await _unitOfWork.RollbackTransactionAsync();
+                    return ServiceResult<CardOrderDto>.Fail(pricingResult.Message, pricingResult.StatusCode);
+                }
+
+                order.UnitPrice = pricingResult.Data!.UnitPrice;
+                order.TotalPrice = pricingResult.Data.TotalPrice;
+                order.Currency = pricingResult.Data.Currency;
+            }
+
+            await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.CommitTransactionAsync();
+
+            var updated = await GetOrderWithItemsAsync(order.Id);
+            return ServiceResult<CardOrderDto>.Success(_mapper.Map<CardOrderDto>(updated), _messageService.Get("RecordUpdated"));
+        }
+        catch
+        {
+            await _unitOfWork.RollbackTransactionAsync();
+            throw;
+        }
+    }
+
+    public async Task<ServiceResult> CancelOrderAsync(Guid id)
     {
         var repo = _unitOfWork.Repository<CardOrder>();
         var order = await repo.GetByIdAsync(id);
@@ -147,10 +285,10 @@ public class CardOrderService(
         if (order.Status != OrderStatus.PendingReview)
             return ServiceResult.Fail(_messageService.Get("OrderCannotBeCancelled"), 400);
 
-        repo.Remove(order);
+        order.Status = OrderStatus.Cancelled;
         await _unitOfWork.SaveChangesAsync();
 
-        return ServiceResult.Success(_messageService.Get("RecordDeleted"));
+        return ServiceResult.Success(_messageService.Get("RecordUpdated"));
     }
 
     public async Task<ServiceResult> ResendOrderOtpAsync(Guid orderId)
@@ -190,202 +328,7 @@ public class CardOrderService(
 
     // Private helpers
 
-    private async Task<ServiceResult<List<CardOrderItem>>> ProcessExcelOrderItemsAsync(string excelDataUrl, Guid tenantId)
-    {
-        var excelValidation = await ValidateExcelAsync(excelDataUrl);
-        if (!excelValidation.IsSuccess)
-            return ServiceResult<List<CardOrderItem>>.Fail(excelValidation.Errors, 422);
 
-        var excelRows = excelValidation.Data!;
-        if (excelRows.Count == 0)
-            return ServiceResult<List<CardOrderItem>>.Success([]);
-
-        var company = await _unitOfWork.Repository<Company>()
-            .GetQueryable()
-            .AsNoTracking()
-            .FirstOrDefaultAsync(c => c.TenantId == tenantId);
-
-        if (company == null)
-            return ServiceResult<List<CardOrderItem>>.Fail(_messageService.Get("CompanyNotFound"), 422);
-
-        var activeSub = await _unitOfWork.Repository<UserSubscription>()
-            .GetQueryable()
-            .AsNoTracking()
-            .Include(s => s.SubscriptionPlan)
-            .FirstOrDefaultAsync(s => s.TenantId == tenantId && s.IsActive && s.EndDate >= DateTime.UtcNow);
-
-        if (activeSub == null)
-            return ServiceResult<List<CardOrderItem>>.Fail(_messageService.Get("SubscriptionExpiredOrMissing"), 422);
-
-        var employeeProcessingResult = await ProcessEmployeesAndProfilesAsync(excelRows, company, activeSub, tenantId);
-        if (!employeeProcessingResult.IsSuccess)
-            return ServiceResult<List<CardOrderItem>>.Fail(employeeProcessingResult.Message, employeeProcessingResult.StatusCode);
-
-        var userProfilesByEmail = employeeProcessingResult.Data!;
-        
-        var itemsToOrder = new List<CardOrderItem>();
-        foreach (var row in excelRows)
-        {
-            if (userProfilesByEmail.TryGetValue(row.Email, out var userProfile) && userProfile != null)
-            {
-                var orderItem = _mapper.Map<CardOrderItem>(row);
-                orderItem.UserProfileId = userProfile.Id;
-                orderItem.TenantId = tenantId;
-                itemsToOrder.Add(orderItem);
-            }
-        }
-
-        return ServiceResult<List<CardOrderItem>>.Success(itemsToOrder);
-    }
-
-    private async Task<ServiceResult<Dictionary<string, UserProfile>>> ProcessEmployeesAndProfilesAsync(
-        List<ExcelEmployeeImportDto> excelRows, Company company, UserSubscription activeSub, Guid tenantId)
-    {
-        var currentEmployeesCount = await _unitOfWork.Repository<Employee>()
-            .CountAsync(e => e.TenantId == tenantId && !e.IsDeleted);
-
-        var targetEmails = excelRows.Select(r => r.Email).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
-
-        var existingUserProfilesList = await _unitOfWork.Repository<User>()
-            .GetQueryable()
-            .AsNoTracking()
-            .Include(u => u.UserProfile)
-            .Where(u => u.TenantId == tenantId && targetEmails.Contains(u.Email))
-            .ToListAsync();
-
-        var userProfilesByEmail = existingUserProfilesList
-            .Where(u => u.UserProfile != null)
-            .ToDictionary(u => u.Email, u => u.UserProfile!, StringComparer.OrdinalIgnoreCase);
-
-        var employeesByEmail = await _unitOfWork.Repository<Employee>()
-            .GetQueryable()
-            .Include(e => e.UserProfile)
-            .Where(e => e.TenantId == tenantId && !e.IsDeleted && targetEmails.Contains(e.Email))
-            .ToDictionaryAsync(e => e.Email, e => e, StringComparer.OrdinalIgnoreCase);
-
-        var existingSlugs = new HashSet<string>(
-            await _unitOfWork.Repository<UserProfile>()
-                .GetQueryable()
-                .IgnoreQueryFilters()
-                .Where(p => p.Subdomain != null)
-                .Select(p => p.Subdomain!)
-                .ToListAsync(),
-            StringComparer.OrdinalIgnoreCase);
-
-        var newEmployeesList = new List<Employee>();
-        var newProfilesList = new List<UserProfile>();
-        var newEmployeesCount = 0;
-
-        var profileMap = new Dictionary<string, UserProfile>(StringComparer.OrdinalIgnoreCase);
-
-        foreach (var row in excelRows)
-        {
-            UserProfile? userProfile = null;
-
-            if (employeesByEmail.TryGetValue(row.Email, out var existingEmployee))
-            {
-                userProfile = existingEmployee.UserProfile;
-            }
-            else if (userProfilesByEmail.TryGetValue(row.Email, out var existingProfile))
-            {
-                userProfile = existingProfile;
-            }
-            else
-            {
-                if (currentEmployeesCount + newEmployeesCount >= activeSub.SubscriptionPlan.MaxEmployees)
-                {
-                    return ServiceResult<Dictionary<string, UserProfile>>.Fail(_messageService.Get("MaxEmployeesLimitReached"), 422);
-                }
-
-                var newEmployee = _mapper.Map<Employee>(row);
-                newEmployee.CompanyId = company.Id;
-                newEmployee.TenantId = tenantId;
-
-                userProfile = _mapper.Map<UserProfile>(row);
-                userProfile.CompanyName = company.Name;
-                userProfile.TenantId = tenantId;
-                userProfile.Subdomain = SubdomainHelper.GenerateUnique(row.Name, existingSlugs);
-
-                newEmployee.UserProfile = userProfile;
-                userProfile.Employee = newEmployee;
-
-                newEmployeesList.Add(newEmployee);
-                newProfilesList.Add(userProfile);
-                newEmployeesCount++;
-
-                employeesByEmail[row.Email] = newEmployee;
-            }
-
-            if (userProfile != null)
-            {
-                profileMap[row.Email] = userProfile;
-            }
-        }
-
-        if (newEmployeesList.Count > 0)
-        {
-            await _unitOfWork.Repository<Employee>().AddRangeAsync(newEmployeesList);
-            await _unitOfWork.Repository<UserProfile>().AddRangeAsync(newProfilesList);
-            await _unitOfWork.SaveChangesAsync();
-        }
-
-        return ServiceResult<Dictionary<string, UserProfile>>.Success(profileMap);
-    }
-
-    private async Task<ServiceResult<List<ExcelEmployeeImportDto>>> ValidateExcelAsync(string excelUrl)
-    {
-        List<ExcelEmployeeImportDto> rows;
-        try
-        {
-            var httpClient = _httpClientFactory.CreateClient();
-            var fileBytes = await httpClient.GetByteArrayAsync(excelUrl);
-            using var stream = new MemoryStream(fileBytes);
-            rows = _excelParser.ParseEmployeesFromExcel(stream);
-        }
-        catch (HttpRequestException)
-        {
-            return ServiceResult<List<ExcelEmployeeImportDto>>.Fail(_messageService.Get("FailedToDownloadExcel", excelUrl), 422);
-        }
-        catch (Exception)
-        {
-            return ServiceResult<List<ExcelEmployeeImportDto>>.Fail(_messageService.Get("FailedToParseExcel", excelUrl), 422);
-        }
-
-        if (rows == null || rows.Count == 0)
-            return ServiceResult<List<ExcelEmployeeImportDto>>.Fail(_messageService.Get("NoValidEmployeeRows"), 422);
-
-        var errors = ValidateExcelRows(rows);
-        return errors.Count > 0
-            ? ServiceResult<List<ExcelEmployeeImportDto>>.Fail(errors, 422)
-            : ServiceResult<List<ExcelEmployeeImportDto>>.Success(rows);
-    }
-
-    private List<string> ValidateExcelRows(List<ExcelEmployeeImportDto> rows)
-    {
-        var errors = new List<string>();
-        var emailRegex = new Regex(
-            @"^[^@\s]+@[^@\s]+\.[^@\s]+$",
-            RegexOptions.Compiled | RegexOptions.IgnoreCase);
-        var uniqueEmails = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-        for (int i = 0; i < rows.Count; i++)
-        {
-            var row = rows[i];
-            var rowNum = i + 2;
-
-            if (string.IsNullOrWhiteSpace(row.Name))
-                errors.Add(_messageService.Get("ImportRowNameRequired", rowNum));
-
-            if (string.IsNullOrWhiteSpace(row.Email))
-                errors.Add(_messageService.Get("ImportRowEmailRequired", rowNum));
-            else if (!emailRegex.IsMatch(row.Email))
-                errors.Add(_messageService.Get("ImportRowEmailInvalid", rowNum, row.Email));
-            else if (!uniqueEmails.Add(row.Email))
-                errors.Add(_messageService.Get("ImportRowEmailDuplicate", rowNum, row.Email));
-        }
-
-        return errors;
-    }
 
     private static CardOrder BuildNewOrder(CreateCardOrderRequest request, Guid userId, OrderPricingResponseDto pricing)
     {
@@ -439,10 +382,7 @@ public class CardOrderService(
             .Include(o => o.Items)
             .FirstOrDefaultAsync(o => o.Id == id);
 
-    private async Task<User?> GetUserByIdAsync(Guid userId)
-        => await _unitOfWork.Repository<User>()
-            .GetQueryable().AsNoTracking()
-            .FirstOrDefaultAsync(u => u.Id == userId);
+   
 
     private async Task<ServiceResult<List<CardOrderItem>>> BuildOrderItemsAsync(
         AssignmentScope? scope, List<Guid>? employeeIds, int quantity)
@@ -450,7 +390,7 @@ public class CardOrderService(
         if (!scope.HasValue)
             return ServiceResult<List<CardOrderItem>>.Success([]);
 
-        if (scope == AssignmentScope.SpecificEmployees)
+        if (scope == AssignmentScope.SpecificEmployees || scope == AssignmentScope.ExcelUpload)
         {
             if (employeeIds == null || employeeIds.Count != quantity)
                 return ServiceResult<List<CardOrderItem>>.Fail(

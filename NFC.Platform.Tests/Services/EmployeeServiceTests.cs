@@ -36,7 +36,7 @@ namespace NFC.Platform.Tests.Services
 
             _messageService.Get(Arg.Any<string>()).Returns(x => (string)x[0]);
 
-            _sut = new EmployeeService(_unitOfWork, _mapper, _messageService, _currentTenant);
+            _sut = new EmployeeService(_unitOfWork, _mapper, _messageService, _currentTenant, Substitute.For<IExcelParser>(), Substitute.For<System.Net.Http.IHttpClientFactory>());
         }
 
         [Fact]
@@ -148,9 +148,8 @@ namespace NFC.Platform.Tests.Services
             _employeeRepo.CountAsync(Arg.Any<Expression<Func<Employee, bool>>>()).Returns(1);
 
             // Mock that an employee with same email already exists
-            var existingEmployee = new Employee { Email = "duplicate@onpoint.com" };
-            _employeeRepo.FindAsync(Arg.Any<Expression<Func<Employee, bool>>>())
-                .Returns(new List<Employee> { existingEmployee });
+            var existingEmployee = new Employee { Email = "duplicate@onpoint.com", TenantId = tenantId };
+            _employeeRepo.GetQueryable().Returns(new List<Employee> { existingEmployee }.AsQueryable().BuildMock());
 
             _messageService.Get("UserAlreadyExists").Returns("User already exists.");
 
@@ -182,7 +181,7 @@ namespace NFC.Platform.Tests.Services
             _subscriptionRepo.GetQueryable().Returns(queryableSub);
 
             _employeeRepo.CountAsync(Arg.Any<Expression<Func<Employee, bool>>>()).Returns(5);
-            _employeeRepo.FindAsync(Arg.Any<Expression<Func<Employee, bool>>>()).Returns(new List<Employee>());
+            _employeeRepo.GetQueryable().Returns(new List<Employee>().AsQueryable().BuildMock());
 
             // Allow GenerateUniqueAsync to check uniqueness (returns empty = no conflict)
             _userProfileRepo.GetQueryable().Returns(new List<UserProfile>().AsQueryable().BuildMock());
@@ -270,7 +269,7 @@ namespace NFC.Platform.Tests.Services
             _subscriptionRepo.GetQueryable().Returns(queryableSub);
 
             _employeeRepo.CountAsync(Arg.Any<Expression<Func<Employee, bool>>>()).Returns(0);
-            _employeeRepo.FindAsync(Arg.Any<Expression<Func<Employee, bool>>>()).Returns(new List<Employee>());
+            _employeeRepo.GetQueryable().Returns(new List<Employee>().AsQueryable().BuildMock());
 
             // Allow GenerateUniqueAsync to check uniqueness (returns empty = no conflict)
             _userProfileRepo.GetQueryable().Returns(new List<UserProfile>().AsQueryable().BuildMock());

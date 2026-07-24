@@ -65,10 +65,10 @@
     <value>Requested record was not found.</value>
   </data>
   <data name="InvalidCredentials" xml:space="preserve">
-    <value>Invalid email or password.</value>
+    <value>Invalid credentials</value>
   </data>
   <data name="Unauthorized" xml:space="preserve">
-    <value>You are not authorized to access this resource.</value>
+    <value>Unauthorized access</value>
   </data>
   <data name="Forbidden" xml:space="preserve">
     <value>Access to this resource is forbidden.</value>
@@ -86,16 +86,16 @@
     <value>An unexpected error occurred. Please try again later.</value>
   </data>
   <data name="UserAlreadyExists" xml:space="preserve">
-    <value>User with this email already exists.</value>
+    <value>User already exists</value>
   </data>
   <data name="InvalidRefreshToken" xml:space="preserve">
-    <value>Invalid or expired refresh token.</value>
+    <value>Invalid refresh token</value>
   </data>
   <data name="InvalidResetToken" xml:space="preserve">
-    <value>Invalid or expired reset token.</value>
+    <value>Invalid reset token</value>
   </data>
   <data name="InvalidRole" xml:space="preserve">
-    <value>Selected role is invalid.</value>
+    <value>Invalid role</value>
   </data>
   <data name="TemplateInactive" xml:space="preserve">
     <value>Template is inactive and cannot be selected.</value>
@@ -113,10 +113,10 @@
     <value>An error occurred during upload: {0}</value>
   </data>
   <data name="FailedToParseExcel" xml:space="preserve">
-    <value>Failed to parse Excel file: {0}</value>
+    <value>Failed to parse Excel file</value>
   </data>
   <data name="NoValidEmployeeRows" xml:space="preserve">
-    <value>No valid employee rows found in the uploaded file.</value>
+    <value>No valid employee rows found</value>
   </data>
   <data name="CardAlreadyAssigned" xml:space="preserve">
     <value>Card is already assigned.</value>
@@ -131,10 +131,10 @@
     <value>Card is not yet activated.</value>
   </data>
   <data name="RejectionReasonRequired" xml:space="preserve">
-    <value>A rejection reason is required.</value>
+    <value>Rejection reason is required</value>
   </data>
   <data name="OrderCannotBeCancelled" xml:space="preserve">
-    <value>Order cannot be cancelled once processing has started.</value>
+    <value>Order cannot be cancelled</value>
   </data>
   <data name="EmployeeCountMismatch" xml:space="preserve">
     <value>EmployeeIds count ({0}) must equal Quantity ({1}).</value>
@@ -143,13 +143,13 @@
     <value>Cannot transition order from {0} to {1}.</value>
   </data>
   <data name="UserNotAuthenticated" xml:space="preserve">
-    <value>User is not authenticated.</value>
+    <value>User is not authenticated</value>
   </data>
   <data name="ProfileNotFound" xml:space="preserve">
-    <value>Profile not found.</value>
+    <value>Profile not found</value>
   </data>
   <data name="CustomCategory" xml:space="preserve">
-    <value>Custom</value>
+    <value>Custom Category</value>
   </data>
   <data name="CannotMarkEncoded" xml:space="preserve">
     <value>Cannot mark as encoded from status '{0}'.</value>
@@ -164,19 +164,19 @@
     <value>Bulk Order - {0}</value>
   </data>
   <data name="CompanyNotFound" xml:space="preserve">
-    <value>Company not found for this tenant.</value>
+    <value>Company not found</value>
   </data>
   <data name="TrackingNumberRequired" xml:space="preserve">
-    <value>Tracking number is required for courier delivery.</value>
+    <value>Tracking number is required</value>
   </data>
   <data name="ImportCompleted" xml:space="preserve">
     <value>Completed</value>
   </data>
   <data name="SubscriptionExpiredOrMissing" xml:space="preserve">
-    <value>No active subscription found. Please subscribe to continue.</value>
+    <value>Subscription expired or missing</value>
   </data>
   <data name="MaxEmployeesLimitReached" xml:space="preserve">
-    <value>Employee limit reached for your current subscription plan.</value>
+    <value>Maximum employees limit reached</value>
   </data>
   <data name="ExcelFilesOnly" xml:space="preserve">
     <value>Only Excel files (.xlsx, .xls) are supported.</value>
@@ -185,28 +185,28 @@
     <value>Failed to upload the file to storage.</value>
   </data>
   <data name="FailedToDownloadExcel" xml:space="preserve">
-    <value>Failed to download Excel file from storage: {0}</value>
+    <value>Failed to download Excel file</value>
   </data>
   <data name="ImportRowNameRequired" xml:space="preserve">
-    <value>Row {0}: Name is required.</value>
+    <value>Name is required</value>
   </data>
   <data name="ImportRowEmailRequired" xml:space="preserve">
-    <value>Row {0}: Email is required.</value>
+    <value>Email is required</value>
   </data>
   <data name="ImportRowEmailInvalid" xml:space="preserve">
-    <value>Row {0}: Email '{1}' is not in a valid format.</value>
+    <value>Invalid email format</value>
   </data>
   <data name="ImportRowEmailDuplicate" xml:space="preserve">
-    <value>Row {0}: Duplicate email '{1}' found in the import sheet.</value>
+    <value>Duplicate email found in file</value>
   </data>
   <data name="ImportExecutionFailed" xml:space="preserve">
-    <value>Import execution failed: {0}</value>
+    <value>Import execution failed</value>
   </data>
   <data name="InvalidRequest" xml:space="preserve">
-    <value>Invalid request payload.</value>
+    <value>Invalid request</value>
   </data>
   <data name="CurrencyMustBeThreeLetters" xml:space="preserve">
-    <value>Currency must be exactly 3 alphabetic characters.</value>
+    <value>Currency must be exactly three letters</value>
   </data>
   <data name="UnitPriceMustBeGreaterThanZero" xml:space="preserve">
     <value>UnitPrice must be greater than zero.</value>
@@ -224,13 +224,13 @@
     <value>Employees missing profile: {0}.</value>
   </data>
   <data name="ShippingAddressRequired" xml:space="preserve">
-    <value>Shipping address is required when delivery method is Courier.</value>
+    <value>Shipping address is required</value>
   </data>
   <data name="CardMustHaveProfileToReissue" xml:space="preserve">
     <value>The card must be linked to a user profile to be reissued.</value>
   </data>
   <data name="ResetTokenExpired" xml:space="preserve">
-    <value>Reset token has expired.</value>
+    <value>Reset token has expired</value>
   </data>
   <data name="TooManyAuthAttempts" xml:space="preserve">
     <value>Too many authentication attempts. Please try again in {0} seconds.</value>
@@ -263,7 +263,7 @@
     <value>Too many password reset attempts. Please try again in {0} seconds.</value>
   </data>
   <data name="InvalidTenantClaim" xml:space="preserve">
-    <value>Invalid or missing Tenant ID claim.</value>
+    <value>Invalid tenant claim</value>
   </data>
   <data name="TenantNotFound" xml:space="preserve">
     <value>The tenant associated with this account does not exist.</value>
@@ -272,15 +272,99 @@
     <value>The tenant associated with this account is currently inactive.</value>
   </data>
   <data name="RoleAlreadyExists" xml:space="preserve">
-    <value>A role with this name already exists.</value>
+    <value>Role already exists</value>
   </data>
   <data name="InvalidPermissions" xml:space="preserve">
-    <value>One or more provided permissions are invalid.</value>
+    <value>Insufficient permissions</value>
   </data>
   <data name="SystemRoleModificationNotAllowed" xml:space="preserve">
-    <value>System roles cannot be modified or deleted.</value>
+    <value>System role modification is not allowed</value>
   </data>
   <data name="UserAlreadyHasRole" xml:space="preserve">
-    <value>The user already has this role.</value>
+    <value>User already has this role</value>
+  </data>
+  <data name="CustomDesignRequestLimitReached" xml:space="preserve">
+    <value>Custom design request limit reached</value>
+  </data>
+  <data name="HasActiveSubscription" xml:space="preserve">
+    <value>Has active subscriptions</value>
+  </data>
+  <data name="InvalidOtp" xml:space="preserve">
+    <value>Invalid OTP</value>
+  </data>
+  <data name="NoActiveSubscriptionToRenew" xml:space="preserve">
+    <value>No active subscription to renew</value>
+  </data>
+  <data name="OrderCannotBeUpdated" xml:space="preserve">
+    <value>Order cannot be updated</value>
+  </data>
+  <data name="OrderNotReadyForDelivery" xml:space="preserve">
+    <value>Order is not ready for delivery</value>
+  </data>
+  <data name="OtpCooldownActive" xml:space="preserve">
+    <value>OTP cooldown is active, please wait</value>
+  </data>
+  <data name="OtpResendLimitReached" xml:space="preserve">
+    <value>OTP resend limit reached</value>
+  </data>
+  <data name="OtpResent" xml:space="preserve">
+    <value>OTP has been resent</value>
+  </data>
+  <data name="PasswordResetRequested" xml:space="preserve">
+    <value>Password reset requested</value>
+  </data>
+  <data name="PasswordResetSuccess" xml:space="preserve">
+    <value>Password reset successful</value>
+  </data>
+  <data name="PlanHasActiveSubscriptions" xml:space="preserve">
+    <value>Plan has active subscriptions</value>
+  </data>
+  <data name="RecordCreated" xml:space="preserve">
+    <value>Record created successfully</value>
+  </data>
+  <data name="RecordDeleted" xml:space="preserve">
+    <value>Record deleted successfully</value>
+  </data>
+  <data name="RecordUpdated" xml:space="preserve">
+    <value>Record updated successfully</value>
+  </data>
+  <data name="RoleAssigned" xml:space="preserve">
+    <value>Role assigned successfully</value>
+  </data>
+  <data name="RoleDeleted" xml:space="preserve">
+    <value>Role deleted successfully</value>
+  </data>
+  <data name="RoleRevoked" xml:space="preserve">
+    <value>Role revoked successfully</value>
+  </data>
+  <data name="SubdomainAlreadyTaken" xml:space="preserve">
+    <value>Subdomain is already taken</value>
+  </data>
+  <data name="TemplateAlreadyAssigned" xml:space="preserve">
+    <value>Template is already assigned</value>
+  </data>
+  <data name="TemplateChangeLimitReached" xml:space="preserve">
+    <value>Template change limit reached</value>
+  </data>
+  <data name="TemplateDeletedAndProfilesCleared" xml:space="preserve">
+    <value>Template deleted and cleared from profiles</value>
+  </data>
+  <data name="TemplateNotAllowedInPlan" xml:space="preserve">
+    <value>Template is not allowed in your plan</value>
+  </data>
+  <data name="TemplateUnassigned" xml:space="preserve">
+    <value>Template unassigned successfully</value>
+  </data>
+  <data name="UserCreated" xml:space="preserve">
+    <value>User created successfully</value>
+  </data>
+  <data name="TemplateRequestCannotBeUpdated" xml:space="preserve">
+    <value>Template request cannot be updated because it is already being processed or completed.</value>
+  </data>
+  <data name="TemplateRequestCannotBeCancelled" xml:space="preserve">
+    <value>Template request cannot be cancelled because it is already in progress or completed.</value>
+  </data>
+  <data name="TemplateRequestCancelled" xml:space="preserve">
+    <value>Template request has been cancelled and quota was refunded.</value>
   </data>
 </root>

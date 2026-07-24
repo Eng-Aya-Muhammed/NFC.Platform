@@ -1,15 +1,24 @@
+using System.Net.Http;
+using NFC.Platform.Application.DTOs.Employee;
+using NFC.Platform.Application.Interfaces.Services;
+using NFC.Platform.Domain.Constants;
+
 namespace NFC.Platform.Application.Services;
 
     public class EmployeeService(
         IUnitOfWork unitOfWork,
         IMapper mapper,
         IMessageService messageService,
-        ICurrentTenant currentTenant) : IEmployeeService
+        ICurrentTenant currentTenant,
+        IExcelParser excelParser,
+        IHttpClientFactory httpClientFactory) : IEmployeeService
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
         private readonly IMapper _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         private readonly IMessageService _messageService = messageService ?? throw new ArgumentNullException(nameof(messageService));
         private readonly ICurrentTenant _currentTenant = currentTenant ?? throw new ArgumentNullException(nameof(currentTenant));
+        private readonly IExcelParser _excelParser = excelParser ?? throw new ArgumentNullException(nameof(excelParser));
+        private readonly IHttpClientFactory _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
 
         public async Task<ServiceResult<PagedResult<EmployeeDto>>> GetPagedEmployeesAsync(PaginationRequest request, string? search)
         {
@@ -55,47 +64,19 @@ namespace NFC.Platform.Application.Services;
             if (!tenantId.HasValue)
                 return ServiceResult<EmployeeDetailsDto>.Unauthorized(_messageService.Get("UserNotAuthenticated"));
 
-            // 1. Fetch Company
-            var company = await _unitOfWork.Repository<Company>().GetQueryable().AsNoTracking().FirstOrDefaultAsync();
+            var company = await GetCompanyOrThrowAsync();
             if (company == null)
                 return ServiceResult<EmployeeDetailsDto>.Fail(_messageService.Get("CompanyNotFound"), 400);
 
-            // 2. Validate Subscription Limit
-            var activeSub = await _unitOfWork.Repository<UserSubscription>()
-                .GetQueryable()
-                .AsNoTracking()
-                .Include(s => s.SubscriptionPlan)
-                .FirstOrDefaultAsync(s => s.TenantId == tenantId.Value && s.IsActive && s.EndDate >= DateTime.UtcNow);
+            var subscriptionError = await ValidateSubscriptionQuotaAsync(tenantId.Value);
+            if (subscriptionError != null)
+                return ServiceResult<EmployeeDetailsDto>.Fail(subscriptionError, 400);
 
-            if (activeSub == null)
-                return ServiceResult<EmployeeDetailsDto>.Fail(_messageService.Get("SubscriptionExpiredOrMissing"), 400);
+            var emailError = await EnsureEmailIsUniqueAsync(request.Email, tenantId.Value);
+            if (emailError != null)
+                return ServiceResult<EmployeeDetailsDto>.Fail(emailError, 400);
 
-            var currentEmployeesCount = await _unitOfWork.Repository<Employee>()
-                .CountAsync(e => e.TenantId == tenantId.Value && !e.IsDeleted);
-
-            if (activeSub.SubscriptionPlan.MaxEmployees != SubscriptionConstants.UnlimitedQuota && currentEmployeesCount >= activeSub.SubscriptionPlan.MaxEmployees)
-                return ServiceResult<EmployeeDetailsDto>.Fail(_messageService.Get("MaxEmployeesLimitReached"), 400);
-
-            // 3. Unique check
-            var existingEmployees = await _unitOfWork.Repository<Employee>().FindAsync(e => e.Email == request.Email && e.TenantId == tenantId.Value);
-            if (existingEmployees.Count > 0)
-                return ServiceResult<EmployeeDetailsDto>.Fail(_messageService.Get("UserAlreadyExists"), 400);
-
-            var employee = _mapper.Map<Employee>(request);
-            employee.CompanyId = company.Id;
-
-            var profile = _mapper.Map<UserProfile>(request);
-            profile.EmployeeId = employee.Id;
-            profile.CompanyName = company.Name;
-            profile.TenantId = tenantId.Value;
-            profile.Subdomain = await SubdomainHelper.GenerateUniqueAsync(
-                request.FullName,
-                _unitOfWork.Repository<UserProfile>());
-
-            if (request.Links?.Count > 0)
-            {
-                profile.UpdateCustomLinks(request.Links);
-            }
+            var (employee, profile) = await BuildEmployeeEntitiesAsync(request, company.Id, company.Name, tenantId.Value);
 
             await _unitOfWork.BeginTransactionAsync();
             try
@@ -128,23 +109,9 @@ namespace NFC.Platform.Application.Services;
 
             if (!string.IsNullOrWhiteSpace(request.Subdomain))
             {
-                var normalized = SubdomainHelper.Slugify(request.Subdomain);
-
-                if (!string.Equals(normalized, employee.UserProfile?.Subdomain, StringComparison.OrdinalIgnoreCase))
-                {
-                    var profileId = employee.UserProfile?.Id;
-                    var exists = await _unitOfWork.Repository<UserProfile>()
-                        .GetQueryable()
-                        .IgnoreQueryFilters()
-                        .AnyAsync(p => p.Subdomain == normalized && (profileId == null || p.Id != profileId));
-
-                    if (exists)
-                        return ServiceResult<EmployeeDetailsDto>.Fail(
-                            _messageService.Get("SubdomainAlreadyTaken"), 409);
-
-                    if (employee.UserProfile != null)
-                        employee.UserProfile.Subdomain = normalized;
-                }
+                var subdomainValidation = await ValidateAndNormalizeSubdomainAsync(employee, request.Subdomain);
+                if (!subdomainValidation.IsSuccess)
+                    return ServiceResult<EmployeeDetailsDto>.Fail(subdomainValidation.Message ?? string.Join(", ", subdomainValidation.Errors), subdomainValidation.StatusCode);
             }
 
             _mapper.Map(request, employee);
@@ -170,6 +137,267 @@ namespace NFC.Platform.Application.Services;
             await _unitOfWork.SaveChangesAsync();
 
             return ServiceResult.Success(_messageService.Get("RecordDeleted"));
+        }
+
+        public async Task<ServiceResult<List<Guid>>> UpsertEmployeesFromExcelAsync(string excelUrl, Guid companyId, Guid tenantId)
+        {
+            var parseResult = await DownloadAndParseExcelAsync(excelUrl);
+            if (!parseResult.IsSuccess)
+                return ServiceResult<List<Guid>>.Fail(parseResult.Message ?? string.Join(", ", parseResult.Errors), parseResult.StatusCode);
+
+            var rows = parseResult.Data!;
+
+            var validationResult = ValidateExcelRows(rows);
+            if (!validationResult.IsSuccess)
+                return validationResult;
+
+            return await ProcessEmployeeRowsAsync(rows, companyId, tenantId);
+        }
+
+        private async Task<ServiceResult<List<ExcelEmployeeImportDto>>> DownloadAndParseExcelAsync(string excelUrl)
+        {
+            try
+            {
+                var httpClient = _httpClientFactory.CreateClient();
+                using var stream = await httpClient.GetStreamAsync(excelUrl);
+                var rows = _excelParser.ParseEmployeesFromExcel(stream);
+                
+                if (rows == null || rows.Count == 0)
+                    return ServiceResult<List<ExcelEmployeeImportDto>>.Fail(_messageService.Get("NoValidEmployeeRows"), 422);
+
+                return ServiceResult<List<ExcelEmployeeImportDto>>.Success(rows);
+            }
+            catch (HttpRequestException)
+            {
+                return ServiceResult<List<ExcelEmployeeImportDto>>.Fail(_messageService.Get("FailedToDownloadExcel", excelUrl), 422);
+            }
+            catch (Exception)
+            {
+                return ServiceResult<List<ExcelEmployeeImportDto>>.Fail(_messageService.Get("FailedToParseExcel", excelUrl), 422);
+            }
+        }
+
+        private ServiceResult<List<Guid>> ValidateExcelRows(List<ExcelEmployeeImportDto> rows)
+        {
+            var errors = new List<string>();
+            var emailRegex = new System.Text.RegularExpressions.Regex(
+                @"^[^@\s]+@[^@\s]+\.[^@\s]+$",
+                System.Text.RegularExpressions.RegexOptions.Compiled | System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            var uniqueEmails = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            for (int i = 0; i < rows.Count; i++)
+            {
+                var row = rows[i];
+                var rowNum = i + 2;
+
+                if (string.IsNullOrWhiteSpace(row.Name))
+                    errors.Add(_messageService.Get("ImportRowNameRequired", rowNum.ToString()));
+
+                if (string.IsNullOrWhiteSpace(row.Email))
+                    errors.Add(_messageService.Get("ImportRowEmailRequired", rowNum.ToString()));
+                else if (!emailRegex.IsMatch(row.Email))
+                    errors.Add(_messageService.Get("ImportRowEmailInvalid", rowNum.ToString(), row.Email));
+                else if (!uniqueEmails.Add(row.Email))
+                    errors.Add(_messageService.Get("ImportRowEmailDuplicate", rowNum.ToString(), row.Email));
+            }
+
+            if (errors.Count > 0)
+                return ServiceResult<List<Guid>>.Fail(errors, 422);
+
+            return ServiceResult<List<Guid>>.Success([]);
+        }
+
+        private async Task<ServiceResult<List<Guid>>> ProcessEmployeeRowsAsync(List<ExcelEmployeeImportDto> rows, Guid companyId, Guid tenantId)
+        {
+            var context = await GetImportContextAsync(rows, companyId, tenantId);
+
+            if (context.ActiveSub == null)
+                return ServiceResult<List<Guid>>.Fail(_messageService.Get("SubscriptionExpiredOrMissing"), 422);
+
+            var newEmployeesList = new List<Employee>();
+            var newProfilesList = new List<UserProfile>();
+            var newEmployeesCount = 0;
+            var resultIds = new List<Guid>();
+            var localCache = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var row in rows)
+            {
+                if (context.EmployeesByEmail.TryGetValue(row.Email, out var existingEmployee))
+                {
+                    UpdateExistingEmployee(existingEmployee, row);
+                    resultIds.Add(existingEmployee.Id);
+                }
+                else
+                {
+                    if (context.ActiveSub.SubscriptionPlan.MaxEmployees != SubscriptionConstants.UnlimitedQuota && 
+                        context.CurrentEmployeesCount + newEmployeesCount >= context.ActiveSub.SubscriptionPlan.MaxEmployees)
+                    {
+                        return ServiceResult<List<Guid>>.Fail(_messageService.Get("MaxEmployeesLimitReached"), 422);
+                    }
+
+                    var (newEmployee, userProfile) = await CreateNewEmployeeAsync(row, companyId, tenantId, context.CompanyName, localCache);
+
+                    newEmployeesList.Add(newEmployee);
+                    newProfilesList.Add(userProfile);
+                    newEmployeesCount++;
+                    
+                    context.EmployeesByEmail[row.Email] = newEmployee;
+                    resultIds.Add(newEmployee.Id);
+                }
+            }
+
+            if (newEmployeesList.Count > 0)
+            {
+                await _unitOfWork.Repository<Employee>().AddRangeAsync(newEmployeesList);
+                await _unitOfWork.Repository<UserProfile>().AddRangeAsync(newProfilesList);
+            }
+
+            await _unitOfWork.SaveChangesAsync();
+            return ServiceResult<List<Guid>>.Success(resultIds);
+        }
+
+        private async Task<(UserSubscription? ActiveSub, int CurrentEmployeesCount, Dictionary<string, Employee> EmployeesByEmail, string CompanyName)> GetImportContextAsync(List<ExcelEmployeeImportDto> rows, Guid companyId, Guid tenantId)
+        {
+            var activeSub = await _unitOfWork.Repository<UserSubscription>()
+                .GetQueryable()
+                .AsNoTracking()
+                .Include(s => s.SubscriptionPlan)
+                .FirstOrDefaultAsync(s => s.TenantId == tenantId && s.IsActive && s.EndDate >= DateTime.UtcNow);
+
+            var currentEmployeesCount = await _unitOfWork.Repository<Employee>()
+                .CountAsync(e => e.TenantId == tenantId && !e.IsDeleted);
+
+            var targetEmails = rows.Select(r => r.Email).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            var existingEmployees = new List<Employee>();
+            
+            foreach (var emailChunk in targetEmails.Chunk(1000))
+            {
+                var chunkResult = await _unitOfWork.Repository<Employee>()
+                    .GetQueryable()
+                    .Include(e => e.UserProfile)
+                    .Where(e => e.TenantId == tenantId && !e.IsDeleted && emailChunk.Contains(e.Email))
+                    .ToListAsync();
+                existingEmployees.AddRange(chunkResult);
+            }
+
+            var employeesByEmail = existingEmployees.ToDictionary(e => e.Email, e => e, StringComparer.OrdinalIgnoreCase);
+
+            var company = await _unitOfWork.Repository<Company>().GetQueryable().AsNoTracking().FirstOrDefaultAsync(c => c.Id == companyId);
+            var companyName = company?.Name ?? string.Empty;
+
+            return (activeSub, currentEmployeesCount, employeesByEmail, companyName);
+        }
+
+
+        private void UpdateExistingEmployee(Employee existingEmployee, ExcelEmployeeImportDto row)
+        {
+            existingEmployee.FullName = row.Name;
+            existingEmployee.JobTitle = row.JobTitle ?? string.Empty;
+            existingEmployee.Department = row.Department ?? string.Empty;
+
+            if (existingEmployee.UserProfile != null)
+            {
+                existingEmployee.UserProfile.FullName = row.Name;
+                existingEmployee.UserProfile.JobTitle = row.JobTitle ?? string.Empty;
+                existingEmployee.UserProfile.Department = row.Department;
+                existingEmployee.UserProfile.Phone = row.Phone;
+            }
+        }
+
+        private async Task<(Employee Employee, UserProfile Profile)> CreateNewEmployeeAsync(ExcelEmployeeImportDto row, Guid companyId, Guid tenantId, string companyName, HashSet<string> localCache)
+        {
+            var newEmployee = _mapper.Map<Employee>(row);
+            newEmployee.Id = Guid.NewGuid();
+            newEmployee.CompanyId = companyId;
+            newEmployee.TenantId = tenantId;
+
+            var userProfile = _mapper.Map<UserProfile>(row);
+            userProfile.Id = Guid.NewGuid();
+            userProfile.CompanyName = companyName;
+            userProfile.TenantId = tenantId;
+            userProfile.Subdomain = await SubdomainHelper.GenerateUniqueHybridAsync(row.Name, _unitOfWork.Repository<UserProfile>(), localCache);
+
+            newEmployee.UserProfile = userProfile;
+            userProfile.Employee = newEmployee;
+
+            return (newEmployee, userProfile);
+        }
+
+        private async Task<Company?> GetCompanyOrThrowAsync()
+        {
+            return await _unitOfWork.Repository<Company>().GetQueryable().AsNoTracking().FirstOrDefaultAsync();
+        }
+
+        private async Task<string?> ValidateSubscriptionQuotaAsync(Guid tenantId)
+        {
+            var activeSub = await _unitOfWork.Repository<UserSubscription>()
+                .GetQueryable()
+                .AsNoTracking()
+                .Include(s => s.SubscriptionPlan)
+                .FirstOrDefaultAsync(s => s.TenantId == tenantId && s.IsActive && s.EndDate >= DateTime.UtcNow);
+
+            if (activeSub == null)
+                return _messageService.Get("SubscriptionExpiredOrMissing");
+
+            var currentEmployeesCount = await _unitOfWork.Repository<Employee>()
+                .CountAsync(e => e.TenantId == tenantId && !e.IsDeleted);
+
+            if (activeSub.SubscriptionPlan.MaxEmployees != SubscriptionConstants.UnlimitedQuota && currentEmployeesCount >= activeSub.SubscriptionPlan.MaxEmployees)
+                return _messageService.Get("MaxEmployeesLimitReached");
+            
+            return null; 
+        }
+
+        private async Task<string?> EnsureEmailIsUniqueAsync(string email, Guid tenantId)
+        {
+            var exists = await _unitOfWork.Repository<Employee>().GetQueryable().AnyAsync(e => e.Email == email && e.TenantId == tenantId);
+            if (exists)
+                return _messageService.Get("UserAlreadyExists");
+
+            return null;
+        }
+
+        private async Task<(Employee Employee, UserProfile Profile)> BuildEmployeeEntitiesAsync(CreateEmployeeRequest request, Guid companyId, string companyName, Guid tenantId)
+        {
+            var employee = _mapper.Map<Employee>(request);
+            employee.CompanyId = companyId;
+
+            var profile = _mapper.Map<UserProfile>(request);
+            profile.EmployeeId = employee.Id;
+            profile.CompanyName = companyName;
+            profile.TenantId = tenantId;
+            profile.Subdomain = await SubdomainHelper.GenerateUniqueAsync(
+                request.FullName,
+                _unitOfWork.Repository<UserProfile>());
+
+            if (request.Links?.Count > 0)
+            {
+                profile.UpdateCustomLinks(request.Links);
+            }
+
+            return (employee, profile);
+        }
+
+        private async Task<ServiceResult> ValidateAndNormalizeSubdomainAsync(Employee employee, string requestedSubdomain)
+        {
+            var normalized = SubdomainHelper.Slugify(requestedSubdomain);
+
+            if (!string.Equals(normalized, employee.UserProfile?.Subdomain, StringComparison.OrdinalIgnoreCase))
+            {
+                var profileId = employee.UserProfile?.Id;
+                var exists = await _unitOfWork.Repository<UserProfile>()
+                    .GetQueryable()
+                    .IgnoreQueryFilters()
+                    .AnyAsync(p => p.Subdomain == normalized && (profileId == null || p.Id != profileId));
+
+                if (exists)
+                    return ServiceResult.Fail(_messageService.Get("SubdomainAlreadyTaken"), 409);
+
+                if (employee.UserProfile != null)
+                    employee.UserProfile.Subdomain = normalized;
+            }
+
+            return ServiceResult.Success();
         }
     }
 

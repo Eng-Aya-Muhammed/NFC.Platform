@@ -12,6 +12,9 @@ namespace NFC.Platform.Domain.Enums
         SpecificEmployees = 2,
 
         [JsonPropertyName("individual")]
-        Individual = 3
+        Individual = 3,
+
+        [JsonPropertyName("excel_upload")]
+        ExcelUpload = 4
     }
 }

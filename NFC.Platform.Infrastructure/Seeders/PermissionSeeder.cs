@@ -25,8 +25,12 @@ namespace NFC.Platform.Infrastructure.Seeders
                 AppPermissions.Profiles.Update,
                 AppPermissions.CardOrders.View,
                 AppPermissions.CardOrders.Create,
+                AppPermissions.CardOrders.Update,
+                AppPermissions.CardOrders.Cancel,
                 AppPermissions.Templates.View,
-                AppPermissions.Templates.Request,
+                AppPermissions.Templates.Create,
+                AppPermissions.Templates.Update,
+                AppPermissions.Templates.Cancel,
             ],
         };
 

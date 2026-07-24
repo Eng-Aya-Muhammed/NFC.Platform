@@ -65,10 +65,10 @@
     <value>السجل المطلوب غير موجود.</value>
   </data>
   <data name="InvalidCredentials" xml:space="preserve">
-    <value>البريد الإلكتروني أو كلمة المرور غير صحيحة.</value>
+    <value>بيانات الدخول غير صحيحة</value>
   </data>
   <data name="Unauthorized" xml:space="preserve">
-    <value>غير مصرح لك بالوصول لهذا المورد.</value>
+    <value>غير مصرح</value>
   </data>
   <data name="Forbidden" xml:space="preserve">
     <value>الوصول إلى هذا المورد ممنوع.</value>
@@ -86,16 +86,16 @@
     <value>حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى لاحقاً.</value>
   </data>
   <data name="UserAlreadyExists" xml:space="preserve">
-    <value>المستخدم بهذا البريد الإلكتروني موجود بالفعل.</value>
+    <value>المستخدم موجود مسبقاً</value>
   </data>
   <data name="InvalidRefreshToken" xml:space="preserve">
-    <value>رمز التحديث غير صالح أو منتهي الصلاحية.</value>
+    <value>رمز التحديث غير صحيح</value>
   </data>
   <data name="InvalidResetToken" xml:space="preserve">
-    <value>رمز إعادة التعيين غير صالح أو منتهي الصلاحية.</value>
+    <value>رمز إعادة التعيين غير صحيح</value>
   </data>
   <data name="InvalidRole" xml:space="preserve">
-    <value>الدور المحدد غير صالح.</value>
+    <value>دور غير صحيح</value>
   </data>
   <data name="TemplateInactive" xml:space="preserve">
     <value>القالب المختار معطل وغير متاح للاستخدام.</value>
@@ -113,10 +113,10 @@
     <value>حدث خطأ أثناء الرفع: {0}</value>
   </data>
   <data name="FailedToParseExcel" xml:space="preserve">
-    <value>فشل في تحليل ملف إكسيل: {0}</value>
+    <value>فشل في قراءة ملف الإكسيل</value>
   </data>
   <data name="NoValidEmployeeRows" xml:space="preserve">
-    <value>لم يتم العثور على صفوف موظفين صالحة في الملف المرفوع.</value>
+    <value>لا توجد بيانات موظفين صحيحة</value>
   </data>
   <data name="CardAlreadyAssigned" xml:space="preserve">
     <value>البطاقة مخصصة بالفعل لمستخدم آخر.</value>
@@ -131,10 +131,10 @@
     <value>هذه البطاقة لم تفعل بعد.</value>
   </data>
   <data name="RejectionReasonRequired" xml:space="preserve">
-    <value>سبب الرفض مطلوب.</value>
+    <value>سبب الرفض مطلوب</value>
   </data>
   <data name="OrderCannotBeCancelled" xml:space="preserve">
-    <value>لا يمكن إلغاء الطلب بعد بدء معالجته.</value>
+    <value>لا يمكن إلغاء الطلب</value>
   </data>
   <data name="EmployeeCountMismatch" xml:space="preserve">
     <value>عدد معرفات الموظفين ({0}) يجب أن يتطابق مع الكمية المطلوبة ({1}).</value>
@@ -143,13 +143,13 @@
     <value>لا يمكن نقل الطلب من الحالة {0} إلى الحالة {1}.</value>
   </data>
   <data name="UserNotAuthenticated" xml:space="preserve">
-    <value>المستخدم غير مسجل الدخول.</value>
+    <value>المستخدم غير مسجل الدخول</value>
   </data>
   <data name="ProfileNotFound" xml:space="preserve">
-    <value>الملف الشخصي غير موجود.</value>
+    <value>لم يتم العثور على الملف الشخصي</value>
   </data>
   <data name="CustomCategory" xml:space="preserve">
-    <value>مخصص</value>
+    <value>تصنيف مخصص</value>
   </data>
   <data name="CannotMarkEncoded" xml:space="preserve">
     <value>لا يمكن تحديد البطاقة كمشفرة من الحالة '{0}'.</value>
@@ -164,19 +164,19 @@
     <value>طلب جماعي - {0}</value>
   </data>
   <data name="CompanyNotFound" xml:space="preserve">
-    <value>الشركة غير موجودة لهذا المستأجر.</value>
+    <value>لم يتم العثور على الشركة</value>
   </data>
   <data name="TrackingNumberRequired" xml:space="preserve">
-    <value>رقم التتبع مطلوب للتوصيل عبر المندوب.</value>
+    <value>رقم التتبع مطلوب</value>
   </data>
   <data name="ImportCompleted" xml:space="preserve">
     <value>مكتمل</value>
   </data>
   <data name="SubscriptionExpiredOrMissing" xml:space="preserve">
-    <value>لا يوجد اشتراك نشط. يرجى الاشتراك للمتابعة.</value>
+    <value>الاشتراك منتهي أو غير موجود</value>
   </data>
   <data name="MaxEmployeesLimitReached" xml:space="preserve">
-    <value>تم الوصول إلى الحد الأقصى للموظفين في باقة اشتراكك الحالية.</value>
+    <value>تم الوصول للحد الأقصى للموظفين</value>
   </data>
   <data name="ExcelFilesOnly" xml:space="preserve">
     <value>ملفات Excel فقط (.xlsx، .xls) هي المدعومة.</value>
@@ -185,28 +185,28 @@
     <value>فشل رفع الملف إلى وحدة التخزين.</value>
   </data>
   <data name="FailedToDownloadExcel" xml:space="preserve">
-    <value>فشل تحميل ملف Excel من وحدة التخزين: {0}</value>
+    <value>فشل في تحميل ملف الإكسيل</value>
   </data>
   <data name="ImportRowNameRequired" xml:space="preserve">
-    <value>الصف {0}: حقل الاسم مطلوب.</value>
+    <value>الاسم مطلوب</value>
   </data>
   <data name="ImportRowEmailRequired" xml:space="preserve">
-    <value>الصف {0}: حقل البريد الإلكتروني مطلوب.</value>
+    <value>البريد الإلكتروني مطلوب</value>
   </data>
   <data name="ImportRowEmailInvalid" xml:space="preserve">
-    <value>الصف {0}: البريد الإلكتروني '{1}' ليس بصيغة صحيحة.</value>
+    <value>البريد الإلكتروني غير صحيح</value>
   </data>
   <data name="ImportRowEmailDuplicate" xml:space="preserve">
-    <value>الصف {0}: البريد الإلكتروني '{1}' مكرر في ورقة الاستيراد.</value>
+    <value>البريد الإلكتروني مكرر في الملف</value>
   </data>
   <data name="ImportExecutionFailed" xml:space="preserve">
-    <value>فشل تنفيذ عملية الاستيراد: {0}</value>
+    <value>فشل في تنفيذ الاستيراد</value>
   </data>
   <data name="InvalidRequest" xml:space="preserve">
-    <value>طلب غير صالح.</value>
+    <value>طلب غير صحيح</value>
   </data>
   <data name="CurrencyMustBeThreeLetters" xml:space="preserve">
-    <value>يجب أن تتكون العملة من 3 أحرف هجائية بالضبط.</value>
+    <value>يجب أن تتكون العملة من ثلاثة أحرف</value>
   </data>
   <data name="UnitPriceMustBeGreaterThanZero" xml:space="preserve">
     <value>يجب أن يكون سعر الوحدة أكبر من الصفر.</value>
@@ -224,13 +224,13 @@
     <value>الموظفون يفتقرون إلى الملف التعريفي: {0}.</value>
   </data>
   <data name="ShippingAddressRequired" xml:space="preserve">
-    <value>عنوان الشحن مطلوب عند اختيار طريقة التوصيل بالشحن.</value>
+    <value>عنوان الشحن مطلوب</value>
   </data>
   <data name="CardMustHaveProfileToReissue" xml:space="preserve">
     <value>يجب ربط البطاقة بملف تعريفي لإعادة إصدارها.</value>
   </data>
   <data name="ResetTokenExpired" xml:space="preserve">
-    <value>انتهت صلاحية رمز إعادة التعيين.</value>
+    <value>انتهت صلاحية رمز إعادة التعيين</value>
   </data>
   <data name="TooManyAuthAttempts" xml:space="preserve">
     <value>لقد تجاوزت الحد الأقصى لمحاولات تسجيل الدخول أو التسجيل. يرجى المحاولة مرة أخرى بعد {0} ثانية.</value>
@@ -263,7 +263,7 @@
     <value>لقد تجاوزت الحد الأقصى لمحاولات إعادة تعيين كلمة المرور. يرجى المحاولة مرة أخرى بعد {0} ثانية.</value>
   </data>
   <data name="InvalidTenantClaim" xml:space="preserve">
-    <value>معرف الشركة غير صالح أو مفقود.</value>
+    <value>خطأ في بيانات المؤسسة</value>
   </data>
   <data name="TenantNotFound" xml:space="preserve">
     <value>الشركة المرتبطة بهذا الحساب غير موجودة.</value>
@@ -272,15 +272,99 @@
     <value>الشركة المرتبطة بهذا الحساب غير مفعلة حالياً.</value>
   </data>
   <data name="RoleAlreadyExists" xml:space="preserve">
-    <value>يوجد دور بهذا الاسم بالفعل.</value>
+    <value>هذا الدور موجود مسبقاً</value>
   </data>
   <data name="InvalidPermissions" xml:space="preserve">
-    <value>صلاحية واحدة أو أكثر غير صالحة.</value>
+    <value>صلاحيات غير كافية</value>
   </data>
   <data name="SystemRoleModificationNotAllowed" xml:space="preserve">
-    <value>لا يمكن تعديل أو حذف أدوار النظام الأساسية.</value>
+    <value>لا يمكن تعديل أدوار النظام الأساسية</value>
   </data>
   <data name="UserAlreadyHasRole" xml:space="preserve">
-    <value>المستخدم يمتلك هذا الدور بالفعل.</value>
+    <value>المستخدم يمتلك هذا الدور بالفعل</value>
+  </data>
+  <data name="CustomDesignRequestLimitReached" xml:space="preserve">
+    <value>تم الوصول للحد الأقصى لطلبات التصميم المخصص</value>
+  </data>
+  <data name="HasActiveSubscription" xml:space="preserve">
+    <value>توجد اشتراكات فعالة</value>
+  </data>
+  <data name="InvalidOtp" xml:space="preserve">
+    <value>رمز التحقق غير صحيح</value>
+  </data>
+  <data name="NoActiveSubscriptionToRenew" xml:space="preserve">
+    <value>لا يوجد اشتراك فعال لتجديده</value>
+  </data>
+  <data name="OrderCannotBeUpdated" xml:space="preserve">
+    <value>لا يمكن تعديل الطلب</value>
+  </data>
+  <data name="OrderNotReadyForDelivery" xml:space="preserve">
+    <value>الطلب غير جاهز للتسليم</value>
+  </data>
+  <data name="OtpCooldownActive" xml:space="preserve">
+    <value>يرجى الانتظار قبل طلب رمز جديد</value>
+  </data>
+  <data name="OtpResendLimitReached" xml:space="preserve">
+    <value>تم الوصول للحد الأقصى لإرسال الرموز</value>
+  </data>
+  <data name="OtpResent" xml:space="preserve">
+    <value>تم إعادة إرسال الرمز</value>
+  </data>
+  <data name="PasswordResetRequested" xml:space="preserve">
+    <value>تم طلب إعادة تعيين كلمة المرور</value>
+  </data>
+  <data name="PasswordResetSuccess" xml:space="preserve">
+    <value>تم إعادة تعيين كلمة المرور بنجاح</value>
+  </data>
+  <data name="PlanHasActiveSubscriptions" xml:space="preserve">
+    <value>الخطة تحتوي على اشتراكات فعالة</value>
+  </data>
+  <data name="RecordCreated" xml:space="preserve">
+    <value>تم إنشاء السجل بنجاح</value>
+  </data>
+  <data name="RecordDeleted" xml:space="preserve">
+    <value>تم حذف السجل بنجاح</value>
+  </data>
+  <data name="RecordUpdated" xml:space="preserve">
+    <value>تم تحديث السجل بنجاح</value>
+  </data>
+  <data name="RoleAssigned" xml:space="preserve">
+    <value>تم تعيين الدور بنجاح</value>
+  </data>
+  <data name="RoleDeleted" xml:space="preserve">
+    <value>تم حذف الدور بنجاح</value>
+  </data>
+  <data name="RoleRevoked" xml:space="preserve">
+    <value>تم سحب الدور بنجاح</value>
+  </data>
+  <data name="SubdomainAlreadyTaken" xml:space="preserve">
+    <value>الرابط الفرعي مستخدم مسبقاً</value>
+  </data>
+  <data name="TemplateAlreadyAssigned" xml:space="preserve">
+    <value>القالب معين مسبقاً</value>
+  </data>
+  <data name="TemplateChangeLimitReached" xml:space="preserve">
+    <value>تم الوصول للحد الأقصى لتغيير القوالب</value>
+  </data>
+  <data name="TemplateDeletedAndProfilesCleared" xml:space="preserve">
+    <value>تم حذف القالب وإزالته من الملفات</value>
+  </data>
+  <data name="TemplateNotAllowedInPlan" xml:space="preserve">
+    <value>هذا القالب غير مسموح به في خطتك</value>
+  </data>
+  <data name="TemplateUnassigned" xml:space="preserve">
+    <value>تم إلغاء تعيين القالب</value>
+  </data>
+  <data name="UserCreated" xml:space="preserve">
+    <value>تم إنشاء المستخدم بنجاح</value>
+  </data>
+  <data name="TemplateRequestCannotBeUpdated" xml:space="preserve">
+    <value>لا يمكن تعديل طلب القالب لأنه قيد التنفيذ أو مكتمل بالفعل.</value>
+  </data>
+  <data name="TemplateRequestCannotBeCancelled" xml:space="preserve">
+    <value>لا يمكن إلغاء طلب القالب لأنه قيد التنفيذ أو مكتمل بالفعل.</value>
+  </data>
+  <data name="TemplateRequestCancelled" xml:space="preserve">
+    <value>تم إلغاء طلب القالب واسترجاع الرصيد بنجاح.</value>
   </data>
 </root>

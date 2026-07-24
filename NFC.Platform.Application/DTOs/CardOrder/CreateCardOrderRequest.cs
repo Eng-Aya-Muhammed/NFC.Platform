@@ -1,4 +1,4 @@
-﻿using NFC.Platform.Domain.Enums;
+using NFC.Platform.Domain.Enums;
 
 namespace NFC.Platform.Application.DTOs.CardOrder;
 
@@ -8,12 +8,23 @@ namespace NFC.Platform.Application.DTOs.CardOrder;
 /// </summary>
 public class CreateCardOrderRequest
 {
-    //  Step 1: Design Type 
+    //  Step 1: Design Type & Scope
     /// <summary>
     /// Whether the customer has their own design (CustomArtwork)
     /// or needs the design team to create one (NeedCustomDesign).
     /// </summary>
     public CardDesignType CardDesignType { get; set; }
+
+    /// <summary>
+    /// Assignment scope (AllEmployees, SpecificEmployees, Individual, ExcelUpload)
+    /// </summary>
+    public AssignmentScope AssignmentScope { get; set; }
+
+    /// <summary>
+    /// Specific employee IDs for the order when scope is SpecificEmployees.
+    /// Also used internally to pass created employee IDs from ExcelUpload.
+    /// </summary>
+    public List<Guid>? EmployeeIds { get; set; }
 
     //  Step 2: Card Info 
     public string? CardName { get; set; }

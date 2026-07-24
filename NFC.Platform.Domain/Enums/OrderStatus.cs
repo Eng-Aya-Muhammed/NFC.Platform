@@ -10,6 +10,7 @@ namespace NFC.Platform.Domain.Enums
         InPrinting = 6,
         Encoding = 7,
         ReadyForDelivery = 8,
-        Delivered = 9
+        Delivered = 9,
+        Cancelled = 10
     }
 }

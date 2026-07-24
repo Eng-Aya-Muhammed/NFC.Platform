@@ -5,6 +5,7 @@ namespace NFC.Platform.Domain.Enums
         Pending = 1,
         InProgress = 2,
         Completed = 3,
-        Rejected = 4
+        Rejected = 4,
+        Cancelled = 5
     }
 }

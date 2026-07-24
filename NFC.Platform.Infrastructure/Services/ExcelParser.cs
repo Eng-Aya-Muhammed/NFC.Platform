@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using ExcelDataReader;
 using NFC.Platform.Application.DTOs.CardOrder;
+using NFC.Platform.Application.DTOs.Employee;
 using NFC.Platform.Application.Interfaces.Services;
 
 namespace NFC.Platform.Infrastructure.Services

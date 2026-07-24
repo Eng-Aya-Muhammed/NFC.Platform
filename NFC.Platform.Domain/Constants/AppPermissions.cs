@@ -19,6 +19,7 @@ namespace NFC.Platform.Domain.Constants
             public const string View   = "CardOrders.View";
             public const string Create = "CardOrders.Create";
             public const string Update = "CardOrders.Update";
+            public const string Cancel = "CardOrders.Cancel";
         }
 
         public static class Roles
@@ -44,7 +45,9 @@ namespace NFC.Platform.Domain.Constants
         public static class Templates
         {
             public const string View    = "Templates.View";
-            public const string Request = "Templates.Request";
+            public const string Create  = "Templates.Create";
+            public const string Update  = "Templates.Update";
+            public const string Cancel  = "Templates.Cancel";
         }
 
         public static class Company

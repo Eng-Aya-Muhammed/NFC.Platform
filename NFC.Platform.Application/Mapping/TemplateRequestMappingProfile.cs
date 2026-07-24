@@ -16,6 +16,9 @@ namespace NFC.Platform.Application.Mapping
 
             CreateMap<CreateTemplateRequest, TemplateRequest>()
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => TemplateRequestStatus.Pending));
+
+            CreateMap<UpdateTemplateRequest, TemplateRequest>()
+                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
         }
     }
 }

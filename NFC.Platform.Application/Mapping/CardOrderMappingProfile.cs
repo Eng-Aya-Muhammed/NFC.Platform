@@ -1,5 +1,7 @@
 namespace NFC.Platform.Application.Mapping
 {
+    using NFC.Platform.Application.DTOs.Employee;
+
     public class CardOrderMappingProfile : Profile
     {
         public CardOrderMappingProfile()
@@ -53,6 +55,13 @@ namespace NFC.Platform.Application.Mapping
                 .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
                 .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
                 .ForMember(dest => dest.Items, opt => opt.Ignore());
+
+            CreateMap<UpdateCardOrderRequest, CardOrder>()
+                .ForMember(dest => dest.CardType, opt => opt.Ignore())
+                .ForMember(dest => dest.Quantity, opt => opt.Ignore())
+                .ForMember(dest => dest.ExcelDataUrl, opt => opt.Ignore())
+                .ForMember(dest => dest.Items, opt => opt.Ignore())
+                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
 
             // Excel import mappings to avoid manual mapping in CardOrderService
             CreateMap<ExcelEmployeeImportDto, Employee>()

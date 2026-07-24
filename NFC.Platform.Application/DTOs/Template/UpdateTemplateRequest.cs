@@ -1,0 +1,9 @@
+namespace NFC.Platform.Application.DTOs.Template;
+
+public class UpdateTemplateRequest
+{
+    public string TemplateName { get; set; } = string.Empty;
+    public string? LogoUrl { get; set; }
+    public string? ReferenceImageUrl { get; set; }
+    public string? Notes { get; set; }
+}

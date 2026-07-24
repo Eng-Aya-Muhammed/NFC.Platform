@@ -1,4 +1,4 @@
-namespace NFC.Platform.Application.DTOs.CardOrder
+namespace NFC.Platform.Application.DTOs.Employee
 {
     public class ExcelEmployeeImportDto
     {

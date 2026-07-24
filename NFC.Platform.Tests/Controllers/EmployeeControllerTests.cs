@@ -20,17 +20,42 @@ namespace NFC.Platform.Tests.Controllers
         }
 
         [Fact]
-        public async Task Create_ShouldCallCreateEmployeeAsync_OnEmployeeService()
+        public void EmployeeController_Methods_ShouldHaveHasPermissionAttribute()
+        {
+            // Assert that endpoints are properly secured with specific permissions
+            var type = typeof(EmployeeController);
+            
+            var getPagedMethod = type.GetMethod(nameof(EmployeeController.GetPaged));
+            var getPagedAttr = getPagedMethod?.GetCustomAttributes(typeof(HasPermissionAttribute), false).FirstOrDefault() as HasPermissionAttribute;
+            Assert.NotNull(getPagedAttr);
+            Assert.Equal($"Permission:{AppPermissions.Employees.View}", getPagedAttr.Policy);
+
+            var getByIdMethod = type.GetMethod(nameof(EmployeeController.GetById));
+            var getByIdAttr = getByIdMethod?.GetCustomAttributes(typeof(HasPermissionAttribute), false).FirstOrDefault() as HasPermissionAttribute;
+            Assert.NotNull(getByIdAttr);
+            Assert.Equal($"Permission:{AppPermissions.Employees.View}", getByIdAttr.Policy);
+
+            var createMethod = type.GetMethod(nameof(EmployeeController.Create));
+            var createAttr = createMethod?.GetCustomAttributes(typeof(HasPermissionAttribute), false).FirstOrDefault() as HasPermissionAttribute;
+            Assert.NotNull(createAttr);
+            Assert.Equal($"Permission:{AppPermissions.Employees.Create}", createAttr.Policy);
+
+            var updateMethod = type.GetMethod(nameof(EmployeeController.Update));
+            var updateAttr = updateMethod?.GetCustomAttributes(typeof(HasPermissionAttribute), false).FirstOrDefault() as HasPermissionAttribute;
+            Assert.NotNull(updateAttr);
+            Assert.Equal($"Permission:{AppPermissions.Employees.Update}", updateAttr.Policy);
+
+            var deleteMethod = type.GetMethod(nameof(EmployeeController.Delete));
+            var deleteAttr = deleteMethod?.GetCustomAttributes(typeof(HasPermissionAttribute), false).FirstOrDefault() as HasPermissionAttribute;
+            Assert.NotNull(deleteAttr);
+            Assert.Equal($"Permission:{AppPermissions.Employees.Delete}", deleteAttr.Policy);
+        }
+
+        [Fact]
+        public async Task Create_ShouldReturnStatusCode_WhenServiceSucceeds()
         {
             // Arrange
-            var request = new CreateEmployeeRequest
-            {
-                Email = "test@onpoint.com",
-                FullName = "Test Employee",
-                JobTitle = "Developer",
-                Department = "Engineering"
-            };
-
+            var request = new CreateEmployeeRequest { Email = "test@onpoint.com" };
             var expectedResult = ServiceResult<EmployeeDetailsDto>.Success(new EmployeeDetailsDto());
             _employeeService.CreateEmployeeAsync(request).Returns(expectedResult);
 
@@ -40,15 +65,15 @@ namespace NFC.Platform.Tests.Controllers
             // Assert
             Assert.NotNull(result);
             Assert.Equal(200, result.StatusCode);
-            await _employeeService.Received(1).CreateEmployeeAsync(request);
+            Assert.Equal(expectedResult, result.Value);
         }
 
         [Fact]
-        public async Task Create_ShouldReturnError_WhenServiceFails()
+        public async Task Create_ShouldReturnErrorStatusCode_WhenServiceFails()
         {
             // Arrange
             var request = new CreateEmployeeRequest { Email = "test@onpoint.com" };
-            var expectedResult = ServiceResult<EmployeeDetailsDto>.Fail("Some error occurred", 400);
+            var expectedResult = ServiceResult<EmployeeDetailsDto>.Fail("Some error occurred", 422);
             _employeeService.CreateEmployeeAsync(request).Returns(expectedResult);
 
             // Act
@@ -56,11 +81,12 @@ namespace NFC.Platform.Tests.Controllers
 
             // Assert
             Assert.NotNull(result);
-            Assert.Equal(400, result.StatusCode);
+            Assert.Equal(422, result.StatusCode);
+            Assert.Equal(expectedResult, result.Value);
         }
 
         [Fact]
-        public async Task GetPaged_ShouldCallGetPagedEmployeesAsync_OnEmployeeService()
+        public async Task GetPaged_ShouldReturnOk_WithResult()
         {
             // Arrange
             var request = new PaginationRequest();
@@ -74,11 +100,11 @@ namespace NFC.Platform.Tests.Controllers
             // Assert
             Assert.NotNull(result);
             Assert.Equal(200, result.StatusCode);
-            await _employeeService.Received(1).GetPagedEmployeesAsync(request, search);
+            Assert.Equal(expectedResult, result.Value);
         }
 
         [Fact]
-        public async Task GetById_ShouldCallGetEmployeeDetailsAsync_OnEmployeeService()
+        public async Task GetById_ShouldReturnOk_WhenSuccess()
         {
             // Arrange
             var id = Guid.NewGuid();
@@ -91,11 +117,28 @@ namespace NFC.Platform.Tests.Controllers
             // Assert
             Assert.NotNull(result);
             Assert.Equal(200, result.StatusCode);
-            await _employeeService.Received(1).GetEmployeeDetailsAsync(id);
+            Assert.Equal(expectedResult, result.Value);
         }
 
         [Fact]
-        public async Task Update_ShouldCallUpdateEmployeeJobDetailsAsync_OnEmployeeService()
+        public async Task GetById_ShouldReturnErrorStatusCode_WhenFailed()
+        {
+            // Arrange
+            var id = Guid.NewGuid();
+            var expectedResult = ServiceResult<EmployeeDetailsDto>.Fail("Not found", 404);
+            _employeeService.GetEmployeeDetailsAsync(id).Returns(expectedResult);
+
+            // Act
+            var result = await _sut.GetById(id) as ObjectResult;
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(404, result.StatusCode);
+            Assert.Equal(expectedResult, result.Value);
+        }
+
+        [Fact]
+        public async Task Update_ShouldReturnOk_WhenSuccess()
         {
             // Arrange
             var id = Guid.NewGuid();
@@ -109,11 +152,29 @@ namespace NFC.Platform.Tests.Controllers
             // Assert
             Assert.NotNull(result);
             Assert.Equal(200, result.StatusCode);
-            await _employeeService.Received(1).UpdateEmployeeJobDetailsAsync(id, request);
+            Assert.Equal(expectedResult, result.Value);
         }
 
         [Fact]
-        public async Task Delete_ShouldCallSoftDeleteEmployeeAsync_OnEmployeeService()
+        public async Task Update_ShouldReturnErrorStatusCode_WhenFailed()
+        {
+            // Arrange
+            var id = Guid.NewGuid();
+            var request = new UpdateEmployeeRequest();
+            var expectedResult = ServiceResult<EmployeeDetailsDto>.Fail("Validation error", 400);
+            _employeeService.UpdateEmployeeJobDetailsAsync(id, request).Returns(expectedResult);
+
+            // Act
+            var result = await _sut.Update(id, request) as ObjectResult;
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(400, result.StatusCode);
+            Assert.Equal(expectedResult, result.Value);
+        }
+
+        [Fact]
+        public async Task Delete_ShouldReturnOk_WhenSuccess()
         {
             // Arrange
             var id = Guid.NewGuid();
@@ -126,7 +187,24 @@ namespace NFC.Platform.Tests.Controllers
             // Assert
             Assert.NotNull(result);
             Assert.Equal(200, result.StatusCode);
-            await _employeeService.Received(1).SoftDeleteEmployeeAsync(id);
+            Assert.Equal(expectedResult, result.Value);
+        }
+
+        [Fact]
+        public async Task Delete_ShouldReturnErrorStatusCode_WhenFailed()
+        {
+            // Arrange
+            var id = Guid.NewGuid();
+            var expectedResult = ServiceResult.Fail("Cannot delete", 403);
+            _employeeService.SoftDeleteEmployeeAsync(id).Returns(expectedResult);
+
+            // Act
+            var result = await _sut.Delete(id) as ObjectResult;
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(403, result.StatusCode);
+            Assert.Equal(expectedResult, result.Value);
         }
     }
 }

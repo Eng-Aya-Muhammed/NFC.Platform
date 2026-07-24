@@ -228,6 +228,14 @@ namespace NFC.Platform.Tests.Services
                 var realExcelParser = new ExcelParser();
                 var otpSettingsOptions = Options.Create(new OtpSettings { CooldownSeconds = 60, MaxResendAttempts = 5 });
 
+                var companyRepo = Substitute.For<IGenericRepository<Company>>();
+                companyRepo.GetQueryable().Returns(new List<Company> { new Company { TenantId = tenantId, Id = Guid.NewGuid() } }.AsQueryable().BuildMock());
+                unitOfWork.Repository<Company>().Returns(companyRepo);
+
+                var employeeService = Substitute.For<IEmployeeService>();
+                employeeService.UpsertEmployeesFromExcelAsync(Arg.Any<string>(), Arg.Any<Guid>(), Arg.Any<Guid>())
+                    .Returns(ServiceResult<List<Guid>>.Fail("FailedToParseExcel", 422));
+
                 var cardOrderService = new CardOrderService(
                     unitOfWork,
                     mapper,
@@ -236,17 +244,21 @@ namespace NFC.Platform.Tests.Services
                     cardPricingService,
                     validator,
                     backgroundJobClient,
-                    httpClientFactory,
-                    realExcelParser,
+                    employeeService,
                     otpSettingsOptions
                 );
+
+                var orderRepo = Substitute.For<IGenericRepository<CardOrder>>();
+                orderRepo.GetQueryable().Returns(new List<CardOrder>().AsQueryable().BuildMock());
+                unitOfWork.Repository<CardOrder>().Returns(orderRepo);
 
                 var request = new CreateCardOrderRequest
                 {
                     Quantity = 1,
                     CardType = CardType.Plastic,
                     CardDesignType = CardDesignType.NeedCustomDesign,
-                    ExcelDataUrl = cloudinaryExcelUrl
+                    ExcelDataUrl = cloudinaryExcelUrl,
+                    AssignmentScope = AssignmentScope.ExcelUpload
                 };
 
                 // 4. Act: Call CreateOrderAsync for CompanyAdmin
@@ -309,6 +321,9 @@ namespace NFC.Platform.Tests.Services
             var realExcelParser = new ExcelParser();
             var otpSettingsOptions = Options.Create(new OtpSettings { CooldownSeconds = 60, MaxResendAttempts = 5 });
 
+            var companyRepo = Substitute.For<IGenericRepository<Company>>();
+            companyRepo.GetQueryable().Returns(new List<Company> { new Company { TenantId = tenantId, Id = Guid.NewGuid() } }.AsQueryable().BuildMock());
+            unitOfWork.Repository<Company>().Returns(companyRepo);
             var cardOrderService = new CardOrderService(
                 unitOfWork,
                 mapper,
@@ -317,8 +332,7 @@ namespace NFC.Platform.Tests.Services
                 cardPricingService,
                 validator,
                 backgroundJobClient,
-                httpClientFactory,
-                realExcelParser,
+                Substitute.For<IEmployeeService>(),
                 otpSettingsOptions
             );
 
@@ -335,9 +349,9 @@ namespace NFC.Platform.Tests.Services
 
             Console.WriteLine($"[Individual User Result] IsSuccess: {result.IsSuccess}, StatusCode: {result.StatusCode}");
 
-            // ExcelDataUrl is now validated for all accounts if provided!
-            Assert.False(result.IsSuccess);
-            Assert.Equal(422, result.StatusCode);
+            // ExcelDataUrl is ignored for Individual accounts (AssignmentScope != ExcelUpload)
+            Assert.True(result.IsSuccess);
+            Assert.Equal(200, result.StatusCode);
         }
     }
 }

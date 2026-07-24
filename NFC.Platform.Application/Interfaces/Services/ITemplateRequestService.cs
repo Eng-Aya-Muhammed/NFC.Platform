@@ -10,7 +10,9 @@ namespace NFC.Platform.Application.Interfaces.Services
     public interface ITemplateRequestService
     {
         Task<ServiceResult<TemplateRequestDto>> CreateRequestAsync(Guid userId, CreateTemplateRequest request);
+        Task<ServiceResult<TemplateRequestDto>> UpdateRequestAsync(Guid id, Guid userId, UpdateTemplateRequest request);
         Task<ServiceResult<IReadOnlyList<TemplateRequestDto>>> GetTenantRequestsAsync();
         Task<ServiceResult<TemplateRequestDto>> GetRequestByIdAsync(Guid id);
+        Task<ServiceResult<bool>> CancelRequestAsync(Guid id);
     }
 }

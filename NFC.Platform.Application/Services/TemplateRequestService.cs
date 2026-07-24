@@ -52,6 +52,69 @@ namespace NFC.Platform.Application.Services;
             return ServiceResult<TemplateRequestDto>.Success(dto, _messageService.Get("RecordCreated"));
         }
 
+        public async Task<ServiceResult<TemplateRequestDto>> UpdateRequestAsync(Guid id, Guid userId, UpdateTemplateRequest request)
+        {
+            var templateRequest = await _unitOfWork.Repository<TemplateRequest>()
+                .GetQueryable()
+                .Include(r => r.RequestedByUser)
+                .FirstOrDefaultAsync(r => r.Id == id);
+
+            if (templateRequest == null)
+            {
+                return ServiceResult<TemplateRequestDto>.NotFound(_messageService.Get("RecordNotFound"));
+            }
+
+            if (templateRequest.Status != TemplateRequestStatus.Pending)
+            {
+                return ServiceResult<TemplateRequestDto>.Fail(_messageService.Get("TemplateRequestCannotBeUpdated"), 400);
+            }
+
+            _mapper.Map(request, templateRequest);
+
+            await _unitOfWork.SaveChangesAsync();
+
+            var dto = _mapper.Map<TemplateRequestDto>(templateRequest);
+            return ServiceResult<TemplateRequestDto>.Success(dto, _messageService.Get("RecordUpdated"));
+        }
+
+        public async Task<ServiceResult<bool>> CancelRequestAsync(Guid id)
+        {
+            var tenantId = _currentTenant.TenantId;
+            if (!tenantId.HasValue)
+            {
+                var msg = _messageService.Get("Unauthorized");
+                return ServiceResult<bool>.Unauthorized(string.IsNullOrWhiteSpace(msg) ? "User is not authenticated." : msg);
+            }
+
+            var templateRequest = await _unitOfWork.Repository<TemplateRequest>()
+                .GetQueryable()
+                .FirstOrDefaultAsync(r => r.Id == id);
+
+            if (templateRequest == null)
+            {
+                return ServiceResult<bool>.NotFound(_messageService.Get("RecordNotFound"));
+            }
+
+            if (templateRequest.Status != TemplateRequestStatus.Pending)
+            {
+                return ServiceResult<bool>.Fail(_messageService.Get("TemplateRequestCannotBeCancelled"), 400);
+            }
+
+            templateRequest.Status = TemplateRequestStatus.Cancelled;
+
+            // Refund quota
+            var activeSub = await SubscriptionHelper.GetActiveSubWithPlanAsync(_unitOfWork, tenantId.Value);
+            if (activeSub != null && activeSub.CustomDesignRequestsUsed > 0)
+            {
+                activeSub.CustomDesignRequestsUsed--;
+            }
+
+            await _unitOfWork.SaveChangesAsync();
+
+            return ServiceResult<bool>.Success(true, _messageService.Get("TemplateRequestCancelled"));
+        }
+
+
         public async Task<ServiceResult<IReadOnlyList<TemplateRequestDto>>> GetTenantRequestsAsync()
         {
             var requests = await _unitOfWork.Repository<TemplateRequest>()

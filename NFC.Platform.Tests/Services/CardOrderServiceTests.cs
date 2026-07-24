@@ -21,12 +21,14 @@ namespace NFC.Platform.Tests.Services
 
         private readonly Hangfire.IBackgroundJobClient _backgroundJobClient;
         private readonly ICardPricingService _cardPricingService;
+        private readonly IEmployeeService _employeeService;
         private readonly CardOrderService _sut;
 
         public CardOrderServiceTests()
         {
             _unitOfWork = Substitute.For<IUnitOfWork>();
-            _mapper = Substitute.For<IMapper>();
+            var mapperConfig = new AutoMapper.MapperConfiguration(cfg => cfg.AddProfile(new NFC.Platform.Application.Mapping.CardOrderMappingProfile()));
+            _mapper = mapperConfig.CreateMapper();
             _messageService = Substitute.For<IMessageService>();
             _currentTenant = Substitute.For<ICurrentTenant>();
             _excelParser = Substitute.For<IExcelParser>();
@@ -35,8 +37,11 @@ namespace NFC.Platform.Tests.Services
             _otpSettingsOptions.Value.Returns(new OtpSettings { CooldownSeconds = 60, MaxResendAttempts = 5 });
 
             _orderRepo = Substitute.For<IGenericRepository<CardOrder>>();
+            _orderRepo.GetQueryable().Returns(new List<CardOrder>().AsQueryable().BuildMock());
 
             _orderItemRepo = Substitute.For<IGenericRepository<CardOrderItem>>();
+            _orderItemRepo.GetQueryable().Returns(new List<CardOrderItem>().AsQueryable().BuildMock());
+            
             _jobRepo = Substitute.For<IGenericRepository<EmployeeImportJob>>();
             _cardPricingRepo = Substitute.For<IGenericRepository<CardPricing>>();
             _userProfileRepo = Substitute.For<IGenericRepository<UserProfile>>();
@@ -47,6 +52,10 @@ namespace NFC.Platform.Tests.Services
             _unitOfWork.Repository<EmployeeImportJob>().Returns(_jobRepo);
             _unitOfWork.Repository<CardPricing>().Returns(_cardPricingRepo);
             _unitOfWork.Repository<UserProfile>().Returns(_userProfileRepo);
+            
+            var _companyRepo = Substitute.For<IGenericRepository<Company>>();
+            _companyRepo.GetQueryable().Returns(new List<Company> { new Company { TenantId = Guid.NewGuid(), Id = Guid.NewGuid() } }.AsQueryable().BuildMock());
+            _unitOfWork.Repository<Company>().Returns(_companyRepo);
 
             _userProfileRepo.GetQueryable().Returns(new List<UserProfile>().AsQueryable().BuildMock());
 
@@ -69,26 +78,15 @@ namespace NFC.Platform.Tests.Services
 
             _messageService.Get(default!, default!).ReturnsForAnyArgs(x => (string)x[0]);
 
-            _mapper.Map<CardOrder>(Arg.Any<CardOrder>()).Returns(x =>
-            {
-                var src = x.Arg<CardOrder>();
-                if (src == null) return null!;
-                return new CardOrder
-                {
-                    CardName = src.CardName,
-                    CardType = src.CardType,
-                    CardDesignType = src.CardDesignType,
-                    FrontDesignUrl = src.FrontDesignUrl,
-                    BackDesignUrl = src.BackDesignUrl,
 
-                };
-            });
 
             _cardPricingService = Substitute.For<ICardPricingService>();
             _cardPricingService.CalculateOrderPricingAsync(Arg.Any<CardType>(), Arg.Any<int>())
                 .Returns(ServiceResult<OrderPricingResponseDto>.Success(new OrderPricingResponseDto { UnitPrice = 4.5m, TotalPrice = 4.5m, Currency = "KWD" }));
 
-            _sut = new CardOrderService(_unitOfWork, _mapper, _messageService, _currentTenant, _cardPricingService, validator, _backgroundJobClient, Substitute.For<System.Net.Http.IHttpClientFactory>(), _excelParser, _otpSettingsOptions);
+            _employeeService = Substitute.For<IEmployeeService>();
+
+            _sut = new CardOrderService(_unitOfWork, _mapper, _messageService, _currentTenant, _cardPricingService, validator, _backgroundJobClient, _employeeService, _otpSettingsOptions);
         }
 
         //  GetByIdAsync 
@@ -119,7 +117,7 @@ namespace NFC.Platform.Tests.Services
             var queryable = new List<CardOrder> { order }.AsQueryable().BuildMock();
             _orderRepo.GetQueryable().Returns(queryable);
             var dto = new CardOrderDto { Id = id };
-            _mapper.Map<CardOrderDto>(order).Returns(dto);
+
 
             // Act
             var result = await _sut.GetOrderByIdAsync(id);
@@ -142,7 +140,7 @@ namespace NFC.Platform.Tests.Services
             _orderRepo.GetQueryable().Returns(orders.AsQueryable().BuildMock());
 
             var request = new PaginationRequest { PageNumber = 1, PageSize = 10 };
-            _mapper.Map<CardOrderDto>(Arg.Any<CardOrder>()).Returns(new CardOrderDto());
+
 
             // Act
             var result = await _sut.GetPagedOrdersAsync(request, null);
@@ -166,7 +164,7 @@ namespace NFC.Platform.Tests.Services
             _orderRepo.GetQueryable().Returns(orders.AsQueryable().BuildMock());
 
             var request = new PaginationRequest { PageNumber = 1, PageSize = 10 };
-            _mapper.Map<CardOrderDto>(Arg.Any<CardOrder>()).Returns(new CardOrderDto());
+
 
             // Act
             var result = await _sut.GetPagedOrdersAsync(request, "Encoding");
@@ -205,7 +203,7 @@ namespace NFC.Platform.Tests.Services
 
             var request = new CreateCardOrderRequest { Quantity = 5, CardType = CardType.Metal };
             var order = new CardOrder { Id = Guid.NewGuid(), Quantity = 5, CardType = CardType.Metal, Items = [] };
-            _mapper.Map<CardOrder>(request).Returns(order);
+
 
             var currentUser = new User { Id = userId, AccountType = AccountType.Individual };
             _unitOfWork.Repository<User>().GetQueryable().Returns(new List<User> { currentUser }.AsQueryable().BuildMock());
@@ -214,7 +212,7 @@ namespace NFC.Platform.Tests.Services
             _orderRepo.GetQueryable().Returns(createdQueryable);
 
             var dto = new CardOrderDto { Quantity = 5, CardType = CardType.Metal };
-            _mapper.Map<CardOrderDto>(order).Returns(dto);
+
             var pricingResp = new OrderPricingResponseDto { UnitPrice = 8.5m, TotalPrice = 42.5m };
             _cardPricingService.CalculateOrderPricingAsync(Arg.Any<CardType>(), Arg.Any<int>()).Returns(ServiceResult<OrderPricingResponseDto>.Success(pricingResp));
 
@@ -245,7 +243,8 @@ namespace NFC.Platform.Tests.Services
             { 
                 Quantity = 10, 
                 CardType = CardType.Plastic,
-                ExcelDataUrl = "https://example.com/employees.xlsx" 
+                ExcelDataUrl = "https://example.com/employees.xlsx",
+                AssignmentScope = AssignmentScope.ExcelUpload
             };
 
             var companyRepo = Substitute.For<IGenericRepository<Company>>();
@@ -257,7 +256,7 @@ namespace NFC.Platform.Tests.Services
 
             // Assert: Since Company is missing, should fail with 422 CompanyNotFound
             Assert.False(result.IsSuccess);
-            Assert.Equal(422, result.StatusCode);
+            Assert.Equal(400, result.StatusCode);
         }
 
         [Fact]
@@ -286,22 +285,214 @@ namespace NFC.Platform.Tests.Services
         }
 
 
-        //  DeleteAsync 
+        //  CancelOrderAsync 
 
         [Fact]
-        public async Task DeleteAsync_ReturnsNotFound_WhenOrderDoesNotExist()
+        public async Task CancelOrderAsync_ReturnsNotFound_WhenOrderDoesNotExist()
         {
             // Arrange
             var id = Guid.NewGuid();
+            var tenantId = Guid.NewGuid();
+            _currentTenant.TenantId.Returns((Guid?)tenantId);
             _orderRepo.GetByIdAsync(id).Returns((CardOrder?)null);
             _messageService.Get("RecordNotFound").Returns("Record not found.");
 
             // Act
-            var result = await _sut.DeleteOrderAsync(id);
+            var result = await _sut.CancelOrderAsync(id);
 
             // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(404, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task CancelOrderAsync_ReturnsBadRequest_WhenStatusIsNotPendingReview()
+        {
+            // Arrange
+            var id = Guid.NewGuid();
+            var tenantId = Guid.NewGuid();
+            _currentTenant.TenantId.Returns((Guid?)tenantId);
+            var order = new CardOrder { Id = id, TenantId = tenantId, Status = OrderStatus.InPrinting };
+            _orderRepo.GetByIdAsync(id).Returns(order);
+            _messageService.Get("OrderCannotBeCancelled").Returns("Order cannot be cancelled.");
+
+            // Act
+            var result = await _sut.CancelOrderAsync(id);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(400, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task CancelOrderAsync_SuccessfullyCancelsOrder_WhenStatusIsPendingReview()
+        {
+            // Arrange
+            var id = Guid.NewGuid();
+            var tenantId = Guid.NewGuid();
+            _currentTenant.TenantId.Returns((Guid?)tenantId);
+            var order = new CardOrder { Id = id, TenantId = tenantId, Status = OrderStatus.PendingReview };
+            _orderRepo.GetByIdAsync(id).Returns(order);
+
+            // Act
+            var result = await _sut.CancelOrderAsync(id);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(200, result.StatusCode);
+            Assert.Equal(OrderStatus.Cancelled, order.Status);
+            await _unitOfWork.Received(1).SaveChangesAsync();
+        }
+
+        // UpdateOrderAsync
+
+        [Fact]
+        public async Task UpdateOrderAsync_ReturnsNotFound_WhenOrderDoesNotExist()
+        {
+            // Arrange
+            var id = Guid.NewGuid();
+            var tenantId = Guid.NewGuid();
+            _currentTenant.TenantId.Returns((Guid?)tenantId);
+            _orderRepo.GetQueryable().Returns(new List<CardOrder>().AsQueryable().BuildMock());
+            _messageService.Get("RecordNotFound").Returns("Record not found.");
+
+            var request = new UpdateCardOrderRequest { CardName = "New Name" };
+
+            // Act
+            var result = await _sut.UpdateOrderAsync(id, request);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(404, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task UpdateOrderAsync_ReturnsBadRequest_WhenStatusIsNotPendingReview()
+        {
+            // Arrange
+            var id = Guid.NewGuid();
+            var tenantId = Guid.NewGuid();
+            _currentTenant.TenantId.Returns((Guid?)tenantId);
+            var order = new CardOrder { Id = id, TenantId = tenantId, Status = OrderStatus.InPrinting };
+            _orderRepo.GetQueryable().Returns(new List<CardOrder> { order }.AsQueryable().BuildMock());
+            _messageService.Get("OrderCannotBeUpdated").Returns("Order cannot be updated.");
+
+            var request = new UpdateCardOrderRequest { CardName = "New Name" };
+
+            // Act
+            var result = await _sut.UpdateOrderAsync(id, request);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(400, result.StatusCode);
+            Assert.Contains("updated", result.Errors.FirstOrDefault());
+        }
+
+        [Fact]
+        public async Task UpdateOrderAsync_UpdatesFields_WithoutRecalculatingPricing_WhenQuantityAndTypeUnchanged()
+        {
+            // Arrange
+            var id = Guid.NewGuid();
+            var tenantId = Guid.NewGuid();
+            _currentTenant.TenantId.Returns((Guid?)tenantId);
+            var order = new CardOrder { 
+                Id = id, 
+                TenantId = tenantId,
+                Status = OrderStatus.PendingReview,
+                CardName = "Old Name",
+                CardType = CardType.Plastic,
+                Quantity = 5,
+                UnitPrice = 4.5m,
+                TotalPrice = 22.5m
+            };
+            _orderRepo.GetQueryable().Returns(new List<CardOrder> { order }.AsQueryable().BuildMock());
+
+            var request = new UpdateCardOrderRequest { CardName = "New Name" };
+
+            // Act
+            var result = await _sut.UpdateOrderAsync(id, request);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal("New Name", order.CardName);
+            Assert.Equal(5, order.Quantity);
+            Assert.Equal(22.5m, order.TotalPrice); // Unchanged
+            await _cardPricingService.DidNotReceiveWithAnyArgs().CalculateOrderPricingAsync(default, default);
+            await _unitOfWork.Received(1).SaveChangesAsync();
+            await _unitOfWork.Received(1).BeginTransactionAsync();
+            await _unitOfWork.Received(1).CommitTransactionAsync();
+        }
+
+        [Fact]
+        public async Task UpdateOrderAsync_RecalculatesPricing_WhenQuantityChanges()
+        {
+            // Arrange
+            var id = Guid.NewGuid();
+            var tenantId = Guid.NewGuid();
+            _currentTenant.TenantId.Returns((Guid?)tenantId);
+            var order = new CardOrder { 
+                Id = id, 
+                TenantId = tenantId,
+                Status = OrderStatus.PendingReview,
+                CardType = CardType.Plastic,
+                Quantity = 5,
+                UnitPrice = 4.5m,
+                TotalPrice = 22.5m,
+                Items = new List<CardOrderItem>()
+            };
+            _orderRepo.GetQueryable().Returns(new List<CardOrder> { order }.AsQueryable().BuildMock());
+
+            var request = new UpdateCardOrderRequest { Quantity = 10 };
+
+            _cardPricingService.CalculateOrderPricingAsync(CardType.Plastic, 10)
+                .Returns(ServiceResult<OrderPricingResponseDto>.Success(new OrderPricingResponseDto { UnitPrice = 4.0m, TotalPrice = 40.0m, Currency = "KWD" }));
+
+            // Act
+            var result = await _sut.UpdateOrderAsync(id, request);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(10, order.Quantity);
+            Assert.Equal(4.0m, order.UnitPrice);
+            Assert.Equal(40.0m, order.TotalPrice);
+            await _cardPricingService.Received(1).CalculateOrderPricingAsync(CardType.Plastic, 10);
+            await _unitOfWork.Received(1).SaveChangesAsync();
+        }
+
+        [Fact]
+        public async Task UpdateOrderAsync_RecalculatesPricing_WhenCardTypeChanges()
+        {
+            // Arrange
+            var id = Guid.NewGuid();
+            var tenantId = Guid.NewGuid();
+            _currentTenant.TenantId.Returns((Guid?)tenantId);
+            var order = new CardOrder { 
+                Id = id, 
+                TenantId = tenantId,
+                Status = OrderStatus.PendingReview,
+                CardType = CardType.Plastic,
+                Quantity = 5,
+                UnitPrice = 4.5m,
+                TotalPrice = 22.5m,
+                Items = new List<CardOrderItem>()
+            };
+            _orderRepo.GetQueryable().Returns(new List<CardOrder> { order }.AsQueryable().BuildMock());
+
+            var request = new UpdateCardOrderRequest { CardType = CardType.Metal };
+
+            _cardPricingService.CalculateOrderPricingAsync(CardType.Metal, 5)
+                .Returns(ServiceResult<OrderPricingResponseDto>.Success(new OrderPricingResponseDto { UnitPrice = 8.5m, TotalPrice = 42.5m, Currency = "KWD" }));
+
+            // Act
+            var result = await _sut.UpdateOrderAsync(id, request);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(CardType.Metal, order.CardType);
+            Assert.Equal(8.5m, order.UnitPrice);
+            Assert.Equal(42.5m, order.TotalPrice);
+            await _cardPricingService.Received(1).CalculateOrderPricingAsync(CardType.Metal, 5);
+            await _unitOfWork.Received(1).SaveChangesAsync();
         }
 
 
@@ -432,8 +623,7 @@ namespace NFC.Platform.Tests.Services
 
             var item1 = new CardOrderItem { UserProfileId = userProfile1.Id };
             var item2 = new CardOrderItem { UserProfileId = userProfile2.Id };
-            _mapper.Map<CardOrderItem>(employees[0]).Returns(item1);
-            _mapper.Map<CardOrderItem>(employees[1]).Returns(item2);
+
 
             // Act
             var result = await _sut.CreateReorderAsync(parentId, request);
@@ -444,8 +634,8 @@ namespace NFC.Platform.Tests.Services
                 o.ParentOrderId == parentId &&
                 o.Quantity == 2 &&
                 o.Items.Count == 2 &&
-                o.Items.Contains(item1) &&
-                o.Items.Contains(item2)));
+                o.Items.Any(i => i.UserProfileId == userProfile1.Id) &&
+                o.Items.Any(i => i.UserProfileId == userProfile2.Id)));
             await _unitOfWork.Received(1).SaveChangesAsync();
         }
 
@@ -543,8 +733,7 @@ namespace NFC.Platform.Tests.Services
 
             var item1 = new CardOrderItem { UserProfileId = userProfile1.Id };
             var item2 = new CardOrderItem { UserProfileId = userProfile2.Id };
-            _mapper.Map<CardOrderItem>(employees[0]).Returns(item1);
-            _mapper.Map<CardOrderItem>(employees[1]).Returns(item2);
+
 
             // Act
             var result = await _sut.CreateReorderAsync(parentId, request);
@@ -555,8 +744,8 @@ namespace NFC.Platform.Tests.Services
                 o.ParentOrderId == parentId &&
                 o.Quantity == 2 &&
                 o.Items.Count == 2 &&
-                o.Items.Contains(item1) &&
-                o.Items.Contains(item2)));
+                o.Items.Any(i => i.UserProfileId == userProfile1.Id) &&
+                o.Items.Any(i => i.UserProfileId == userProfile2.Id)));
             await _unitOfWork.Received(1).SaveChangesAsync();
         }
 
@@ -598,8 +787,7 @@ namespace NFC.Platform.Tests.Services
             _cardPricingRepo.GetQueryable().Returns(new List<CardPricing> { pricing }.AsQueryable().BuildMock());
 
             var reorder = new CardOrder { Id = Guid.NewGuid(), CardType = CardType.Plastic };
-            _mapper.Map<CardOrder>(parentOrder).Returns(reorder);
-            _mapper.Map<CardOrderDto>(reorder).Returns(new CardOrderDto());
+
 
             CardOrder? addedReorder = null;
             await _orderRepo.AddAsync(Arg.Do<CardOrder>(o => addedReorder = o));
@@ -790,17 +978,26 @@ namespace NFC.Platform.Tests.Services
         {
             // Arrange
             var userId = Guid.NewGuid();
+            var tenantId = Guid.NewGuid();
             _currentTenant.UserId.Returns(userId);
-            _currentTenant.TenantId.Returns(Guid.NewGuid());
+            _currentTenant.TenantId.Returns(tenantId);
 
             var companyAdminUser = new User { Id = userId, AccountType = AccountType.CompanyAdmin };
             _unitOfWork.Repository<User>().GetQueryable().Returns(new List<User> { companyAdminUser }.AsQueryable().BuildMock());
+
+            _employeeService.UpsertEmployeesFromExcelAsync(Arg.Any<string>(), Arg.Any<Guid>(), Arg.Any<Guid>())
+                .Returns(ServiceResult<List<Guid>>.Fail(new List<string> { "FailedToParseExcel" }, 400));
+
+            var companyRepo = Substitute.For<IGenericRepository<Company>>();
+            companyRepo.GetQueryable().Returns(new List<Company> { new Company { TenantId = tenantId, Id = Guid.NewGuid() } }.AsQueryable().BuildMock());
+            _unitOfWork.Repository<Company>().Returns(companyRepo);
 
             var request = new CreateCardOrderRequest
             {
                 Quantity = 10,
                 CardType = CardType.Plastic,
-                ExcelDataUrl = "https://example.com/invalid-file.xlsx"
+                ExcelDataUrl = "https://example.com/invalid-file.xlsx",
+                AssignmentScope = AssignmentScope.ExcelUpload
             };
 
             // Act
@@ -810,7 +1007,7 @@ namespace NFC.Platform.Tests.Services
 
             // Assert
             Assert.False(result.IsSuccess);
-            Assert.Equal(422, result.StatusCode);
+            Assert.Equal(400, result.StatusCode);
             Assert.Contains(result.Errors, e => e.Contains("FailedToParseExcel") || e.Contains("FailedToDownloadExcel") || e.Contains("NoValidEmployeeRows"));
             
             // Ensure no order was saved

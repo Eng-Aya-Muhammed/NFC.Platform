@@ -108,13 +108,27 @@ namespace NFC.Platform.API.Controllers
 
 
         /// <summary>
-        /// Soft-deletes a card order. Only allowed while Status = PendingReview.
+        /// Updates an existing card order.
         /// </summary>
-        [HttpDelete("{id:guid}")]
+        [HttpPut("{id:guid}")]
         [HasPermission(AppPermissions.CardOrders.Update)]
-        public async Task<IActionResult> Delete([FromRoute] Guid id)
+        public async Task<IActionResult> Update([FromRoute] Guid id, [FromBody] UpdateCardOrderRequest request)
         {
-            var result = await _cardOrderService.DeleteOrderAsync(id);
+            var result = await _cardOrderService.UpdateOrderAsync(id, request);
+            if (!result.IsSuccess)
+                return StatusCode(result.StatusCode, result);
+
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// Soft-cancels a card order. Only allowed while Status = PendingReview.
+        /// </summary>
+        [HttpPut("{id:guid}/cancel")]
+        [HasPermission(AppPermissions.CardOrders.Cancel)]
+        public async Task<IActionResult> Cancel([FromRoute] Guid id)
+        {
+            var result = await _cardOrderService.CancelOrderAsync(id);
             if (!result.IsSuccess)
                 return StatusCode(result.StatusCode, result);
 

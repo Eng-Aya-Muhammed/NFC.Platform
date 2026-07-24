@@ -70,6 +70,10 @@ namespace NFC.Platform.Tests.Services
 
             var otpSettingsOptions = Substitute.For<IOptions<OtpSettings>>();
             otpSettingsOptions.Value.Returns(new OtpSettings { CooldownSeconds = 60, MaxResendAttempts = 5 });
+            
+            var companyRepo = Substitute.For<IGenericRepository<Company>>();
+            companyRepo.GetQueryable().Returns(new List<Company> { new Company { TenantId = Guid.NewGuid(), Id = Guid.NewGuid() } }.AsQueryable().BuildMock());
+            unitOfWork.Repository<Company>().Returns(companyRepo);
 
             var service = new CardOrderService(
                 unitOfWork,
@@ -79,8 +83,7 @@ namespace NFC.Platform.Tests.Services
                 cardPricingService,
                 validator,
                 backgroundJobClient,
-                Substitute.For<System.Net.Http.IHttpClientFactory>(),
-                Substitute.For<NFC.Platform.Application.Interfaces.Services.IExcelParser>(),
+                Substitute.For<IEmployeeService>(),
                 otpSettingsOptions);
 
             var request = new CreateCardOrderRequest

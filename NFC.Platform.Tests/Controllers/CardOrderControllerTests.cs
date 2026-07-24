@@ -151,25 +151,25 @@ namespace NFC.Platform.Tests.Controllers
         }
 
         [Fact]
-        public async Task Delete_CallsService_AndReturnsOk_OnSuccess()
+        public async Task Cancel_CallsService_AndReturnsOk_OnSuccess()
         {
             var id = Guid.NewGuid();
-            _cardOrderService.DeleteOrderAsync(id).Returns(ServiceResult.Success());
+            _cardOrderService.CancelOrderAsync(id).Returns(ServiceResult.Success());
 
-            var result = await _sut.Delete(id) as OkObjectResult;
+            var result = await _sut.Cancel(id) as OkObjectResult;
 
             Assert.NotNull(result);
             Assert.Equal(200, result.StatusCode);
-            await _cardOrderService.Received(1).DeleteOrderAsync(id);
+            await _cardOrderService.Received(1).CancelOrderAsync(id);
         }
 
         [Fact]
-        public async Task Delete_ReturnsErrorStatusCode_OnFailure()
+        public async Task Cancel_ReturnsErrorStatusCode_OnFailure()
         {
             var id = Guid.NewGuid();
-            _cardOrderService.DeleteOrderAsync(id).Returns(ServiceResult.Fail("Error", 400));
+            _cardOrderService.CancelOrderAsync(id).Returns(ServiceResult.Fail("Error", 400));
 
-            var result = await _sut.Delete(id) as ObjectResult;
+            var result = await _sut.Cancel(id) as ObjectResult;
 
             Assert.NotNull(result);
             Assert.Equal(400, result.StatusCode);

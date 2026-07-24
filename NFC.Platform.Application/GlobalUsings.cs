@@ -12,6 +12,7 @@ global using FluentValidation;
 global using Hangfire;
 global using Microsoft.EntityFrameworkCore;
 global using Microsoft.Extensions.Configuration;
+global using Microsoft.Extensions.Options;
 global using NFC.Platform.Application.Constants;
 global using NFC.Platform.Application.DTOs;
 global using NFC.Platform.Application.DTOs.Admin;
