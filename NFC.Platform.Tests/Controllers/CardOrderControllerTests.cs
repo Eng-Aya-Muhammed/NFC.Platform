@@ -18,12 +18,12 @@ namespace NFC.Platform.Tests.Controllers
         }
 
         [Fact]
-        public void CardOrderController_ShouldHaveAuthorizeAndRouteAttributes()
+        public void CardOrderController_ShouldHaveApiControllerAndRouteAttributes()
         {
             var type = typeof(CardOrderController);
             
-            var authorizeAttributes = type.GetCustomAttributes(typeof(AuthorizeAttribute), true);
-            Assert.NotEmpty(authorizeAttributes);
+            var apiController = type.GetCustomAttributes(typeof(ApiControllerAttribute), true);
+            Assert.NotEmpty(apiController);
 
             var routeAttributes = type.GetCustomAttributes(typeof(RouteAttribute), true).Cast<RouteAttribute>().ToList();
             Assert.NotEmpty(routeAttributes);

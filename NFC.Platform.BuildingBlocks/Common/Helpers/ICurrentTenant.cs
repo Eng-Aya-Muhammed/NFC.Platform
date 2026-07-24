@@ -28,9 +28,9 @@ namespace NFC.Platform.BuildingBlocks.Common.Helpers
         bool IsAuthenticated { get; }
 
         /// <summary>
-        /// Gets a value indicating whether the current user is a SuperAdmin (bypassing tenant filters).
+        /// Gets a value indicating whether the current user is an Admin (bypassing tenant filters).
         /// </summary>
-        bool IsSuperAdmin { get; }
+        bool IsAdmin { get; }
 
         /// <summary>
         /// Manually sets the current tenant and user identifiers. Useful in background threads.

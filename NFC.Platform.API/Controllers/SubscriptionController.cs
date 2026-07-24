@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Mvc;
 using NFC.Platform.Application.DTOs;
 using NFC.Platform.Application.Interfaces.Services;
 using NFC.Platform.BuildingBlocks.Common.Constants;
+using NFC.Platform.Domain.Constants;
+using NFC.Platform.Infrastructure.Authorization;
 
 namespace NFC.Platform.API.Controllers
 {
@@ -23,7 +25,7 @@ namespace NFC.Platform.API.Controllers
         }
 
         [HttpGet("current")]
-        [Authorize(Policy = AppPolicies.CompanyAdminOnly)]
+        [HasPermission(AppPermissions.Company.View)]
         public async Task<IActionResult> GetCurrent()
         {
             var result = await _subscriptionService.GetCurrentSubscriptionAsync();
@@ -35,7 +37,7 @@ namespace NFC.Platform.API.Controllers
         }
 
         [HttpGet("history")]
-        [Authorize(Policy = AppPolicies.CompanyAdminOnly)]
+        [HasPermission(AppPermissions.Company.View)]
         public async Task<IActionResult> GetHistory()
         {
             var result = await _subscriptionService.GetSubscriptionHistoryAsync();
@@ -47,7 +49,7 @@ namespace NFC.Platform.API.Controllers
         }
 
         [HttpPost("subscribe")]
-        [Authorize(Policy = AppPolicies.CompanyAdminOnly)]
+        [HasPermission(AppPermissions.Company.Update)]
         public async Task<IActionResult> Subscribe([FromBody] SubscribeRequest request)
         {
             var result = await _subscriptionService.SubscribeAsync(request);
@@ -59,7 +61,7 @@ namespace NFC.Platform.API.Controllers
         }
 
         [HttpPost("renew")]
-        [Authorize(Policy = AppPolicies.CompanyAdminOnly)]
+        [HasPermission(AppPermissions.Company.Update)]
         public async Task<IActionResult> Renew([FromBody] RenewSubscriptionRequest request)
         {
             var result = await _subscriptionService.RenewSubscriptionAsync(request);

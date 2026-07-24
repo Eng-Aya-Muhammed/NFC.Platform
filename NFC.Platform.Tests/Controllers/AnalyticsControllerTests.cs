@@ -12,11 +12,11 @@ namespace NFC.Platform.Tests.Controllers
         }
 
         [Fact]
-        public void AnalyticsController_ShouldHaveAuthorizeAndRouteAttributes()
+        public void AnalyticsController_ShouldHaveApiControllerAndRouteAttributes()
         {
             var type = typeof(AnalyticsController);
-            var auth = type.GetCustomAttributes(typeof(AuthorizeAttribute), true);
-            Assert.NotEmpty(auth);
+            var apiController = type.GetCustomAttributes(typeof(ApiControllerAttribute), true);
+            Assert.NotEmpty(apiController);
 
             var route = type.GetCustomAttributes(typeof(RouteAttribute), true).Cast<RouteAttribute>().First();
             Assert.Equal("api/analytics", route.Template);
@@ -95,15 +95,15 @@ namespace NFC.Platform.Tests.Controllers
         }
 
         [Fact]
-        public void GetCompanyLeaderboard_ShouldHaveAuthorizeAttributeWithCompanyAdminOnlyPolicy()
+        public void GetCompanyLeaderboard_ShouldHaveHasPermissionAttributeWithAnalyticsView()
         {
             var type = typeof(AnalyticsController);
             var method = type.GetMethod(nameof(AnalyticsController.GetCompanyLeaderboard));
             Assert.NotNull(method);
 
-            var auth = method.GetCustomAttributes(typeof(AuthorizeAttribute), true).Cast<AuthorizeAttribute>().FirstOrDefault();
+            var auth = method.GetCustomAttributes(typeof(HasPermissionAttribute), true).Cast<HasPermissionAttribute>().FirstOrDefault();
             Assert.NotNull(auth);
-            Assert.Equal(AppPolicies.CompanyAdminOnly, auth.Policy);
+            Assert.Equal($"Permission:{AppPermissions.Analytics.View}", auth.Policy);
         }
     }
 }

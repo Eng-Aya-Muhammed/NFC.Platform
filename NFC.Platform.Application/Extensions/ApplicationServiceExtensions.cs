@@ -27,6 +27,7 @@ namespace NFC.Platform.Application.Extensions
             services.AddScoped<IAdminService, AdminService>();
             services.AddScoped<IProfileService, ProfileService>();
             services.AddScoped<IAnalyticsService, AnalyticsService>();
+            services.AddScoped<IRoleService, RoleService>();
 
             return services;
         }

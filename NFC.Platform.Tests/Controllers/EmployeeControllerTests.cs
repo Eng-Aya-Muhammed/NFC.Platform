@@ -12,17 +12,11 @@ namespace NFC.Platform.Tests.Controllers
         }
 
         [Fact]
-        public void EmployeeController_ShouldHaveAuthorizeAttributeWithCompanyAdminOnlyPolicy()
+        public void EmployeeController_ShouldHaveApiControllerAttribute()
         {
-            // Arrange & Act
             var type = typeof(EmployeeController);
-            var attributes = type.GetCustomAttributes(typeof(AuthorizeAttribute), true);
-
-            // Assert
+            var attributes = type.GetCustomAttributes(typeof(ApiControllerAttribute), true);
             Assert.NotEmpty(attributes);
-            var authorizeAttribute = attributes.First() as AuthorizeAttribute;
-            Assert.NotNull(authorizeAttribute);
-            Assert.Equal(AppPolicies.CompanyAdminOnly, authorizeAttribute.Policy);
         }
 
         [Fact]

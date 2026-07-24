@@ -3,6 +3,7 @@ using Hangfire.Dashboard;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using NFC.Platform.Domain.Enums;
 
 namespace NFC.Platform.API.Extensions
 {
@@ -19,10 +20,9 @@ namespace NFC.Platform.API.Extensions
                 return true;
             }
 
-            // In production, restrict to authenticated users in Admin or SuperAdmin role
+            // In production, restrict to authenticated users in Admin role
             var user = httpContext.User;
-            return user.Identity?.IsAuthenticated == true &&
-                   (user.IsInRole("Admin") || user.IsInRole("SuperAdmin"));
+            return user.Identity?.IsAuthenticated == true && user.IsInRole(AppRole.Admin.ToString());
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -25,7 +25,7 @@ namespace NFC.Platform.Infrastructure.Services
 
         private bool _isTenantValidated;
         private Guid? _cachedTenantId;
-        private bool _isSuperAdmin;
+        private bool _isAdmin;
 
         private Guid? _tenantIdOverride;
         private Guid? _userIdOverride;
@@ -73,12 +73,12 @@ namespace NFC.Platform.Infrastructure.Services
             _userIdOverride.HasValue || (_httpContextAccessor.HttpContext?.User?.Identity?.IsAuthenticated ?? false);
 
         /// <inheritdoc />
-        public bool IsSuperAdmin
+        public bool IsAdmin
         {
             get
             {
                 EnsureValidated();
-                return _isSuperAdmin;
+                return _isAdmin;
             }
         }
 
@@ -93,22 +93,21 @@ namespace NFC.Platform.Infrastructure.Services
                 return;
             }
 
-            // 1. Resolve SuperAdmin status
+            // 1. Resolve Admin status
             var roles = httpContext.User.FindAll(ClaimTypes.Role)
                 .Concat(httpContext.User.FindAll(AppClaims.Role))
                 .Select(c => c.Value);
 
-            _isSuperAdmin = roles.Any(r => r.Equals("Admin", StringComparison.OrdinalIgnoreCase)
-                                        || r.Equals("SuperAdmin", StringComparison.OrdinalIgnoreCase));
+            _isAdmin = roles.Any(r => r.Equals(AppRole.Admin.ToString(), StringComparison.OrdinalIgnoreCase));
 
             // 2. Resolve TenantId from claim
             var tenantIdStr = httpContext.User.FindFirstValue(AppClaims.TenantId)
                 ?? httpContext.User.FindFirstValue("http://schemas.microsoft.com/identity/claims/tenantid");
             if (!Guid.TryParse(tenantIdStr, out Guid tenantId))
             {
-                // If it is a SuperAdmin, they may not have a tenant claim if they are a system user, or they might.
-                // If they are SuperAdmin, allow null/empty TenantId bypass.
-                if (_isSuperAdmin)
+                // If it is an Admin, they may not have a tenant claim if they are a system user, or they might.
+                // If they are Admin, allow null/empty TenantId bypass.
+                if (_isAdmin)
                 {
                     _isTenantValidated = true;
                     return;

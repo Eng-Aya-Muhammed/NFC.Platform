@@ -10,21 +10,23 @@ using NFC.Platform.Application.DTOs.CardOrder;
 using NFC.Platform.Application.Interfaces.Services;
 using NFC.Platform.BuildingBlocks.Common.Helpers;
 using NFC.Platform.BuildingBlocks.Common.Constants;
+using NFC.Platform.Domain.Constants;
 using NFC.Platform.Domain.Enums;
-
+using NFC.Platform.Infrastructure.Authorization;
 using NFC.Platform.BuildingBlocks.Localization;
 
 namespace NFC.Platform.API.Controllers
 {
     [ApiController]
     [Route("api/company/employees")]
-    [Authorize(Policy = AppPolicies.CompanyAdminOnly)]
+    [Authorize]
     public class EmployeeController(
         IEmployeeService employeeService) : ControllerBase
     {
         private readonly IEmployeeService _employeeService = employeeService ?? throw new ArgumentNullException(nameof(employeeService));
 
         [HttpGet]
+        [HasPermission(AppPermissions.Employees.View)]
         public async Task<IActionResult> GetPaged([FromQuery] PaginationRequest request, [FromQuery] string? search)
         {
             var result = await _employeeService.GetPagedEmployeesAsync(request, search);
@@ -32,6 +34,7 @@ namespace NFC.Platform.API.Controllers
         }
 
         [HttpGet("{id:guid}")]
+        [HasPermission(AppPermissions.Employees.View)]
         public async Task<IActionResult> GetById([FromRoute] Guid id)
         {
             var result = await _employeeService.GetEmployeeDetailsAsync(id);
@@ -43,6 +46,7 @@ namespace NFC.Platform.API.Controllers
         }
 
         [HttpPost]
+        [HasPermission(AppPermissions.Employees.Create)]
         public async Task<IActionResult> Create([FromBody] CreateEmployeeRequest request)
         {
             var result = await _employeeService.CreateEmployeeAsync(request);
@@ -54,6 +58,7 @@ namespace NFC.Platform.API.Controllers
         }
 
         [HttpPut("{id:guid}")]
+        [HasPermission(AppPermissions.Employees.Update)]
         public async Task<IActionResult> Update([FromRoute] Guid id, [FromBody] UpdateEmployeeRequest request)
         {
             var result = await _employeeService.UpdateEmployeeJobDetailsAsync(id, request);
@@ -65,6 +70,7 @@ namespace NFC.Platform.API.Controllers
         }
 
         [HttpDelete("{id:guid}")]
+        [HasPermission(AppPermissions.Employees.Delete)]
         public async Task<IActionResult> Delete([FromRoute] Guid id)
         {
             var result = await _employeeService.SoftDeleteEmployeeAsync(id);

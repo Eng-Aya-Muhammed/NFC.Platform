@@ -97,4 +97,13 @@
   <data name="UserCreated" xml:space="preserve">
     <value>User created successfully.</value>
   </data>
+  <data name="RoleDeleted" xml:space="preserve">
+    <value>Role deleted successfully.</value>
+  </data>
+  <data name="RoleAssigned" xml:space="preserve">
+    <value>Role assigned successfully.</value>
+  </data>
+  <data name="RoleRevoked" xml:space="preserve">
+    <value>Role revoked successfully.</value>
+  </data>
 </root>

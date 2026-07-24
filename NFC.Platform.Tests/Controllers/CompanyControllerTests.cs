@@ -12,12 +12,12 @@ namespace NFC.Platform.Tests.Controllers
         }
 
         [Fact]
-        public void CompanyController_ShouldHaveAuthorizeAttributeWithCompanyAdminOnlyPolicy()
+        public void CompanyController_ShouldHaveHasPermissionAttributeWithCompanyView()
         {
             var type = typeof(CompanyController);
-            var auth = type.GetCustomAttributes(typeof(AuthorizeAttribute), true).Cast<AuthorizeAttribute>().FirstOrDefault();
+            var auth = type.GetCustomAttributes(typeof(HasPermissionAttribute), true).Cast<HasPermissionAttribute>().FirstOrDefault();
             Assert.NotNull(auth);
-            Assert.Equal(AppPolicies.CompanyAdminOnly, auth.Policy);
+            Assert.Equal($"Permission:{AppPermissions.Company.View}", auth.Policy);
         }
 
         [Fact]

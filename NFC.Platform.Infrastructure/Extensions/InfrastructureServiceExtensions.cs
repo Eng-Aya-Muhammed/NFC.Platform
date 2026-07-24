@@ -1,6 +1,8 @@
+using Microsoft.AspNetCore.Authorization;
 using NFC.Platform.BuildingBlocks.Common.Helpers;
 using NFC.Platform.BuildingBlocks.Common.Seeders;
 using NFC.Platform.BuildingBlocks.Settings;
+using NFC.Platform.Infrastructure.Authorization;
 using NFC.Platform.Infrastructure.Contexts;
 using NFC.Platform.Infrastructure.Interceptors;
 using NFC.Platform.Infrastructure.Repositories;
@@ -68,9 +70,16 @@ namespace NFC.Platform.Infrastructure.Extensions
 
             // 5. Register Seeders
             services.AddScoped<IRoleSeeder, RoleSeeder>();
+            services.AddScoped<IPermissionSeeder, PermissionSeeder>();
             services.AddScoped<IAdminUserSeeder, AdminUserSeeder>();
             services.AddScoped<ISubscriptionPlanSeeder, SubscriptionPlanSeeder>();
             services.AddScoped<IDefaultCardTemplateSeeder, DefaultCardTemplateSeeder>();
+
+            // 6. Register Permission Cache Service
+            services.AddScoped<IPermissionCacheService, PermissionCacheService>();
+
+            services.AddSingleton<IAuthorizationPolicyProvider, PermissionAuthorizationPolicyProvider>();
+            services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
 
             return services;
         }

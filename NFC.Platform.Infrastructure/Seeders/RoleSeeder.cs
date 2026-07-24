@@ -16,16 +16,32 @@ namespace NFC.Platform.Infrastructure.Seeders
         public async Task SeedAsync()
         {
             var roles = Enum.GetNames<AppRole>();
-            var existingRoles = await _context.Roles
+            var existingRolesDb = await _context.Roles
                 .Where(r => roles.Contains(r.Name))
-                .Select(r => r.Name)
                 .ToListAsync();
+
+            var existingRoleNames = existingRolesDb.Select(r => r.Name).ToList();
 
             foreach (var roleName in roles)
             {
-                if (!existingRoles.Contains(roleName))
+                if (!existingRoleNames.Contains(roleName))
                 {
-                    _context.Roles.Add(new Role { Name = roleName });
+                    _context.Roles.Add(new Role
+                    {
+                        Name = roleName,
+                        IsSystemRole = true,
+                        TenantId = null
+                    });
+                }
+                else
+                {
+                    var existingRole = existingRolesDb.First(r => r.Name == roleName);
+                    if (!existingRole.IsSystemRole || existingRole.TenantId != null)
+                    {
+                        existingRole.IsSystemRole = true;
+                        existingRole.TenantId = null;
+                        _context.Roles.Update(existingRole);
+                    }
                 }
             }
 

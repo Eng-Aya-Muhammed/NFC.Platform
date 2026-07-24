@@ -19,7 +19,7 @@ namespace NFC.Platform.Infrastructure.Contexts
         private readonly ICurrentTenant _currentTenant = currentTenant ?? throw new ArgumentNullException(nameof(currentTenant));
 
         public Guid CurrentTenantId => _currentTenant.TenantId ?? Guid.Empty;
-        public bool IsSuperAdmin => _currentTenant.IsSuperAdmin;
+        public bool IsAdmin => _currentTenant.IsAdmin;
 
         public DbSet<Tenant> Tenants { get; set; }
 
@@ -28,6 +28,7 @@ namespace NFC.Platform.Infrastructure.Contexts
         public DbSet<Employee> Employees { get; set; }
         public DbSet<Role> Roles { get; set; }
         public DbSet<UserRole> UserRoles { get; set; }
+        public DbSet<RolePermission> RolePermissions { get; set; }
         public DbSet<Company> Companies { get; set; }
         public DbSet<UserProfile> UserProfiles { get; set; }
         public DbSet<ProfileLink> ProfileLinks { get; set; }
@@ -112,28 +113,28 @@ namespace NFC.Platform.Infrastructure.Contexts
                         var tenantIdProp = Expression.Property(parameter, tenantIdPropInfo);
                         var dbContextExpr = Expression.Constant(this);
                         
-                        var isSuperAdminExpr = Expression.Property(dbContextExpr, nameof(IsSuperAdmin));
+                        var isAdminExpr = Expression.Property(dbContextExpr, nameof(IsAdmin));
                         var currentTenantIdExpr = Expression.Property(dbContextExpr, nameof(CurrentTenantId));
 
                         Expression tenantIdComparison;
                         if (tenantIdPropInfo.PropertyType == typeof(Guid?))
                         {
                             // Nullable Guid comparison (e.g. CardTemplate):
-                            // _currentTenant.IsSuperAdmin || e.TenantId == null || e.TenantId == _currentTenant.TenantId
+                            // _currentTenant.IsAdmin || e.TenantId == null || e.TenantId == _currentTenant.TenantId
                             var nullConst = Expression.Constant(null, typeof(Guid?));
                             var isNullExpr = Expression.Equal(tenantIdProp, nullConst);
                             var currentTenantIdNullable = Expression.Convert(currentTenantIdExpr, typeof(Guid?));
                             var isMatchExpr = Expression.Equal(tenantIdProp, currentTenantIdNullable);
                             
                             var tenantMatchOrNull = Expression.OrElse(isNullExpr, isMatchExpr);
-                            tenantIdComparison = Expression.OrElse(isSuperAdminExpr, tenantMatchOrNull);
+                            tenantIdComparison = Expression.OrElse(isAdminExpr, tenantMatchOrNull);
                         }
                         else
                         {
                             // Non-nullable Guid comparison:
-                            // _currentTenant.IsSuperAdmin || e.TenantId == _currentTenant.TenantId
+                            // _currentTenant.IsAdmin || e.TenantId == _currentTenant.TenantId
                             var isMatchExpr = Expression.Equal(tenantIdProp, currentTenantIdExpr);
-                            tenantIdComparison = Expression.OrElse(isSuperAdminExpr, isMatchExpr);
+                            tenantIdComparison = Expression.OrElse(isAdminExpr, isMatchExpr);
                         }
 
                         if (combinedBody == null)

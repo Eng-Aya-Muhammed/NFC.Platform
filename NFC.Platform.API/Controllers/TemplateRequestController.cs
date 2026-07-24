@@ -1,9 +1,13 @@
-
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using NFC.Platform.Application.DTOs;
+using NFC.Platform.Application.Interfaces.Services;
+using NFC.Platform.Domain.Constants;
+using NFC.Platform.Infrastructure.Authorization;
 
 namespace NFC.Platform.API.Controllers
 {
     [ApiController]
-    [Authorize]
     public class TemplateRequestController(
         ITemplateRequestService templateRequestService,
         ICurrentTenant currentTenant) : ControllerBase
@@ -12,6 +16,7 @@ namespace NFC.Platform.API.Controllers
         private readonly ICurrentTenant _currentTenant = currentTenant ?? throw new ArgumentNullException(nameof(currentTenant));
 
         [HttpPost("api/templates/requests")]
+        [HasPermission(AppPermissions.Templates.Request)]
         public async Task<IActionResult> CreateRequest([FromBody] CreateTemplateRequest request)
         {
             var userId = _currentTenant.UserId;
@@ -29,6 +34,7 @@ namespace NFC.Platform.API.Controllers
         }
 
         [HttpGet("api/templates/requests")]
+        [HasPermission(AppPermissions.Templates.View)]
         public async Task<IActionResult> GetTenantRequests()
         {
             var result = await _templateRequestService.GetTenantRequestsAsync();
@@ -36,6 +42,7 @@ namespace NFC.Platform.API.Controllers
         }
 
         [HttpGet("api/custom-design-requests/{id:guid}")]
+        [HasPermission(AppPermissions.Templates.View)]
         public async Task<IActionResult> GetRequestById([FromRoute] Guid id)
         {
             var result = await _templateRequestService.GetRequestByIdAsync(id);

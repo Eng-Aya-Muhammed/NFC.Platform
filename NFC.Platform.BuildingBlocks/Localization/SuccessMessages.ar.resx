@@ -97,4 +97,13 @@
   <data name="UserCreated" xml:space="preserve">
     <value>تم إنشاء المستخدم بنجاح.</value>
   </data>
+  <data name="RoleDeleted" xml:space="preserve">
+    <value>تم حذف الدور بنجاح.</value>
+  </data>
+  <data name="RoleAssigned" xml:space="preserve">
+    <value>تم تعيين الدور بنجاح.</value>
+  </data>
+  <data name="RoleRevoked" xml:space="preserve">
+    <value>تم سحب الدور بنجاح.</value>
+  </data>
 </root>

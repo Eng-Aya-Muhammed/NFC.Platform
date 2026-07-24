@@ -1,10 +1,15 @@
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using NFC.Platform.Application.DTOs.Company;
+using NFC.Platform.Application.Interfaces.Services;
+using NFC.Platform.Domain.Constants;
+using NFC.Platform.Infrastructure.Authorization;
 
 namespace NFC.Platform.API.Controllers
 {
     [ApiController]
     [Route("api/company")]
-    [Authorize(Policy = AppPolicies.CompanyAdminOnly)]
+    [HasPermission(AppPermissions.Company.View)]
     public class CompanyController(ICompanyService companyService) : ControllerBase
     {
         private readonly ICompanyService _companyService = companyService ?? throw new ArgumentNullException(nameof(companyService));
@@ -32,6 +37,7 @@ namespace NFC.Platform.API.Controllers
         }
 
         [HttpPut("profile")]
+        [HasPermission(AppPermissions.Company.Update)]
         public async Task<IActionResult> UpdateProfile([FromBody] UpdateCompanyProfileRequest request)
         {
             var result = await _companyService.UpdateCompanyProfileAsync(request);
@@ -44,6 +50,7 @@ namespace NFC.Platform.API.Controllers
 
         [HttpPost("change-password")]
         [EnableRateLimiting("ChangePasswordPolicy")]
+        [HasPermission(AppPermissions.Company.Update)]
         public async Task<IActionResult> ChangePassword([FromBody] CompanyChangePasswordRequest request)
         {
             var result = await _companyService.ChangeCompanyAdminPasswordAsync(request);
@@ -58,6 +65,7 @@ namespace NFC.Platform.API.Controllers
         /// Applies a specific digital card template to the company's public profile (overrides employee defaults).
         /// </summary>
         [HttpPost("template/{templateId:guid}")]
+        [HasPermission(AppPermissions.Company.Update)]
         public async Task<IActionResult> ApplyCompanyPublicProfileTemplate([FromRoute] Guid templateId)
         {
             var result = await _companyService.UpdateCompanyTemplateAsync(templateId);
@@ -69,6 +77,7 @@ namespace NFC.Platform.API.Controllers
         /// Removes the specific digital card template from the company's public profile.
         /// </summary>
         [HttpDelete("template")]
+        [HasPermission(AppPermissions.Company.Update)]
         public async Task<IActionResult> RemoveCompanyPublicProfileTemplate()
         {
             var result = await _companyService.UpdateCompanyTemplateAsync(null);

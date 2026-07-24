@@ -14,12 +14,9 @@ namespace NFC.Platform.Tests.Controllers
         }
 
         [Fact]
-        public void TemplateRequestController_ShouldHaveAuthorizeAttribute()
+        public void TemplateRequestController_ShouldHaveApiControllerAttribute()
         {
             var type = typeof(TemplateRequestController);
-            var authorizeAttributes = type.GetCustomAttributes(typeof(AuthorizeAttribute), true);
-            Assert.NotEmpty(authorizeAttributes);
-
             var apiControllerAttributes = type.GetCustomAttributes(typeof(ApiControllerAttribute), true);
             Assert.NotEmpty(apiControllerAttributes);
         }

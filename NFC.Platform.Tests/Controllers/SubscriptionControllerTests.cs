@@ -136,17 +136,29 @@ namespace NFC.Platform.Tests.Controllers
         [Theory]
         [InlineData(nameof(SubscriptionController.GetCurrent))]
         [InlineData(nameof(SubscriptionController.GetHistory))]
-        [InlineData(nameof(SubscriptionController.Subscribe))]
-        [InlineData(nameof(SubscriptionController.Renew))]
-        public void SubscriptionController_ProtectedEndpoints_ShouldHaveCompanyAdminOnlyPolicy(string methodName)
+        public void SubscriptionController_ReadEndpoints_ShouldHaveViewPermission(string methodName)
         {
             var type = typeof(SubscriptionController);
             var method = type.GetMethod(methodName);
             Assert.NotNull(method);
 
-            var auth = method.GetCustomAttributes(typeof(AuthorizeAttribute), true).Cast<AuthorizeAttribute>().FirstOrDefault();
+            var auth = method.GetCustomAttributes(typeof(HasPermissionAttribute), true).Cast<HasPermissionAttribute>().FirstOrDefault();
             Assert.NotNull(auth);
-            Assert.Equal(AppPolicies.CompanyAdminOnly, auth.Policy);
+            Assert.Equal($"Permission:{AppPermissions.Company.View}", auth.Policy);
+        }
+
+        [Theory]
+        [InlineData(nameof(SubscriptionController.Subscribe))]
+        [InlineData(nameof(SubscriptionController.Renew))]
+        public void SubscriptionController_WriteEndpoints_ShouldHaveUpdatePermission(string methodName)
+        {
+            var type = typeof(SubscriptionController);
+            var method = type.GetMethod(methodName);
+            Assert.NotNull(method);
+
+            var auth = method.GetCustomAttributes(typeof(HasPermissionAttribute), true).Cast<HasPermissionAttribute>().FirstOrDefault();
+            Assert.NotNull(auth);
+            Assert.Equal($"Permission:{AppPermissions.Company.Update}", auth.Policy);
         }
     }
 }

@@ -46,15 +46,19 @@ namespace NFC.Platform.API.Extensions
                 var roleSeeder = services.GetRequiredService<IRoleSeeder>();
                 await roleSeeder.SeedAsync();
 
-                // 3. Seed Admin User
+                // 3. Seed Default Permissions for System Roles
+                var permissionSeeder = services.GetRequiredService<IPermissionSeeder>();
+                await permissionSeeder.SeedAsync();
+
+                // 4. Seed Admin User
                 var adminSeeder = services.GetRequiredService<IAdminUserSeeder>();
                 await adminSeeder.SeedAsync();
 
-                // 4. Seed Subscription Plans
+                // 5. Seed Subscription Plans
                 var planSeeder = services.GetRequiredService<ISubscriptionPlanSeeder>();
                 await planSeeder.SeedAsync();
 
-                // 5. Seed default CardTemplate + normalize StyleConfigJson on existing templates
+                // 6. Seed default CardTemplate + normalize StyleConfigJson on existing templates
                 var templateSeeder = services.GetRequiredService<IDefaultCardTemplateSeeder>();
                 await templateSeeder.SeedAsync();
             }

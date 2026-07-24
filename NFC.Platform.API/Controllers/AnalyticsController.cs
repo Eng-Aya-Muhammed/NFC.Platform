@@ -3,6 +3,8 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NFC.Platform.Application.Interfaces.Services;
+using NFC.Platform.Domain.Constants;
+using NFC.Platform.Infrastructure.Authorization;
 
 namespace NFC.Platform.API.Controllers
 {
@@ -45,7 +47,7 @@ namespace NFC.Platform.API.Controllers
         /// Accessible to company admins only.
         /// </summary>
         [HttpGet("/api/company/analytics/leaderboard")]
-        [Authorize(Policy = AppPolicies.CompanyAdminOnly)]
+        [HasPermission(AppPermissions.Analytics.View)]
         public async Task<IActionResult> GetCompanyLeaderboard(CancellationToken cancellationToken)
         {
             var result = await _analyticsService.GetCompanyLeaderboardAsync(cancellationToken);

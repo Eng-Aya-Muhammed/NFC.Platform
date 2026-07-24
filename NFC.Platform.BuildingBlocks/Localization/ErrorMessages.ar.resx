@@ -271,4 +271,16 @@
   <data name="TenantInactive" xml:space="preserve">
     <value>الشركة المرتبطة بهذا الحساب غير مفعلة حالياً.</value>
   </data>
+  <data name="RoleAlreadyExists" xml:space="preserve">
+    <value>يوجد دور بهذا الاسم بالفعل.</value>
+  </data>
+  <data name="InvalidPermissions" xml:space="preserve">
+    <value>صلاحية واحدة أو أكثر غير صالحة.</value>
+  </data>
+  <data name="SystemRoleModificationNotAllowed" xml:space="preserve">
+    <value>لا يمكن تعديل أو حذف أدوار النظام الأساسية.</value>
+  </data>
+  <data name="UserAlreadyHasRole" xml:space="preserve">
+    <value>المستخدم يمتلك هذا الدور بالفعل.</value>
+  </data>
 </root>
