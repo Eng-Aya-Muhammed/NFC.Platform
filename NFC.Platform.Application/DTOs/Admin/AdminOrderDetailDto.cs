@@ -1,6 +1,10 @@
 using System;
 using System.Collections.Generic;
 using NFC.Platform.Application.DTOs.CardOrder;
+using NFC.Platform.Application.DTOs.CardPackage;
+using NFC.Platform.Application.DTOs.CardTemplate;
+using NFC.Platform.Application.DTOs.CardType;
+using NFC.Platform.Application.DTOs.Template;
 using NFC.Platform.Domain.Enums;
 
 namespace NFC.Platform.Application.DTOs.Admin
@@ -14,7 +18,11 @@ namespace NFC.Platform.Application.DTOs.Admin
         public string CustomerEmail { get; set; } = string.Empty;
         public string CardName { get; set; } = string.Empty;
         public Guid CardTypeId { get; set; }
+        public CardTypeAdminDto? CardType { get; set; }
         public Guid CardPackageId { get; set; }
+        public CardPackageAdminDto? CardPackage { get; set; }
+        public CardTemplateAdminDto? SelectedTemplate { get; set; }
+        public TemplateRequestDto? LatestTemplateRequest { get; set; }
         public CardDesignType DesignType { get; set; }
         public int Quantity { get; set; }
         public string? ExcelDataUrl { get; set; }

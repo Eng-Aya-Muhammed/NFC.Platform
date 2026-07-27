@@ -18,10 +18,10 @@ namespace NFC.Platform.Application.Mapping
                 .ForMember(dest => dest.CustomerName, opt => opt.MapFrom(src => src.User != null ? (src.User.UserProfile != null ? src.User.UserProfile.FullName : src.User.Username) : string.Empty))
                 .ForMember(dest => dest.CustomerEmail, opt => opt.MapFrom(src => src.User != null ? src.User.Email : string.Empty))
                 .ForMember(dest => dest.DesignType, opt => opt.MapFrom(src => src.CardDesignType))
+                .ForMember(dest => dest.CardType, opt => opt.MapFrom(src => src.CardType))
+                .ForMember(dest => dest.CardPackage, opt => opt.MapFrom(src => src.CardPackage))
                 .ForMember(dest => dest.Items, opt => opt.MapFrom(src => src.Items));
 
-            CreateMap<CreateCardTemplateDto, CardTemplate>();
-            CreateMap<UpdateCardTemplateDto, CardTemplate>();
             CreateMap<Tenant, TenantSummaryDto>();
             CreateMap<User, UserDto>()
                 .ForMember(dest => dest.Role, opt => opt.Ignore());

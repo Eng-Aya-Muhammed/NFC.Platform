@@ -92,6 +92,7 @@ namespace NFC.Platform.Tests.BusinessCycles
 
             var planRepo = Substitute.For<IGenericRepository<SubscriptionPlan>>();
             planRepo.GetQueryable().Returns(_plans.AsQueryable().BuildMock());
+            planRepo.GetByIdAsync(Arg.Any<Guid>()).Returns(callInfo => Task.FromResult(_plans.FirstOrDefault(p => p.Id == callInfo.Arg<Guid>())));
 
             var subRepo = Substitute.For<IGenericRepository<UserSubscription>>();
             subRepo.GetQueryable().Returns(_subscriptions.AsQueryable().BuildMock());

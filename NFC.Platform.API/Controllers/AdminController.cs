@@ -105,9 +105,9 @@ namespace NFC.Platform.API.Controllers
         /// Adds a new built-in template to the global system catalog.
         /// </summary>
         [HttpPost("templates")]
-        public async Task<IActionResult> CreateTemplate([FromBody] CreateCardTemplateDto dto)
+        public async Task<IActionResult> CreateTemplate([FromBody] CreateCardTemplateRequest request)
         {
-            var result = await _adminService.CreateTemplateAsync(dto);
+            var result = await _adminService.CreateTemplateAsync(request);
             return Ok(result);
         }
 
@@ -115,9 +115,9 @@ namespace NFC.Platform.API.Controllers
         /// Modifies the styling parameters or layout configuration of an existing global card template.
         /// </summary>
         [HttpPut("templates/{id:guid}")]
-        public async Task<IActionResult> UpdateTemplate([FromRoute] Guid id, [FromBody] UpdateCardTemplateDto dto)
+        public async Task<IActionResult> UpdateTemplate([FromRoute] Guid id, [FromBody] UpdateCardTemplateRequest request)
         {
-            var result = await _adminService.UpdateTemplateAsync(id, dto);
+            var result = await _adminService.UpdateTemplateAsync(id, request);
             if (!result.IsSuccess)
             {
                 return StatusCode(result.StatusCode, result);

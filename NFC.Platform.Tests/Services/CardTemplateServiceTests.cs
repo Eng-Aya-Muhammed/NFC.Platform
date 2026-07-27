@@ -1,9 +1,25 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using AutoMapper;
+using MockQueryable.NSubstitute;
+using NSubstitute;
+using NFC.Platform.Application.DTOs.CardTemplate;
+using NFC.Platform.Application.Interfaces.Repositories;
+using NFC.Platform.Application.Interfaces.Services;
+using NFC.Platform.Application.Services;
+using NFC.Platform.BuildingBlocks.Localization;
+using NFC.Platform.Domain.Entities;
+using Xunit;
+
 namespace NFC.Platform.Tests.Services
 {
     public class CardTemplateServiceTests
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
+        private readonly IMessageService _messageService;
 
         private readonly IGenericRepository<CardTemplate> _templateRepo;
         private readonly IGenericRepository<UserProfile> _profileRepo;
@@ -15,6 +31,7 @@ namespace NFC.Platform.Tests.Services
         {
             _unitOfWork = Substitute.For<IUnitOfWork>();
             _mapper = Substitute.For<IMapper>();
+            _messageService = Substitute.For<IMessageService>();
 
             _templateRepo = Substitute.For<IGenericRepository<CardTemplate>>();
             _profileRepo = Substitute.For<IGenericRepository<UserProfile>>();
@@ -24,10 +41,10 @@ namespace NFC.Platform.Tests.Services
             _unitOfWork.Repository<UserProfile>().Returns(_profileRepo);
             _unitOfWork.Repository<User>().Returns(_userRepo);
 
-            _sut = new CardTemplateService(_unitOfWork, _mapper);
+            _sut = new CardTemplateService(_unitOfWork, _mapper, _messageService);
         }
 
-        //  GetActiveTemplatesAsync 
+        // GetActiveTemplatesAsync
 
         [Fact]
         public async Task GetActiveTemplatesAsync_ReturnsEmptyList_WhenNoTemplatesExist()
@@ -61,8 +78,8 @@ namespace NFC.Platform.Tests.Services
 
             var dtos = new List<CardTemplateDto>
             {
-                new() { NameAr = "First", NameEn = "First" },
-                new() { NameAr = "Second", NameEn = "Second" }
+                new() { Name = "First" },
+                new() { Name = "Second" }
             };
             _mapper.Map<IReadOnlyList<CardTemplateDto>>(Arg.Any<object>()).Returns(dtos);
 
@@ -72,7 +89,7 @@ namespace NFC.Platform.Tests.Services
             // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(2, result.Data!.Count);
-            Assert.Equal("First", result.Data![0].NameAr);
+            Assert.Equal("First", result.Data![0].Name);
         }
 
         [Fact]

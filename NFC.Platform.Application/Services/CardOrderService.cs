@@ -1,3 +1,5 @@
+
+
 namespace NFC.Platform.Application.Services;
 
 public class CardOrderService(
@@ -73,6 +75,30 @@ public class CardOrderService(
         await _unitOfWork.BeginTransactionAsync();
         try
         {
+            // 1. Validate CardType (exists & IsActive)
+            if (request.CardTypeId != Guid.Empty)
+            {
+                var cardType = await _unitOfWork.Repository<CardType>().GetByIdAsync(request.CardTypeId);
+                if (cardType != null && !cardType.IsActive)
+                {
+                    await _unitOfWork.RollbackTransactionAsync();
+                    return ServiceResult<CardOrderDto>.Fail(_messageService.Get("InvalidOrInactiveCardType"), 400);
+                }
+            }
+
+            // 2. Validate CardPackage (exists & IsActive)
+            CardPackage? cardPackage = null;
+            if (request.CardPackageId != Guid.Empty)
+            {
+                cardPackage = await _unitOfWork.Repository<CardPackage>().GetByIdAsync(request.CardPackageId);
+                if (cardPackage != null && !cardPackage.IsActive)
+                {
+                    await _unitOfWork.RollbackTransactionAsync();
+                    return ServiceResult<CardOrderDto>.Fail(_messageService.Get("InvalidOrInactiveCardPackage"), 400);
+                }
+            }
+
+            // 3. Build CardOrderItems (from Assignment Scope / Excel Upload)
             var itemsToOrder = new List<CardOrderItem>();
 
             if (request.AssignmentScope == AssignmentScope.ExcelUpload && !string.IsNullOrWhiteSpace(request.ExcelDataUrl))
@@ -94,8 +120,6 @@ public class CardOrderService(
                 request.EmployeeIds = excelResult.Data;
             }
 
-            // We removed the auto-override so that BuildOrderItemsAsync can throw a mismatch error if needed.
-
             var itemsResult = await BuildOrderItemsAsync(request.AssignmentScope, request.EmployeeIds, request.Quantity);
             if (!itemsResult.IsSuccess)
             {
@@ -104,28 +128,35 @@ public class CardOrderService(
             }
 
             itemsToOrder = itemsResult.Data ?? [];
-            request.Quantity = itemsToOrder.Count;
 
-            var cardType = await _unitOfWork.Repository<CardType>().GetByIdAsync(request.CardTypeId);
-            if (cardType == null || !cardType.IsActive)
+            // 4. Calculate Required Physical Cards using Sum(NumberOfCardsRequired) for items where RequiresCard == true
+            var totalRequiredCards = itemsToOrder.Where(i => i.RequiresCard).Sum(i => i.NumberOfCardsRequired);
+
+            // 5. Validate Package Capacity
+            if (cardPackage != null && totalRequiredCards > cardPackage.NumberOfCards)
             {
                 await _unitOfWork.RollbackTransactionAsync();
-                return ServiceResult<CardOrderDto>.Fail(_messageService.Get("InvalidOrInactiveCardType"), 400);
+                return ServiceResult<CardOrderDto>.Fail(_messageService.Get("CardPackageCapacityExceeded"), 400);
             }
 
-            var cardPackage = await _unitOfWork.Repository<CardPackage>().GetByIdAsync(request.CardPackageId);
-            if (cardPackage == null || !cardPackage.IsActive)
-            {
-                await _unitOfWork.RollbackTransactionAsync();
-                return ServiceResult<CardOrderDto>.Fail(_messageService.Get("InvalidOrInactiveCardPackage"), 400);
-            }
+            // 6. Apply Package Pricing & Map Order via AutoMapper Profile
+            var order = _mapper.Map<CardOrder>(request) ?? new CardOrder();
+            order.UserId = userId.Value;
+            order.TenantId = tenantId.Value;
+            order.Quantity = cardPackage?.NumberOfCards ?? request.Quantity;
+            order.TotalPrice = cardPackage?.Price ?? 0;
+            order.UnitPrice = cardPackage != null
+                ? (cardPackage.NumberOfCards > 0 ? cardPackage.Price / cardPackage.NumberOfCards : cardPackage.Price)
+                : 0;
+            order.Currency = "KWD";
+            order.Status = OrderStatus.PendingReview;
 
-            var order = BuildNewOrder(request, userId.Value, cardPackage);
             if (itemsToOrder.Count > 0)
             {
                 order.Items = itemsToOrder;
             }
 
+            // 7. Persist Order
             await _unitOfWork.Repository<CardOrder>().AddAsync(order);
             await _unitOfWork.SaveChangesAsync();
             await _unitOfWork.CommitTransactionAsync();
@@ -161,10 +192,16 @@ public class CardOrderService(
             return ServiceResult<CardOrderDto>.Fail(itemsResult.Message ?? string.Join(", ", itemsResult.Errors), itemsResult.StatusCode);
 
         var cardPackage = await _unitOfWork.Repository<CardPackage>().GetByIdAsync(parentOrder.CardPackageId);
-        if (cardPackage == null || !cardPackage.IsActive)
+        if (cardPackage != null && !cardPackage.IsActive)
             return ServiceResult<CardOrderDto>.Fail(_messageService.Get("InvalidOrInactiveCardPackage"), 400);
 
-        var reorder = BuildReorder(parentOrder, request, userId.Value, cardPackage, itemsResult.Data!);
+        var itemsToOrder = itemsResult.Data ?? [];
+        var totalRequiredCards = itemsToOrder.Where(i => i.RequiresCard).Sum(i => i.NumberOfCardsRequired);
+
+        if (cardPackage != null && totalRequiredCards > cardPackage.NumberOfCards)
+            return ServiceResult<CardOrderDto>.Fail(_messageService.Get("CardPackageCapacityExceeded"), 400);
+
+        var reorder = BuildReorder(parentOrder, request, userId.Value, cardPackage, itemsToOrder);
         await _unitOfWork.Repository<CardOrder>().AddAsync(reorder);
         await _unitOfWork.SaveChangesAsync();
 
@@ -181,8 +218,6 @@ public class CardOrderService(
         if (!tenantId.HasValue)
             return ServiceResult<CardOrderDto>.Fail(_messageService.Get("InvalidTenantClaim"), 400);
 
-
-
         var repo = _unitOfWork.Repository<CardOrder>();
         var order = await repo.GetQueryable()
             .Include(o => o.Items)
@@ -197,25 +232,34 @@ public class CardOrderService(
         await _unitOfWork.BeginTransactionAsync();
         try
         {
-            bool recalculatePricing = false;
-            
             if (request.CardTypeId.HasValue && request.CardTypeId.Value != order.CardTypeId)
             {
+                var cardType = await _unitOfWork.Repository<CardType>().GetByIdAsync(request.CardTypeId.Value);
+                if (cardType == null || !cardType.IsActive)
+                {
+                    await _unitOfWork.RollbackTransactionAsync();
+                    return ServiceResult<CardOrderDto>.Fail(_messageService.Get("InvalidOrInactiveCardType"), 400);
+                }
                 order.CardTypeId = request.CardTypeId.Value;
             }
-            if (request.CardPackageId.HasValue && request.CardPackageId.Value != order.CardPackageId)
+
+            CardPackage? pkg = null;
+            if (request.CardPackageId.HasValue)
             {
-                order.CardPackageId = request.CardPackageId.Value;
-                var pkg = await _unitOfWork.Repository<CardPackage>().GetByIdAsync(order.CardPackageId);
-                if (pkg != null)
+                pkg = await _unitOfWork.Repository<CardPackage>().GetByIdAsync(request.CardPackageId.Value);
+                if (pkg == null || !pkg.IsActive)
                 {
-                    order.UnitPrice = pkg.Price;
-                    order.TotalPrice = pkg.Price;
+                    await _unitOfWork.RollbackTransactionAsync();
+                    return ServiceResult<CardOrderDto>.Fail(_messageService.Get("InvalidOrInactiveCardPackage"), 400);
                 }
+                order.CardPackageId = request.CardPackageId.Value;
+                order.Quantity = pkg.NumberOfCards;
+                order.TotalPrice = pkg.Price;
+                order.UnitPrice = pkg.NumberOfCards > 0 ? pkg.Price / pkg.NumberOfCards : pkg.Price;
             }
-            if (request.Quantity.HasValue && request.Quantity.Value != order.Quantity)
+            else
             {
-                order.Quantity = request.Quantity.Value;
+                pkg = await _unitOfWork.Repository<CardPackage>().GetByIdAsync(order.CardPackageId);
             }
 
             if (request.AssignmentScope == AssignmentScope.ExcelUpload && !string.IsNullOrWhiteSpace(request.ExcelDataUrl))
@@ -235,8 +279,6 @@ public class CardOrderService(
                 }
                 request.EmployeeIds = excelResult.Data;
             }
-            
-            // We removed the auto-override so that BuildOrderItemsAsync can throw a mismatch error if needed.
 
             var currentScope = request.AssignmentScope ?? (order.Items.Count > 0 ? AssignmentScope.SpecificEmployees : AssignmentScope.Individual);
 
@@ -253,6 +295,16 @@ public class CardOrderService(
 
                 var newItems = itemsResult.Data ?? new List<CardOrderItem>();
 
+                if (pkg != null)
+                {
+                    var totalRequiredCards = newItems.Where(i => i.RequiresCard).Sum(i => i.NumberOfCardsRequired);
+                    if (totalRequiredCards > pkg.NumberOfCards)
+                    {
+                        await _unitOfWork.RollbackTransactionAsync();
+                        return ServiceResult<CardOrderDto>.Fail(_messageService.Get("CardPackageCapacityExceeded"), 400);
+                    }
+                }
+
                 var oldItems = order.Items.ToList();
                 foreach (var item in oldItems)
                 {
@@ -265,29 +317,6 @@ public class CardOrderService(
                     newItem.CardOrderId = order.Id;
                     newItem.TenantId = order.TenantId;
                     await itemRepo.AddAsync(newItem);
-                }
-                
-                if (order.Quantity != newItems.Count)
-                {
-                    order.Quantity = newItems.Count;
-                    recalculatePricing = true;
-                }
-            }
-
-            if (request.CardDesignType == CardDesignType.CustomArtwork || (request.CardDesignType == null && order.CardDesignType == CardDesignType.CustomArtwork))
-            {
-                var finalFrontUrl = request.FrontDesignUrl ?? order.FrontDesignUrl;
-                var finalBackUrl = request.BackDesignUrl ?? order.BackDesignUrl;
-
-                if (string.IsNullOrWhiteSpace(finalFrontUrl))
-                {
-                    await _unitOfWork.RollbackTransactionAsync();
-                    return ServiceResult<CardOrderDto>.Fail(_messageService.Get("FrontDesignRequired"), 400);
-                }
-                if (string.IsNullOrWhiteSpace(finalBackUrl))
-                {
-                    await _unitOfWork.RollbackTransactionAsync();
-                    return ServiceResult<CardOrderDto>.Fail(_messageService.Get("BackDesignRequired"), 400);
                 }
             }
 
@@ -360,30 +389,15 @@ public class CardOrderService(
 
     // Private helpers
 
-    private static CardOrder BuildNewOrder(CreateCardOrderRequest request, Guid userId, CardPackage package)
-    {
-        return new CardOrder
-        {
-            UserId         = userId,
-            CardDesignType = request.CardDesignType,
-            CardTypeId     = request.CardTypeId,
-            CardPackageId  = request.CardPackageId,
-            CardName       = request.CardName ?? string.Empty,
-            ExcelDataUrl   = request.ExcelDataUrl,
-            FrontDesignUrl = request.FrontDesignUrl,
-            BackDesignUrl  = request.BackDesignUrl,
-            Quantity       = request.Quantity,
-            Notes          = request.Notes,
-            UnitPrice      = package.Price,
-            TotalPrice     = package.Price,
-            Currency       = "KWD",
-            Status         = OrderStatus.PendingReview,
-        };
-    }
-
     private static CardOrder BuildReorder(CardOrder parent, ReorderRequest request, Guid userId,
-        CardPackage package, List<CardOrderItem> items)
+        CardPackage? package, List<CardOrderItem> items)
     {
+        var quantity = package?.NumberOfCards ?? request.Quantity;
+        var unitPrice = package != null
+            ? (package.NumberOfCards > 0 ? package.Price / package.NumberOfCards : package.Price)
+            : parent.UnitPrice;
+        var totalPrice = package?.Price ?? parent.TotalPrice;
+
         return new CardOrder
         {
             UserId          = userId,
@@ -394,12 +408,12 @@ public class CardOrderService(
             CardName        = parent.CardName,
             FrontDesignUrl  = parent.FrontDesignUrl,
             BackDesignUrl   = parent.BackDesignUrl,
-            Quantity        = request.Quantity,
+            Quantity        = quantity,
             Notes           = parent.Notes,
             DeliveryMethod  = request.DeliveryMethod,
             ShippingAddress = request.ShippingAddress,
-            UnitPrice       = package.Price,
-            TotalPrice      = package.Price,
+            UnitPrice       = unitPrice,
+            TotalPrice      = totalPrice,
             Currency        = "KWD",
             Status          = OrderStatus.PendingReview,
             Items           = items,
@@ -411,8 +425,6 @@ public class CardOrderService(
             .GetQueryable().AsNoTracking()
             .Include(o => o.Items)
             .FirstOrDefaultAsync(o => o.Id == id);
-
-   
 
     private async Task<ServiceResult<List<CardOrderItem>>> BuildOrderItemsAsync(
         AssignmentScope? scope, List<Guid>? employeeIds, int quantity)

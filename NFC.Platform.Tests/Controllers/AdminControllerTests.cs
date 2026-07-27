@@ -169,9 +169,9 @@ namespace NFC.Platform.Tests.Controllers
         [Fact]
         public async Task CreateTemplate_CallsAdminService_AndReturnsOk()
         {
-            var dto = new CreateCardTemplateDto();
-            var resultDto = new CardTemplateDto();
-            _adminService.CreateTemplateAsync(dto).Returns(ServiceResult<CardTemplateDto>.Success(resultDto));
+            var dto = new CreateCardTemplateRequest();
+            var resultDto = new CardTemplateAdminDto();
+            _adminService.CreateTemplateAsync(dto).Returns(ServiceResult<CardTemplateAdminDto>.Success(resultDto));
 
             var result = await _sut.CreateTemplate(dto) as OkObjectResult;
 
@@ -184,9 +184,9 @@ namespace NFC.Platform.Tests.Controllers
         public async Task UpdateTemplate_CallsAdminService_AndReturnsOk_OnSuccess()
         {
             var id = Guid.NewGuid();
-            var dto = new UpdateCardTemplateDto();
-            var resultDto = new CardTemplateDto();
-            _adminService.UpdateTemplateAsync(id, dto).Returns(ServiceResult<CardTemplateDto>.Success(resultDto));
+            var dto = new UpdateCardTemplateRequest();
+            var resultDto = new CardTemplateAdminDto();
+            _adminService.UpdateTemplateAsync(id, dto).Returns(ServiceResult<CardTemplateAdminDto>.Success(resultDto));
 
             var result = await _sut.UpdateTemplate(id, dto) as OkObjectResult;
 
@@ -198,8 +198,8 @@ namespace NFC.Platform.Tests.Controllers
         public async Task UpdateTemplate_ReturnsError_OnFailure()
         {
             var id = Guid.NewGuid();
-            var dto = new UpdateCardTemplateDto();
-            _adminService.UpdateTemplateAsync(id, dto).Returns(ServiceResult<CardTemplateDto>.Fail("Error", 400));
+            var dto = new UpdateCardTemplateRequest();
+            _adminService.UpdateTemplateAsync(id, dto).Returns(ServiceResult<CardTemplateAdminDto>.Fail("Error", 400));
 
             var result = await _sut.UpdateTemplate(id, dto) as ObjectResult;
 

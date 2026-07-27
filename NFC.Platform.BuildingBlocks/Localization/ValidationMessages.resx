@@ -298,4 +298,13 @@
   <data name="Price" xml:space="preserve">
     <value>Price</value>
   </data>
+  <data name="DuplicateNameAr" xml:space="preserve">
+    <value>Arabic name is already taken.</value>
+  </data>
+  <data name="DuplicateNameEn" xml:space="preserve">
+    <value>English name is already taken.</value>
+  </data>
+  <data name="DuplicatePackageNumberOfCards" xml:space="preserve">
+    <value>A package with the same number of cards already exists.</value>
+  </data>
 </root>

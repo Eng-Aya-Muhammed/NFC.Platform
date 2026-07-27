@@ -15,6 +15,9 @@ namespace NFC.Platform.Tests.Services
         private readonly IGenericRepository<UserSubscription> _subscriptionRepo;
         private readonly IGenericRepository<Company> _companyRepo;
         private readonly IGenericRepository<UserProfile> _userProfileRepo;
+        private readonly IGenericRepository<TemplateCategory> _templateCategoryRepo;
+        private readonly IGenericRepository<SubscriptionPlanTemplate> _subscriptionPlanTemplateRepo;
+        private readonly IGenericRepository<SubscriptionPlan> _subscriptionPlanRepo;
         private readonly IBackgroundJobClient _backgroundJobClient;
 
         private readonly AdminService _sut;
@@ -28,26 +31,36 @@ namespace NFC.Platform.Tests.Services
             _storageService      = Substitute.For<IStorageService>();
             _backgroundJobClient = Substitute.For<IBackgroundJobClient>();
 
-            _orderRepo           = Substitute.For<IGenericRepository<CardOrder>>();
-            _templateRequestRepo = Substitute.For<IGenericRepository<TemplateRequest>>();
-            _cardTemplateRepo    = Substitute.For<IGenericRepository<CardTemplate>>();
-            _tenantRepo          = Substitute.For<IGenericRepository<Tenant>>();
-            _subscriptionRepo    = Substitute.For<IGenericRepository<UserSubscription>>();
-            _companyRepo         = Substitute.For<IGenericRepository<Company>>();
-            _userProfileRepo     = Substitute.For<IGenericRepository<UserProfile>>();
+            _orderRepo                    = Substitute.For<IGenericRepository<CardOrder>>();
+            _templateRequestRepo          = Substitute.For<IGenericRepository<TemplateRequest>>();
+            _cardTemplateRepo             = Substitute.For<IGenericRepository<CardTemplate>>();
+            _tenantRepo                   = Substitute.For<IGenericRepository<Tenant>>();
+            _subscriptionRepo             = Substitute.For<IGenericRepository<UserSubscription>>();
+            _companyRepo                  = Substitute.For<IGenericRepository<Company>>();
+            _userProfileRepo              = Substitute.For<IGenericRepository<UserProfile>>();
+            _userProfileRepo              = Substitute.For<IGenericRepository<UserProfile>>();
+            _templateCategoryRepo         = Substitute.For<IGenericRepository<TemplateCategory>>();
+            _subscriptionPlanTemplateRepo = Substitute.For<IGenericRepository<SubscriptionPlanTemplate>>();
+            _subscriptionPlanRepo         = Substitute.For<IGenericRepository<SubscriptionPlan>>();
 
             _unitOfWork.Repository<CardOrder>().Returns(_orderRepo);
             _unitOfWork.Repository<TemplateRequest>().Returns(_templateRequestRepo);
             _unitOfWork.Repository<CardTemplate>().Returns(_cardTemplateRepo);
             _unitOfWork.Repository<Tenant>().Returns(_tenantRepo);
             _unitOfWork.Repository<UserSubscription>().Returns(_subscriptionRepo);
-            _unitOfWork.Repository<CardPricing>().Returns(_cardPricingRepo);
             _unitOfWork.Repository<Company>().Returns(_companyRepo);
             _unitOfWork.Repository<UserProfile>().Returns(_userProfileRepo);
+            _unitOfWork.Repository<TemplateCategory>().Returns(_templateCategoryRepo);
+            _unitOfWork.Repository<SubscriptionPlanTemplate>().Returns(_subscriptionPlanTemplateRepo);
+            _unitOfWork.Repository<SubscriptionPlan>().Returns(_subscriptionPlanRepo);
 
-            // Seed mock queryable lists to avoid EF FirstOrDefaultAsync failures in tests
             _companyRepo.GetQueryable().Returns(new List<Company>().AsQueryable().BuildMock());
             _userProfileRepo.GetQueryable().Returns(new List<UserProfile>().AsQueryable().BuildMock());
+            _templateCategoryRepo.GetQueryable().Returns(new List<TemplateCategory>().AsQueryable().BuildMock());
+            _templateRequestRepo.GetQueryable().Returns(new List<TemplateRequest>().AsQueryable().BuildMock());
+            _cardTemplateRepo.GetQueryable().Returns(new List<CardTemplate>().AsQueryable().BuildMock());
+            _subscriptionPlanTemplateRepo.GetQueryable().Returns(new List<SubscriptionPlanTemplate>().AsQueryable().BuildMock());
+            _subscriptionPlanRepo.GetQueryable().Returns(new List<SubscriptionPlan>().AsQueryable().BuildMock());
 
 
 
@@ -253,7 +266,7 @@ namespace NFC.Platform.Tests.Services
         public async Task CreateTemplateAsync_SavesTemplateAndReturnsDto()
         {
             // Arrange
-            var createDto = new CreateCardTemplateDto
+            var createDto = new CreateCardTemplateRequest
             {
                 NameAr = "Modern Template",
                 NameEn = "Modern Template",
@@ -268,7 +281,7 @@ namespace NFC.Platform.Tests.Services
             };
 
             _mapper.Map<CardTemplate>(createDto).Returns(mappedTemplate);
-            _mapper.Map<CardTemplateDto>(mappedTemplate).Returns(new CardTemplateDto { NameAr = "Modern Template", NameEn = "Modern Template" });
+            _mapper.Map<CardTemplateAdminDto>(mappedTemplate).Returns(new CardTemplateAdminDto { NameAr = "Modern Template", NameEn = "Modern Template" });
 
             // Act
             var result = await _sut.CreateTemplateAsync(createDto);
@@ -290,7 +303,7 @@ namespace NFC.Platform.Tests.Services
             _cardTemplateRepo.GetByIdAsync(templateId).Returns((CardTemplate?)null);
 
             // Act
-            var result = await _sut.UpdateTemplateAsync(templateId, new UpdateCardTemplateDto());
+            var result = await _sut.UpdateTemplateAsync(templateId, new UpdateCardTemplateRequest());
 
             // Assert
             Assert.False(result.IsSuccess);
@@ -305,16 +318,16 @@ namespace NFC.Platform.Tests.Services
             var template = new CardTemplate { Id = templateId, NameAr = "Old Name", NameEn = "Old Name" };
             _cardTemplateRepo.GetByIdAsync(templateId).Returns(template);
 
-            var updateDto = new UpdateCardTemplateDto { NameAr = "New Name", NameEn = "New Name" };
+            var updateDto = new UpdateCardTemplateRequest { NameAr = "New Name", NameEn = "New Name" };
             _mapper.Map(updateDto, template).Returns(template);
-            _mapper.Map<CardTemplateDto>(template).Returns(new CardTemplateDto { Id = templateId, NameAr = "New Name", NameEn = "New Name" });
+            _mapper.Map<CardTemplateAdminDto>(template).Returns(new CardTemplateAdminDto { Id = templateId, NameAr = "New Name", NameEn = "New Name" });
 
             // Act
             var result = await _sut.UpdateTemplateAsync(templateId, updateDto);
 
             // Assert
             Assert.True(result.IsSuccess);
-            Assert.Equal("New Name", result.Data!.Name);
+            Assert.Equal("New Name", result.Data!.NameAr);
             await _unitOfWork.Received(1).SaveChangesAsync();
         }
 
@@ -380,12 +393,12 @@ namespace NFC.Platform.Tests.Services
         public async Task CreateTemplateAsync_CreatesGlobalTemplate()
         {
             // Arrange
-            var dto = new CreateCardTemplateDto { NameAr = "Global Temp", NameEn = "Global Temp" };
+            var dto = new CreateCardTemplateRequest { NameAr = "Global Temp", NameEn = "Global Temp" };
             var mappedTemplate = new CardTemplate { NameAr = "Global Temp", NameEn = "Global Temp" };
             _mapper.Map<CardTemplate>(dto).Returns(mappedTemplate);
 
-            var expectedDto = new CardTemplateDto { NameAr = "Global Temp", NameEn = "Global Temp" };
-            _mapper.Map<CardTemplateDto>(mappedTemplate).Returns(expectedDto);
+            var expectedDto = new CardTemplateAdminDto { NameAr = "Global Temp", NameEn = "Global Temp" };
+            _mapper.Map<CardTemplateAdminDto>(mappedTemplate).Returns(expectedDto);
 
             // Act
             var result = await _sut.CreateTemplateAsync(dto);
@@ -832,6 +845,9 @@ namespace NFC.Platform.Tests.Services
         {
             // Arrange
             var planId = Guid.NewGuid();
+            var plan = new SubscriptionPlan { Id = planId };
+            _subscriptionPlanRepo.GetByIdAsync(planId).Returns(plan);
+
             var activeSub = new UserSubscription
             {
                 SubscriptionPlanId = planId,
@@ -857,12 +873,10 @@ namespace NFC.Platform.Tests.Services
             // Arrange
             var planId = Guid.NewGuid();
             var plan = new SubscriptionPlan { Id = planId };
-            var planRepo = Substitute.For<IGenericRepository<SubscriptionPlan>>();
-            _unitOfWork.Repository<SubscriptionPlan>().Returns(planRepo);
 
             _subscriptionRepo.GetQueryable()
                 .Returns(new List<UserSubscription>().AsQueryable().BuildMock());
-            planRepo.GetByIdAsync(planId).Returns(plan);
+            _subscriptionPlanRepo.GetByIdAsync(planId).Returns(plan);
             _messageService.Get(Arg.Any<string>()).Returns(x => x.Arg<string>());
 
             // Act
@@ -870,7 +884,7 @@ namespace NFC.Platform.Tests.Services
 
             // Assert
             Assert.True(result.IsSuccess);
-            Assert.True(plan.IsDeleted);
+            _subscriptionPlanRepo.Received(1).Remove(plan);
         }
 
         [Fact]
@@ -880,18 +894,10 @@ namespace NFC.Platform.Tests.Services
             var planId = Guid.NewGuid();
             var templateId = Guid.NewGuid();
 
-            var planRepo = Substitute.For<IGenericRepository<SubscriptionPlan>>();
-            var planTemplateRepo = Substitute.For<IGenericRepository<SubscriptionPlanTemplate>>();
-            _unitOfWork.Repository<SubscriptionPlan>().Returns(planRepo);
-            _unitOfWork.Repository<SubscriptionPlanTemplate>().Returns(planTemplateRepo);
+            _subscriptionPlanRepo.GetByIdAsync(planId).Returns(new SubscriptionPlan { Id = planId });
+            _cardTemplateRepo.GetByIdAsync(templateId).Returns(new CardTemplate { Id = templateId });
 
-            planRepo.GetQueryable().Returns(new List<SubscriptionPlan>
-                { new() { Id = planId } }.AsQueryable().BuildMock());
-
-            _cardTemplateRepo.GetQueryable().Returns(new List<CardTemplate>
-                { new() { Id = templateId, IsActive = true, IsDeleted = false } }.AsQueryable().BuildMock());
-
-            planTemplateRepo.GetQueryable().Returns(new List<SubscriptionPlanTemplate>
+            _subscriptionPlanTemplateRepo.GetQueryable().Returns(new List<SubscriptionPlanTemplate>
                 { new() { SubscriptionPlanId = planId, CardTemplateId = templateId } }.AsQueryable().BuildMock());
 
             _messageService.Get("TemplateAlreadyAssigned").Returns("Already assigned.");
@@ -911,16 +917,10 @@ namespace NFC.Platform.Tests.Services
             var planId = Guid.NewGuid();
             var templateId = Guid.NewGuid();
 
-            var planRepo = Substitute.For<IGenericRepository<SubscriptionPlan>>();
-            var planTemplateRepo = Substitute.For<IGenericRepository<SubscriptionPlanTemplate>>();
-            _unitOfWork.Repository<SubscriptionPlan>().Returns(planRepo);
-            _unitOfWork.Repository<SubscriptionPlanTemplate>().Returns(planTemplateRepo);
+            _subscriptionPlanRepo.GetByIdAsync(planId).Returns(new SubscriptionPlan { Id = planId });
+            _cardTemplateRepo.GetByIdAsync(templateId).Returns(new CardTemplate { Id = templateId });
 
-            planRepo.GetQueryable().Returns(new List<SubscriptionPlan>
-                { new() { Id = planId } }.AsQueryable().BuildMock());
-            _cardTemplateRepo.GetQueryable().Returns(new List<CardTemplate>
-                { new() { Id = templateId, IsActive = true, IsDeleted = false } }.AsQueryable().BuildMock());
-            planTemplateRepo.GetQueryable().Returns(new List<SubscriptionPlanTemplate>().AsQueryable().BuildMock());
+            _subscriptionPlanTemplateRepo.GetQueryable().Returns(new List<SubscriptionPlanTemplate>().AsQueryable().BuildMock());
             _messageService.Get(Arg.Any<string>()).Returns(x => x.Arg<string>());
 
             // Act
@@ -928,7 +928,7 @@ namespace NFC.Platform.Tests.Services
 
             // Assert
             Assert.True(result.IsSuccess);
-            await planTemplateRepo.Received(1).AddAsync(Arg.Is<SubscriptionPlanTemplate>(
+            await _subscriptionPlanTemplateRepo.Received(1).AddAsync(Arg.Is<SubscriptionPlanTemplate>(
                 pt => pt.SubscriptionPlanId == planId && pt.CardTemplateId == templateId));
         }
 
