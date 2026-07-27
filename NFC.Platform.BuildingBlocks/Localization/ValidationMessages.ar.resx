@@ -271,4 +271,25 @@
   <data name="TemplateDeletedAndProfilesCleared" xml:space="preserve">
     <value>تم حذف القالب بنجاح. تمت إعادة تعيين الملفات الشخصية المتأثرة إلى القالب الافتراضي.</value>
   </data>
+  <data name="NameAr" xml:space="preserve">
+    <value>الاسم باللغة العربية</value>
+  </data>
+  <data name="NameEn" xml:space="preserve">
+    <value>الاسم باللغة الإنجليزية</value>
+  </data>
+  <data name="CategoryId" xml:space="preserve">
+    <value>الفئة</value>
+  </data>
+  <data name="PhotoUrl" xml:space="preserve">
+    <value>رابط الصورة</value>
+  </data>
+  <data name="FileUrl" xml:space="preserve">
+    <value>رابط الملف</value>
+  </data>
+  <data name="NumberOfCards" xml:space="preserve">
+    <value>عدد البطاقات</value>
+  </data>
+  <data name="Price" xml:space="preserve">
+    <value>السعر</value>
+  </data>
 </root>
