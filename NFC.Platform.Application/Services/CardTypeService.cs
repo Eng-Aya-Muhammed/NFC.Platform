@@ -9,6 +9,8 @@ using NFC.Platform.Application.Extensions;
 using NFC.Platform.Application.Interfaces.Repositories;
 using NFC.Platform.Application.Interfaces.Services;
 using NFC.Platform.BuildingBlocks.Localization;
+using NFC.Platform.BuildingBlocks.Results;
+using NFC.Platform.Domain.Entities;
 
 
 namespace NFC.Platform.Application.Services;

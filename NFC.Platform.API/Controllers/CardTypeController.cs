@@ -1,0 +1,19 @@
+namespace NFC.Platform.API.Controllers;
+
+[ApiController]
+[Route("api/card-types")]
+[Authorize]
+public class CardTypeController(ICardTypeService cardTypeService) : ControllerBase
+{
+    private readonly ICardTypeService _cardTypeService = cardTypeService ?? throw new ArgumentNullException(nameof(cardTypeService));
+
+    /// <summary>
+    /// Returns all active, localized card types for user selection.
+    /// </summary>
+    [HttpGet]
+    public async Task<IActionResult> GetActiveCardTypes()
+    {
+        var result = await _cardTypeService.GetActiveCardTypesAsync();
+        return Ok(result);
+    }
+}

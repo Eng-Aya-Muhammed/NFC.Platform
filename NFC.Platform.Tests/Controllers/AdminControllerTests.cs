@@ -3,12 +3,26 @@ namespace NFC.Platform.Tests.Controllers
     public class AdminControllerTests
     {
         private readonly IAdminService _adminService;
+        private readonly ICardTemplateService _cardTemplateService;
+        private readonly ITemplateCategoryService _templateCategoryService;
+        private readonly ICardTypeService _cardTypeService;
+        private readonly ICardPackageService _cardPackageService;
         private readonly AdminController _sut;
 
         public AdminControllerTests()
         {
             _adminService = Substitute.For<IAdminService>();
-            _sut = new AdminController(_adminService);
+            _cardTemplateService = Substitute.For<ICardTemplateService>();
+            _templateCategoryService = Substitute.For<ITemplateCategoryService>();
+            _cardTypeService = Substitute.For<ICardTypeService>();
+            _cardPackageService = Substitute.For<ICardPackageService>();
+
+            _sut = new AdminController(
+                _adminService,
+                _cardTemplateService,
+                _templateCategoryService,
+                _cardTypeService,
+                _cardPackageService);
         }
 
         [Fact]
@@ -167,28 +181,28 @@ namespace NFC.Platform.Tests.Controllers
         }
 
         [Fact]
-        public async Task CreateTemplate_CallsAdminService_AndReturnsOk()
+        public async Task CreateTemplate_CallsCardTemplateService_AndReturnsOk()
         {
             var dto = new CreateCardTemplateRequest();
             var resultDto = new CardTemplateAdminDto();
-            _adminService.CreateTemplateAsync(dto).Returns(ServiceResult<CardTemplateAdminDto>.Success(resultDto));
+            _cardTemplateService.CreateAsync(dto).Returns(ServiceResult<CardTemplateAdminDto>.Success(resultDto));
 
-            var result = await _sut.CreateTemplate(dto) as OkObjectResult;
+            var result = await _sut.CreateCardTemplate(dto) as OkObjectResult;
 
             Assert.NotNull(result);
             Assert.Equal(200, result.StatusCode);
-            await _adminService.Received(1).CreateTemplateAsync(dto);
+            await _cardTemplateService.Received(1).CreateAsync(dto);
         }
 
         [Fact]
-        public async Task UpdateTemplate_CallsAdminService_AndReturnsOk_OnSuccess()
+        public async Task UpdateTemplate_CallsCardTemplateService_AndReturnsOk_OnSuccess()
         {
             var id = Guid.NewGuid();
             var dto = new UpdateCardTemplateRequest();
             var resultDto = new CardTemplateAdminDto();
-            _adminService.UpdateTemplateAsync(id, dto).Returns(ServiceResult<CardTemplateAdminDto>.Success(resultDto));
+            _cardTemplateService.UpdateAsync(id, dto).Returns(ServiceResult<CardTemplateAdminDto>.Success(resultDto));
 
-            var result = await _sut.UpdateTemplate(id, dto) as OkObjectResult;
+            var result = await _sut.UpdateCardTemplate(id, dto) as OkObjectResult;
 
             Assert.NotNull(result);
             Assert.Equal(200, result.StatusCode);
@@ -199,21 +213,21 @@ namespace NFC.Platform.Tests.Controllers
         {
             var id = Guid.NewGuid();
             var dto = new UpdateCardTemplateRequest();
-            _adminService.UpdateTemplateAsync(id, dto).Returns(ServiceResult<CardTemplateAdminDto>.Fail("Error", 400));
+            _cardTemplateService.UpdateAsync(id, dto).Returns(ServiceResult<CardTemplateAdminDto>.Fail("Error", 400));
 
-            var result = await _sut.UpdateTemplate(id, dto) as ObjectResult;
+            var result = await _sut.UpdateCardTemplate(id, dto) as ObjectResult;
 
             Assert.NotNull(result);
             Assert.Equal(400, result.StatusCode);
         }
 
         [Fact]
-        public async Task DeleteTemplate_CallsAdminService_AndReturnsOk_OnSuccess()
+        public async Task DeleteTemplate_CallsCardTemplateService_AndReturnsOk_OnSuccess()
         {
             var id = Guid.NewGuid();
-            _adminService.DeleteTemplateAsync(id).Returns(ServiceResult.Success());
+            _cardTemplateService.DeleteAsync(id).Returns(ServiceResult<bool>.Success(true));
 
-            var result = await _sut.DeleteTemplate(id) as OkObjectResult;
+            var result = await _sut.DeleteCardTemplate(id) as OkObjectResult;
 
             Assert.NotNull(result);
             Assert.Equal(200, result.StatusCode);
@@ -223,9 +237,9 @@ namespace NFC.Platform.Tests.Controllers
         public async Task DeleteTemplate_ReturnsError_OnFailure()
         {
             var id = Guid.NewGuid();
-            _adminService.DeleteTemplateAsync(id).Returns(ServiceResult.Fail("Error", 404));
+            _cardTemplateService.DeleteAsync(id).Returns(ServiceResult<bool>.Fail("Error", 404));
 
-            var result = await _sut.DeleteTemplate(id) as ObjectResult;
+            var result = await _sut.DeleteCardTemplate(id) as ObjectResult;
 
             Assert.NotNull(result);
             Assert.Equal(404, result.StatusCode);
