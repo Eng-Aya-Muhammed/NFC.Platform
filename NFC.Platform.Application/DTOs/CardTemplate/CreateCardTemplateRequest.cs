@@ -1,0 +1,14 @@
+using System;
+
+namespace NFC.Platform.Application.DTOs.CardTemplate;
+
+public class CreateCardTemplateRequest
+{
+    public string NameAr { get; set; } = string.Empty;
+    public string NameEn { get; set; } = string.Empty;
+    public string? PhotoUrl { get; set; }
+    public string? FileUrl { get; set; }
+    public Guid CategoryId { get; set; }
+    public bool IsActive { get; set; } = true;
+    public int DisplayOrder { get; set; } = 0;
+}

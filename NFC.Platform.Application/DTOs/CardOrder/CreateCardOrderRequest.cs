@@ -1,62 +1,31 @@
+using System;
+using System.Collections.Generic;
 using NFC.Platform.Domain.Enums;
 
 namespace NFC.Platform.Application.DTOs.CardOrder;
 
 /// <summary>
 /// Request payload for creating a new CardOrder.
-/// Mirrors the single-page card design form in the UI.
 /// </summary>
 public class CreateCardOrderRequest
 {
-    //  Step 1: Design Type & Scope
-    /// <summary>
-    /// Whether the customer has their own design (CustomArtwork)
-    /// or needs the design team to create one (NeedCustomDesign).
-    /// </summary>
     public CardDesignType CardDesignType { get; set; }
-
-    /// <summary>
-    /// Assignment scope (AllEmployees, SpecificEmployees, Individual, ExcelUpload)
-    /// </summary>
     public AssignmentScope AssignmentScope { get; set; }
-
-    /// <summary>
-    /// Specific employee IDs for the order when scope is SpecificEmployees.
-    /// Also used internally to pass created employee IDs from ExcelUpload.
-    /// </summary>
     public List<Guid>? EmployeeIds { get; set; }
 
-    //  Step 2: Card Info 
     public string? CardName { get; set; }
 
-    //  Step 3: Files (Cloudinary URLs already uploaded by the frontend) 
-    /// <summary>
-    /// Cloudinary URL of the Excel file containing employee data.
-    /// Only processed for CompanyAdmin users â€” ignored for Individual accounts.
-    /// </summary>
     public string? ExcelDataUrl { get; set; }
-
-    /// <summary>
-    /// Front design file URL (PDF / PNG / AI).
-    /// Required when CardDesignType = CustomArtwork.
-    /// </summary>
     public string? FrontDesignUrl { get; set; }
-
-    /// <summary>
-    /// Back design file URL (PDF / PNG / AI).
-    /// Required when CardDesignType = CustomArtwork.
-    /// </summary>
     public string? BackDesignUrl { get; set; }
 
-    //  Step 4: Card Material & Package 
     public Guid CardTypeId { get; set; }
     public Guid CardPackageId { get; set; }
 
-    //  Step 5: Quantity 
     public int Quantity { get; set; }
 
-    //  Step 6: Notes 
     public string? Notes { get; set; }
+
+    public DeliveryMethod DeliveryMethod { get; set; } = DeliveryMethod.Pickup;
+    public string? ShippingAddress { get; set; }
 }
-
-

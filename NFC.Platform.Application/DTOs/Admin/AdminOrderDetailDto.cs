@@ -13,7 +13,8 @@ namespace NFC.Platform.Application.DTOs.Admin
         public string CustomerName { get; set; } = string.Empty;
         public string CustomerEmail { get; set; } = string.Empty;
         public string CardName { get; set; } = string.Empty;
-        public CardType Material { get; set; }
+        public Guid CardTypeId { get; set; }
+        public Guid CardPackageId { get; set; }
         public CardDesignType DesignType { get; set; }
         public int Quantity { get; set; }
         public string? ExcelDataUrl { get; set; }
@@ -21,7 +22,10 @@ namespace NFC.Platform.Application.DTOs.Admin
         public string? BackDesignUrl { get; set; }
         public string? Notes { get; set; }
         public OrderStatus Status { get; set; }
+        public string? RejectionReason { get; set; }
         public decimal TotalPrice { get; set; }
+        public decimal UnitPrice { get; set; }
+        public string Currency { get; set; } = "KWD";
         public DeliveryMethod DeliveryMethod { get; set; }
         public string? TrackingNumber { get; set; }
         public string? ShippingAddress { get; set; }

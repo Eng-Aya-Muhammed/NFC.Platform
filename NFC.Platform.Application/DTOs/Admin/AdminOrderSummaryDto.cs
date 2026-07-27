@@ -9,7 +9,8 @@ namespace NFC.Platform.Application.DTOs.Admin
         public Guid TenantId { get; set; }
         public string TenantName { get; set; } = string.Empty;
         public string CardName { get; set; } = string.Empty;
-        public CardType Material { get; set; }
+        public Guid CardTypeId { get; set; }
+        public Guid CardPackageId { get; set; }
         public CardDesignType DesignType { get; set; }
         public int Quantity { get; set; }
         public decimal TotalPrice { get; set; }
