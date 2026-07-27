@@ -97,7 +97,7 @@ public class CardOrderController(
     /// Retrieves the Excel ingestion status for a bulk order.
     /// </summary>
     [HttpGet("/api/orders/{id:guid}/employees-import-status")]
-    [HasPermission(AppPermissions.CardOrders.View)]
+    [HasPermission(AppPermissions.Employees.Import)]
     public async Task<IActionResult> GetEmployeesImportStatus([FromRoute] Guid id)
     {
         var result = await _employeeImportService.GetImportStatusAsync(id);

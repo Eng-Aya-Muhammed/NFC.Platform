@@ -162,5 +162,27 @@ namespace NFC.Platform.Application.Services;
 
             return ServiceResult<EmployeeDetailsDto>.Success(_mapper.Map<EmployeeDetailsDto>(user), _messageService.Get("RecordUpdated"));
         }
+
+        public async Task<ServiceResult<DTOs.VipCustomer.VipCustomerDto>> UpdateVipStatusAsync(Guid profileId, DTOs.VipCustomer.UpdateVipStatusRequest request)
+        {
+            if (request == null)
+                throw new ArgumentNullException(nameof(request));
+
+            var profile = await _unitOfWork.Repository<UserProfile>()
+                .GetByIdAsync(profileId);
+
+            if (profile == null)
+                return ServiceResult<DTOs.VipCustomer.VipCustomerDto>.NotFound(_messageService.Get("RecordNotFound"));
+
+            if (profile.EmployeeId != null)
+                return ServiceResult<DTOs.VipCustomer.VipCustomerDto>.Fail(_messageService.Get("CannotSetVipForEmployeeProfile"), 400);
+
+            profile.IsVip = request.IsVip;
+            profile.VipDisplayOrder = request.VipDisplayOrder;
+
+            await _unitOfWork.SaveChangesAsync();
+
+            return ServiceResult<DTOs.VipCustomer.VipCustomerDto>.Success(_mapper.Map<DTOs.VipCustomer.VipCustomerDto>(profile), _messageService.Get("RecordUpdated"));
+        }
     }
 

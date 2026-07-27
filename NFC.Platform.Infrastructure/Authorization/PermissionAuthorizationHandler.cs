@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Caching.Memory;
@@ -25,12 +26,15 @@ namespace NFC.Platform.Infrastructure.Authorization
             AuthorizationHandlerContext context,
             PermissionRequirement requirement)
         {
-            var userIdStr = context.User.FindFirst(AppClaims.UserId)?.Value;
+            var userIdStr = context.User.FindFirst(AppClaims.UserId)?.Value 
+                ?? context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
             if (string.IsNullOrEmpty(userIdStr) || !Guid.TryParse(userIdStr, out var userId))
                 return;
 
             // Admin overrides all permissions (God Mode)
-            if (context.User.IsInRole(AppRole.Admin.ToString()) || context.User.HasClaim(c => c.Type == AppClaims.Role && c.Value == AppRole.Admin.ToString()))
+            if (context.User.IsInRole(AppRole.Admin.ToString()) || 
+                context.User.HasClaim(c => (c.Type == AppClaims.Role || c.Type == ClaimTypes.Role) && c.Value == AppRole.Admin.ToString()))
             {
                 context.Succeed(requirement);
                 return;
@@ -44,28 +48,35 @@ namespace NFC.Platform.Infrastructure.Authorization
                 _cache.Set(cacheKey, userPermissions, CacheExpiry);
             }
 
-            if (userPermissions!.Contains(requirement.Permission))
+            if (userPermissions != null && userPermissions.Contains(requirement.Permission))
                 context.Succeed(requirement);
         }
 
         private async Task<IReadOnlySet<string>> LoadPermissionsFromDbAsync(Guid userId)
         {
-            using var scope = _scopeFactory.CreateScope();
-            var uow = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+            try
+            {
+                using var scope = _scopeFactory.CreateScope();
+                var uow = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
 
-            var userRoles = await uow.Repository<UserRole>()
-                .FindAsync(ur => ur.UserId == userId);
+                var userRoles = await uow.Repository<UserRole>()
+                    .FindAsync(ur => ur.UserId == userId);
 
-            var roleIds = userRoles.Select(ur => ur.RoleId).ToHashSet();
-            if (roleIds.Count == 0)
+                var roleIds = userRoles.Select(ur => ur.RoleId).ToHashSet();
+                if (roleIds.Count == 0)
+                    return new HashSet<string>();
+
+                var rolePermissions = await uow.Repository<RolePermission>()
+                    .FindAsync(rp => roleIds.Contains(rp.RoleId));
+
+                return rolePermissions
+                    .Select(rp => rp.Permission)
+                    .ToHashSet();
+            }
+            catch
+            {
                 return new HashSet<string>();
-
-            var rolePermissions = await uow.Repository<RolePermission>()
-                .FindAsync(rp => roleIds.Contains(rp.RoleId));
-
-            return rolePermissions
-                .Select(rp => rp.Permission)
-                .ToHashSet();
+            }
         }
     }
 }

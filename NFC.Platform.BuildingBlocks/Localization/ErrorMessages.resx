@@ -376,4 +376,19 @@
   <data name="CardPackageCapacityExceeded" xml:space="preserve">
     <value>Card package capacity exceeded.</value>
   </data>
+  <data name="CannotSetVipForEmployeeProfile" xml:space="preserve">
+    <value>Cannot set VIP status for a company employee profile.</value>
+  </data>
+  <data name="SubscriptionExtendedSuccessfully" xml:space="preserve">
+    <value>Customer subscription extended successfully.</value>
+  </data>
+  <data name="InvalidExtensionDays" xml:space="preserve">
+    <value>Subscription renewal period must be between 1 and 3650 days.</value>
+  </data>
+  <data name="SubscriptionPlanRequiredForNewSubscription" xml:space="preserve">
+    <value>Subscription plan ID is required for customers with no prior subscription.</value>
+  </data>
+  <data name="NoSubscriptionFoundToExtend" xml:space="preserve">
+    <value>Cannot extend subscription for a customer with no prior subscription.</value>
+  </data>
 </root>

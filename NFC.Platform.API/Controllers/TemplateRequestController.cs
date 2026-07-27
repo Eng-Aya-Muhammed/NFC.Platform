@@ -1,3 +1,5 @@
+using System;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NFC.Platform.Application.DTOs;
@@ -8,6 +10,8 @@ using NFC.Platform.Infrastructure.Authorization;
 namespace NFC.Platform.API.Controllers
 {
     [ApiController]
+    [Route("api/templates/requests")]
+    [Authorize]
     public class TemplateRequestController(
         ITemplateRequestService templateRequestService,
         ICurrentTenant currentTenant) : ControllerBase
@@ -15,8 +19,8 @@ namespace NFC.Platform.API.Controllers
         private readonly ITemplateRequestService _templateRequestService = templateRequestService ?? throw new ArgumentNullException(nameof(templateRequestService));
         private readonly ICurrentTenant _currentTenant = currentTenant ?? throw new ArgumentNullException(nameof(currentTenant));
 
-        [HttpPost("api/templates/requests")]
-        [HasPermission(AppPermissions.Templates.Create)]
+        [HttpPost]
+        [HasPermission(AppPermissions.TemplateRequests.Create)]
         public async Task<IActionResult> CreateRequest([FromBody] CreateTemplateRequest request)
         {
             var userId = _currentTenant.UserId;
@@ -33,8 +37,8 @@ namespace NFC.Platform.API.Controllers
             return StatusCode(result.StatusCode, result);
         }
 
-        [HttpPut("api/templates/requests/{id:guid}")]
-        [HasPermission(AppPermissions.Templates.Update)]
+        [HttpPut("{id:guid}")]
+        [HasPermission(AppPermissions.TemplateRequests.Update)]
         public async Task<IActionResult> UpdateRequest([FromRoute] Guid id, [FromBody] UpdateTemplateRequest request)
         {
             var userId = _currentTenant.UserId;
@@ -51,8 +55,8 @@ namespace NFC.Platform.API.Controllers
             return Ok(result);
         }
 
-        [HttpPatch("api/templates/requests/{id:guid}/cancel")]
-        [HasPermission(AppPermissions.Templates.Cancel)]
+        [HttpPatch("{id:guid}/cancel")]
+        [HasPermission(AppPermissions.TemplateRequests.Cancel)]
         public async Task<IActionResult> CancelRequest([FromRoute] Guid id)
         {
             var result = await _templateRequestService.CancelRequestAsync(id);
@@ -63,16 +67,16 @@ namespace NFC.Platform.API.Controllers
             return Ok(result);
         }
 
-        [HttpGet("api/templates/requests")]
-        [HasPermission(AppPermissions.Templates.View)]
+        [HttpGet]
+        [HasPermission(AppPermissions.TemplateRequests.View)]
         public async Task<IActionResult> GetTenantRequests()
         {
             var result = await _templateRequestService.GetTenantRequestsAsync();
             return Ok(result);
         }
 
-        [HttpGet("api/custom-design-requests/{id:guid}")]
-        [HasPermission(AppPermissions.Templates.View)]
+        [HttpGet("{id:guid}")]
+        [HasPermission(AppPermissions.TemplateRequests.View)]
         public async Task<IActionResult> GetRequestById([FromRoute] Guid id)
         {
             var result = await _templateRequestService.GetRequestByIdAsync(id);
@@ -82,6 +86,5 @@ namespace NFC.Platform.API.Controllers
             }
             return Ok(result);
         }
-
     }
 }

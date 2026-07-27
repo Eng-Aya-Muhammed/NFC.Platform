@@ -242,5 +242,24 @@ public class CompanyService(
 
             return ServiceResult<CompanyDashboardDto>.Success(dashboardDto);
         }
+
+        public async Task<ServiceResult<DTOs.VipCustomer.VipCustomerDto>> UpdateVipStatusAsync(Guid companyId, DTOs.VipCustomer.UpdateVipStatusRequest request)
+        {
+            if (request == null)
+                throw new ArgumentNullException(nameof(request));
+
+            var company = await _unitOfWork.Repository<Company>()
+                .GetByIdAsync(companyId);
+
+            if (company == null)
+                return ServiceResult<DTOs.VipCustomer.VipCustomerDto>.NotFound(_messageService.Get("RecordNotFound"));
+
+            company.IsVip = request.IsVip;
+            company.VipDisplayOrder = request.VipDisplayOrder;
+
+            await _unitOfWork.SaveChangesAsync();
+
+            return ServiceResult<DTOs.VipCustomer.VipCustomerDto>.Success(_mapper.Map<DTOs.VipCustomer.VipCustomerDto>(company), _messageService.Get("RecordUpdated"));
+        }
     }
 

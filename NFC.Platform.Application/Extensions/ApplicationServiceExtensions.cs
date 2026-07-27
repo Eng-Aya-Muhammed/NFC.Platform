@@ -9,7 +9,6 @@ namespace NFC.Platform.Application.Extensions
     /// </summary>
     public static class ApplicationServiceExtensions
     {
-        
         public static IServiceCollection AddApplicationServices(this IServiceCollection services)
         {
             services.AddHttpClient();
@@ -27,6 +26,11 @@ namespace NFC.Platform.Application.Extensions
             services.AddScoped<IProfileService, ProfileService>();
             services.AddScoped<IAnalyticsService, AnalyticsService>();
             services.AddScoped<IRoleService, RoleService>();
+            services.AddScoped<IDiscountCodeService, DiscountCodeService>();
+            services.AddScoped<IVipCustomerService, VipCustomerService>();
+            services.AddScoped<ICardTypeService, CardTypeService>();
+            services.AddScoped<ICardPackageService, CardPackageService>();
+            services.AddScoped<ITemplateCategoryService, TemplateCategoryService>();
 
             return services;
         }

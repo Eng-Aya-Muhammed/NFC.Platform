@@ -13,5 +13,6 @@ namespace NFC.Platform.Application.Interfaces.Services
         Task<ServiceResult<IReadOnlyList<UserSubscriptionDto>>> GetSubscriptionHistoryAsync();
         Task<ServiceResult<UserSubscriptionDto>> SubscribeAsync(SubscribeRequest request);
         Task<ServiceResult<UserSubscriptionDto>> RenewSubscriptionAsync(RenewSubscriptionRequest request);
+        Task<ServiceResult<UserSubscriptionDto>> AdminExtendSubscriptionAsync(Guid tenantId, DTOs.Subscription.ExtendSubscriptionRequest request);
     }
 }

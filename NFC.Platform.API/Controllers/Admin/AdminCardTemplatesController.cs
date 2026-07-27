@@ -7,26 +7,27 @@ using NFC.Platform.Application.DTOs.CardTemplate;
 using NFC.Platform.Application.Interfaces.Services;
 using NFC.Platform.BuildingBlocks.Common.Constants;
 using NFC.Platform.Domain.Constants;
+using NFC.Platform.Infrastructure.Authorization;
 
 namespace NFC.Platform.API.Controllers.Admin;
 
 [ApiController]
-[Route("api/admin")]
+[Route("api/admin/card-templates")]
 [Authorize(Policy = AppPolicies.AdminOnly)]
 public class AdminCardTemplatesController(ICardTemplateService cardTemplateService) : ControllerBase
 {
     private readonly ICardTemplateService _cardTemplateService = cardTemplateService ?? throw new ArgumentNullException(nameof(cardTemplateService));
 
-    [HttpGet("card-templates")]
-    [HasPermission(AppPermissions.Templates.View)]
+    [HttpGet]
+    [HasPermission(AppPermissions.Platform.CardTemplates.View)]
     public async Task<IActionResult> GetAllAdminCardTemplates([FromQuery] PaginationRequest request)
     {
         var result = await _cardTemplateService.GetAllAdminTemplatesAsync(request);
         return Ok(result);
     }
 
-    [HttpGet("card-templates/{id:guid}")]
-    [HasPermission(AppPermissions.Templates.View)]
+    [HttpGet("{id:guid}")]
+    [HasPermission(AppPermissions.Platform.CardTemplates.View)]
     public async Task<IActionResult> GetCardTemplateById([FromRoute] Guid id)
     {
         var result = await _cardTemplateService.GetByIdAsync(id);
@@ -34,9 +35,8 @@ public class AdminCardTemplatesController(ICardTemplateService cardTemplateServi
         return Ok(result);
     }
 
-    [HttpPost("card-templates")]
-    [HttpPost("templates")]
-    [HasPermission(AppPermissions.Templates.Create)]
+    [HttpPost]
+    [HasPermission(AppPermissions.Platform.CardTemplates.Create)]
     public async Task<IActionResult> CreateCardTemplate([FromBody] CreateCardTemplateRequest request)
     {
         var result = await _cardTemplateService.CreateAsync(request);
@@ -44,9 +44,8 @@ public class AdminCardTemplatesController(ICardTemplateService cardTemplateServi
         return Ok(result);
     }
 
-    [HttpPut("card-templates/{id:guid}")]
-    [HttpPut("templates/{id:guid}")]
-    [HasPermission(AppPermissions.Templates.Update)]
+    [HttpPut("{id:guid}")]
+    [HasPermission(AppPermissions.Platform.CardTemplates.Update)]
     public async Task<IActionResult> UpdateCardTemplate([FromRoute] Guid id, [FromBody] UpdateCardTemplateRequest request)
     {
         var result = await _cardTemplateService.UpdateAsync(id, request);
@@ -54,9 +53,8 @@ public class AdminCardTemplatesController(ICardTemplateService cardTemplateServi
         return Ok(result);
     }
 
-    [HttpDelete("card-templates/{id:guid}")]
-    [HttpDelete("templates/{id:guid}")]
-    [HasPermission(AppPermissions.Templates.Delete)]
+    [HttpDelete("{id:guid}")]
+    [HasPermission(AppPermissions.Platform.CardTemplates.Delete)]
     public async Task<IActionResult> DeleteCardTemplate([FromRoute] Guid id)
     {
         var result = await _cardTemplateService.DeleteAsync(id);

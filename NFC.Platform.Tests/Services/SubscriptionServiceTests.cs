@@ -9,6 +9,7 @@ namespace NFC.Platform.Tests.Services
 
         private readonly IGenericRepository<SubscriptionPlan> _planRepo;
         private readonly IGenericRepository<UserSubscription> _subscriptionRepo;
+        private readonly IGenericRepository<Tenant> _tenantRepo;
 
         private readonly SubscriptionService _sut;
 
@@ -21,9 +22,11 @@ namespace NFC.Platform.Tests.Services
 
             _planRepo = Substitute.For<IGenericRepository<SubscriptionPlan>>();
             _subscriptionRepo = Substitute.For<IGenericRepository<UserSubscription>>();
+            _tenantRepo = Substitute.For<IGenericRepository<Tenant>>();
 
             _unitOfWork.Repository<SubscriptionPlan>().Returns(_planRepo);
             _unitOfWork.Repository<UserSubscription>().Returns(_subscriptionRepo);
+            _unitOfWork.Repository<Tenant>().Returns(_tenantRepo);
 
             _sut = new SubscriptionService(_unitOfWork, _mapper, _messageService, _currentTenant);
         }
@@ -407,6 +410,132 @@ namespace NFC.Platform.Tests.Services
             // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(401, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task AdminExtendSubscriptionAsync_ReturnsNotFound_WhenTenantDoesNotExist()
+        {
+            // Arrange
+            var tenantId = Guid.NewGuid();
+            _tenantRepo.GetQueryable().Returns(new List<Tenant>().AsQueryable().BuildMock());
+            _messageService.Get("RecordNotFound").Returns("Record not found.");
+
+            var request = new NFC.Platform.Application.DTOs.Subscription.ExtendSubscriptionRequest { ExtensionDays = 30 };
+
+            // Act
+            var result = await _sut.AdminExtendSubscriptionAsync(tenantId, request);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(404, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task AdminExtendSubscriptionAsync_ExtendsEndDate_PreservingStartDateAndQuotas_WhenActiveSubscriptionExists()
+        {
+            // Arrange
+            var tenantId = Guid.NewGuid();
+            var tenant = new Tenant { Id = tenantId, Name = "Acme Corp" };
+            _tenantRepo.GetQueryable().Returns(new List<Tenant> { tenant }.AsQueryable().BuildMock());
+
+            var originalStartDate = DateTime.UtcNow.AddDays(-10);
+            var originalEndDate = DateTime.UtcNow.AddDays(20);
+            var sub = new UserSubscription
+            {
+                TenantId = tenantId,
+                StartDate = originalStartDate,
+                EndDate = originalEndDate,
+                IsActive = true,
+                TemplateChangesUsed = 3,
+                CustomDesignRequestsUsed = 1
+            };
+            _subscriptionRepo.GetQueryable().Returns(new List<UserSubscription> { sub }.AsQueryable().BuildMock());
+            _mapper.Map<UserSubscriptionDto>(sub).Returns(new UserSubscriptionDto { Id = sub.Id });
+            _messageService.Get("SubscriptionExtendedSuccessfully").Returns("Subscription extended successfully.");
+
+            var request = new NFC.Platform.Application.DTOs.Subscription.ExtendSubscriptionRequest { ExtensionDays = 30 };
+
+            // Act
+            var result = await _sut.AdminExtendSubscriptionAsync(tenantId, request);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(200, result.StatusCode);
+            Assert.Equal(originalStartDate, sub.StartDate); // StartDate preserved for active subscription
+            Assert.Equal(originalEndDate.AddDays(30), sub.EndDate); // EndDate extended from current EndDate
+            Assert.Equal(3, sub.TemplateChangesUsed); // Quota preserved
+            Assert.Equal(1, sub.CustomDesignRequestsUsed); // Quota preserved
+            await _unitOfWork.Received(1).SaveChangesAsync();
+        }
+
+        [Fact]
+        public async Task AdminExtendSubscriptionAsync_ReactivatesAndUpdatesStartDateToUtcNow_WhenSubscriptionExpired()
+        {
+            // Arrange
+            var tenantId = Guid.NewGuid();
+            var tenant = new Tenant { Id = tenantId, Name = "Acme Corp" };
+            _tenantRepo.GetQueryable().Returns(new List<Tenant> { tenant }.AsQueryable().BuildMock());
+
+            var expiredEndDate = DateTime.UtcNow.AddDays(-5);
+            var sub = new UserSubscription
+            {
+                TenantId = tenantId,
+                StartDate = DateTime.UtcNow.AddDays(-35),
+                EndDate = expiredEndDate,
+                IsActive = false
+            };
+            _subscriptionRepo.GetQueryable().Returns(new List<UserSubscription> { sub }.AsQueryable().BuildMock());
+            _mapper.Map<UserSubscriptionDto>(sub).Returns(new UserSubscriptionDto { Id = sub.Id });
+            _messageService.Get("SubscriptionExtendedSuccessfully").Returns("Subscription extended successfully.");
+
+            var request = new NFC.Platform.Application.DTOs.Subscription.ExtendSubscriptionRequest { ExtensionDays = 60 };
+
+            // Act
+            var result = await _sut.AdminExtendSubscriptionAsync(tenantId, request);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.True(sub.IsActive);
+            Assert.True(sub.StartDate > expiredEndDate); // StartDate updated to UtcNow
+            await _unitOfWork.Received(1).SaveChangesAsync();
+        }
+
+        [Fact]
+        public async Task AdminExtendSubscriptionAsync_ReturnsBadRequest_WhenNoSubscriptionExistsToExtend()
+        {
+            // Arrange
+            var tenantId = Guid.NewGuid();
+            var tenant = new Tenant { Id = tenantId, Name = "Tenant Without Sub" };
+            _tenantRepo.GetQueryable().Returns(new List<Tenant> { tenant }.AsQueryable().BuildMock());
+            _subscriptionRepo.GetQueryable().Returns(new List<UserSubscription>().AsQueryable().BuildMock());
+            _messageService.Get("NoSubscriptionFoundToExtend").Returns("Cannot extend subscription for a customer with no prior subscription.");
+
+            var request = new NFC.Platform.Application.DTOs.Subscription.ExtendSubscriptionRequest { ExtensionDays = 30 };
+
+            // Act
+            var result = await _sut.AdminExtendSubscriptionAsync(tenantId, request);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(400, result.StatusCode);
+            Assert.Equal("Cannot extend subscription for a customer with no prior subscription.", result.Message);
+        }
+
+        [Fact]
+        public async Task AdminExtendSubscriptionAsync_ReturnsBadRequest_WhenDaysIsZeroOrNegative()
+        {
+            // Arrange
+            var tenantId = Guid.NewGuid();
+            _messageService.Get("InvalidExtensionDays").Returns("Invalid extension days.");
+
+            var request = new NFC.Platform.Application.DTOs.Subscription.ExtendSubscriptionRequest { ExtensionDays = 0 };
+
+            // Act
+            var result = await _sut.AdminExtendSubscriptionAsync(tenantId, request);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(400, result.StatusCode);
         }
     }
 }

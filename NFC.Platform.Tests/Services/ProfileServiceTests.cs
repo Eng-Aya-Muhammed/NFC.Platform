@@ -417,5 +417,68 @@ namespace NFC.Platform.Tests.Services
             Assert.Equal(3, sub.TemplateChangesUsed); // Incremented
             await _unitOfWork.Received(1).SaveChangesAsync();
         }
+
+        [Fact]
+        public async Task UpdateVipStatusAsync_ReturnsNotFound_WhenProfileDoesNotExist()
+        {
+            // Arrange
+            var profileId = Guid.NewGuid();
+            _userProfileRepo.GetByIdAsync(profileId).Returns((UserProfile?)null);
+            _messageService.Get("RecordNotFound").Returns("Record not found.");
+
+            var request = new Application.DTOs.VipCustomer.UpdateVipStatusRequest { IsVip = true, VipDisplayOrder = 1 };
+
+            // Act
+            var result = await _sut.UpdateVipStatusAsync(profileId, request);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(404, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task UpdateVipStatusAsync_ReturnsBadRequest_WhenProfileBelongsToEmployee()
+        {
+            // Arrange
+            var profileId = Guid.NewGuid();
+            var employeeProfile = new UserProfile { Id = profileId, EmployeeId = Guid.NewGuid(), FullName = "Company Employee" };
+            _userProfileRepo.GetByIdAsync(profileId).Returns(employeeProfile);
+            _messageService.Get("CannotSetVipForEmployeeProfile").Returns("Cannot set VIP for employee profile.");
+
+            var request = new Application.DTOs.VipCustomer.UpdateVipStatusRequest { IsVip = true, VipDisplayOrder = 1 };
+
+            // Act
+            var result = await _sut.UpdateVipStatusAsync(profileId, request);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(400, result.StatusCode);
+            Assert.Equal("Cannot set VIP for employee profile.", result.Message);
+        }
+
+        [Fact]
+        public async Task UpdateVipStatusAsync_ReturnsSuccess_WhenProfileIsStandaloneIndividual()
+        {
+            // Arrange
+            var profileId = Guid.NewGuid();
+            var standaloneProfile = new UserProfile { Id = profileId, EmployeeId = null, FullName = "Individual Client", IsVip = false, VipDisplayOrder = 0 };
+            _userProfileRepo.GetByIdAsync(profileId).Returns(standaloneProfile);
+
+            var dto = new Application.DTOs.VipCustomer.VipCustomerDto { Id = profileId, Name = "Individual Client", IsVip = true, VipDisplayOrder = 3, CustomerType = Domain.Enums.VipCustomerType.Individual };
+            _mapper.Map<Application.DTOs.VipCustomer.VipCustomerDto>(standaloneProfile).Returns(dto);
+            _messageService.Get("RecordUpdated").Returns("Record updated.");
+
+            var request = new Application.DTOs.VipCustomer.UpdateVipStatusRequest { IsVip = true, VipDisplayOrder = 3 };
+
+            // Act
+            var result = await _sut.UpdateVipStatusAsync(profileId, request);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(200, result.StatusCode);
+            Assert.True(standaloneProfile.IsVip);
+            Assert.Equal(3, standaloneProfile.VipDisplayOrder);
+            await _unitOfWork.Received(1).SaveChangesAsync();
+        }
     }
 }

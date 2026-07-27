@@ -8,7 +8,9 @@ using NFC.Platform.Application.DTOs.Admin;
 using NFC.Platform.Application.DTOs.CardOrder;
 using NFC.Platform.Application.Interfaces.Services;
 using NFC.Platform.BuildingBlocks.Common.Constants;
+using NFC.Platform.Domain.Constants;
 using NFC.Platform.Domain.Enums;
+using NFC.Platform.Infrastructure.Authorization;
 
 namespace NFC.Platform.API.Controllers.Admin;
 
@@ -20,6 +22,7 @@ public class AdminOrdersController(IAdminService adminService) : ControllerBase
     private readonly IAdminService _adminService = adminService ?? throw new ArgumentNullException(nameof(adminService));
 
     [HttpGet]
+    [HasPermission(AppPermissions.Platform.Orders.View)]
     public async Task<IActionResult> GetOrdersPaged(
         [FromQuery] PaginationRequest request,
         [FromQuery] OrderStatus? status,
@@ -31,6 +34,7 @@ public class AdminOrdersController(IAdminService adminService) : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
+    [HasPermission(AppPermissions.Platform.Orders.View)]
     public async Task<IActionResult> GetOrderById([FromRoute] Guid id)
     {
         var result = await _adminService.GetOrderByIdAsync(id);
@@ -39,6 +43,7 @@ public class AdminOrdersController(IAdminService adminService) : ControllerBase
     }
 
     [HttpPut("{id:guid}/status")]
+    [HasPermission(AppPermissions.Platform.Orders.UpdateStatus)]
     public async Task<IActionResult> UpdateOrderStatus([FromRoute] Guid id, [FromBody] UpdateOrderStatusDto dto)
     {
         var result = await _adminService.UpdateOrderStatusAsync(id, dto);
@@ -47,6 +52,7 @@ public class AdminOrdersController(IAdminService adminService) : ControllerBase
     }
 
     [HttpPost("{id:guid}/verify-otp")]
+    [HasPermission(AppPermissions.Platform.Orders.VerifyOtp)]
     public async Task<IActionResult> VerifyDeliveryOtp([FromRoute] Guid id, [FromBody] VerifyDeliveryOtpRequest request)
     {
         var result = await _adminService.VerifyDeliveryOtpAsync(id, request.Otp);
@@ -55,6 +61,7 @@ public class AdminOrdersController(IAdminService adminService) : ControllerBase
     }
 
     [HttpPost("{id:guid}/resend-otp")]
+    [HasPermission(AppPermissions.Platform.Orders.ResendOtp)]
     public async Task<IActionResult> ResendDeliveryOtp([FromRoute] Guid id)
     {
         var result = await _adminService.ResendDeliveryOtpAsync(id);

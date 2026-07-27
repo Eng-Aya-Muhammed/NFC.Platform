@@ -6,26 +6,28 @@ using NFC.Platform.Application.DTOs;
 using NFC.Platform.Application.DTOs.Subscription;
 using NFC.Platform.Application.Interfaces.Services;
 using NFC.Platform.BuildingBlocks.Common.Constants;
+using NFC.Platform.Domain.Constants;
+using NFC.Platform.Infrastructure.Authorization;
 
 namespace NFC.Platform.API.Controllers.Admin;
 
 [ApiController]
-[Route("api/admin")]
+[Route("api/admin/subscription-plans")]
 [Authorize(Policy = AppPolicies.AdminOnly)]
 public class AdminSubscriptionPlansController(IAdminService adminService) : ControllerBase
 {
     private readonly IAdminService _adminService = adminService ?? throw new ArgumentNullException(nameof(adminService));
 
-    [HttpGet("subscription-plans")]
-    [HttpGet("plans")]
+    [HttpGet]
+    [HasPermission(AppPermissions.Platform.SubscriptionPlans.View)]
     public async Task<IActionResult> GetAllAdminPlans([FromQuery] PaginationRequest request)
     {
         var result = await _adminService.GetAllAdminPlansAsync(request);
         return Ok(result);
     }
 
-    [HttpGet("subscription-plans/{id:guid}")]
-    [HttpGet("plans/{id:guid}")]
+    [HttpGet("{id:guid}")]
+    [HasPermission(AppPermissions.Platform.SubscriptionPlans.View)]
     public async Task<IActionResult> GetPlanById([FromRoute] Guid id)
     {
         var result = await _adminService.GetPlanByIdAsync(id);
@@ -33,8 +35,8 @@ public class AdminSubscriptionPlansController(IAdminService adminService) : Cont
         return Ok(result);
     }
 
-    [HttpPost("subscription-plans")]
-    [HttpPost("plans")]
+    [HttpPost]
+    [HasPermission(AppPermissions.Platform.SubscriptionPlans.Create)]
     public async Task<IActionResult> CreatePlan([FromBody] CreateSubscriptionPlanRequest request)
     {
         var result = await _adminService.CreatePlanAsync(request);
@@ -42,8 +44,8 @@ public class AdminSubscriptionPlansController(IAdminService adminService) : Cont
         return Ok(result);
     }
 
-    [HttpPut("subscription-plans/{planId:guid}")]
-    [HttpPut("plans/{planId:guid}")]
+    [HttpPut("{planId:guid}")]
+    [HasPermission(AppPermissions.Platform.SubscriptionPlans.Update)]
     public async Task<IActionResult> UpdatePlan([FromRoute] Guid planId, [FromBody] UpdateSubscriptionPlanRequest request)
     {
         var result = await _adminService.UpdatePlanAsync(planId, request);
@@ -51,8 +53,8 @@ public class AdminSubscriptionPlansController(IAdminService adminService) : Cont
         return Ok(result);
     }
 
-    [HttpDelete("subscription-plans/{planId:guid}")]
-    [HttpDelete("plans/{planId:guid}")]
+    [HttpDelete("{planId:guid}")]
+    [HasPermission(AppPermissions.Platform.SubscriptionPlans.Delete)]
     public async Task<IActionResult> DeletePlan([FromRoute] Guid planId)
     {
         var result = await _adminService.DeletePlanAsync(planId);
@@ -60,14 +62,16 @@ public class AdminSubscriptionPlansController(IAdminService adminService) : Cont
         return Ok(result);
     }
 
-    [HttpGet("plans/{planId:guid}/templates")]
+    [HttpGet("{planId:guid}/templates")]
+    [HasPermission(AppPermissions.Platform.SubscriptionPlans.View)]
     public async Task<IActionResult> GetPlanTemplates([FromRoute] Guid planId)
     {
         var result = await _adminService.GetPlanTemplatesAsync(planId);
         return Ok(result);
     }
 
-    [HttpPost("plans/{planId:guid}/templates/{templateId:guid}")]
+    [HttpPost("{planId:guid}/templates/{templateId:guid}")]
+    [HasPermission(AppPermissions.Platform.SubscriptionPlans.AssignTemplate)]
     public async Task<IActionResult> AssignTemplate([FromRoute] Guid planId, [FromRoute] Guid templateId)
     {
         var result = await _adminService.AssignTemplateAsync(planId, templateId);
@@ -75,7 +79,8 @@ public class AdminSubscriptionPlansController(IAdminService adminService) : Cont
         return Ok(result);
     }
 
-    [HttpDelete("plans/{planId:guid}/templates/{templateId:guid}")]
+    [HttpDelete("{planId:guid}/templates/{templateId:guid}")]
+    [HasPermission(AppPermissions.Platform.SubscriptionPlans.AssignTemplate)]
     public async Task<IActionResult> UnassignTemplate([FromRoute] Guid planId, [FromRoute] Guid templateId)
     {
         var result = await _adminService.UnassignTemplateAsync(planId, templateId);

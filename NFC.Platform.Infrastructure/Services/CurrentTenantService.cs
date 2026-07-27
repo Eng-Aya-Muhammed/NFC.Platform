@@ -1,7 +1,6 @@
 using System;
 using System.Linq;
 using System.Security.Claims;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -94,46 +93,55 @@ namespace NFC.Platform.Infrastructure.Services
             }
 
             // 1. Resolve Admin status
-            var userRoles = httpContext.User.FindAll(System.Security.Claims.ClaimTypes.Role)
+            var userRoles = httpContext.User.FindAll(ClaimTypes.Role)
                 .Concat(httpContext.User.FindAll(AppClaims.Role))
                 .Select(c => c.Value);
 
             _isAdmin = userRoles.Any(r => r.Equals(AppRole.Admin.ToString(), StringComparison.OrdinalIgnoreCase));
 
-            // 2. Resolve TenantId from claim
-            var tenantIdStr = httpContext.User.FindFirstValue(AppClaims.TenantId)
-                ?? httpContext.User.FindFirstValue("http://schemas.microsoft.com/identity/claims/tenantid");
-            if (!Guid.TryParse(tenantIdStr, out Guid tenantId))
+            // System Admin bypasses tenant validation completely
+            if (_isAdmin)
             {
-                // If it is an Admin, they may not have a tenant claim if they are a system user, or they might.
-                // If they are Admin, allow null/empty TenantId bypass.
-                if (_isAdmin)
+                var adminTenantIdStr = httpContext.User.FindFirstValue(AppClaims.TenantId)
+                    ?? httpContext.User.FindFirstValue("http://schemas.microsoft.com/identity/claims/tenantid");
+
+                if (Guid.TryParse(adminTenantIdStr, out Guid adminTenantId) && adminTenantId != Guid.Empty)
                 {
-                    _isTenantValidated = true;
-                    return;
+                    _cachedTenantId = adminTenantId;
                 }
 
+                _isTenantValidated = true;
+                return;
+            }
+
+            // 2. Resolve TenantId from claim for Tenant users
+            var tenantIdStr = httpContext.User.FindFirstValue(AppClaims.TenantId)
+                ?? httpContext.User.FindFirstValue("http://schemas.microsoft.com/identity/claims/tenantid");
+
+            if (!Guid.TryParse(tenantIdStr, out Guid tenantId) || tenantId == Guid.Empty)
+            {
                 throw new ForbiddenException("InvalidTenantClaim");
             }
 
             _cachedTenantId = tenantId;
 
-            // 3. Database validation
-            // We load the tenant from database using a fresh DbContext instance to prevent
-            // concurrent/nested DbContext operation conflicts during query processing.
+            // 3. Synchronous Database validation to avoid async deadlock inside property getter
             using (var scope = _serviceProvider.CreateScope())
             {
                 var options = scope.ServiceProvider.GetRequiredService<DbContextOptions<ApplicationDbContext>>();
                 var interceptor = scope.ServiceProvider.GetRequiredService<AuditableEntitySaveChangesInterceptor>();
 
-                // We pass 'this' (the current service) instead of a Fake class!
                 using var validationContext = new ApplicationDbContext(options, interceptor, this);
-                
+
                 var tenant = validationContext.Set<Tenant>()
                     .IgnoreQueryFilters()
-                    .FirstOrDefaultAsync(t => t.Id == tenantId)
-                    .GetAwaiter().GetResult() ?? throw new ForbiddenException("TenantNotFound");
-                    
+                    .FirstOrDefault(t => t.Id == tenantId);
+
+                if (tenant == null)
+                {
+                    throw new ForbiddenException("TenantNotFound");
+                }
+
                 if (!tenant.IsActive)
                 {
                     throw new ForbiddenException("TenantInactive");

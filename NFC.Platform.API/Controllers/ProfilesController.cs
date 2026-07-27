@@ -80,7 +80,7 @@ public class ProfilesController(IProfileService profileService, ICurrentTenant c
     /// <summary>
     /// Applies a specific digital card template to the authenticated user's public profile.
     /// </summary>
-    [HttpPost("template/{templateId:guid}")]
+    [HttpPost("apply-template/{templateId:guid}")]
     public async Task<IActionResult> ApplyPublicProfileTemplate([FromRoute] Guid templateId)
     {
         var userId = _currentTenant.UserId;
@@ -91,9 +91,9 @@ public class ProfilesController(IProfileService profileService, ICurrentTenant c
     }
 
     /// <summary>
-    /// Removes the specific digital card template from the authenticated user's public profile, reverting to the default.
+    /// Removes the applied digital card template from the authenticated user's public profile, reverting to default.
     /// </summary>
-    [HttpDelete("template")]
+    [HttpDelete("remove-template")]
     public async Task<IActionResult> RemovePublicProfileTemplate()
     {
         var userId = _currentTenant.UserId;

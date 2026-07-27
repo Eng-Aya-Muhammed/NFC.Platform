@@ -1,3 +1,18 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using NSubstitute;
+using Xunit;
+using NFC.Platform.API.Controllers;
+using NFC.Platform.Application.DTOs.Role;
+using NFC.Platform.Application.Interfaces.Services;
+using NFC.Platform.BuildingBlocks.Results;
+using NFC.Platform.Domain.Constants;
+using NFC.Platform.Infrastructure.Authorization;
+
 namespace NFC.Platform.Tests.Controllers
 {
     public class RolesControllerTests
@@ -19,18 +34,18 @@ namespace NFC.Platform.Tests.Controllers
             Assert.NotEmpty(apiController);
 
             var route = type.GetCustomAttributes(typeof(RouteAttribute), true).Cast<RouteAttribute>().First();
-            Assert.Equal("api/company/roles", route.Template);
+            Assert.Equal("api/admin/roles", route.Template);
         }
 
         [Theory]
-        [InlineData(nameof(RolesController.GetRoles), AppPermissions.Roles.View)]
-        [InlineData(nameof(RolesController.GetRoleById), AppPermissions.Roles.View)]
-        [InlineData(nameof(RolesController.CreateRole), AppPermissions.Roles.Create)]
-        [InlineData(nameof(RolesController.UpdateRolePermissions), AppPermissions.Roles.Update)]
-        [InlineData(nameof(RolesController.DeleteRole), AppPermissions.Roles.Delete)]
-        [InlineData(nameof(RolesController.AssignRoleToUser), AppPermissions.Roles.AssignToUser)]
-        [InlineData(nameof(RolesController.RevokeRoleFromUser), AppPermissions.Roles.AssignToUser)]
-        [InlineData(nameof(RolesController.GetAvailablePermissions), AppPermissions.Roles.View)]
+        [InlineData(nameof(RolesController.GetRoles), AppPermissions.Platform.Roles.View)]
+        [InlineData(nameof(RolesController.GetRoleById), AppPermissions.Platform.Roles.View)]
+        [InlineData(nameof(RolesController.CreateRole), AppPermissions.Platform.Roles.Create)]
+        [InlineData(nameof(RolesController.UpdateRolePermissions), AppPermissions.Platform.Roles.Update)]
+        [InlineData(nameof(RolesController.DeleteRole), AppPermissions.Platform.Roles.Delete)]
+        [InlineData(nameof(RolesController.AssignRoleToUser), AppPermissions.Platform.Roles.AssignToUser)]
+        [InlineData(nameof(RolesController.RevokeRoleFromUser), AppPermissions.Platform.Roles.AssignToUser)]
+        [InlineData(nameof(RolesController.GetAvailablePermissions), AppPermissions.Platform.Roles.View)]
         public void RolesController_Endpoints_ShouldHaveCorrectPermission(string methodName, string expectedPermission)
         {
             var type = typeof(RolesController);

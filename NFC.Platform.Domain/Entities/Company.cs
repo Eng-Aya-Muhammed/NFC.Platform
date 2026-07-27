@@ -14,6 +14,8 @@ namespace NFC.Platform.Domain.Entities
         public string? LogoUrl { get; set; }
         public string? Bio { get; set; }
         public string? WebsiteUrl { get; set; }
+        public bool IsVip { get; set; } = false;
+        public int VipDisplayOrder { get; set; } = 0;
 
         public Guid TenantId { get; set; }
         public Tenant Tenant { get; set; } = null!;

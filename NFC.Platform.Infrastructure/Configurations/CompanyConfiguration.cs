@@ -22,6 +22,7 @@ namespace NFC.Platform.Infrastructure.Configurations
 
             builder.Property(c => c.TenantId).IsRequired();
             builder.HasIndex(c => c.TenantId).IsUnique();
+            builder.HasIndex(c => new { c.IsVip, c.IsDeleted, c.VipDisplayOrder });
 
             builder.HasOne(c => c.AdminUser)
                 .WithMany()

@@ -36,7 +36,7 @@ namespace NFC.Platform.Application.Services
             if (existing.Any())
                 return ServiceResult<RoleDto>.Fail(_messageService.Get("RoleAlreadyExists"));
 
-            var validPermissions = AppPermissions.GetAll().ToHashSet();
+            var validPermissions = AppPermissions.GetTenantPermissions().ToHashSet();
             var invalidPerms = request.Permissions.Where(p => !validPermissions.Contains(p)).ToList();
             if (invalidPerms.Count > 0)
                 return ServiceResult<RoleDto>.Fail(_messageService.Get("InvalidPermissions"));
@@ -114,7 +114,7 @@ namespace NFC.Platform.Application.Services
             if (!roles.Any())
                 return ServiceResult.Fail(_messageService.Get("SystemRoleModificationNotAllowed"), 403);
 
-            var validPermissions = AppPermissions.GetAll().ToHashSet();
+            var validPermissions = AppPermissions.GetTenantPermissions().ToHashSet();
             var invalidPerms = request.Permissions.Where(p => !validPermissions.Contains(p)).ToList();
             if (invalidPerms.Count > 0)
                 return ServiceResult.Fail(_messageService.Get("InvalidPermissions"));
@@ -207,7 +207,7 @@ namespace NFC.Platform.Application.Services
 
         public Task<ServiceResult<IReadOnlyList<string>>> GetAvailablePermissionsAsync()
         {
-            IReadOnlyList<string> permissions = AppPermissions.GetAll().ToList();
+            IReadOnlyList<string> permissions = AppPermissions.GetTenantPermissions().ToList();
             return Task.FromResult(ServiceResult<IReadOnlyList<string>>.Success(permissions));
         }
 

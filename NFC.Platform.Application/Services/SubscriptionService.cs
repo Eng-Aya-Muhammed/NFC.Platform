@@ -1,3 +1,5 @@
+using NFC.Platform.Application.DTOs.Subscription;
+
 namespace NFC.Platform.Application.Services;
 
 public class SubscriptionService(
@@ -149,5 +151,49 @@ public class SubscriptionService(
         var dto = _mapper.Map<UserSubscriptionDto>(newSub);
 
         return ServiceResult<UserSubscriptionDto>.Success(dto, _messageService.Get("RecordUpdated"));
+    }
+
+    public async Task<ServiceResult<UserSubscriptionDto>> AdminExtendSubscriptionAsync(Guid tenantId, ExtendSubscriptionRequest request)
+    {
+        if (request == null)
+            throw new ArgumentNullException(nameof(request));
+
+        if (request.ExtensionDays < 1 || request.ExtensionDays > 3650)
+            return ServiceResult<UserSubscriptionDto>.Fail(_messageService.Get("InvalidExtensionDays"), 400);
+
+        var tenantRepo = _unitOfWork.Repository<Tenant>();
+        var tenant = await tenantRepo.GetQueryable().AsNoTracking().IgnoreQueryFilters().FirstOrDefaultAsync(t => t.Id == tenantId && !t.IsDeleted);
+        if (tenant == null)
+            return ServiceResult<UserSubscriptionDto>.NotFound(_messageService.Get("RecordNotFound"));
+
+        // Target the single tenant subscription directly, bypassing tenant context query filters for Admin operations
+        var sub = await _unitOfWork.Repository<UserSubscription>()
+            .GetQueryable()
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(s => s.TenantId == tenantId && !s.IsDeleted);
+
+        if (sub == null)
+            return ServiceResult<UserSubscriptionDto>.Fail(_messageService.Get("NoSubscriptionFoundToExtend"), 400);
+
+        var isExpired = sub.EndDate <= DateTime.UtcNow;
+
+        if (isExpired)
+        {
+            sub.StartDate = DateTime.UtcNow;
+            sub.EndDate = DateTime.UtcNow.AddDays(request.ExtensionDays);
+        }
+        else
+        {
+            // Active subscription: Keep original StartDate, extend EndDate from current EndDate
+            sub.EndDate = sub.EndDate.AddDays(request.ExtensionDays);
+        }
+
+        sub.IsActive = true;
+        // Usage quotas (TemplateChangesUsed, CustomDesignRequestsUsed) are preserved intact
+
+        await _unitOfWork.SaveChangesAsync();
+
+        var dto = _mapper.Map<UserSubscriptionDto>(sub);
+        return ServiceResult<UserSubscriptionDto>.Success(dto, _messageService.Get("SubscriptionExtendedSuccessfully"));
     }
 }

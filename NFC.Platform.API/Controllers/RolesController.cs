@@ -4,20 +4,21 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NFC.Platform.Application.DTOs.Role;
 using NFC.Platform.Application.Interfaces.Services;
+using NFC.Platform.BuildingBlocks.Common.Constants;
 using NFC.Platform.Domain.Constants;
 using NFC.Platform.Infrastructure.Authorization;
 
 namespace NFC.Platform.API.Controllers
 {
     [ApiController]
-    [Route("api/company/roles")]
-    [Authorize]
+    [Route("api/admin/roles")]
+    [Authorize(Policy = AppPolicies.AdminOnly)]
     public class RolesController(IRoleService roleService) : ControllerBase
     {
         private readonly IRoleService _roleService = roleService ?? throw new ArgumentNullException(nameof(roleService));
 
         [HttpGet]
-        [HasPermission(AppPermissions.Roles.View)]
+        [HasPermission(AppPermissions.Platform.Roles.View)]
         public async Task<IActionResult> GetRoles()
         {
             var result = await _roleService.GetRolesAsync();
@@ -25,7 +26,7 @@ namespace NFC.Platform.API.Controllers
         }
 
         [HttpGet("{id:guid}")]
-        [HasPermission(AppPermissions.Roles.View)]
+        [HasPermission(AppPermissions.Platform.Roles.View)]
         public async Task<IActionResult> GetRoleById([FromRoute] Guid id)
         {
             var result = await _roleService.GetRoleByIdAsync(id);
@@ -35,7 +36,7 @@ namespace NFC.Platform.API.Controllers
         }
 
         [HttpPost]
-        [HasPermission(AppPermissions.Roles.Create)]
+        [HasPermission(AppPermissions.Platform.Roles.Create)]
         public async Task<IActionResult> CreateRole([FromBody] CreateRoleRequest request)
         {
             var result = await _roleService.CreateRoleAsync(request);
@@ -45,7 +46,7 @@ namespace NFC.Platform.API.Controllers
         }
 
         [HttpPut("{id:guid}/permissions")]
-        [HasPermission(AppPermissions.Roles.Update)]
+        [HasPermission(AppPermissions.Platform.Roles.Update)]
         public async Task<IActionResult> UpdateRolePermissions([FromRoute] Guid id, [FromBody] AssignPermissionsRequest request)
         {
             var result = await _roleService.UpdateRolePermissionsAsync(id, request);
@@ -55,7 +56,7 @@ namespace NFC.Platform.API.Controllers
         }
 
         [HttpDelete("{id:guid}")]
-        [HasPermission(AppPermissions.Roles.Delete)]
+        [HasPermission(AppPermissions.Platform.Roles.Delete)]
         public async Task<IActionResult> DeleteRole([FromRoute] Guid id)
         {
             var result = await _roleService.DeleteRoleAsync(id);
@@ -65,7 +66,7 @@ namespace NFC.Platform.API.Controllers
         }
 
         [HttpPost("{roleId:guid}/users/{userId:guid}")]
-        [HasPermission(AppPermissions.Roles.AssignToUser)]
+        [HasPermission(AppPermissions.Platform.Roles.AssignToUser)]
         public async Task<IActionResult> AssignRoleToUser([FromRoute] Guid roleId, [FromRoute] Guid userId)
         {
             var result = await _roleService.AssignRoleToUserAsync(userId, roleId);
@@ -75,7 +76,7 @@ namespace NFC.Platform.API.Controllers
         }
 
         [HttpDelete("{roleId:guid}/users/{userId:guid}")]
-        [HasPermission(AppPermissions.Roles.AssignToUser)]
+        [HasPermission(AppPermissions.Platform.Roles.AssignToUser)]
         public async Task<IActionResult> RevokeRoleFromUser([FromRoute] Guid roleId, [FromRoute] Guid userId)
         {
             var result = await _roleService.RevokeRoleFromUserAsync(userId, roleId);
@@ -85,7 +86,7 @@ namespace NFC.Platform.API.Controllers
         }
 
         [HttpGet("permissions/available")]
-        [HasPermission(AppPermissions.Roles.View)]
+        [HasPermission(AppPermissions.Platform.Roles.View)]
         public async Task<IActionResult> GetAvailablePermissions()
         {
             var result = await _roleService.GetAvailablePermissionsAsync();

@@ -144,7 +144,7 @@ namespace NFC.Platform.Tests.Controllers
 
             var auth = method.GetCustomAttributes(typeof(HasPermissionAttribute), true).Cast<HasPermissionAttribute>().FirstOrDefault();
             Assert.NotNull(auth);
-            Assert.Equal($"Permission:{AppPermissions.Company.View}", auth.Policy);
+            Assert.Equal($"Permission:{AppPermissions.Subscriptions.View}", auth.Policy);
         }
 
         [Theory]
@@ -158,7 +158,7 @@ namespace NFC.Platform.Tests.Controllers
 
             var auth = method.GetCustomAttributes(typeof(HasPermissionAttribute), true).Cast<HasPermissionAttribute>().FirstOrDefault();
             Assert.NotNull(auth);
-            Assert.Equal($"Permission:{AppPermissions.Company.Update}", auth.Policy);
+            Assert.Equal($"Permission:{AppPermissions.Subscriptions.Update}", auth.Policy);
         }
     }
 }

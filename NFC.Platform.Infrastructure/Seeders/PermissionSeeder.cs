@@ -17,7 +17,7 @@ namespace NFC.Platform.Infrastructure.Seeders
 
         private static readonly Dictionary<AppRole, IReadOnlyList<string>> DefaultPermissions = new()
         {
-            [AppRole.CompanyAdmin] = AppPermissions.GetAll().ToList(),
+            [AppRole.CompanyAdmin] = AppPermissions.GetTenantPermissions().ToList(),
 
             [AppRole.Customer] =
             [
@@ -27,10 +27,10 @@ namespace NFC.Platform.Infrastructure.Seeders
                 AppPermissions.CardOrders.Create,
                 AppPermissions.CardOrders.Update,
                 AppPermissions.CardOrders.Cancel,
-                AppPermissions.Templates.View,
-                AppPermissions.Templates.Create,
-                AppPermissions.Templates.Update,
-                AppPermissions.Templates.Cancel,
+                AppPermissions.TemplateRequests.View,
+                AppPermissions.TemplateRequests.Create,
+                AppPermissions.TemplateRequests.Update,
+                AppPermissions.TemplateRequests.Cancel,
             ],
         };
 

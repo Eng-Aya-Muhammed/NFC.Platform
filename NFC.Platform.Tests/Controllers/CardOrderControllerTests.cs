@@ -1,3 +1,19 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
+using NSubstitute;
+using Xunit;
+using NFC.Platform.API.Controllers;
+using NFC.Platform.Application.DTOs;
+using NFC.Platform.Application.DTOs.CardOrder;
+using NFC.Platform.Application.Interfaces.Services;
+using NFC.Platform.BuildingBlocks.Localization;
+using NFC.Platform.BuildingBlocks.Results;
+using NFC.Platform.Domain.Constants;
+using NFC.Platform.Infrastructure.Authorization;
+
 namespace NFC.Platform.Tests.Controllers
 {
     public class CardOrderControllerTests
@@ -123,6 +139,34 @@ namespace NFC.Platform.Tests.Controllers
         }
 
         [Fact]
+        public async Task Update_CallsService_AndReturnsOk_OnSuccess()
+        {
+            var id = Guid.NewGuid();
+            var request = new UpdateCardOrderRequest();
+            var dto = new CardOrderDto { Id = id };
+            _cardOrderService.UpdateOrderAsync(id, request).Returns(ServiceResult<CardOrderDto>.Success(dto));
+
+            var result = await _sut.Update(id, request) as OkObjectResult;
+
+            Assert.NotNull(result);
+            Assert.Equal(200, result.StatusCode);
+            await _cardOrderService.Received(1).UpdateOrderAsync(id, request);
+        }
+
+        [Fact]
+        public async Task Update_ReturnsErrorStatusCode_OnFailure()
+        {
+            var id = Guid.NewGuid();
+            var request = new UpdateCardOrderRequest();
+            _cardOrderService.UpdateOrderAsync(id, request).Returns(ServiceResult<CardOrderDto>.Fail("Error", 400));
+
+            var result = await _sut.Update(id, request) as ObjectResult;
+
+            Assert.NotNull(result);
+            Assert.Equal(400, result.StatusCode);
+        }
+
+        [Fact]
         public async Task Cancel_CallsService_AndReturnsOk_OnSuccess()
         {
             var id = Guid.NewGuid();
@@ -172,6 +216,7 @@ namespace NFC.Platform.Tests.Controllers
             Assert.NotNull(result);
             Assert.Equal(404, result.StatusCode);
         }
+
         [Fact]
         public async Task ResendDeliveryOtp_ReturnsOk_WhenSuccess()
         {
@@ -197,5 +242,3 @@ namespace NFC.Platform.Tests.Controllers
         }
     }
 }
-
-

@@ -24,16 +24,25 @@ public class DiscountCodeControllerTests
     [Fact]
     public async Task ValidateDiscountCode_ReturnsOkResult_OnSuccess()
     {
-        // Arrange
         var request = new ValidateDiscountCodeRequest { Code = "SUMMER20", OrderAmount = 100 };
         var validationResult = new DiscountCodeValidationResultDto { IsValid = true, Code = "SUMMER20", FinalAmount = 80 };
         _discountCodeService.ValidateCodeAsync(request).Returns(ServiceResult<DiscountCodeValidationResultDto>.Success(validationResult));
 
-        // Act
         var result = await _sut.ValidateDiscountCode(request) as OkObjectResult;
 
-        // Assert
         Assert.NotNull(result);
         Assert.Equal(200, result.StatusCode);
+    }
+
+    [Fact]
+    public async Task ValidateDiscountCode_ReturnsError_WhenInvalid()
+    {
+        var request = new ValidateDiscountCodeRequest { Code = "INVALID", OrderAmount = 100 };
+        _discountCodeService.ValidateCodeAsync(request).Returns(ServiceResult<DiscountCodeValidationResultDto>.Fail("كود الخصم غير صالح", 400));
+
+        var result = await _sut.ValidateDiscountCode(request) as ObjectResult;
+
+        Assert.NotNull(result);
+        Assert.Equal(400, result.StatusCode);
     }
 }

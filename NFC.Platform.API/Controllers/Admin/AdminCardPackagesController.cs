@@ -7,6 +7,7 @@ using NFC.Platform.Application.DTOs.CardPackage;
 using NFC.Platform.Application.Interfaces.Services;
 using NFC.Platform.BuildingBlocks.Common.Constants;
 using NFC.Platform.Domain.Constants;
+using NFC.Platform.Infrastructure.Authorization;
 
 namespace NFC.Platform.API.Controllers.Admin;
 
@@ -18,7 +19,7 @@ public class AdminCardPackagesController(ICardPackageService cardPackageService)
     private readonly ICardPackageService _cardPackageService = cardPackageService ?? throw new ArgumentNullException(nameof(cardPackageService));
 
     [HttpGet]
-    [HasPermission(AppPermissions.CardPackages.View)]
+    [HasPermission(AppPermissions.Platform.CardPackages.View)]
     public async Task<IActionResult> GetAllAdminCardPackages([FromQuery] PaginationRequest request)
     {
         var result = await _cardPackageService.GetAllAdminCardPackagesAsync(request);
@@ -26,7 +27,7 @@ public class AdminCardPackagesController(ICardPackageService cardPackageService)
     }
 
     [HttpGet("{id:guid}")]
-    [HasPermission(AppPermissions.CardPackages.View)]
+    [HasPermission(AppPermissions.Platform.CardPackages.View)]
     public async Task<IActionResult> GetCardPackageById([FromRoute] Guid id)
     {
         var result = await _cardPackageService.GetByIdAsync(id);
@@ -35,7 +36,7 @@ public class AdminCardPackagesController(ICardPackageService cardPackageService)
     }
 
     [HttpPost]
-    [HasPermission(AppPermissions.CardPackages.Create)]
+    [HasPermission(AppPermissions.Platform.CardPackages.Create)]
     public async Task<IActionResult> CreateCardPackage([FromBody] CreateCardPackageRequest request)
     {
         var result = await _cardPackageService.CreateAsync(request);
@@ -44,7 +45,7 @@ public class AdminCardPackagesController(ICardPackageService cardPackageService)
     }
 
     [HttpPut("{id:guid}")]
-    [HasPermission(AppPermissions.CardPackages.Update)]
+    [HasPermission(AppPermissions.Platform.CardPackages.Update)]
     public async Task<IActionResult> UpdateCardPackage([FromRoute] Guid id, [FromBody] UpdateCardPackageRequest request)
     {
         var result = await _cardPackageService.UpdateAsync(id, request);
@@ -53,7 +54,7 @@ public class AdminCardPackagesController(ICardPackageService cardPackageService)
     }
 
     [HttpDelete("{id:guid}")]
-    [HasPermission(AppPermissions.CardPackages.Delete)]
+    [HasPermission(AppPermissions.Platform.CardPackages.Delete)]
     public async Task<IActionResult> DeleteCardPackage([FromRoute] Guid id)
     {
         var result = await _cardPackageService.DeleteAsync(id);

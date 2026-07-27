@@ -8,6 +8,7 @@ using NFC.Platform.Application.DTOs.DiscountCode;
 using NFC.Platform.Application.Interfaces.Services;
 using NFC.Platform.BuildingBlocks.Common.Constants;
 using NFC.Platform.Domain.Constants;
+using NFC.Platform.Infrastructure.Authorization;
 
 namespace NFC.Platform.API.Controllers.Admin;
 
@@ -19,7 +20,7 @@ public class AdminDiscountCodesController(IDiscountCodeService discountCodeServi
     private readonly IDiscountCodeService _discountCodeService = discountCodeService ?? throw new ArgumentNullException(nameof(discountCodeService));
 
     [HttpGet]
-    [HasPermission(AppPermissions.DiscountCodes.View)]
+    [HasPermission(AppPermissions.Platform.DiscountCodes.View)]
     public async Task<IActionResult> GetDiscountCodesPaged([FromQuery] PaginationRequest request, CancellationToken cancellationToken)
     {
         var result = await _discountCodeService.GetPagedAdminAsync(request, cancellationToken);
@@ -27,7 +28,7 @@ public class AdminDiscountCodesController(IDiscountCodeService discountCodeServi
     }
 
     [HttpGet("{id:guid}")]
-    [HasPermission(AppPermissions.DiscountCodes.View)]
+    [HasPermission(AppPermissions.Platform.DiscountCodes.View)]
     public async Task<IActionResult> GetDiscountCodeById([FromRoute] Guid id)
     {
         var result = await _discountCodeService.GetByIdAsync(id);
@@ -36,7 +37,7 @@ public class AdminDiscountCodesController(IDiscountCodeService discountCodeServi
     }
 
     [HttpPost]
-    [HasPermission(AppPermissions.DiscountCodes.Create)]
+    [HasPermission(AppPermissions.Platform.DiscountCodes.Create)]
     public async Task<IActionResult> CreateDiscountCode([FromBody] CreateDiscountCodeRequest request)
     {
         var result = await _discountCodeService.CreateAsync(request);
@@ -45,7 +46,7 @@ public class AdminDiscountCodesController(IDiscountCodeService discountCodeServi
     }
 
     [HttpPut("{id:guid}")]
-    [HasPermission(AppPermissions.DiscountCodes.Update)]
+    [HasPermission(AppPermissions.Platform.DiscountCodes.Update)]
     public async Task<IActionResult> UpdateDiscountCode([FromRoute] Guid id, [FromBody] UpdateDiscountCodeRequest request)
     {
         var result = await _discountCodeService.UpdateAsync(id, request);
@@ -54,7 +55,7 @@ public class AdminDiscountCodesController(IDiscountCodeService discountCodeServi
     }
 
     [HttpDelete("{id:guid}")]
-    [HasPermission(AppPermissions.DiscountCodes.Delete)]
+    [HasPermission(AppPermissions.Platform.DiscountCodes.Delete)]
     public async Task<IActionResult> DeleteDiscountCode([FromRoute] Guid id)
     {
         var result = await _discountCodeService.DeleteAsync(id);

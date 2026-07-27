@@ -7,6 +7,7 @@ using NFC.Platform.Application.DTOs.CardType;
 using NFC.Platform.Application.Interfaces.Services;
 using NFC.Platform.BuildingBlocks.Common.Constants;
 using NFC.Platform.Domain.Constants;
+using NFC.Platform.Infrastructure.Authorization;
 
 namespace NFC.Platform.API.Controllers.Admin;
 
@@ -18,7 +19,7 @@ public class AdminCardTypesController(ICardTypeService cardTypeService) : Contro
     private readonly ICardTypeService _cardTypeService = cardTypeService ?? throw new ArgumentNullException(nameof(cardTypeService));
 
     [HttpGet]
-    [HasPermission(AppPermissions.CardTypes.View)]
+    [HasPermission(AppPermissions.Platform.CardTypes.View)]
     public async Task<IActionResult> GetAllAdminCardTypes([FromQuery] PaginationRequest request)
     {
         var result = await _cardTypeService.GetAllAdminCardTypesAsync(request);
@@ -26,7 +27,7 @@ public class AdminCardTypesController(ICardTypeService cardTypeService) : Contro
     }
 
     [HttpGet("{id:guid}")]
-    [HasPermission(AppPermissions.CardTypes.View)]
+    [HasPermission(AppPermissions.Platform.CardTypes.View)]
     public async Task<IActionResult> GetCardTypeById([FromRoute] Guid id)
     {
         var result = await _cardTypeService.GetByIdAsync(id);
@@ -35,7 +36,7 @@ public class AdminCardTypesController(ICardTypeService cardTypeService) : Contro
     }
 
     [HttpPost]
-    [HasPermission(AppPermissions.CardTypes.Create)]
+    [HasPermission(AppPermissions.Platform.CardTypes.Create)]
     public async Task<IActionResult> CreateCardType([FromBody] CreateCardTypeRequest request)
     {
         var result = await _cardTypeService.CreateAsync(request);
@@ -44,7 +45,7 @@ public class AdminCardTypesController(ICardTypeService cardTypeService) : Contro
     }
 
     [HttpPut("{id:guid}")]
-    [HasPermission(AppPermissions.CardTypes.Update)]
+    [HasPermission(AppPermissions.Platform.CardTypes.Update)]
     public async Task<IActionResult> UpdateCardType([FromRoute] Guid id, [FromBody] UpdateCardTypeRequest request)
     {
         var result = await _cardTypeService.UpdateAsync(id, request);
@@ -53,7 +54,7 @@ public class AdminCardTypesController(ICardTypeService cardTypeService) : Contro
     }
 
     [HttpDelete("{id:guid}")]
-    [HasPermission(AppPermissions.CardTypes.Delete)]
+    [HasPermission(AppPermissions.Platform.CardTypes.Delete)]
     public async Task<IActionResult> DeleteCardType([FromRoute] Guid id)
     {
         var result = await _cardTypeService.DeleteAsync(id);

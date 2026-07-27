@@ -7,6 +7,7 @@ using NFC.Platform.Application.DTOs.TemplateCategory;
 using NFC.Platform.Application.Interfaces.Services;
 using NFC.Platform.BuildingBlocks.Common.Constants;
 using NFC.Platform.Domain.Constants;
+using NFC.Platform.Infrastructure.Authorization;
 
 namespace NFC.Platform.API.Controllers.Admin;
 
@@ -18,7 +19,7 @@ public class AdminTemplateCategoriesController(ITemplateCategoryService template
     private readonly ITemplateCategoryService _templateCategoryService = templateCategoryService ?? throw new ArgumentNullException(nameof(templateCategoryService));
 
     [HttpGet]
-    [HasPermission(AppPermissions.TemplateCategories.View)]
+    [HasPermission(AppPermissions.Platform.TemplateCategories.View)]
     public async Task<IActionResult> GetAllAdminTemplateCategories([FromQuery] PaginationRequest request)
     {
         var result = await _templateCategoryService.GetAllAdminCategoriesAsync(request);
@@ -26,7 +27,7 @@ public class AdminTemplateCategoriesController(ITemplateCategoryService template
     }
 
     [HttpGet("{id:guid}")]
-    [HasPermission(AppPermissions.TemplateCategories.View)]
+    [HasPermission(AppPermissions.Platform.TemplateCategories.View)]
     public async Task<IActionResult> GetTemplateCategoryById([FromRoute] Guid id)
     {
         var result = await _templateCategoryService.GetByIdAsync(id);
@@ -35,7 +36,7 @@ public class AdminTemplateCategoriesController(ITemplateCategoryService template
     }
 
     [HttpPost]
-    [HasPermission(AppPermissions.TemplateCategories.Create)]
+    [HasPermission(AppPermissions.Platform.TemplateCategories.Create)]
     public async Task<IActionResult> CreateTemplateCategory([FromBody] CreateTemplateCategoryRequest request)
     {
         var result = await _templateCategoryService.CreateAsync(request);
@@ -44,7 +45,7 @@ public class AdminTemplateCategoriesController(ITemplateCategoryService template
     }
 
     [HttpPut("{id:guid}")]
-    [HasPermission(AppPermissions.TemplateCategories.Update)]
+    [HasPermission(AppPermissions.Platform.TemplateCategories.Update)]
     public async Task<IActionResult> UpdateTemplateCategory([FromRoute] Guid id, [FromBody] UpdateTemplateCategoryRequest request)
     {
         var result = await _templateCategoryService.UpdateAsync(id, request);
@@ -53,7 +54,7 @@ public class AdminTemplateCategoriesController(ITemplateCategoryService template
     }
 
     [HttpDelete("{id:guid}")]
-    [HasPermission(AppPermissions.TemplateCategories.Delete)]
+    [HasPermission(AppPermissions.Platform.TemplateCategories.Delete)]
     public async Task<IActionResult> DeleteTemplateCategory([FromRoute] Guid id)
     {
         var result = await _templateCategoryService.DeleteAsync(id);

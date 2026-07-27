@@ -376,4 +376,19 @@
   <data name="CardPackageCapacityExceeded" xml:space="preserve">
     <value>تم تجاوز سعة باقة البطاقات.</value>
   </data>
+  <data name="CannotSetVipForEmployeeProfile" xml:space="preserve">
+    <value>لا يمكن تعيين حالة عميل VIP لموظف تابع لشركة.</value>
+  </data>
+  <data name="SubscriptionExtendedSuccessfully" xml:space="preserve">
+    <value>تم تمديد اشتراك العميل بنجاح</value>
+  </data>
+  <data name="InvalidExtensionDays" xml:space="preserve">
+    <value>فترة تمديد الاشتراك يجب أن تكون بين 1 و 3650 يوماً</value>
+  </data>
+  <data name="SubscriptionPlanRequiredForNewSubscription" xml:space="preserve">
+    <value>يجب تحديد خطة الاشتراك لإنشاء اشتراك جديد للعميل</value>
+  </data>
+  <data name="NoSubscriptionFoundToExtend" xml:space="preserve">
+    <value>لا يمكن تمديد اشتراك لعميل ليس لديه اشتراك سابق.</value>
+  </data>
 </root>

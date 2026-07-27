@@ -1,8 +1,11 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using NFC.Platform.Application.Interfaces.Services;
+
 namespace NFC.Platform.API.Controllers;
 
 [ApiController]
 [Route("api/card-templates")]
-[Route("api/templates")]
 [Authorize]
 public class CardTemplateController(ICardTemplateService cardTemplateService) : ControllerBase
 {

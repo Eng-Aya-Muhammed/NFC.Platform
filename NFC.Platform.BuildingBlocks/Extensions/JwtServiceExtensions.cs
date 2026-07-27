@@ -1,4 +1,5 @@
 using System;
+using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Configuration;
@@ -38,18 +39,24 @@ namespace NFC.Platform.BuildingBlocks.Extensions
                     ValidateLifetime = true,
                     ClockSkew = TimeSpan.Zero,
                     NameClaimType = AppClaims.UserId,
-                    RoleClaimType = System.Security.Claims.ClaimTypes.Role
+                    RoleClaimType = AppClaims.Role
                 };
             });
 
             services.AddAuthorization(options =>
             {
-                options.AddPolicy(AppPolicies.AdminOnly, policy => policy.RequireRole(AppRole.Admin.ToString()));
-                options.AddPolicy(AppPolicies.CompanyAdminOnly, policy => policy.RequireRole(AppRole.CompanyAdmin.ToString()));
+                options.AddPolicy(AppPolicies.AdminOnly, policy => 
+                    policy.RequireAssertion(ctx => 
+                        ctx.User.IsInRole(AppRole.Admin.ToString()) || 
+                        ctx.User.HasClaim(c => (c.Type == AppClaims.Role || c.Type == ClaimTypes.Role) && c.Value == AppRole.Admin.ToString())));
+
+                options.AddPolicy(AppPolicies.CompanyAdminOnly, policy => 
+                    policy.RequireAssertion(ctx => 
+                        ctx.User.IsInRole(AppRole.CompanyAdmin.ToString()) || 
+                        ctx.User.HasClaim(c => (c.Type == AppClaims.Role || c.Type == ClaimTypes.Role) && c.Value == AppRole.CompanyAdmin.ToString())));
             });
 
             services.AddMemoryCache();
-
 
             return services;
         }

@@ -33,6 +33,9 @@ namespace NFC.Platform.Infrastructure.Configurations
                 .IsUnique()
                 .HasFilter("[EmployeeId] IS NOT NULL");
 
+            builder.HasIndex(p => new { p.IsVip, p.IsDeleted, p.VipDisplayOrder })
+                .HasFilter("[EmployeeId] IS NULL");
+
             builder.HasOne(p => p.Tenant)
                 .WithMany()
                 .HasForeignKey(p => p.TenantId)

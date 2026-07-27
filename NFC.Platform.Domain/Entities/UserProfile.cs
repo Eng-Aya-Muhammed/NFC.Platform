@@ -29,6 +29,8 @@ namespace NFC.Platform.Domain.Entities
         public string? Phone { get; set; }
         public string? WhatsApp { get; set; }
         public string? Address { get; set; }
+        public bool IsVip { get; set; } = false;
+        public int VipDisplayOrder { get; set; } = 0;
 
         //  Digital profile branding (individual accounts only) 
 

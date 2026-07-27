@@ -18,5 +18,7 @@ namespace NFC.Platform.Application.Interfaces.Services
         /// Available via PATCH /api/user/profile/template.
         /// </summary>
         Task<ServiceResult<EmployeeDetailsDto>> UpdateProfileTemplateAsync(Guid userId, Guid? templateId);
+
+        Task<ServiceResult<DTOs.VipCustomer.VipCustomerDto>> UpdateVipStatusAsync(Guid profileId, DTOs.VipCustomer.UpdateVipStatusRequest request);
     }
 }

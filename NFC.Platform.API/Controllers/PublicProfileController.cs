@@ -1,4 +1,10 @@
+using System;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using NFC.Platform.Application.DTOs.Card;
+using NFC.Platform.Application.Interfaces.Services;
 
 namespace NFC.Platform.API.Controllers
 {
@@ -12,7 +18,6 @@ namespace NFC.Platform.API.Controllers
         /// <summary>
         /// Resolves a digital profile by its unique Id and returns the public profile data.
         /// </summary>
-        [HttpGet("p/{id:guid}")]
         [HttpGet("profile/{id:guid}")]
         [EnableRateLimiting("ResolvePublicProfilePolicy")]
         public async Task<IActionResult> ResolvePublicProfile([FromRoute] Guid id)

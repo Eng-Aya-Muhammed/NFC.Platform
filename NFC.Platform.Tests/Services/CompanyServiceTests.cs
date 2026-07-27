@@ -541,5 +541,48 @@ namespace NFC.Platform.Tests.Services
             Assert.Equal(2, sub.TemplateChangesUsed); // Incremented
             await _unitOfWork.Received(1).SaveChangesAsync();
         }
+
+        [Fact]
+        public async Task UpdateVipStatusAsync_ReturnsNotFound_WhenCompanyDoesNotExist()
+        {
+            // Arrange
+            var companyId = Guid.NewGuid();
+            _companyRepo.GetByIdAsync(companyId).Returns((Company?)null);
+            _messageService.Get("RecordNotFound").Returns("Record not found.");
+
+            var request = new Application.DTOs.VipCustomer.UpdateVipStatusRequest { IsVip = true, VipDisplayOrder = 5 };
+
+            // Act
+            var result = await _sut.UpdateVipStatusAsync(companyId, request);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(404, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task UpdateVipStatusAsync_ReturnsSuccess_WhenCompanyExists()
+        {
+            // Arrange
+            var companyId = Guid.NewGuid();
+            var company = new Company { Id = companyId, Name = "Google", IsVip = false, VipDisplayOrder = 0 };
+            _companyRepo.GetByIdAsync(companyId).Returns(company);
+
+            var dto = new Application.DTOs.VipCustomer.VipCustomerDto { Id = companyId, Name = "Google", IsVip = true, VipDisplayOrder = 5, CustomerType = Domain.Enums.VipCustomerType.Company };
+            _mapper.Map<Application.DTOs.VipCustomer.VipCustomerDto>(company).Returns(dto);
+            _messageService.Get("RecordUpdated").Returns("Record updated.");
+
+            var request = new Application.DTOs.VipCustomer.UpdateVipStatusRequest { IsVip = true, VipDisplayOrder = 5 };
+
+            // Act
+            var result = await _sut.UpdateVipStatusAsync(companyId, request);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(200, result.StatusCode);
+            Assert.True(company.IsVip);
+            Assert.Equal(5, company.VipDisplayOrder);
+            await _unitOfWork.Received(1).SaveChangesAsync();
+        }
     }
 }
