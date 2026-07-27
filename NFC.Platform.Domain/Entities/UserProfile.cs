@@ -28,6 +28,7 @@ namespace NFC.Platform.Domain.Entities
         public string? ContactEmail { get; set; }
         public string? Phone { get; set; }
         public string? WhatsApp { get; set; }
+        public string? Address { get; set; }
 
         //  Digital profile branding (individual accounts only) 
 

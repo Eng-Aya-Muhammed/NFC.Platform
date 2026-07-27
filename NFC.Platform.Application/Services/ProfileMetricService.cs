@@ -25,8 +25,6 @@ public class ProfileMetricService(IUnitOfWork unitOfWork, IMessageService messag
         var dto = _mapper.Map<EmployeeDetailsDto>(profile);
         dto.ProfileId = profile.Id;
 
-        // Note: Logo retrieval logic removed for performance optimization
-
         ApplyBranding(dto, profile);
 
         return ServiceResult<EmployeeDetailsDto>.Success(dto);
@@ -52,32 +50,26 @@ public class ProfileMetricService(IUnitOfWork unitOfWork, IMessageService messag
 
     /// <summary>
     /// Resolves branding for the public profile with priority:
-    ///   1. Company (if employee) â€” uses Resolved Company template
-    ///   2. Individual â€” uses UserProfile.ProfileTemplate
-    ///   3. Default fallback â€” neutral colors, no logo, "classic" layout
+    ///   1. Company (if employee) — uses Resolved Company template
+    ///   2. Individual — uses UserProfile.ProfileTemplate
+    ///   3. Default fallback — neutral colors, no logo, "classic" layout
     /// </summary>
     private static void ApplyBranding(EmployeeDetailsDto dto, UserProfile profile)
     {
-        CardTemplate? resolvedTemplate = null;
-
         var company = profile.Employee?.Company;
-        if (company != null)
-        {
-            // Employee profile â€” use company branding template
-            resolvedTemplate = company.ProfileTemplate;
-        }
-        else if (profile.ProfileTemplate != null)
-        {
-            // Individual profile â€” use own template
-            resolvedTemplate = profile.ProfileTemplate;
-        }
 
-        string? layout = null;
-        string? styleConfigJson = null;
+        dto.CompanyName = company?.Name ?? profile.CompanyName;
+        dto.LogoUrl = company?.LogoUrl ?? profile.ProfilePictureUrl;
+        dto.ProfilePictureUrl = profile.ProfilePictureUrl;
+        dto.Address = !string.IsNullOrWhiteSpace(profile.Address) ? profile.Address : (company?.Address ?? string.Empty);
 
-        // Set parsed layout (or null if none)
-        dto.Layout = layout;
-        dto.StyleConfigJson = styleConfigJson;
+        CardTemplate? resolvedTemplate = company?.ProfileTemplate ?? profile.ProfileTemplate;
+
+        if (resolvedTemplate != null)
+        {
+            dto.Layout = resolvedTemplate.PhotoUrl;
+            dto.StyleConfigJson = resolvedTemplate.FileUrl;
+        }
     }
 }
 

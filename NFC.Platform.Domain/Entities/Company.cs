@@ -11,6 +11,9 @@ namespace NFC.Platform.Domain.Entities
         public string CommercialRegistry { get; set; } = string.Empty;
         public string Size { get; set; } = string.Empty;
         public string Address { get; set; } = string.Empty;
+        public string? LogoUrl { get; set; }
+        public string? Bio { get; set; }
+        public string? WebsiteUrl { get; set; }
 
         public Guid TenantId { get; set; }
         public Tenant Tenant { get; set; } = null!;

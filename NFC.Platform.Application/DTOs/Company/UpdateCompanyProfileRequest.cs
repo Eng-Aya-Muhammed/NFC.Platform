@@ -8,5 +8,9 @@ namespace NFC.Platform.Application.DTOs.Company;
         public string Size { get; set; } = string.Empty;
         public string Address { get; set; } = string.Empty;
         public string Phone { get; set; } = string.Empty;
+        public string? LogoUrl { get; set; }
+        public string? Bio { get; set; }
+        public string? WebsiteUrl { get; set; }
+        public System.Collections.Generic.List<Profile.CustomLinkInput>? Links { get; set; }
     }
 

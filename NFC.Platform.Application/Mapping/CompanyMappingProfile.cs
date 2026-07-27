@@ -12,10 +12,12 @@ namespace NFC.Platform.Application.Mapping
             CreateMap<Company, CompanyProfileDto>()
                 .ForMember(dest => dest.AdminUserEmail, opt => opt.MapFrom(src => src.AdminUser != null ? src.AdminUser.Email : string.Empty))
                 .ForMember(dest => dest.Phone, opt => opt.MapFrom(src => src.AdminUser != null ? src.AdminUser.PhoneNumber : string.Empty))
-                .ForMember(dest => dest.SubscriptionRemainingDays, opt => opt.Ignore());
-            // ProfileTemplateId — mapped by convention from Company entity
+                .ForMember(dest => dest.SubscriptionRemainingDays, opt => opt.Ignore())
+                .ForMember(dest => dest.Links, opt => opt.MapFrom(src => src.AdminUser != null && src.AdminUser.UserProfile != null ? src.AdminUser.UserProfile.CustomLinks.OrderBy(l => l.DisplayOrder) : System.Linq.Enumerable.Empty<ProfileLink>()));
 
-            CreateMap<UpdateCompanyProfileRequest, Company>();
+            CreateMap<UpdateCompanyProfileRequest, Company>()
+                .ForMember(dest => dest.CommercialRegistry, opt => opt.Condition(src => !string.IsNullOrEmpty(src.CommercialRegistry)))
+                .ForMember(dest => dest.Activity, opt => opt.Condition(src => !string.IsNullOrEmpty(src.Activity)));
 
     }
     }

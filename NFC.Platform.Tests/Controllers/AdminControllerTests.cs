@@ -1,497 +1,201 @@
-namespace NFC.Platform.Tests.Controllers
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using NSubstitute;
+using Xunit;
+using NFC.Platform.API.Controllers.Admin;
+using NFC.Platform.Application.DTOs;
+using NFC.Platform.Application.DTOs.Admin;
+using NFC.Platform.Application.DTOs.CardOrder;
+using NFC.Platform.Application.DTOs.CardPackage;
+using NFC.Platform.Application.DTOs.CardTemplate;
+using NFC.Platform.Application.DTOs.CardType;
+using NFC.Platform.Application.DTOs.DiscountCode;
+using NFC.Platform.Application.DTOs.Subscription;
+using NFC.Platform.Application.DTOs.Template;
+using NFC.Platform.Application.DTOs.TemplateCategory;
+using NFC.Platform.Application.Interfaces.Services;
+using NFC.Platform.BuildingBlocks.Common.Constants;
+using NFC.Platform.BuildingBlocks.Results;
+using NFC.Platform.Domain.Enums;
+
+namespace NFC.Platform.Tests.Controllers;
+
+public class AdminOrdersControllerTests
 {
-    public class AdminControllerTests
+    private readonly IAdminService _adminService = Substitute.For<IAdminService>();
+    private readonly AdminOrdersController _sut;
+
+    public AdminOrdersControllerTests()
     {
-        private readonly IAdminService _adminService;
-        private readonly ICardTemplateService _cardTemplateService;
-        private readonly ITemplateCategoryService _templateCategoryService;
-        private readonly ICardTypeService _cardTypeService;
-        private readonly ICardPackageService _cardPackageService;
-        private readonly IDiscountCodeService _discountCodeService;
-        private readonly AdminController _sut;
-
-        public AdminControllerTests()
-        {
-            _adminService = Substitute.For<IAdminService>();
-            _cardTemplateService = Substitute.For<ICardTemplateService>();
-            _templateCategoryService = Substitute.For<ITemplateCategoryService>();
-            _cardTypeService = Substitute.For<ICardTypeService>();
-            _cardPackageService = Substitute.For<ICardPackageService>();
-            _discountCodeService = Substitute.For<IDiscountCodeService>();
-
-            _sut = new AdminController(
-                _adminService,
-                _cardTemplateService,
-                _templateCategoryService,
-                _cardTypeService,
-                _cardPackageService,
-                _discountCodeService);
-        }
-
-        [Fact]
-        public void AdminController_ShouldHaveAuthorizeAttributeWithAdminOnlyPolicy()
-        {
-            var type = typeof(AdminController);
-            var attributes = type.GetCustomAttributes(typeof(AuthorizeAttribute), true);
-            Assert.NotEmpty(attributes);
-            var auth = attributes.First() as AuthorizeAttribute;
-            Assert.NotNull(auth);
-            Assert.Equal(AppPolicies.AdminOnly, auth.Policy);
-        }
-
-        [Fact]
-        public async Task GetOrdersPaged_CallsAdminService_AndReturnsOk()
-        {
-            var request = new PaginationRequest();
-            var status = OrderStatus.InPrinting;
-            var companyId = Guid.NewGuid();
-            var expectedResult = ServiceResult<PagedResult<AdminOrderSummaryDto>>.Success(
-                PagedResult<AdminOrderSummaryDto>.Create(new List<AdminOrderSummaryDto>(), 0, 1, 10));
-
-            _adminService.GetOrdersPagedAsync(request, status, companyId).Returns(expectedResult);
-
-            var result = await _sut.GetOrdersPaged(request, status, companyId, CancellationToken.None) as OkObjectResult;
-
-            Assert.NotNull(result);
-            Assert.Equal(200, result.StatusCode);
-            await _adminService.Received(1).GetOrdersPagedAsync(request, status, companyId);
-        }
-
-        [Fact]
-        public async Task GetOrdersPaged_WithNullStatusAndCompanyId_CallsAdminService_AndReturnsOk()
-        {
-            var request = new PaginationRequest();
-            var expectedResult = ServiceResult<PagedResult<AdminOrderSummaryDto>>.Success(
-                PagedResult<AdminOrderSummaryDto>.Create(new List<AdminOrderSummaryDto>(), 0, 1, 10));
-
-            _adminService.GetOrdersPagedAsync(request, null, null).Returns(expectedResult);
-
-            var result = await _sut.GetOrdersPaged(request, null, null, CancellationToken.None) as OkObjectResult;
-
-            Assert.NotNull(result);
-            Assert.Equal(200, result.StatusCode);
-            await _adminService.Received(1).GetOrdersPagedAsync(request, null, null);
-        }
-
-        [Fact]
-        public async Task GetTemplateRequestsPaged_WithNullStatus_CallsAdminService_AndReturnsOk()
-        {
-            var request = new PaginationRequest();
-            var expectedResult = ServiceResult<PagedResult<TemplateRequestDto>>.Success(
-                PagedResult<TemplateRequestDto>.Create(new List<TemplateRequestDto>(), 0, 1, 10));
-
-            _adminService.GetTemplateRequestsPagedAsync(request, null).Returns(expectedResult);
-
-            var result = await _sut.GetTemplateRequestsPaged(request, null, CancellationToken.None) as OkObjectResult;
-
-            Assert.NotNull(result);
-            Assert.Equal(200, result.StatusCode);
-            await _adminService.Received(1).GetTemplateRequestsPagedAsync(request, null);
-        }
-
-        [Fact]
-        public async Task GetOrderById_CallsAdminService_AndReturnsOk_OnSuccess()
-        {
-            var id = Guid.NewGuid();
-            var dto = new AdminOrderDetailDto();
-            _adminService.GetOrderByIdAsync(id).Returns(ServiceResult<AdminOrderDetailDto>.Success(dto));
-
-            var result = await _sut.GetOrderById(id) as OkObjectResult;
-
-            Assert.NotNull(result);
-            Assert.Equal(200, result.StatusCode);
-        }
-
-        [Fact]
-        public async Task GetOrderById_ReturnsError_OnFailure()
-        {
-            var id = Guid.NewGuid();
-            _adminService.GetOrderByIdAsync(id).Returns(ServiceResult<AdminOrderDetailDto>.Fail("Error", 404));
-
-            var result = await _sut.GetOrderById(id) as ObjectResult;
-
-            Assert.NotNull(result);
-            Assert.Equal(404, result.StatusCode);
-        }
-
-        [Fact]
-        public async Task UpdateOrderStatus_CallsAdminService_AndReturnsOk_OnSuccess()
-        {
-            var id = Guid.NewGuid();
-            var dto = new UpdateOrderStatusDto();
-            _adminService.UpdateOrderStatusAsync(id, dto).Returns(ServiceResult.Success());
-
-            var result = await _sut.UpdateOrderStatus(id, dto) as OkObjectResult;
-
-            Assert.NotNull(result);
-            Assert.Equal(200, result.StatusCode);
-        }
-
-        [Fact]
-        public async Task UpdateOrderStatus_ReturnsError_OnFailure()
-        {
-            var id = Guid.NewGuid();
-            var dto = new UpdateOrderStatusDto();
-            _adminService.UpdateOrderStatusAsync(id, dto).Returns(ServiceResult.Fail("Error", 400));
-
-            var result = await _sut.UpdateOrderStatus(id, dto) as ObjectResult;
-
-            Assert.NotNull(result);
-            Assert.Equal(400, result.StatusCode);
-        }
-
-        [Fact]
-        public async Task GetTemplateRequestsPaged_CallsAdminService_AndReturnsOk()
-        {
-            var request = new PaginationRequest();
-            var status = TemplateRequestStatus.Completed;
-            var expectedResult = ServiceResult<PagedResult<TemplateRequestDto>>.Success(
-                PagedResult<TemplateRequestDto>.Create(new List<TemplateRequestDto>(), 0, 1, 10));
-
-            _adminService.GetTemplateRequestsPagedAsync(request, status).Returns(expectedResult);
-
-            var result = await _sut.GetTemplateRequestsPaged(request, status, CancellationToken.None) as OkObjectResult;
-
-            Assert.NotNull(result);
-            Assert.Equal(200, result.StatusCode);
-            await _adminService.Received(1).GetTemplateRequestsPagedAsync(request, status);
-        }
-
-        [Fact]
-        public async Task ResolveTemplateRequest_CallsAdminService_AndReturnsOk_OnSuccess()
-        {
-            var id = Guid.NewGuid();
-            var dto = new ResolveTemplateRequestDto();
-            _adminService.ResolveTemplateRequestAsync(id, dto).Returns(ServiceResult.Success());
-
-            var result = await _sut.ResolveTemplateRequest(id, dto) as OkObjectResult;
-
-            Assert.NotNull(result);
-            Assert.Equal(200, result.StatusCode);
-        }
-
-        [Fact]
-        public async Task ResolveTemplateRequest_ReturnsError_OnFailure()
-        {
-            var id = Guid.NewGuid();
-            var dto = new ResolveTemplateRequestDto();
-            _adminService.ResolveTemplateRequestAsync(id, dto).Returns(ServiceResult.Fail("Error", 400));
-
-            var result = await _sut.ResolveTemplateRequest(id, dto) as ObjectResult;
-
-            Assert.NotNull(result);
-            Assert.Equal(400, result.StatusCode);
-        }
-
-        [Fact]
-        public async Task CreateTemplate_CallsCardTemplateService_AndReturnsOk()
-        {
-            var dto = new CreateCardTemplateRequest();
-            var resultDto = new CardTemplateAdminDto();
-            _cardTemplateService.CreateAsync(dto).Returns(ServiceResult<CardTemplateAdminDto>.Success(resultDto));
-
-            var result = await _sut.CreateCardTemplate(dto) as OkObjectResult;
-
-            Assert.NotNull(result);
-            Assert.Equal(200, result.StatusCode);
-            await _cardTemplateService.Received(1).CreateAsync(dto);
-        }
-
-        [Fact]
-        public async Task UpdateTemplate_CallsCardTemplateService_AndReturnsOk_OnSuccess()
-        {
-            var id = Guid.NewGuid();
-            var dto = new UpdateCardTemplateRequest();
-            var resultDto = new CardTemplateAdminDto();
-            _cardTemplateService.UpdateAsync(id, dto).Returns(ServiceResult<CardTemplateAdminDto>.Success(resultDto));
-
-            var result = await _sut.UpdateCardTemplate(id, dto) as OkObjectResult;
-
-            Assert.NotNull(result);
-            Assert.Equal(200, result.StatusCode);
-        }
-
-        [Fact]
-        public async Task UpdateTemplate_ReturnsError_OnFailure()
-        {
-            var id = Guid.NewGuid();
-            var dto = new UpdateCardTemplateRequest();
-            _cardTemplateService.UpdateAsync(id, dto).Returns(ServiceResult<CardTemplateAdminDto>.Fail("Error", 400));
-
-            var result = await _sut.UpdateCardTemplate(id, dto) as ObjectResult;
-
-            Assert.NotNull(result);
-            Assert.Equal(400, result.StatusCode);
-        }
-
-        [Fact]
-        public async Task DeleteTemplate_CallsCardTemplateService_AndReturnsOk_OnSuccess()
-        {
-            var id = Guid.NewGuid();
-            _cardTemplateService.DeleteAsync(id).Returns(ServiceResult<bool>.Success(true));
-
-            var result = await _sut.DeleteCardTemplate(id) as OkObjectResult;
-
-            Assert.NotNull(result);
-            Assert.Equal(200, result.StatusCode);
-        }
-
-        [Fact]
-        public async Task DeleteTemplate_ReturnsError_OnFailure()
-        {
-            var id = Guid.NewGuid();
-            _cardTemplateService.DeleteAsync(id).Returns(ServiceResult<bool>.Fail("Error", 404));
-
-            var result = await _sut.DeleteCardTemplate(id) as ObjectResult;
-
-            Assert.NotNull(result);
-            Assert.Equal(404, result.StatusCode);
-        }
-
-        // ============================
-        // Template Categories Admin Tests
-        // ============================
-
-        [Fact]
-        public async Task GetAllAdminTemplateCategories_CallsService_AndReturnsOk()
-        {
-            var request = new PaginationRequest();
-            var paged = PagedResult<TemplateCategoryAdminDto>.Create(new List<TemplateCategoryAdminDto>(), 0, 1, 10);
-            _templateCategoryService.GetAllAdminCategoriesAsync(request).Returns(ServiceResult<PagedResult<TemplateCategoryAdminDto>>.Success(paged));
-
-            var result = await _sut.GetAllAdminTemplateCategories(request) as OkObjectResult;
-
-            Assert.NotNull(result);
-            Assert.Equal(200, result.StatusCode);
-        }
-
-        [Fact]
-        public async Task CreateTemplateCategory_CallsService_AndReturnsOk()
-        {
-            var dto = new CreateTemplateCategoryRequest { NameAr = "فئة", NameEn = "Cat" };
-            _templateCategoryService.CreateAsync(dto).Returns(ServiceResult<TemplateCategoryAdminDto>.Success(new TemplateCategoryAdminDto()));
-
-            var result = await _sut.CreateTemplateCategory(dto) as OkObjectResult;
-
-            Assert.NotNull(result);
-            Assert.Equal(200, result.StatusCode);
-        }
-
-        // ============================
-        // Card Types Admin Tests
-        // ============================
-
-        [Fact]
-        public async Task GetAllAdminCardTypes_CallsService_AndReturnsOk()
-        {
-            var request = new PaginationRequest();
-            var paged = PagedResult<CardTypeAdminDto>.Create(new List<CardTypeAdminDto>(), 0, 1, 10);
-            _cardTypeService.GetAllAdminCardTypesAsync(request).Returns(ServiceResult<PagedResult<CardTypeAdminDto>>.Success(paged));
-
-            var result = await _sut.GetAllAdminCardTypes(request) as OkObjectResult;
-
-            Assert.NotNull(result);
-            Assert.Equal(200, result.StatusCode);
-        }
-
-        [Fact]
-        public async Task CreateCardType_CallsService_AndReturnsOk()
-        {
-            var dto = new CreateCardTypeRequest { NameAr = "نوع", NameEn = "Type" };
-            _cardTypeService.CreateAsync(dto).Returns(ServiceResult<CardTypeAdminDto>.Success(new CardTypeAdminDto()));
-
-            var result = await _sut.CreateCardType(dto) as OkObjectResult;
-
-            Assert.NotNull(result);
-            Assert.Equal(200, result.StatusCode);
-        }
-
-        // ============================
-        // Card Packages Admin Tests
-        // ============================
-
-        [Fact]
-        public async Task GetAllAdminCardPackages_CallsService_AndReturnsOk()
-        {
-            var request = new PaginationRequest();
-            var paged = PagedResult<CardPackageAdminDto>.Create(new List<CardPackageAdminDto>(), 0, 1, 10);
-            _cardPackageService.GetAllAdminCardPackagesAsync(request).Returns(ServiceResult<PagedResult<CardPackageAdminDto>>.Success(paged));
-
-            var result = await _sut.GetAllAdminCardPackages(request) as OkObjectResult;
-
-            Assert.NotNull(result);
-            Assert.Equal(200, result.StatusCode);
-        }
-
-        [Fact]
-        public async Task CreateCardPackage_CallsService_AndReturnsOk()
-        {
-            var dto = new CreateCardPackageRequest { NumberOfCards = 10, Price = 100 };
-            _cardPackageService.CreateAsync(dto).Returns(ServiceResult<CardPackageAdminDto>.Success(new CardPackageAdminDto()));
-
-            var result = await _sut.CreateCardPackage(dto) as OkObjectResult;
-
-            Assert.NotNull(result);
-            Assert.Equal(200, result.StatusCode);
-        }
-
-        [Fact]
-        public async Task GetTenantsPaged_CallsAdminService_AndReturnsOk()
-        {
-            var request = new PaginationRequest();
-            var paged = PagedResult<TenantSummaryDto>.Create(new List<TenantSummaryDto>(), 0, 1, 10);
-            _adminService.GetTenantsPagedAsync(request).Returns(ServiceResult<PagedResult<TenantSummaryDto>>.Success(paged));
-
-            var result = await _sut.GetTenantsPaged(request, CancellationToken.None) as OkObjectResult;
-
-            Assert.NotNull(result);
-            Assert.Equal(200, result.StatusCode);
-            await _adminService.Received(1).GetTenantsPagedAsync(request);
-        }
-
-        [Fact]
-        public async Task UpdateTenantStatus_CallsAdminService_AndReturnsOk_OnSuccess()
-        {
-            var id = Guid.NewGuid();
-            var dto = new UpdateTenantStatusDto();
-            _adminService.UpdateTenantStatusAsync(id, dto).Returns(ServiceResult.Success());
-
-            var result = await _sut.UpdateTenantStatus(id, dto) as OkObjectResult;
-
-            Assert.NotNull(result);
-            Assert.Equal(200, result.StatusCode);
-        }
-
-        [Fact]
-        public async Task UpdateTenantStatus_ReturnsError_OnFailure()
-        {
-            var id = Guid.NewGuid();
-            var dto = new UpdateTenantStatusDto();
-            _adminService.UpdateTenantStatusAsync(id, dto).Returns(ServiceResult.Fail("Error", 400));
-
-            var result = await _sut.UpdateTenantStatus(id, dto) as ObjectResult;
-
-            Assert.NotNull(result);
-            Assert.Equal(400, result.StatusCode);
-        }
-
-
-        [Fact]
-        public async Task VerifyDeliveryOtp_ReturnsOk_WhenValid()
-        {
-            var id = Guid.NewGuid();
-            var request = new VerifyDeliveryOtpRequest { Otp = "123456" };
-            _adminService.VerifyDeliveryOtpAsync(id, request.Otp).Returns(ServiceResult<bool>.Success(true));
-
-            var result = await _sut.VerifyDeliveryOtp(id, request) as OkObjectResult;
-
-            Assert.NotNull(result);
-            Assert.Equal(200, result.StatusCode);
-        }
-
-        [Fact]
-        public async Task VerifyDeliveryOtp_ReturnsBadRequest_WhenInvalid()
-        {
-            var id = Guid.NewGuid();
-            var request = new VerifyDeliveryOtpRequest { Otp = "123456" };
-            _adminService.VerifyDeliveryOtpAsync(id, request.Otp).Returns(ServiceResult<bool>.Fail("Invalid OTP"));
-
-            var result = await _sut.VerifyDeliveryOtp(id, request) as ObjectResult;
-
-            Assert.NotNull(result);
-            Assert.Equal(400, result.StatusCode);
-        }
-
-        [Fact]
-        public async Task ResendDeliveryOtp_ReturnsOk_WhenSuccess()
-        {
-            var id = Guid.NewGuid();
-            _adminService.ResendDeliveryOtpAsync(id).Returns(ServiceResult<bool>.Success(true));
-
-            var result = await _sut.ResendDeliveryOtp(id) as OkObjectResult;
-
-            Assert.NotNull(result);
-            Assert.Equal(200, result.StatusCode);
-        }
-
-
-
-        [Fact]
-        public async Task CreatePlan_ReturnsOk_WhenSuccess()
-        {
-            var request = new CreateSubscriptionPlanRequest();
-            _adminService.CreatePlanAsync(request).Returns(ServiceResult<SubscriptionPlanAdminDto>.Success(new SubscriptionPlanAdminDto()));
-
-            var result = await _sut.CreatePlan(request) as OkObjectResult;
-
-            Assert.NotNull(result);
-            Assert.Equal(200, result.StatusCode);
-        }
-
-        [Fact]
-        public async Task UpdatePlan_ReturnsOk_WhenSuccess()
-        {
-            var id = Guid.NewGuid();
-            var request = new UpdateSubscriptionPlanRequest();
-            _adminService.UpdatePlanAsync(id, request).Returns(ServiceResult<SubscriptionPlanAdminDto>.Success(new SubscriptionPlanAdminDto()));
-
-            var result = await _sut.UpdatePlan(id, request) as OkObjectResult;
-
-            Assert.NotNull(result);
-            Assert.Equal(200, result.StatusCode);
-        }
-
-        [Fact]
-        public async Task DeletePlan_ReturnsOk_WhenSuccess()
-        {
-            var id = Guid.NewGuid();
-            _adminService.DeletePlanAsync(id).Returns(ServiceResult<bool>.Success(true));
-
-            var result = await _sut.DeletePlan(id) as OkObjectResult;
-
-            Assert.NotNull(result);
-            Assert.Equal(200, result.StatusCode);
-        }
-
-        [Fact]
-        public async Task GetPlanTemplates_ReturnsOk_WithData()
-        {
-            var id = Guid.NewGuid();
-            _adminService.GetPlanTemplatesAsync(id).Returns(ServiceResult<IReadOnlyList<CardTemplateSummaryDto>>.Success(new List<CardTemplateSummaryDto>()));
-
-            var result = await _sut.GetPlanTemplates(id) as OkObjectResult;
-
-            Assert.NotNull(result);
-            Assert.Equal(200, result.StatusCode);
-        }
-
-        [Fact]
-        public async Task AssignTemplate_ReturnsOk_WhenSuccess()
-        {
-            var planId = Guid.NewGuid();
-            var templateId = Guid.NewGuid();
-            _adminService.AssignTemplateAsync(planId, templateId).Returns(ServiceResult<bool>.Success(true));
-
-            var result = await _sut.AssignTemplate(planId, templateId) as OkObjectResult;
-
-            Assert.NotNull(result);
-            Assert.Equal(200, result.StatusCode);
-        }
-
-        [Fact]
-        public async Task UnassignTemplate_ReturnsOk_WhenSuccess()
-        {
-            var planId = Guid.NewGuid();
-            var templateId = Guid.NewGuid();
-            _adminService.UnassignTemplateAsync(planId, templateId).Returns(ServiceResult<bool>.Success(true));
-
-            var result = await _sut.UnassignTemplate(planId, templateId) as OkObjectResult;
-
-            Assert.NotNull(result);
-            Assert.Equal(200, result.StatusCode);
-        }
+        _sut = new AdminOrdersController(_adminService);
+    }
+
+    [Fact]
+    public void AdminOrdersController_ShouldHaveAuthorizeAttributeWithAdminOnlyPolicy()
+    {
+        var type = typeof(AdminOrdersController);
+        var attributes = type.GetCustomAttributes(typeof(AuthorizeAttribute), true);
+        Assert.NotEmpty(attributes);
+        var auth = attributes.First() as AuthorizeAttribute;
+        Assert.NotNull(auth);
+        Assert.Equal(AppPolicies.AdminOnly, auth.Policy);
+    }
+
+    [Fact]
+    public async Task GetOrdersPaged_CallsAdminService_AndReturnsOk()
+    {
+        var request = new PaginationRequest();
+        var status = OrderStatus.InPrinting;
+        var companyId = Guid.NewGuid();
+        var expectedResult = ServiceResult<PagedResult<AdminOrderSummaryDto>>.Success(
+            PagedResult<AdminOrderSummaryDto>.Create(new List<AdminOrderSummaryDto>(), 0, 1, 10));
+
+        _adminService.GetOrdersPagedAsync(request, status, companyId).Returns(expectedResult);
+
+        var result = await _sut.GetOrdersPaged(request, status, companyId, CancellationToken.None) as OkObjectResult;
+
+        Assert.NotNull(result);
+        Assert.Equal(200, result.StatusCode);
+        await _adminService.Received(1).GetOrdersPagedAsync(request, status, companyId);
+    }
+
+    [Fact]
+    public async Task GetOrderById_ReturnsOk_WhenSuccess()
+    {
+        var id = Guid.NewGuid();
+        _adminService.GetOrderByIdAsync(id).Returns(ServiceResult<AdminOrderDetailDto>.Success(new AdminOrderDetailDto()));
+
+        var result = await _sut.GetOrderById(id) as OkObjectResult;
+
+        Assert.NotNull(result);
+        Assert.Equal(200, result.StatusCode);
+    }
+
+    [Fact]
+    public async Task UpdateOrderStatus_ReturnsOk_WhenSuccess()
+    {
+        var id = Guid.NewGuid();
+        var dto = new UpdateOrderStatusDto();
+        _adminService.UpdateOrderStatusAsync(id, dto).Returns(ServiceResult<AdminOrderDetailDto>.Success(new AdminOrderDetailDto()));
+
+        var result = await _sut.UpdateOrderStatus(id, dto) as OkObjectResult;
+
+        Assert.NotNull(result);
+        Assert.Equal(200, result.StatusCode);
+    }
+
+    [Fact]
+    public async Task VerifyDeliveryOtp_ReturnsOk_WhenSuccess()
+    {
+        var id = Guid.NewGuid();
+        var req = new VerifyDeliveryOtpRequest { Otp = "123456" };
+        _adminService.VerifyDeliveryOtpAsync(id, "123456").Returns(ServiceResult<bool>.Success(true));
+
+        var result = await _sut.VerifyDeliveryOtp(id, req) as OkObjectResult;
+
+        Assert.NotNull(result);
+        Assert.Equal(200, result.StatusCode);
+    }
+
+    [Fact]
+    public async Task ResendDeliveryOtp_ReturnsOk_WhenSuccess()
+    {
+        var id = Guid.NewGuid();
+        _adminService.ResendDeliveryOtpAsync(id).Returns(ServiceResult<bool>.Success(true));
+
+        var result = await _sut.ResendDeliveryOtp(id) as OkObjectResult;
+
+        Assert.NotNull(result);
+        Assert.Equal(200, result.StatusCode);
     }
 }
 
+public class AdminTemplateRequestsControllerTests
+{
+    private readonly IAdminService _adminService = Substitute.For<IAdminService>();
+    private readonly AdminTemplateRequestsController _sut;
 
+    public AdminTemplateRequestsControllerTests()
+    {
+        _sut = new AdminTemplateRequestsController(_adminService);
+    }
 
+    [Fact]
+    public async Task GetTemplateRequestsPaged_ReturnsOk()
+    {
+        var request = new PaginationRequest();
+        _adminService.GetTemplateRequestsPagedAsync(request, null).Returns(ServiceResult<PagedResult<TemplateRequestDto>>.Success(
+            PagedResult<TemplateRequestDto>.Create(new List<TemplateRequestDto>(), 0, 1, 10)));
+
+        var result = await _sut.GetTemplateRequestsPaged(request, null, CancellationToken.None) as OkObjectResult;
+
+        Assert.NotNull(result);
+        Assert.Equal(200, result.StatusCode);
+    }
+
+    [Fact]
+    public async Task ResolveTemplateRequest_ReturnsOk_WhenSuccess()
+    {
+        var id = Guid.NewGuid();
+        var dto = new ResolveTemplateRequestDto();
+        _adminService.ResolveTemplateRequestAsync(id, dto).Returns(ServiceResult<TemplateRequestDto>.Success(new TemplateRequestDto()));
+
+        var result = await _sut.ResolveTemplateRequest(id, dto) as OkObjectResult;
+
+        Assert.NotNull(result);
+        Assert.Equal(200, result.StatusCode);
+    }
+}
+
+public class AdminCardTemplatesControllerTests
+{
+    private readonly ICardTemplateService _cardTemplateService = Substitute.For<ICardTemplateService>();
+    private readonly AdminCardTemplatesController _sut;
+
+    public AdminCardTemplatesControllerTests()
+    {
+        _sut = new AdminCardTemplatesController(_cardTemplateService);
+    }
+
+    [Fact]
+    public async Task GetAllAdminCardTemplates_ReturnsOk()
+    {
+        var req = new PaginationRequest();
+        _cardTemplateService.GetAllAdminTemplatesAsync(req).Returns(ServiceResult<PagedResult<CardTemplateAdminDto>>.Success(
+            PagedResult<CardTemplateAdminDto>.Create(new List<CardTemplateAdminDto>(), 0, 1, 10)));
+
+        var result = await _sut.GetAllAdminCardTemplates(req) as OkObjectResult;
+
+        Assert.NotNull(result);
+        Assert.Equal(200, result.StatusCode);
+    }
+}
+
+public class AdminDiscountCodesControllerTests
+{
+    private readonly IDiscountCodeService _discountCodeService = Substitute.For<IDiscountCodeService>();
+    private readonly AdminDiscountCodesController _sut;
+
+    public AdminDiscountCodesControllerTests()
+    {
+        _sut = new AdminDiscountCodesController(_discountCodeService);
+    }
+
+    [Fact]
+    public async Task GetDiscountCodesPaged_ReturnsOk()
+    {
+        var req = new PaginationRequest();
+        _discountCodeService.GetPagedAdminAsync(req).Returns(ServiceResult<PagedResult<DiscountCodeDto>>.Success(
+            PagedResult<DiscountCodeDto>.Create(new List<DiscountCodeDto>(), 0, 1, 10)));
+
+        var result = await _sut.GetDiscountCodesPaged(req, CancellationToken.None) as OkObjectResult;
+
+        Assert.NotNull(result);
+        Assert.Equal(200, result.StatusCode);
+    }
+}

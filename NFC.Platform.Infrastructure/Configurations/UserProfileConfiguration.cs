@@ -20,6 +20,7 @@ namespace NFC.Platform.Infrastructure.Configurations
             builder.Property(p => p.ContactEmail).HasMaxLength(256);
             builder.Property(p => p.Phone).HasMaxLength(50);
             builder.Property(p => p.WhatsApp).HasMaxLength(50);
+            builder.Property(p => p.Address).HasMaxLength(500);
 
             builder.Property(p => p.TenantId).IsRequired();
             builder.HasIndex(p => p.TenantId);

@@ -22,6 +22,8 @@ public class CompanyService(
                 .GetQueryable()
                 .AsNoTracking()
                 .Include(c => c.AdminUser)
+                    .ThenInclude(u => u.UserProfile)
+                        .ThenInclude(p => p!.CustomLinks)
                 .FirstOrDefaultAsync();
 
             if (company == null)
@@ -44,6 +46,8 @@ public class CompanyService(
             var company = await _unitOfWork.Repository<Company>()
                 .GetQueryable()
                 .Include(c => c.AdminUser)
+                    .ThenInclude(u => u.UserProfile)
+                        .ThenInclude(p => p!.CustomLinks)
                 .FirstOrDefaultAsync();
 
             if (company == null)
@@ -53,6 +57,18 @@ public class CompanyService(
             if (company.AdminUser != null)
             {
                 company.AdminUser.PhoneNumber = request.Phone;
+
+                if (request.Links?.Count > 0)
+                {
+                    if (company.AdminUser.UserProfile == null)
+                    {
+                        company.AdminUser.UserProfile = new UserProfile { UserId = company.AdminUserId, TenantId = tenantId.Value };
+                        await _unitOfWork.Repository<UserProfile>().AddAsync(company.AdminUser.UserProfile);
+                        await _unitOfWork.SaveChangesAsync();
+                    }
+
+                    company.AdminUser.UserProfile.UpdateCustomLinks(request.Links);
+                }
             }
             await _unitOfWork.SaveChangesAsync();
 

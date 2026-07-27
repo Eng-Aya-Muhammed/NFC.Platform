@@ -9,6 +9,7 @@ namespace NFC.Platform.Application.DTOs.Employee;
         public string? ContactEmail { get; set; }
         public string? Phone { get; set; }
         public string? WhatsApp { get; set; }
+        public string? Address { get; set; }
 
         public System.Collections.Generic.List<Profile.CustomLinkInput> Links { get; set; } = [];
 
