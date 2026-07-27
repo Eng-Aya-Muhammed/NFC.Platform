@@ -17,6 +17,7 @@ global using NFC.Platform.Application.DTOs.Employee;
 global using NFC.Platform.Application.DTOs.Profile;
 global using NFC.Platform.Application.DTOs.Template;
 global using NFC.Platform.Application.DTOs.Subscription;
+global using NFC.Platform.Application.DTOs.DiscountCode;
 global using NFC.Platform.Application.Interfaces.Services;
 global using NFC.Platform.Application.Validators.Auth;
 global using NFC.Platform.Application.Validators.Company;

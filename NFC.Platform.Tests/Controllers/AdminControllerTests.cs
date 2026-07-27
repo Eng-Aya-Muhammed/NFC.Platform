@@ -7,6 +7,7 @@ namespace NFC.Platform.Tests.Controllers
         private readonly ITemplateCategoryService _templateCategoryService;
         private readonly ICardTypeService _cardTypeService;
         private readonly ICardPackageService _cardPackageService;
+        private readonly IDiscountCodeService _discountCodeService;
         private readonly AdminController _sut;
 
         public AdminControllerTests()
@@ -16,13 +17,15 @@ namespace NFC.Platform.Tests.Controllers
             _templateCategoryService = Substitute.For<ITemplateCategoryService>();
             _cardTypeService = Substitute.For<ICardTypeService>();
             _cardPackageService = Substitute.For<ICardPackageService>();
+            _discountCodeService = Substitute.For<IDiscountCodeService>();
 
             _sut = new AdminController(
                 _adminService,
                 _cardTemplateService,
                 _templateCategoryService,
                 _cardTypeService,
-                _cardPackageService);
+                _cardPackageService,
+                _discountCodeService);
         }
 
         [Fact]

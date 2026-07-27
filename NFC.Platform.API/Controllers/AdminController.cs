@@ -8,13 +8,15 @@ public class AdminController(
     ICardTemplateService cardTemplateService,
     ITemplateCategoryService templateCategoryService,
     ICardTypeService cardTypeService,
-    ICardPackageService cardPackageService) : ControllerBase
+    ICardPackageService cardPackageService,
+    IDiscountCodeService discountCodeService) : ControllerBase
 {
     private readonly IAdminService _adminService = adminService ?? throw new ArgumentNullException(nameof(adminService));
     private readonly ICardTemplateService _cardTemplateService = cardTemplateService ?? throw new ArgumentNullException(nameof(cardTemplateService));
     private readonly ITemplateCategoryService _templateCategoryService = templateCategoryService ?? throw new ArgumentNullException(nameof(templateCategoryService));
     private readonly ICardTypeService _cardTypeService = cardTypeService ?? throw new ArgumentNullException(nameof(cardTypeService));
     private readonly ICardPackageService _cardPackageService = cardPackageService ?? throw new ArgumentNullException(nameof(cardPackageService));
+    private readonly IDiscountCodeService _discountCodeService = discountCodeService ?? throw new ArgumentNullException(nameof(discountCodeService));
 
     // ==========================================
     // Order Management
@@ -364,6 +366,54 @@ public class AdminController(
     public async Task<IActionResult> UnassignTemplate([FromRoute] Guid planId, [FromRoute] Guid templateId)
     {
         var result = await _adminService.UnassignTemplateAsync(planId, templateId);
+        if (!result.IsSuccess) return StatusCode(result.StatusCode, result);
+        return Ok(result);
+    }
+
+    // ==========================================
+    // Discount Code Management
+    // ==========================================
+
+    [HttpGet("discount-codes")]
+    [HasPermission(AppPermissions.DiscountCodes.View)]
+    public async Task<IActionResult> GetDiscountCodesPaged([FromQuery] PaginationRequest request, CancellationToken cancellationToken)
+    {
+        var result = await _discountCodeService.GetPagedAdminAsync(request, cancellationToken);
+        return Ok(result);
+    }
+
+    [HttpGet("discount-codes/{id:guid}")]
+    [HasPermission(AppPermissions.DiscountCodes.View)]
+    public async Task<IActionResult> GetDiscountCodeById([FromRoute] Guid id)
+    {
+        var result = await _discountCodeService.GetByIdAsync(id);
+        if (!result.IsSuccess) return StatusCode(result.StatusCode, result);
+        return Ok(result);
+    }
+
+    [HttpPost("discount-codes")]
+    [HasPermission(AppPermissions.DiscountCodes.Create)]
+    public async Task<IActionResult> CreateDiscountCode([FromBody] CreateDiscountCodeRequest request)
+    {
+        var result = await _discountCodeService.CreateAsync(request);
+        if (!result.IsSuccess) return StatusCode(result.StatusCode, result);
+        return Ok(result);
+    }
+
+    [HttpPut("discount-codes/{id:guid}")]
+    [HasPermission(AppPermissions.DiscountCodes.Update)]
+    public async Task<IActionResult> UpdateDiscountCode([FromRoute] Guid id, [FromBody] UpdateDiscountCodeRequest request)
+    {
+        var result = await _discountCodeService.UpdateAsync(id, request);
+        if (!result.IsSuccess) return StatusCode(result.StatusCode, result);
+        return Ok(result);
+    }
+
+    [HttpDelete("discount-codes/{id:guid}")]
+    [HasPermission(AppPermissions.DiscountCodes.Delete)]
+    public async Task<IActionResult> DeleteDiscountCode([FromRoute] Guid id)
+    {
+        var result = await _discountCodeService.DeleteAsync(id);
         if (!result.IsSuccess) return StatusCode(result.StatusCode, result);
         return Ok(result);
     }

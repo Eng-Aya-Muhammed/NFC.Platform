@@ -81,6 +81,14 @@ namespace NFC.Platform.Domain.Constants
             public const string Update = "Company.Update";
         }
 
+        public static class DiscountCodes
+        {
+            public const string View   = "DiscountCodes.View";
+            public const string Create = "DiscountCodes.Create";
+            public const string Update = "DiscountCodes.Update";
+            public const string Delete = "DiscountCodes.Delete";
+        }
+
         public static IEnumerable<string> GetAll()
         {
             foreach (var nested in typeof(AppPermissions).GetNestedTypes())
