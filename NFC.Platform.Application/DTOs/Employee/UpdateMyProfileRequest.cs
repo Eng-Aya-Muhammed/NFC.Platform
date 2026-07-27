@@ -12,8 +12,6 @@ namespace NFC.Platform.Application.DTOs.Employee;
 
         public System.Collections.Generic.List<Profile.CustomLinkInput> Links { get; set; } = [];
 
-        public string? Subdomain { get; set; }
-
         public NFC.Platform.Domain.Enums.PreferredLanguage? PreferredLanguage { get; set; }
     }
 

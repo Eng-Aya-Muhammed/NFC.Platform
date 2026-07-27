@@ -46,25 +46,6 @@ namespace NFC.Platform.Application.Services;
                 await _unitOfWork.SaveChangesAsync();
             }
 
-            //  Subdomain update (slugify + global uniqueness check) 
-            if (!string.IsNullOrWhiteSpace(request.Subdomain))
-            {
-                var normalized = SubdomainHelper.Slugify(request.Subdomain);
-
-                if (!string.Equals(normalized, user.UserProfile.Subdomain, StringComparison.OrdinalIgnoreCase))
-                {
-                    var exists = await _unitOfWork.Repository<UserProfile>()
-                        .GetQueryable()
-                        .IgnoreQueryFilters()
-                        .AnyAsync(p => p.Subdomain == normalized && p.Id != user.UserProfile.Id);
-
-                    if (exists)
-                        return ServiceResult<EmployeeDetailsDto>.Fail(
-                            _messageService.Get("SubdomainAlreadyTaken"), 409);
-
-                    user.UserProfile.Subdomain = normalized;
-                }
-            }
 
             _mapper.Map(request, user.UserProfile);
 

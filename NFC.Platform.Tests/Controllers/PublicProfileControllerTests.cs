@@ -23,24 +23,24 @@ namespace NFC.Platform.Tests.Controllers
         [Fact]
         public async Task ResolvePublicProfile_CallsService_AndReturnsOk_OnSuccess()
         {
-            var code = "ABC123XYZ";
+            var id = Guid.NewGuid();
             var dto = new EmployeeDetailsDto();
-            _profileMetricService.ResolvePublicProfileAsync(code).Returns(ServiceResult<EmployeeDetailsDto>.Success(dto));
+            _profileMetricService.ResolvePublicProfileAsync(id).Returns(ServiceResult<EmployeeDetailsDto>.Success(dto));
 
-            var result = await _sut.ResolvePublicProfile(code) as OkObjectResult;
+            var result = await _sut.ResolvePublicProfile(id) as OkObjectResult;
 
             Assert.NotNull(result);
             Assert.Equal(200, result.StatusCode);
-            await _profileMetricService.Received(1).ResolvePublicProfileAsync(code);
+            await _profileMetricService.Received(1).ResolvePublicProfileAsync(id);
         }
 
         [Fact]
         public async Task ResolvePublicProfile_ReturnsError_OnFailure()
         {
-            var code = "ABC123XYZ";
-            _profileMetricService.ResolvePublicProfileAsync(code).Returns(ServiceResult<EmployeeDetailsDto>.Fail("Error", 404));
+            var id = Guid.NewGuid();
+            _profileMetricService.ResolvePublicProfileAsync(id).Returns(ServiceResult<EmployeeDetailsDto>.Fail("Error", 404));
 
-            var result = await _sut.ResolvePublicProfile(code) as ObjectResult;
+            var result = await _sut.ResolvePublicProfile(id) as ObjectResult;
 
             Assert.NotNull(result);
             Assert.Equal(404, result.StatusCode);

@@ -245,6 +245,93 @@ namespace NFC.Platform.Tests.Controllers
             Assert.Equal(404, result.StatusCode);
         }
 
+        // ============================
+        // Template Categories Admin Tests
+        // ============================
+
+        [Fact]
+        public async Task GetAllAdminTemplateCategories_CallsService_AndReturnsOk()
+        {
+            var request = new PaginationRequest();
+            var paged = PagedResult<TemplateCategoryAdminDto>.Create(new List<TemplateCategoryAdminDto>(), 0, 1, 10);
+            _templateCategoryService.GetAllAdminCategoriesAsync(request).Returns(ServiceResult<PagedResult<TemplateCategoryAdminDto>>.Success(paged));
+
+            var result = await _sut.GetAllAdminTemplateCategories(request) as OkObjectResult;
+
+            Assert.NotNull(result);
+            Assert.Equal(200, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task CreateTemplateCategory_CallsService_AndReturnsOk()
+        {
+            var dto = new CreateTemplateCategoryRequest { NameAr = "فئة", NameEn = "Cat" };
+            _templateCategoryService.CreateAsync(dto).Returns(ServiceResult<TemplateCategoryAdminDto>.Success(new TemplateCategoryAdminDto()));
+
+            var result = await _sut.CreateTemplateCategory(dto) as OkObjectResult;
+
+            Assert.NotNull(result);
+            Assert.Equal(200, result.StatusCode);
+        }
+
+        // ============================
+        // Card Types Admin Tests
+        // ============================
+
+        [Fact]
+        public async Task GetAllAdminCardTypes_CallsService_AndReturnsOk()
+        {
+            var request = new PaginationRequest();
+            var paged = PagedResult<CardTypeAdminDto>.Create(new List<CardTypeAdminDto>(), 0, 1, 10);
+            _cardTypeService.GetAllAdminCardTypesAsync(request).Returns(ServiceResult<PagedResult<CardTypeAdminDto>>.Success(paged));
+
+            var result = await _sut.GetAllAdminCardTypes(request) as OkObjectResult;
+
+            Assert.NotNull(result);
+            Assert.Equal(200, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task CreateCardType_CallsService_AndReturnsOk()
+        {
+            var dto = new CreateCardTypeRequest { NameAr = "نوع", NameEn = "Type" };
+            _cardTypeService.CreateAsync(dto).Returns(ServiceResult<CardTypeAdminDto>.Success(new CardTypeAdminDto()));
+
+            var result = await _sut.CreateCardType(dto) as OkObjectResult;
+
+            Assert.NotNull(result);
+            Assert.Equal(200, result.StatusCode);
+        }
+
+        // ============================
+        // Card Packages Admin Tests
+        // ============================
+
+        [Fact]
+        public async Task GetAllAdminCardPackages_CallsService_AndReturnsOk()
+        {
+            var request = new PaginationRequest();
+            var paged = PagedResult<CardPackageAdminDto>.Create(new List<CardPackageAdminDto>(), 0, 1, 10);
+            _cardPackageService.GetAllAdminCardPackagesAsync(request).Returns(ServiceResult<PagedResult<CardPackageAdminDto>>.Success(paged));
+
+            var result = await _sut.GetAllAdminCardPackages(request) as OkObjectResult;
+
+            Assert.NotNull(result);
+            Assert.Equal(200, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task CreateCardPackage_CallsService_AndReturnsOk()
+        {
+            var dto = new CreateCardPackageRequest { NumberOfCards = 10, Price = 100 };
+            _cardPackageService.CreateAsync(dto).Returns(ServiceResult<CardPackageAdminDto>.Success(new CardPackageAdminDto()));
+
+            var result = await _sut.CreateCardPackage(dto) as OkObjectResult;
+
+            Assert.NotNull(result);
+            Assert.Equal(200, result.StatusCode);
+        }
+
         [Fact]
         public async Task GetTenantsPaged_CallsAdminService_AndReturnsOk()
         {
@@ -324,37 +411,13 @@ namespace NFC.Platform.Tests.Controllers
             Assert.Equal(200, result.StatusCode);
         }
 
-        [Fact]
-        public async Task GetAllSubdomains_ReturnsOk_WithData()
-        {
-            var request = new PaginationRequest();
-            var pagedData = PagedResult<ProfileSubdomainSummaryDto>.Create(new List<ProfileSubdomainSummaryDto>(), 0, 1, 10);
-            _adminService.GetAllProfileSubdomainsAsync(request, null, CancellationToken.None).Returns(ServiceResult<PagedResult<ProfileSubdomainSummaryDto>>.Success(pagedData));
 
-            var result = await _sut.GetAllSubdomains(request, null, CancellationToken.None) as OkObjectResult;
-
-            Assert.NotNull(result);
-            Assert.Equal(200, result.StatusCode);
-        }
-
-        [Fact]
-        public async Task ReassignSubdomain_ReturnsOk_WhenSuccess()
-        {
-            var id = Guid.NewGuid();
-            var dto = new ReassignSubdomainDto { Subdomain = "test" };
-            _adminService.ReassignSubdomainAsync(id, dto.Subdomain).Returns(ServiceResult<bool>.Success(true));
-
-            var result = await _sut.ReassignSubdomain(id, dto) as OkObjectResult;
-
-            Assert.NotNull(result);
-            Assert.Equal(200, result.StatusCode);
-        }
 
         [Fact]
         public async Task CreatePlan_ReturnsOk_WhenSuccess()
         {
             var request = new CreateSubscriptionPlanRequest();
-            _adminService.CreatePlanAsync(request).Returns(ServiceResult<SubscriptionPlanDto>.Success(new SubscriptionPlanDto()));
+            _adminService.CreatePlanAsync(request).Returns(ServiceResult<SubscriptionPlanAdminDto>.Success(new SubscriptionPlanAdminDto()));
 
             var result = await _sut.CreatePlan(request) as OkObjectResult;
 
@@ -367,7 +430,7 @@ namespace NFC.Platform.Tests.Controllers
         {
             var id = Guid.NewGuid();
             var request = new UpdateSubscriptionPlanRequest();
-            _adminService.UpdatePlanAsync(id, request).Returns(ServiceResult<SubscriptionPlanDto>.Success(new SubscriptionPlanDto()));
+            _adminService.UpdatePlanAsync(id, request).Returns(ServiceResult<SubscriptionPlanAdminDto>.Success(new SubscriptionPlanAdminDto()));
 
             var result = await _sut.UpdatePlan(id, request) as OkObjectResult;
 

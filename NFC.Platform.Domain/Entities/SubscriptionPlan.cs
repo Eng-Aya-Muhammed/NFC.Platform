@@ -5,7 +5,8 @@ namespace NFC.Platform.Domain.Entities
 {
     public class SubscriptionPlan : BaseEntity
     {
-        public string Name { get; set; } = string.Empty;
+        public string NameAr { get; set; } = string.Empty;
+        public string NameEn { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
         public decimal Price { get; set; }
         public int DurationInDays { get; set; }

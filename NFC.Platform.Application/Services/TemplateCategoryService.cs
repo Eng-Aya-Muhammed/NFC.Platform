@@ -47,17 +47,25 @@ public class TemplateCategoryService(
 
     public async Task<ServiceResult<TemplateCategoryAdminDto>> CreateAsync(CreateTemplateCategoryRequest request)
     {
-        var nameArExists = await _unitOfWork.Repository<TemplateCategory>()
-            .GetQueryable()
-            .AnyAsync(c => c.NameAr == request.NameAr);
-        if (nameArExists)
-            return ServiceResult<TemplateCategoryAdminDto>.Fail(_messageService.Get("DuplicateNameAr"), 400);
+        var trimmedAr = request.NameAr?.Trim();
+        if (!string.IsNullOrWhiteSpace(trimmedAr))
+        {
+            var nameArExists = await _unitOfWork.Repository<TemplateCategory>()
+                .GetQueryable()
+                .AnyAsync(c => c.NameAr.Trim() == trimmedAr);
+            if (nameArExists)
+                return ServiceResult<TemplateCategoryAdminDto>.Fail(_messageService.Get("DuplicateNameAr"), 400);
+        }
 
-        var nameEnExists = await _unitOfWork.Repository<TemplateCategory>()
-            .GetQueryable()
-            .AnyAsync(c => c.NameEn == request.NameEn);
-        if (nameEnExists)
-            return ServiceResult<TemplateCategoryAdminDto>.Fail(_messageService.Get("DuplicateNameEn"), 400);
+        var trimmedEn = request.NameEn?.Trim();
+        if (!string.IsNullOrWhiteSpace(trimmedEn))
+        {
+            var nameEnExists = await _unitOfWork.Repository<TemplateCategory>()
+                .GetQueryable()
+                .AnyAsync(c => c.NameEn.Trim() == trimmedEn);
+            if (nameEnExists)
+                return ServiceResult<TemplateCategoryAdminDto>.Fail(_messageService.Get("DuplicateNameEn"), 400);
+        }
 
         var entity = _mapper.Map<TemplateCategory>(request);
         await _unitOfWork.Repository<TemplateCategory>().AddAsync(entity);
@@ -75,18 +83,20 @@ public class TemplateCategoryService(
 
         if (!string.IsNullOrWhiteSpace(request.NameAr))
         {
+            var trimmedAr = request.NameAr.Trim();
             var nameArExists = await _unitOfWork.Repository<TemplateCategory>()
                 .GetQueryable()
-                .AnyAsync(c => c.NameAr == request.NameAr && c.Id != id);
+                .AnyAsync(c => c.NameAr.Trim() == trimmedAr && c.Id != id);
             if (nameArExists)
                 return ServiceResult<TemplateCategoryAdminDto>.Fail(_messageService.Get("DuplicateNameAr"), 400);
         }
 
         if (!string.IsNullOrWhiteSpace(request.NameEn))
         {
+            var trimmedEn = request.NameEn.Trim();
             var nameEnExists = await _unitOfWork.Repository<TemplateCategory>()
                 .GetQueryable()
-                .AnyAsync(c => c.NameEn == request.NameEn && c.Id != id);
+                .AnyAsync(c => c.NameEn.Trim() == trimmedEn && c.Id != id);
             if (nameEnExists)
                 return ServiceResult<TemplateCategoryAdminDto>.Fail(_messageService.Get("DuplicateNameEn"), 400);
         }

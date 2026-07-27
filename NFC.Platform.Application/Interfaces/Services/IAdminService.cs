@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using NFC.Platform.Application.DTOs;
 using NFC.Platform.Application.DTOs.Admin;
@@ -26,13 +27,11 @@ public interface IAdminService
     Task<ServiceResult<PagedResult<TenantSummaryDto>>> GetTenantsPagedAsync(PaginationRequest request, CancellationToken cancellationToken = default);
     Task<ServiceResult> UpdateTenantStatusAsync(Guid id, UpdateTenantStatusDto dto);
 
-    // Subdomain management (Super Admin)
-    Task<ServiceResult<PagedResult<ProfileSubdomainSummaryDto>>> GetAllProfileSubdomainsAsync(PaginationRequest request, string? search, CancellationToken cancellationToken = default);
-    Task<ServiceResult> ReassignSubdomainAsync(Guid profileId, string newSubdomain);
-
     // Subscription Plan Management (Super Admin)
-    Task<ServiceResult<SubscriptionPlanDto>> CreatePlanAsync(CreateSubscriptionPlanRequest request);
-    Task<ServiceResult<SubscriptionPlanDto>> UpdatePlanAsync(Guid planId, UpdateSubscriptionPlanRequest request);
+    Task<ServiceResult<PagedResult<SubscriptionPlanAdminDto>>> GetAllAdminPlansAsync(PaginationRequest request, CancellationToken cancellationToken = default);
+    Task<ServiceResult<SubscriptionPlanAdminDto>> GetPlanByIdAsync(Guid id);
+    Task<ServiceResult<SubscriptionPlanAdminDto>> CreatePlanAsync(CreateSubscriptionPlanRequest request);
+    Task<ServiceResult<SubscriptionPlanAdminDto>> UpdatePlanAsync(Guid planId, UpdateSubscriptionPlanRequest request);
     Task<ServiceResult> DeletePlanAsync(Guid planId);
 
     // Plan Template Assignment (Super Admin)

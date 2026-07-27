@@ -59,17 +59,25 @@ public class CardTypeService(
 
     public async Task<ServiceResult<CardTypeAdminDto>> CreateAsync(CreateCardTypeRequest request)
     {
-        var nameArExists = await _unitOfWork.Repository<CardType>()
-            .GetQueryable()
-            .AnyAsync(t => t.NameAr == request.NameAr);
-        if (nameArExists)
-            return ServiceResult<CardTypeAdminDto>.Fail(_messageService.Get("DuplicateNameAr"), 400);
+        var trimmedAr = request.NameAr?.Trim();
+        if (!string.IsNullOrWhiteSpace(trimmedAr))
+        {
+            var nameArExists = await _unitOfWork.Repository<CardType>()
+                .GetQueryable()
+                .AnyAsync(t => t.NameAr.Trim() == trimmedAr);
+            if (nameArExists)
+                return ServiceResult<CardTypeAdminDto>.Fail(_messageService.Get("DuplicateNameAr"), 400);
+        }
 
-        var nameEnExists = await _unitOfWork.Repository<CardType>()
-            .GetQueryable()
-            .AnyAsync(t => t.NameEn == request.NameEn);
-        if (nameEnExists)
-            return ServiceResult<CardTypeAdminDto>.Fail(_messageService.Get("DuplicateNameEn"), 400);
+        var trimmedEn = request.NameEn?.Trim();
+        if (!string.IsNullOrWhiteSpace(trimmedEn))
+        {
+            var nameEnExists = await _unitOfWork.Repository<CardType>()
+                .GetQueryable()
+                .AnyAsync(t => t.NameEn.Trim() == trimmedEn);
+            if (nameEnExists)
+                return ServiceResult<CardTypeAdminDto>.Fail(_messageService.Get("DuplicateNameEn"), 400);
+        }
 
         var entity = _mapper.Map<CardType>(request);
         await _unitOfWork.Repository<CardType>().AddAsync(entity);
@@ -87,18 +95,20 @@ public class CardTypeService(
 
         if (!string.IsNullOrWhiteSpace(request.NameAr))
         {
+            var trimmedAr = request.NameAr.Trim();
             var nameArExists = await _unitOfWork.Repository<CardType>()
                 .GetQueryable()
-                .AnyAsync(t => t.NameAr == request.NameAr && t.Id != id);
+                .AnyAsync(t => t.NameAr.Trim() == trimmedAr && t.Id != id);
             if (nameArExists)
                 return ServiceResult<CardTypeAdminDto>.Fail(_messageService.Get("DuplicateNameAr"), 400);
         }
 
         if (!string.IsNullOrWhiteSpace(request.NameEn))
         {
+            var trimmedEn = request.NameEn.Trim();
             var nameEnExists = await _unitOfWork.Repository<CardType>()
                 .GetQueryable()
-                .AnyAsync(t => t.NameEn == request.NameEn && t.Id != id);
+                .AnyAsync(t => t.NameEn.Trim() == trimmedEn && t.Id != id);
             if (nameEnExists)
                 return ServiceResult<CardTypeAdminDto>.Fail(_messageService.Get("DuplicateNameEn"), 400);
         }

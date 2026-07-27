@@ -459,7 +459,9 @@ public class AdminService : IAdminService
 
             if (activeSubByTenant.TryGetValue(tenant.Id, out var activeSub) && activeSub != null)
             {
-                dto.ActivePlanName = activeSub.SubscriptionPlan?.Name;
+                dto.ActivePlanName = activeSub.SubscriptionPlan != null
+                    ? (CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar" ? activeSub.SubscriptionPlan.NameAr : activeSub.SubscriptionPlan.NameEn)
+                    : null;
                 dto.SubscriptionExpiry = activeSub.EndDate;
                 dto.DaysRemaining = Math.Max(0, (int)(activeSub.EndDate - DateTime.UtcNow).TotalDays);
             }
@@ -496,71 +498,138 @@ public class AdminService : IAdminService
         return ServiceResult.Success(_messageService.Get("RecordUpdated"));
     }
 
-    public async Task<ServiceResult<PagedResult<ProfileSubdomainSummaryDto>>> GetAllProfileSubdomainsAsync(
-        PaginationRequest request, string? search, CancellationToken cancellationToken = default)
+    public async Task<ServiceResult<PagedResult<SubscriptionPlanAdminDto>>> GetAllAdminPlansAsync(
+        PaginationRequest request, CancellationToken cancellationToken = default)
     {
-        var query = _unitOfWork.Repository<UserProfile>()
+        var query = _unitOfWork.Repository<SubscriptionPlan>()
             .GetQueryable()
             .AsNoTracking()
-            .Include(p => p.Employee)
-                .ThenInclude(e => e!.Company)
-            .Where(p => !p.IsDeleted)
-            .AsQueryable();
+            .Include(p => p.PlanTemplates)
+                .ThenInclude(pt => pt.CardTemplate)
+            .OrderByDescending(p => p.CreatedAt);
 
-        if (!string.IsNullOrWhiteSpace(search))
-            query = query.Where(p =>
-                (p.Subdomain != null && p.Subdomain.Contains(search)) ||
-                p.FullName.Contains(search));
-
-        var pagedResult = await query
-            .OrderByDescending(p => p.CreatedAt)
-            .ToPagedResultAsync(request, p => _mapper.Map<ProfileSubdomainSummaryDto>(p), cancellationToken);
-
-        return ServiceResult<PagedResult<ProfileSubdomainSummaryDto>>.Success(pagedResult);
+        var pagedResult = await query.ToPagedResultAsync(request, p => _mapper.Map<SubscriptionPlanAdminDto>(p), cancellationToken);
+        return ServiceResult<PagedResult<SubscriptionPlanAdminDto>>.Success(pagedResult);
     }
 
-    public async Task<ServiceResult> ReassignSubdomainAsync(Guid profileId, string newSubdomain)
+    public async Task<ServiceResult<SubscriptionPlanAdminDto>> GetPlanByIdAsync(Guid id)
     {
-        var profile = await _unitOfWork.Repository<UserProfile>().GetByIdAsync(profileId);
-        if (profile == null)
-            return ServiceResult.NotFound(_messageService.Get("RecordNotFound"));
-
-        var normalized = SubdomainHelper.Slugify(newSubdomain);
-
-        var exists = await _unitOfWork.Repository<UserProfile>()
+        var plan = await _unitOfWork.Repository<SubscriptionPlan>()
             .GetQueryable()
-            .IgnoreQueryFilters()
-            .AnyAsync(p => p.Subdomain == normalized && p.Id != profileId && !p.IsDeleted);
+            .AsNoTracking()
+            .Include(p => p.PlanTemplates)
+                .ThenInclude(pt => pt.CardTemplate)
+            .FirstOrDefaultAsync(p => p.Id == id);
 
-        if (exists)
-            return ServiceResult.Fail(_messageService.Get("SubdomainAlreadyTaken"), 409);
+        if (plan == null)
+            return ServiceResult<SubscriptionPlanAdminDto>.NotFound(_messageService.Get("RecordNotFound"));
 
-        profile.Subdomain = normalized;
-        await _unitOfWork.SaveChangesAsync();
-
-        return ServiceResult.Success(_messageService.Get("RecordUpdated"));
+        var dto = _mapper.Map<SubscriptionPlanAdminDto>(plan);
+        return ServiceResult<SubscriptionPlanAdminDto>.Success(dto);
     }
 
-    public async Task<ServiceResult<SubscriptionPlanDto>> CreatePlanAsync(CreateSubscriptionPlanRequest request)
+    public async Task<ServiceResult<SubscriptionPlanAdminDto>> CreatePlanAsync(CreateSubscriptionPlanRequest request)
     {
+        var trimmedAr = request.NameAr?.Trim();
+        if (!string.IsNullOrWhiteSpace(trimmedAr))
+        {
+            var nameArExists = await _unitOfWork.Repository<SubscriptionPlan>()
+                .GetQueryable()
+                .AnyAsync(p => p.NameAr.Trim() == trimmedAr);
+            if (nameArExists)
+                return ServiceResult<SubscriptionPlanAdminDto>.Fail(_messageService.Get("DuplicateNameAr"), 400);
+        }
+
+        var trimmedEn = request.NameEn?.Trim();
+        if (!string.IsNullOrWhiteSpace(trimmedEn))
+        {
+            var nameEnExists = await _unitOfWork.Repository<SubscriptionPlan>()
+                .GetQueryable()
+                .AnyAsync(p => p.NameEn.Trim() == trimmedEn);
+            if (nameEnExists)
+                return ServiceResult<SubscriptionPlanAdminDto>.Fail(_messageService.Get("DuplicateNameEn"), 400);
+        }
+
         var plan = _mapper.Map<SubscriptionPlan>(request);
         await _unitOfWork.Repository<SubscriptionPlan>().AddAsync(plan);
         await _unitOfWork.SaveChangesAsync();
 
-        return ServiceResult<SubscriptionPlanDto>.Success(_mapper.Map<SubscriptionPlanDto>(plan), _messageService.Get("RecordCreated"));
+        if (request.TemplateIds?.Count > 0)
+        {
+            foreach (var templateId in request.TemplateIds)
+            {
+                var template = await _unitOfWork.Repository<CardTemplate>().GetByIdAsync(templateId);
+                if (template != null)
+                {
+                    await _unitOfWork.Repository<SubscriptionPlanTemplate>().AddAsync(new SubscriptionPlanTemplate
+                    {
+                        SubscriptionPlanId = plan.Id,
+                        CardTemplateId = templateId
+                    });
+                }
+            }
+            await _unitOfWork.SaveChangesAsync();
+        }
+
+        var dto = _mapper.Map<SubscriptionPlanAdminDto>(plan);
+        return ServiceResult<SubscriptionPlanAdminDto>.Success(dto, _messageService.Get("RecordCreated"));
     }
 
-    public async Task<ServiceResult<SubscriptionPlanDto>> UpdatePlanAsync(Guid planId, UpdateSubscriptionPlanRequest request)
+    public async Task<ServiceResult<SubscriptionPlanAdminDto>> UpdatePlanAsync(Guid planId, UpdateSubscriptionPlanRequest request)
     {
         var plan = await _unitOfWork.Repository<SubscriptionPlan>().GetByIdAsync(planId);
         if (plan == null)
-            return ServiceResult<SubscriptionPlanDto>.NotFound(_messageService.Get("RecordNotFound"));
+            return ServiceResult<SubscriptionPlanAdminDto>.NotFound(_messageService.Get("RecordNotFound"));
+
+        if (!string.IsNullOrWhiteSpace(request.NameAr))
+        {
+            var trimmedAr = request.NameAr.Trim();
+            var nameArExists = await _unitOfWork.Repository<SubscriptionPlan>()
+                .GetQueryable()
+                .AnyAsync(p => p.NameAr.Trim() == trimmedAr && p.Id != planId);
+            if (nameArExists)
+                return ServiceResult<SubscriptionPlanAdminDto>.Fail(_messageService.Get("DuplicateNameAr"), 400);
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.NameEn))
+        {
+            var trimmedEn = request.NameEn.Trim();
+            var nameEnExists = await _unitOfWork.Repository<SubscriptionPlan>()
+                .GetQueryable()
+                .AnyAsync(p => p.NameEn.Trim() == trimmedEn && p.Id != planId);
+            if (nameEnExists)
+                return ServiceResult<SubscriptionPlanAdminDto>.Fail(_messageService.Get("DuplicateNameEn"), 400);
+        }
 
         _mapper.Map(request, plan);
         _unitOfWork.Repository<SubscriptionPlan>().Update(plan);
+
+        if (request.TemplateIds != null)
+        {
+            var existingAssignments = await _unitOfWork.Repository<SubscriptionPlanTemplate>()
+                .GetQueryable()
+                .Where(pt => pt.SubscriptionPlanId == planId)
+                .ToListAsync();
+
+            foreach (var existing in existingAssignments)
+            {
+                _unitOfWork.Repository<SubscriptionPlanTemplate>().Remove(existing);
+            }
+
+            foreach (var templateId in request.TemplateIds)
+            {
+                await _unitOfWork.Repository<SubscriptionPlanTemplate>().AddAsync(new SubscriptionPlanTemplate
+                {
+                    SubscriptionPlanId = planId,
+                    CardTemplateId = templateId
+                });
+            }
+        }
+
         await _unitOfWork.SaveChangesAsync();
 
-        return ServiceResult<SubscriptionPlanDto>.Success(_mapper.Map<SubscriptionPlanDto>(plan), _messageService.Get("RecordUpdated"));
+        var dto = _mapper.Map<SubscriptionPlanAdminDto>(plan);
+        return ServiceResult<SubscriptionPlanAdminDto>.Success(dto, _messageService.Get("RecordUpdated"));
     }
 
     public async Task<ServiceResult> DeletePlanAsync(Guid planId)

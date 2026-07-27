@@ -18,39 +18,42 @@ namespace NFC.Platform.Infrastructure.Seeders
             {
                 new SubscriptionPlan
                 {
-                    Name = "PremiumAnnual",
-                    Description = "PremiumDescription",
+                    NameAr = "الخطة السنوية الممتازة",
+                    NameEn = "Premium Annual Plan",
+                    Description = "Premium Annual Subscription",
                     Price = 699.00m,
                     DurationInDays = 365,
                     MaxEmployees = 100
                 },
                 new SubscriptionPlan
                 {
-                    Name = "Premium3Years",
-                    Description = "PremiumDescription",
+                    NameAr = "خطة الـ 3 سنوات الممتازة",
+                    NameEn = "Premium 3-Year Plan",
+                    Description = "Premium 3-Year Subscription",
                     Price = 699.00m,
                     DurationInDays = 1095,
                     MaxEmployees = 100
                 },
                 new SubscriptionPlan
                 {
-                    Name = "Premium5Years",
-                    Description = "PremiumDescription",
+                    NameAr = "خطة الـ 5 سنوات الممتازة",
+                    NameEn = "Premium 5-Year Plan",
+                    Description = "Premium 5-Year Subscription",
                     Price = 699.00m,
                     DurationInDays = 1825,
                     MaxEmployees = 100
                 }
             };
 
-            var planNames = plans.Select(p => p.Name).ToList();
+            var planNamesAr = plans.Select(p => p.NameAr).ToList();
             var existingPlans = await _context.SubscriptionPlans
-                .Where(p => planNames.Contains(p.Name))
-                .Select(p => p.Name)
+                .Where(p => planNamesAr.Contains(p.NameAr))
+                .Select(p => p.NameAr)
                 .ToListAsync();
 
             foreach (var plan in plans)
             {
-                if (!existingPlans.Contains(plan.Name))
+                if (!existingPlans.Contains(plan.NameAr))
                 {
                     _context.SubscriptionPlans.Add(plan);
                 }

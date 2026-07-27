@@ -3,7 +3,8 @@ namespace NFC.Platform.Application.DTOs.Subscription
     /// <summary>Patch-semantics: only non-null fields are applied.</summary>
     public class UpdateSubscriptionPlanRequest
     {
-        public string? Name { get; set; }
+        public string? NameAr { get; set; }
+        public string? NameEn { get; set; }
         public string? Description { get; set; }
         public decimal? Price { get; set; }
         public int? DurationInDays { get; set; }

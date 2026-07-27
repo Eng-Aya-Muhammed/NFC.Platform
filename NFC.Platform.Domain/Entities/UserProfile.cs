@@ -25,13 +25,6 @@ namespace NFC.Platform.Domain.Entities
 
         public PreferredLanguage PreferredLanguage { get; set; } = PreferredLanguage.Arabic;
 
-        /// <summary>
-        /// URL-safe subdomain slug for the public digital profile.
-        /// e.g. "ghaith" → ghaith.on-point-kw.com
-        /// Globally unique across all tenants.
-        /// </summary>
-        public string? Subdomain { get; set; }
-
         public string? ContactEmail { get; set; }
         public string? Phone { get; set; }
         public string? WhatsApp { get; set; }

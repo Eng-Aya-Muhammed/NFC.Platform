@@ -10,15 +10,14 @@ namespace NFC.Platform.API.Controllers
         private readonly IProfileMetricService _profileMetricService = profileMetricService ?? throw new ArgumentNullException(nameof(profileMetricService));
 
         /// <summary>
-        /// Resolves a digital profile by its unique subdomain and returns the public profile data.
-        /// Fallback route while wildcard DNS (*.on-point-kw.com) is not yet configured.
-        /// Primary access: GET https://{subdomain}.on-point-kw.com/
+        /// Resolves a digital profile by its unique Id and returns the public profile data.
         /// </summary>
-        [HttpGet("p/{subdomain}")]
+        [HttpGet("p/{id:guid}")]
+        [HttpGet("profile/{id:guid}")]
         [EnableRateLimiting("ResolvePublicProfilePolicy")]
-        public async Task<IActionResult> ResolvePublicProfile([FromRoute] string subdomain)
+        public async Task<IActionResult> ResolvePublicProfile([FromRoute] Guid id)
         {
-            var result = await _profileMetricService.ResolvePublicProfileAsync(subdomain);
+            var result = await _profileMetricService.ResolvePublicProfileAsync(id);
             if (!result.IsSuccess)
             {
                 return StatusCode(result.StatusCode, result);

@@ -117,7 +117,6 @@ namespace NFC.Platform.Tests.Services
             var userProfile = new UserProfile
             {
                 TenantId = tenantId,
-                Subdomain = "test-subdomain",
                 Employee = employee
             };
 
@@ -138,7 +137,7 @@ namespace NFC.Platform.Tests.Services
             var service = new ProfileMetricService(unitOfWork, messageService, mapper);
 
             // Act
-            var result = await service.ResolvePublicProfileAsync("test-subdomain");
+            var result = await service.ResolvePublicProfileAsync(userProfile.Id);
 
             // Assert
             Assert.True(result.IsSuccess);

@@ -107,13 +107,6 @@ namespace NFC.Platform.Application.Services;
             if (employee == null)
                 return ServiceResult<EmployeeDetailsDto>.NotFound(_messageService.Get("RecordNotFound"));
 
-            if (!string.IsNullOrWhiteSpace(request.Subdomain))
-            {
-                var subdomainValidation = await ValidateAndNormalizeSubdomainAsync(employee, request.Subdomain);
-                if (!subdomainValidation.IsSuccess)
-                    return ServiceResult<EmployeeDetailsDto>.Fail(subdomainValidation.Message ?? string.Join(", ", subdomainValidation.Errors), subdomainValidation.StatusCode);
-            }
-
             _mapper.Map(request, employee);
 
             if (employee.UserProfile != null)
@@ -315,7 +308,6 @@ namespace NFC.Platform.Application.Services;
             userProfile.Id = Guid.NewGuid();
             userProfile.CompanyName = companyName;
             userProfile.TenantId = tenantId;
-            userProfile.Subdomain = await SubdomainHelper.GenerateUniqueHybridAsync(row.Name, _unitOfWork.Repository<UserProfile>(), localCache);
 
             newEmployee.UserProfile = userProfile;
             userProfile.Employee = newEmployee;
@@ -366,9 +358,6 @@ namespace NFC.Platform.Application.Services;
             profile.EmployeeId = employee.Id;
             profile.CompanyName = companyName;
             profile.TenantId = tenantId;
-            profile.Subdomain = await SubdomainHelper.GenerateUniqueAsync(
-                request.FullName,
-                _unitOfWork.Repository<UserProfile>());
 
             if (request.Links?.Count > 0)
             {
@@ -376,28 +365,6 @@ namespace NFC.Platform.Application.Services;
             }
 
             return (employee, profile);
-        }
-
-        private async Task<ServiceResult> ValidateAndNormalizeSubdomainAsync(Employee employee, string requestedSubdomain)
-        {
-            var normalized = SubdomainHelper.Slugify(requestedSubdomain);
-
-            if (!string.Equals(normalized, employee.UserProfile?.Subdomain, StringComparison.OrdinalIgnoreCase))
-            {
-                var profileId = employee.UserProfile?.Id;
-                var exists = await _unitOfWork.Repository<UserProfile>()
-                    .GetQueryable()
-                    .IgnoreQueryFilters()
-                    .AnyAsync(p => p.Subdomain == normalized && (profileId == null || p.Id != profileId));
-
-                if (exists)
-                    return ServiceResult.Fail(_messageService.Get("SubdomainAlreadyTaken"), 409);
-
-                if (employee.UserProfile != null)
-                    employee.UserProfile.Subdomain = normalized;
-            }
-
-            return ServiceResult.Success();
         }
     }
 

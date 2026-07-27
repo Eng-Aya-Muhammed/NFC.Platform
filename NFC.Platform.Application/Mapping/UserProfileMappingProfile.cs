@@ -18,7 +18,6 @@ public class UserProfileMappingProfile : Profile
         CreateMap<UserProfile, EmployeeDetailsDto>()
             .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.EmployeeId ?? src.UserId ?? src.Id))
             .ForMember(dest => dest.ProfileId, opt => opt.MapFrom(src => src.Id))
-            .ForMember(dest => dest.Subdomain, opt => opt.MapFrom(src => src.Subdomain))
             .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Employee != null ? src.Employee.Status.ToString() : (src.User != null ? src.User.Status.ToString() : UserStatus.Active.ToString())))
             .ForMember(dest => dest.Links, opt => opt.MapFrom(src => src.CustomLinks.OrderBy(l => l.DisplayOrder)))
             // Branding fields are resolved manually in ProfileMetricService.ApplyBranding — not mapped from entity
@@ -45,9 +44,7 @@ public class UserProfileMappingProfile : Profile
             .ForMember(dest => dest.ContactEmail, opt => opt.MapFrom(src => src.Email))
             .ForMember(dest => dest.CustomLinks, opt => opt.Ignore());
 
-        CreateMap<UpdateMyProfileRequest, UserProfile>()
-            // Subdomain is handled manually in ProfileService.UpdateProfileAsync (slug + uniqueness check)
-            .ForMember(dest => dest.Subdomain, opt => opt.Ignore());
+        CreateMap<UpdateMyProfileRequest, UserProfile>();
 
         CreateMap<UpdateEmployeeRequest, UserProfile>()
             .ForMember(dest => dest.JobTitle, opt => opt.MapFrom(src => src.JobTitle ?? string.Empty))

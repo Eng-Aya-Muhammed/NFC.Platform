@@ -60,23 +60,21 @@ namespace NFC.Platform.Tests.Services
                 Company = company
             };
 
+            var profileId = Guid.NewGuid();
             var profile = new UserProfile
             {
-                Id = Guid.NewGuid(),
-                Subdomain = "emp-subdomain",
+                Id = profileId,
                 FullName = "Alice Smith",
                 JobTitle = "Senior Engineer",
                 Department = "Engineering",
                 Employee = employee
             };
 
-
-
             var profileQueryable = new List<UserProfile> { profile }.AsQueryable().BuildMock();
             _profileRepo.GetQueryable().Returns(profileQueryable);
 
             // Act
-            var result = await _sut.ResolvePublicProfileAsync("emp-subdomain");
+            var result = await _sut.ResolvePublicProfileAsync(profileId);
 
             // Assert
             Assert.True(result.IsSuccess);
@@ -96,10 +94,10 @@ namespace NFC.Platform.Tests.Services
                 NameEn = "Minimalist Light",
             };
 
+            var profileId = Guid.NewGuid();
             var profile = new UserProfile
             {
-                Id = Guid.NewGuid(),
-                Subdomain = "ind-subdomain",
+                Id = profileId,
                 FullName = "John Doe",
                 JobTitle = "Freelancer",
                 Department = "",
@@ -112,7 +110,7 @@ namespace NFC.Platform.Tests.Services
             _profileRepo.GetQueryable().Returns(profileQueryable);
 
             // Act
-            var result = await _sut.ResolvePublicProfileAsync("ind-subdomain");
+            var result = await _sut.ResolvePublicProfileAsync(profileId);
 
             // Assert
             Assert.True(result.IsSuccess);
@@ -125,10 +123,10 @@ namespace NFC.Platform.Tests.Services
         public async Task ResolvePublicProfileAsync_NoTemplateSelected_UsesSystemDefaults()
         {
             // Arrange
+            var profileId = Guid.NewGuid();
             var profile = new UserProfile
             {
-                Id = Guid.NewGuid(),
-                Subdomain = "default-subdomain",
+                Id = profileId,
                 FullName = "Bob Vance",
                 JobTitle = "Manager",
                 Employee = null,
@@ -140,7 +138,7 @@ namespace NFC.Platform.Tests.Services
             _profileRepo.GetQueryable().Returns(profileQueryable);
 
             // Act
-            var result = await _sut.ResolvePublicProfileAsync("default-subdomain");
+            var result = await _sut.ResolvePublicProfileAsync(profileId);
 
             // Assert
             Assert.True(result.IsSuccess);

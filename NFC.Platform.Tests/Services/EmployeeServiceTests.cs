@@ -475,39 +475,6 @@ namespace NFC.Platform.Tests.Services
             await _unitOfWork.Received(1).SaveChangesAsync();
         }
 
-        [Fact]
-        public async Task UpdateEmployeeJobDetailsAsync_ReturnsConflict_WhenSubdomainAlreadyTaken()
-        {
-            // Arrange
-            var tenantId = Guid.NewGuid();
-            _currentTenant.TenantId.Returns(tenantId);
-            
-            var employeeId = Guid.NewGuid();
-            var employee = new Employee 
-            { 
-                Id = employeeId, 
-                TenantId = tenantId,
-                UserProfile = new UserProfile { Id = Guid.NewGuid(), Subdomain = "old-subdomain" }
-            };
 
-            var employees = new List<Employee> { employee }.AsQueryable().BuildMock();
-            _employeeRepo.GetQueryable().Returns(employees);
-
-            var anotherProfile = new UserProfile { Id = Guid.NewGuid(), Subdomain = "taken-subdomain" };
-            var profiles = new List<UserProfile> { anotherProfile }.AsQueryable().BuildMock();
-            _userProfileRepo.GetQueryable().Returns(profiles);
-
-            _messageService.Get("SubdomainAlreadyTaken").Returns("This subdomain is already taken.");
-
-            var request = new UpdateEmployeeRequest { Subdomain = "taken-subdomain" };
-
-            // Act
-            var result = await _sut.UpdateEmployeeJobDetailsAsync(employeeId, request);
-
-            // Assert
-            Assert.False(result.IsSuccess);
-            Assert.Equal(409, result.StatusCode);
-            Assert.Equal("This subdomain is already taken.", result.Message);
-        }
     }
 }

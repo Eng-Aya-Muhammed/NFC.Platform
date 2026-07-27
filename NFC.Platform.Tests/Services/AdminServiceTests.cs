@@ -349,7 +349,7 @@ namespace NFC.Platform.Tests.Services
 
             var subscriptions = new List<UserSubscription>
             {
-                new() { TenantId = tenantId, IsActive = true, EndDate = DateTime.UtcNow.AddDays(30), SubscriptionPlan = new SubscriptionPlan { Name = "Premium Plan" } }
+                new() { TenantId = tenantId, IsActive = true, EndDate = DateTime.UtcNow.AddDays(30), SubscriptionPlan = new SubscriptionPlan { NameAr = "Premium Plan Ar", NameEn = "Premium Plan En" } }
             };
             var mockSubQuery = subscriptions.AsQueryable().BuildMock();
             _subscriptionRepo.GetQueryable().Returns(mockSubQuery);
@@ -364,7 +364,7 @@ namespace NFC.Platform.Tests.Services
             // Assert
             Assert.True(result.IsSuccess);
             var item = result.Data!.Items.First();
-            Assert.Equal("Premium Plan", item.ActivePlanName);
+            Assert.Equal("Premium Plan En", item.ActivePlanName);
             Assert.True(item.DaysRemaining > 0);
         }
 
@@ -603,67 +603,8 @@ namespace NFC.Platform.Tests.Services
         }
         //  ReassignSubdomainAsync 
 
-        [Fact]
-        public async Task ReassignSubdomainAsync_ReturnsNotFound_WhenProfileDoesNotExist()
-        {
-            // Arrange
-            var profileId = Guid.NewGuid();
-            _userProfileRepo.GetByIdAsync(profileId).Returns((UserProfile?)null);
-            _messageService.Get("RecordNotFound").Returns("Profile not found.");
 
-            // Act
-            var result = await _sut.ReassignSubdomainAsync(profileId, "new-subdomain");
 
-            // Assert
-            Assert.False(result.IsSuccess);
-            Assert.Equal(404, result.StatusCode);
-            Assert.Equal("Profile not found.", result.Message);
-        }
-
-        [Fact]
-        public async Task ReassignSubdomainAsync_ReturnsConflict_WhenSubdomainAlreadyTaken()
-        {
-            // Arrange
-            var profileId = Guid.NewGuid();
-            var profile = new UserProfile { Id = profileId, Subdomain = "old-subdomain" };
-            _userProfileRepo.GetByIdAsync(profileId).Returns(profile);
-
-            // Mock that another profile already has the normalized subdomain
-            var anotherProfile = new UserProfile { Id = Guid.NewGuid(), Subdomain = "new-subdomain" };
-            var queryable = new List<UserProfile> { anotherProfile }.AsQueryable().BuildMock();
-            _userProfileRepo.GetQueryable().Returns(queryable);
-
-            _messageService.Get("SubdomainAlreadyTaken").Returns("This subdomain is already taken.");
-
-            // Act
-            var result = await _sut.ReassignSubdomainAsync(profileId, "New Subdomain");
-
-            // Assert
-            Assert.False(result.IsSuccess);
-            Assert.Equal(409, result.StatusCode);
-            Assert.Equal("This subdomain is already taken.", result.Message);
-        }
-
-        [Fact]
-        public async Task ReassignSubdomainAsync_UpdatesSubdomain_WhenUnique()
-        {
-            // Arrange
-            var profileId = Guid.NewGuid();
-            var profile = new UserProfile { Id = profileId, Subdomain = "old-subdomain" };
-            _userProfileRepo.GetByIdAsync(profileId).Returns(profile);
-
-            // Mock that NO other profile has the new subdomain
-            var queryable = new List<UserProfile>().AsQueryable().BuildMock();
-            _userProfileRepo.GetQueryable().Returns(queryable);
-
-            // Act
-            var result = await _sut.ReassignSubdomainAsync(profileId, "Fresh New Subdomain");
-
-            // Assert
-            Assert.True(result.IsSuccess);
-            Assert.Equal("fresh-new-subdomain", profile.Subdomain);
-            await _unitOfWork.Received(1).SaveChangesAsync();
-        }
 
         //  OTP Expiration & Resend Unit Tests 
 
@@ -810,7 +751,8 @@ namespace NFC.Platform.Tests.Services
             // Arrange
             var request = new CreateSubscriptionPlanRequest
             {
-                Name = "Business",
+                NameAr = "BusinessAr",
+                NameEn = "BusinessEn",
                 Description = "Business plan",
                 Price = 199m,
                 DurationInDays = 365,
@@ -825,11 +767,11 @@ namespace NFC.Platform.Tests.Services
             _unitOfWork.Repository<SubscriptionPlan>().Returns(planRepo);
             _unitOfWork.Repository<SubscriptionPlanTemplate>().Returns(planTemplateRepo);
 
-            var plan = new SubscriptionPlan { Id = Guid.NewGuid(), Name = request.Name };
+            var plan = new SubscriptionPlan { Id = Guid.NewGuid(), NameAr = request.NameAr, NameEn = request.NameEn };
             _mapper.Map<SubscriptionPlan>(request).Returns(plan);
 
-            planRepo.GetQueryable().Returns(new List<SubscriptionPlan> { plan }.AsQueryable().BuildMock());
-            _mapper.Map<SubscriptionPlanDto>(Arg.Any<SubscriptionPlan>()).Returns(new SubscriptionPlanDto { Name = plan.Name });
+            planRepo.GetQueryable().Returns(new List<SubscriptionPlan>().AsQueryable().BuildMock());
+            _mapper.Map<SubscriptionPlanAdminDto>(Arg.Any<SubscriptionPlan>()).Returns(new SubscriptionPlanAdminDto { NameAr = plan.NameAr, NameEn = plan.NameEn });
             _messageService.Get(Arg.Any<string>()).Returns(x => x.Arg<string>());
 
             // Act

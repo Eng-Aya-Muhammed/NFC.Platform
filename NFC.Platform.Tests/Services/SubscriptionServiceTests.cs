@@ -34,8 +34,8 @@ namespace NFC.Platform.Tests.Services
             // Arrange
             var plans = new List<SubscriptionPlan>
             {
-                new SubscriptionPlan { Id = Guid.NewGuid(), Name = "PremiumAnnual", Description = "PremiumDesc", DurationInDays = 365, Price = 699 },
-                new SubscriptionPlan { Id = Guid.NewGuid(), Name = "Premium3Years", Description = "PremiumDesc", DurationInDays = 1095, Price = 699 }
+                new SubscriptionPlan { Id = Guid.NewGuid(), NameAr = "PremiumAnnualAr", NameEn = "PremiumAnnualEn", Description = "PremiumDesc", DurationInDays = 365, Price = 699 },
+                new SubscriptionPlan { Id = Guid.NewGuid(), NameAr = "Premium3YearsAr", NameEn = "Premium3YearsEn", Description = "PremiumDesc", DurationInDays = 1095, Price = 699 }
             };
 
             var queryable = plans.AsQueryable().BuildMock();
@@ -43,8 +43,8 @@ namespace NFC.Platform.Tests.Services
 
             var dtos = new List<SubscriptionPlanDto>
             {
-                new SubscriptionPlanDto { Name = "PremiumAnnual", Description = "PremiumDesc", DurationInDays = 365, Price = 699 },
-                new SubscriptionPlanDto { Name = "Premium3Years", Description = "PremiumDesc", DurationInDays = 1095, Price = 699 }
+                new SubscriptionPlanDto { Name = "Premium - Annual", Description = "PremiumDesc", DurationInDays = 365, Price = 699 },
+                new SubscriptionPlanDto { Name = "Premium - 3 Years", Description = "PremiumDesc", DurationInDays = 1095, Price = 699 }
             };
 
             _mapper.Map<IReadOnlyList<SubscriptionPlanDto>>(Arg.Any<List<SubscriptionPlan>>()).Returns(dtos);
@@ -60,7 +60,7 @@ namespace NFC.Platform.Tests.Services
             Assert.True(result.IsSuccess);
             Assert.Equal(2, result.Data!.Count);
             Assert.Equal("Premium - Annual", result.Data![0].Name);
-            Assert.Equal("Premium Description", result.Data![0].Description);
+            Assert.Equal("PremiumDesc", result.Data![0].Description);
         }
 
         [Fact]
@@ -105,7 +105,7 @@ namespace NFC.Platform.Tests.Services
             var tenantId = Guid.NewGuid();
             _currentTenant.TenantId.Returns(tenantId);
 
-            var plan = new SubscriptionPlan { Name = "PremiumAnnual" };
+            var plan = new SubscriptionPlan { NameAr = "PremiumAnnualAr", NameEn = "PremiumAnnualEn" };
             var activeSub = new UserSubscription
             {
                 TenantId = tenantId,
@@ -117,7 +117,7 @@ namespace NFC.Platform.Tests.Services
             var queryable = new List<UserSubscription> { activeSub }.AsQueryable().BuildMock();
             _subscriptionRepo.GetQueryable().Returns(queryable);
 
-            var dto = new UserSubscriptionDto { PlanName = "PremiumAnnual", IsActive = true };
+            var dto = new UserSubscriptionDto { PlanName = "البريميوم - سنوي", IsActive = true };
             _mapper.Map<UserSubscriptionDto>(activeSub).Returns(dto);
 
             _messageService.Get("PremiumAnnual").Returns("البريميوم - سنوي");
@@ -137,7 +137,7 @@ namespace NFC.Platform.Tests.Services
             var tenantId = Guid.NewGuid();
             _currentTenant.TenantId.Returns(tenantId);
 
-            var plan = new SubscriptionPlan { Name = "PremiumAnnual" };
+            var plan = new SubscriptionPlan { NameAr = "PremiumAnnualAr", NameEn = "PremiumAnnualEn" };
             var history = new List<UserSubscription>
             {
                 new UserSubscription { TenantId = tenantId, SubscriptionPlan = plan, IsActive = false }
@@ -148,7 +148,7 @@ namespace NFC.Platform.Tests.Services
 
             var dtos = new List<UserSubscriptionDto>
             {
-                new UserSubscriptionDto { PlanName = "PremiumAnnual", IsActive = false }
+                new UserSubscriptionDto { PlanName = "Premium - Annual", IsActive = false }
             };
             _mapper.Map<IReadOnlyList<UserSubscriptionDto>>(Arg.Any<List<UserSubscription>>()).Returns(dtos);
 
@@ -211,7 +211,7 @@ namespace NFC.Platform.Tests.Services
             _currentTenant.TenantId.Returns(tenantId);
             _currentTenant.UserId.Returns(userId);
 
-            var plan = new SubscriptionPlan { Id = planId, Name = "PremiumAnnual", DurationInDays = 365 };
+            var plan = new SubscriptionPlan { Id = planId, NameAr = "PremiumAnnualAr", NameEn = "PremiumAnnualEn", DurationInDays = 365 };
             _planRepo.GetQueryable().Returns(new List<SubscriptionPlan> { plan }.AsQueryable().BuildMock());
 
             _subscriptionRepo.GetQueryable().Returns(new List<UserSubscription>().AsQueryable().BuildMock());
@@ -252,7 +252,7 @@ namespace NFC.Platform.Tests.Services
             _currentTenant.TenantId.Returns(tenantId);
             _currentTenant.UserId.Returns(userId);
 
-            var plan = new SubscriptionPlan { Id = planId, Name = "PremiumAnnual", DurationInDays = 365 };
+            var plan = new SubscriptionPlan { Id = planId, NameAr = "PremiumAnnualAr", NameEn = "PremiumAnnualEn", DurationInDays = 365 };
             _planRepo.GetQueryable().Returns(new List<SubscriptionPlan> { plan }.AsQueryable().BuildMock());
 
             var activeSub = new UserSubscription { TenantId = tenantId, IsActive = true, EndDate = DateTime.UtcNow.AddDays(10) };
@@ -281,7 +281,7 @@ namespace NFC.Platform.Tests.Services
             _currentTenant.TenantId.Returns(tenantId);
             _currentTenant.UserId.Returns(userId);
 
-            var plan = new SubscriptionPlan { Id = planId, Name = "PremiumAnnual", DurationInDays = 365 };
+            var plan = new SubscriptionPlan { Id = planId, NameAr = "PremiumAnnualAr", NameEn = "PremiumAnnualEn", DurationInDays = 365 };
             _planRepo.GetQueryable().Returns(new List<SubscriptionPlan> { plan }.AsQueryable().BuildMock());
 
             var activeSubEndDate = DateTime.UtcNow.AddDays(10);
@@ -328,7 +328,7 @@ namespace NFC.Platform.Tests.Services
             _currentTenant.TenantId.Returns(tenantId);
             _currentTenant.UserId.Returns(userId);
 
-            var plan = new SubscriptionPlan { Id = planId, Name = "PremiumAnnual", DurationInDays = 365 };
+            var plan = new SubscriptionPlan { Id = planId, NameAr = "PremiumAnnualAr", NameEn = "PremiumAnnualEn", DurationInDays = 365 };
             _planRepo.GetQueryable().Returns(new List<SubscriptionPlan> { plan }.AsQueryable().BuildMock());
 
             _subscriptionRepo.GetQueryable().Returns(new List<UserSubscription>().AsQueryable().BuildMock());
@@ -356,7 +356,7 @@ namespace NFC.Platform.Tests.Services
             _currentTenant.TenantId.Returns(tenantId);
             _currentTenant.UserId.Returns(userId);
 
-            var plan = new SubscriptionPlan { Id = planId, Name = "PremiumAnnual", DurationInDays = 365 };
+            var plan = new SubscriptionPlan { Id = planId, NameAr = "PremiumAnnualAr", NameEn = "PremiumAnnualEn", DurationInDays = 365 };
             _planRepo.GetQueryable().Returns(new List<SubscriptionPlan> { plan }.AsQueryable().BuildMock());
 
             var currentEndDate = DateTime.UtcNow.AddDays(30);

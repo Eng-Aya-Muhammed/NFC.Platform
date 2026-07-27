@@ -17,6 +17,5 @@ public class UpdateEmployeeRequest
 
     public List<Profile.CustomLinkInput> Links { get; set; } = [];
 
-    public string? Subdomain { get; set; }
 }
 

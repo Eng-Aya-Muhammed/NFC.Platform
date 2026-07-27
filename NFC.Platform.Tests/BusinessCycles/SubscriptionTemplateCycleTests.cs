@@ -159,7 +159,8 @@ namespace NFC.Platform.Tests.BusinessCycles
             var plan = new SubscriptionPlan
             {
                 Id = Guid.NewGuid(),
-                Name = "Premium Plan",
+                NameAr = "Premium Plan Ar",
+                NameEn = "Premium Plan En",
                 MaxCustomDesignRequests = 1, // Only 1 custom design allowed!
                 MaxTemplateChanges = 1       // Only 1 template change allowed!
             };

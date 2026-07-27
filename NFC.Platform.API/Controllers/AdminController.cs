@@ -298,28 +298,27 @@ public class AdminController(
     }
 
     // ==========================================
-    // Subdomain Management
+    // Subscription Plan Management
     // ==========================================
 
-    [HttpGet("subdomains")]
-    public async Task<IActionResult> GetAllSubdomains([FromQuery] PaginationRequest request, [FromQuery] string? search, CancellationToken cancellationToken)
+    [HttpGet("subscription-plans")]
+    [HttpGet("plans")]
+    public async Task<IActionResult> GetAllAdminPlans([FromQuery] PaginationRequest request)
     {
-        var result = await _adminService.GetAllProfileSubdomainsAsync(request, search, cancellationToken);
+        var result = await _adminService.GetAllAdminPlansAsync(request);
         return Ok(result);
     }
 
-    [HttpPut("subdomains/{profileId:guid}")]
-    public async Task<IActionResult> ReassignSubdomain([FromRoute] Guid profileId, [FromBody] ReassignSubdomainDto dto)
+    [HttpGet("subscription-plans/{id:guid}")]
+    [HttpGet("plans/{id:guid}")]
+    public async Task<IActionResult> GetPlanById([FromRoute] Guid id)
     {
-        var result = await _adminService.ReassignSubdomainAsync(profileId, dto.Subdomain);
+        var result = await _adminService.GetPlanByIdAsync(id);
         if (!result.IsSuccess) return StatusCode(result.StatusCode, result);
         return Ok(result);
     }
 
-    // ==========================================
-    // Subscription Plan Management
-    // ==========================================
-
+    [HttpPost("subscription-plans")]
     [HttpPost("plans")]
     public async Task<IActionResult> CreatePlan([FromBody] CreateSubscriptionPlanRequest request)
     {
@@ -328,6 +327,7 @@ public class AdminController(
         return Ok(result);
     }
 
+    [HttpPut("subscription-plans/{planId:guid}")]
     [HttpPut("plans/{planId:guid}")]
     public async Task<IActionResult> UpdatePlan([FromRoute] Guid planId, [FromBody] UpdateSubscriptionPlanRequest request)
     {
@@ -336,6 +336,7 @@ public class AdminController(
         return Ok(result);
     }
 
+    [HttpDelete("subscription-plans/{planId:guid}")]
     [HttpDelete("plans/{planId:guid}")]
     public async Task<IActionResult> DeletePlan([FromRoute] Guid planId)
     {

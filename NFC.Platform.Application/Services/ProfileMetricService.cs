@@ -6,11 +6,8 @@ public class ProfileMetricService(IUnitOfWork unitOfWork, IMessageService messag
     private readonly IMessageService _messageService = messageService ?? throw new ArgumentNullException(nameof(messageService));
     private readonly IMapper _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
 
-    public async Task<ServiceResult<EmployeeDetailsDto>> ResolvePublicProfileAsync(string subdomain)
+    public async Task<ServiceResult<EmployeeDetailsDto>> ResolvePublicProfileAsync(Guid profileId)
     {
-        if (string.IsNullOrWhiteSpace(subdomain))
-            return ServiceResult<EmployeeDetailsDto>.NotFound(_messageService.Get("ProfileNotFound"));
-
         var profile = await _unitOfWork.Repository<UserProfile>()
             .GetQueryable()
             .AsNoTracking()
@@ -20,7 +17,7 @@ public class ProfileMetricService(IUnitOfWork unitOfWork, IMessageService messag
                     .ThenInclude(co => co!.ProfileTemplate)
             .Include(p => p.ProfileTemplate)
             .Include(p => p.User)
-            .FirstOrDefaultAsync(p => p.Subdomain == subdomain && !p.IsDeleted);
+            .FirstOrDefaultAsync(p => p.Id == profileId && !p.IsDeleted);
 
         if (profile == null)
             return ServiceResult<EmployeeDetailsDto>.NotFound(_messageService.Get("ProfileNotFound"));

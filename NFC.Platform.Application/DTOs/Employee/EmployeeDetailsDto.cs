@@ -19,7 +19,6 @@ public class EmployeeDetailsDto
     public List<ProfileLinkDto> Links { get; set; } = [];
 
     public Guid ProfileId { get; set; }
-    public string? Subdomain { get; set; }
 
     //  Digital profile branding 
     /// <summary>

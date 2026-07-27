@@ -1,11 +1,12 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace NFC.Platform.Application.DTOs.Subscription
 {
     public class CreateSubscriptionPlanRequest
     {
-        public string Name { get; set; } = string.Empty;
+        public string NameAr { get; set; } = string.Empty;
+        public string NameEn { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
         public decimal Price { get; set; }
         public int DurationInDays { get; set; }

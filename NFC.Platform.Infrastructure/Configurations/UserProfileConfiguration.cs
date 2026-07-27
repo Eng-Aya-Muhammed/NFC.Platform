@@ -17,12 +17,6 @@ namespace NFC.Platform.Infrastructure.Configurations
             builder.Property(p => p.CompanyName).HasMaxLength(256);
             builder.Property(p => p.ProfilePictureUrl).HasMaxLength(1000);
             builder.Property(p => p.Bio).HasMaxLength(500);
-            builder.Property(p => p.Subdomain).HasMaxLength(100);
-
-            builder.HasIndex(p => p.Subdomain)
-                .IsUnique()
-                .HasFilter("[Subdomain] IS NOT NULL");
-
             builder.Property(p => p.ContactEmail).HasMaxLength(256);
             builder.Property(p => p.Phone).HasMaxLength(50);
             builder.Property(p => p.WhatsApp).HasMaxLength(50);

@@ -183,17 +183,6 @@ public class EmployeeImportService(
                 var newEmployeesList = new List<Employee>();
                 var newProfilesList = new List<UserProfile>();
 
-                // Pre-load all existing subdomains once â€” avoids N+1 queries in the loop.
-                // IgnoreQueryFilters: background job has no tenant context; uniqueness is global.
-                var existingSlugs = new HashSet<string>(
-                    await _unitOfWork.Repository<UserProfile>()
-                        .GetQueryable()
-                        .IgnoreQueryFilters()
-                        .Where(p => p.Subdomain != null)
-                        .Select(p => p.Subdomain!)
-                        .ToListAsync(),
-                    StringComparer.OrdinalIgnoreCase);
-
                 foreach (var row in employeeRows)
                 {
                     UserProfile? userProfile = null;
@@ -222,8 +211,6 @@ public class EmployeeImportService(
                         userProfile = _mapper.Map<UserProfile>(row);
                         userProfile.CompanyName = company.Name;
                         userProfile.TenantId = job.TenantId;
-                        // In-memory slug generation â€” no extra DB queries
-                        userProfile.Subdomain = SubdomainHelper.GenerateUnique(row.Name, existingSlugs);
 
                         newEmployee.UserProfile = userProfile;
                         userProfile.Employee = newEmployee;

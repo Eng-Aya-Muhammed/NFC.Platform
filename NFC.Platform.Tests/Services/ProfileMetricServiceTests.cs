@@ -42,35 +42,7 @@ namespace NFC.Platform.Tests.Services
         //  ResolvePublicProfileAsync 
 
         [Fact]
-        public async Task ResolvePublicProfileAsync_ReturnsNotFound_WhenSubdomainIsNull()
-        {
-            // Arrange
-            _messageService.Get("ProfileNotFound").Returns("Profile not found.");
-
-            // Act
-            var result = await _sut.ResolvePublicProfileAsync(null!);
-
-            // Assert
-            Assert.False(result.IsSuccess);
-            Assert.Equal(404, result.StatusCode);
-        }
-
-        [Fact]
-        public async Task ResolvePublicProfileAsync_ReturnsNotFound_WhenSubdomainIsWhitespace()
-        {
-            // Arrange
-            _messageService.Get("ProfileNotFound").Returns("Profile not found.");
-
-            // Act
-            var result = await _sut.ResolvePublicProfileAsync("   ");
-
-            // Assert
-            Assert.False(result.IsSuccess);
-            Assert.Equal(404, result.StatusCode);
-        }
-
-        [Fact]
-        public async Task ResolvePublicProfileAsync_ReturnsNotFound_WhenSubdomainDoesNotExist()
+        public async Task ResolvePublicProfileAsync_ReturnsNotFound_WhenProfileDoesNotExist()
         {
             // Arrange
             var emptyQueryable = new List<UserProfile>().AsQueryable().BuildMock();
@@ -78,7 +50,7 @@ namespace NFC.Platform.Tests.Services
             _messageService.Get("ProfileNotFound").Returns("Profile not found.");
 
             // Act
-            var result = await _sut.ResolvePublicProfileAsync("unknown-subdomain");
+            var result = await _sut.ResolvePublicProfileAsync(Guid.NewGuid());
 
             // Assert
             Assert.False(result.IsSuccess);
@@ -86,13 +58,13 @@ namespace NFC.Platform.Tests.Services
         }
 
         [Fact]
-        public async Task ResolvePublicProfileAsync_ReturnsSuccess_WhenSubdomainExists()
+        public async Task ResolvePublicProfileAsync_ReturnsSuccess_WhenProfileExists()
         {
             // Arrange
+            var profileId = Guid.NewGuid();
             var profile = new UserProfile
             {
-                Id = Guid.NewGuid(),
-                Subdomain = "ghaith",
+                Id = profileId,
                 FullName = "Mohamed Ahmed",
                 CustomLinks =
                 [
@@ -108,10 +80,10 @@ namespace NFC.Platform.Tests.Services
                 FullName = "Mohamed Ahmed",
                 Links = [new ProfileLinkDto { Title = "LinkedIn" }]
             };
-            _mapper.Map<EmployeeDetailsDto>(profile).Returns(dto);
+            _mapper.Map<EmployeeDetailsDto>(Arg.Any<UserProfile>()).Returns(dto);
 
             // Act
-            var result = await _sut.ResolvePublicProfileAsync("ghaith");
+            var result = await _sut.ResolvePublicProfileAsync(profileId);
 
             // Assert
             Assert.True(result.IsSuccess);
