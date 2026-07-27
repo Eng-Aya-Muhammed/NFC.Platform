@@ -41,8 +41,8 @@ namespace NFC.Platform.Tests.Services
             var companyTemplate = new CardTemplate
             {
                 Id = Guid.NewGuid(),
-                Name = "Corporate Modern",
-                StyleConfigJson = "{\"layout\":\"modern-dark\",\"primaryColor\":\"#FF5733\",\"secondaryColor\":\"#00FF00\"}"
+                NameAr = "Corporate Modern",
+                NameEn = "Corporate Modern",
             };
 
             var company = new Company
@@ -83,8 +83,6 @@ namespace NFC.Platform.Tests.Services
             Assert.NotNull(result.Data);
             Assert.Equal("Alice Smith", result.Data.FullName);
             Assert.Null(result.Data.LogoUrl);
-            Assert.Equal("modern-dark", result.Data.Layout);
-            Assert.Equal(companyTemplate.StyleConfigJson, result.Data.StyleConfigJson);
         }
 
         [Fact]
@@ -94,8 +92,8 @@ namespace NFC.Platform.Tests.Services
             var personalTemplate = new CardTemplate
             {
                 Id = Guid.NewGuid(),
-                Name = "Minimalist Light",
-                StyleConfigJson = "{\"layout\":\"minimalist\",\"primaryColor\":\"#4A90E2\",\"secondaryColor\":\"#FFFFFF\"}"
+                NameAr = "Minimalist Light",
+                NameEn = "Minimalist Light",
             };
 
             var profile = new UserProfile
@@ -121,8 +119,6 @@ namespace NFC.Platform.Tests.Services
             Assert.NotNull(result.Data);
             Assert.Equal("John Doe", result.Data.FullName);
             Assert.Null(result.Data.LogoUrl); // Individuals have no company logo
-            Assert.Equal("minimalist", result.Data.Layout);
-            Assert.Equal(personalTemplate.StyleConfigJson, result.Data.StyleConfigJson);
         }
 
         [Fact]

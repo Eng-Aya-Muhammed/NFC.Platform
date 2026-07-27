@@ -367,4 +367,13 @@
   <data name="TemplateRequestCancelled" xml:space="preserve">
     <value>Template request has been cancelled and quota was refunded.</value>
   </data>
+  <data name="InvalidOrInactiveCardType" xml:space="preserve">
+    <value>Invalid or inactive card type.</value>
+  </data>
+  <data name="InvalidOrInactiveCardPackage" xml:space="preserve">
+    <value>Invalid or inactive card package.</value>
+  </data>
+  <data name="CardPackageCapacityExceeded" xml:space="preserve">
+    <value>Card package capacity exceeded.</value>
+  </data>
 </root>

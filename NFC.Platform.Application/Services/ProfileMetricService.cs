@@ -75,22 +75,8 @@ public class ProfileMetricService(IUnitOfWork unitOfWork, IMessageService messag
             resolvedTemplate = profile.ProfileTemplate;
         }
 
-        // Extract layout from the resolved template's StyleConfigJson
         string? layout = null;
         string? styleConfigJson = null;
-
-        if (resolvedTemplate != null && !string.IsNullOrWhiteSpace(resolvedTemplate.StyleConfigJson))
-        {
-            styleConfigJson = resolvedTemplate.StyleConfigJson;
-            try
-            {
-                using var doc = JsonDocument.Parse(resolvedTemplate.StyleConfigJson);
-                var root = doc.RootElement;
-
-                if (root.TryGetProperty("layout", out var lp)) layout = lp.GetString();
-            }
-            catch (JsonException) { /* malformed JSON â€” fall back to defaults */ }
-        }
 
         // Set parsed layout (or null if none)
         dto.Layout = layout;

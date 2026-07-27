@@ -7,5 +7,7 @@ namespace NFC.Platform.Application.DTOs.Employee
         public string? Phone { get; set; }
         public string? JobTitle { get; set; }
         public string? Department { get; set; }
+        public bool RequiresCard { get; set; } = true;
+        public int NumberOfCardsRequired { get; set; } = 1;
     }
 }

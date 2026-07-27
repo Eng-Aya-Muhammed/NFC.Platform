@@ -25,6 +25,8 @@ namespace NFC.Platform.Infrastructure.Services
             var phoneCol = -1;
             var jobTitleCol = -1;
             var departmentCol = -1;
+            var requiresCardCol = -1;
+            var numberOfCardsCol = -1;
 
             if (reader.Read())
             {
@@ -43,6 +45,10 @@ namespace NFC.Platform.Infrastructure.Services
                         jobTitleCol = i;
                     else if (headerVal.Contains("department", StringComparison.OrdinalIgnoreCase) || headerVal.Contains("قسم", StringComparison.OrdinalIgnoreCase))
                         departmentCol = i;
+                    else if (headerVal.Contains("requirescard", StringComparison.OrdinalIgnoreCase) || headerVal.Contains("requires card", StringComparison.OrdinalIgnoreCase) || headerVal.Contains("requires_card", StringComparison.OrdinalIgnoreCase) || headerVal.Contains("بطاقة", StringComparison.OrdinalIgnoreCase))
+                        requiresCardCol = i;
+                    else if (headerVal.Contains("numberofcards", StringComparison.OrdinalIgnoreCase) || headerVal.Contains("number of cards", StringComparison.OrdinalIgnoreCase) || headerVal.Contains("number_of_cards", StringComparison.OrdinalIgnoreCase) || headerVal.Contains("عدد البطاقات", StringComparison.OrdinalIgnoreCase) || headerVal.Contains("عدد بطاقات", StringComparison.OrdinalIgnoreCase))
+                        numberOfCardsCol = i;
                 }
             }
 
@@ -61,6 +67,29 @@ namespace NFC.Platform.Infrastructure.Services
                 var jobTitle = jobTitleCol < reader.FieldCount ? reader.GetValue(jobTitleCol)?.ToString()?.Trim() : null;
                 var department = departmentCol < reader.FieldCount ? reader.GetValue(departmentCol)?.ToString()?.Trim() : null;
 
+                bool requiresCard = true;
+                if (requiresCardCol != -1 && requiresCardCol < reader.FieldCount)
+                {
+                    var reqVal = reader.GetValue(requiresCardCol)?.ToString()?.Trim();
+                    if (!string.IsNullOrEmpty(reqVal))
+                    {
+                        if (bool.TryParse(reqVal, out var parsedReq))
+                            requiresCard = parsedReq;
+                        else if (reqVal.Equals("0", StringComparison.OrdinalIgnoreCase) || reqVal.Equals("no", StringComparison.OrdinalIgnoreCase) || reqVal.Equals("لا", StringComparison.OrdinalIgnoreCase) || reqVal.Equals("false", StringComparison.OrdinalIgnoreCase))
+                            requiresCard = false;
+                    }
+                }
+
+                int numberOfCardsRequired = 1;
+                if (numberOfCardsCol != -1 && numberOfCardsCol < reader.FieldCount)
+                {
+                    var countVal = reader.GetValue(numberOfCardsCol)?.ToString()?.Trim();
+                    if (!string.IsNullOrEmpty(countVal) && int.TryParse(countVal, out var parsedCount) && parsedCount >= 0)
+                    {
+                        numberOfCardsRequired = parsedCount;
+                    }
+                }
+
                 bool isCompletelyEmptyRow = string.IsNullOrWhiteSpace(name) && 
                                             string.IsNullOrWhiteSpace(email) &&
                                             string.IsNullOrWhiteSpace(phone) &&
@@ -78,7 +107,9 @@ namespace NFC.Platform.Infrastructure.Services
                     Email = email,
                     Phone = phone,
                     JobTitle = jobTitle,
-                    Department = department
+                    Department = department,
+                    RequiresCard = requiresCard,
+                    NumberOfCardsRequired = numberOfCardsRequired
                 });
             }
 

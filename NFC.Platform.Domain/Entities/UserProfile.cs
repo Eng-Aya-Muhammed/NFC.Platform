@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using NFC.Platform.Domain.Common;
+using NFC.Platform.Domain.Enums;
 
 namespace NFC.Platform.Domain.Entities
 {
@@ -21,6 +22,8 @@ namespace NFC.Platform.Domain.Entities
         public string CompanyName { get; set; } = string.Empty;
         public string? ProfilePictureUrl { get; set; }
         public string? Bio { get; set; }
+
+        public PreferredLanguage PreferredLanguage { get; set; } = PreferredLanguage.Arabic;
 
         /// <summary>
         /// URL-safe subdomain slug for the public digital profile.

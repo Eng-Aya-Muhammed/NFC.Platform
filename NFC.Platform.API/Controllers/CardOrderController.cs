@@ -18,39 +18,12 @@ namespace NFC.Platform.API.Controllers
     [Route("api/card-orders")]
     public class CardOrderController(
         ICardOrderService cardOrderService, 
-        ICardPricingService cardPricingService,
         IEmployeeImportService employeeImportService,
         IMessageService messageService) : ControllerBase
     {
         private readonly ICardOrderService _cardOrderService = cardOrderService ?? throw new ArgumentNullException(nameof(cardOrderService));
-        private readonly ICardPricingService _cardPricingService = cardPricingService ?? throw new ArgumentNullException(nameof(cardPricingService));
         private readonly IEmployeeImportService _employeeImportService = employeeImportService ?? throw new ArgumentNullException(nameof(employeeImportService));
         private readonly IMessageService _messageService = messageService ?? throw new ArgumentNullException(nameof(messageService));
-
-        /// <summary>
-        /// Returns the unit and total price for a given card type and quantity.
-        /// Used to preview cost before placing an order.
-        /// </summary>
-        [HttpGet("pricing")]
-        [HttpGet("/api/order-draft/pricing")]
-        [HasPermission(AppPermissions.CardOrders.Create)]
-        public async Task<IActionResult> GetPricing([FromQuery] CardType cardType = CardType.Plastic, [FromQuery] int quantity = 1)
-        {
-            var result = await _cardPricingService.CalculateOrderPricingAsync(cardType, quantity);
-            return Ok(result);
-        }
-
-        /// <summary>
-        /// Returns all currently active card pricing configurations.
-        /// </summary>
-        [HttpGet("pricing-catalog")]
-        [HttpGet("/api/pricing/config")]
-        [HasPermission(AppPermissions.CardOrders.Create)]
-        public async Task<IActionResult> GetActivePricingCatalog()
-        {
-            var result = await _cardPricingService.GetActiveCatalogAsync();
-            return Ok(result);
-        }
 
         /// <summary>
         /// Returns a paged list of card orders for the current tenant.

@@ -284,13 +284,21 @@ namespace NFC.Platform.Application.Services;
 
                 if (dto.Status == TemplateRequestStatus.Completed)
                 {
+                    var customCategory = await _unitOfWork.Repository<TemplateCategory>().GetQueryable()
+                        .FirstOrDefaultAsync(c => c.NameEn == "Custom" || c.NameAr == "خاص");
+                    if (customCategory == null)
+                    {
+                        customCategory = new TemplateCategory { NameAr = "خاص", NameEn = "Custom", IsActive = true };
+                        await _unitOfWork.Repository<TemplateCategory>().AddAsync(customCategory);
+                        await _unitOfWork.SaveChangesAsync();
+                    }
+
                     var customTemplate = new CardTemplate
                     {
-                        TenantId = templateRequest.TenantId,
-                        Name = templateRequest.TemplateName,
-                        Category = _messageService.Get("CustomCategory"),
-                        ThumbnailUrl = templateRequest.ReferenceImageUrl ?? templateRequest.LogoUrl ?? "",
-                        StyleConfigJson = dto.StyleConfigJson ?? "{}",
+                        NameAr = templateRequest.TemplateName,
+                        NameEn = templateRequest.TemplateName,
+                        CategoryId = customCategory.Id,
+                        PhotoUrl = templateRequest.ReferenceImageUrl ?? templateRequest.LogoUrl ?? "",
                         IsActive = true,
                         DisplayOrder = 1
                     };
@@ -354,7 +362,6 @@ namespace NFC.Platform.Application.Services;
         public async Task<ServiceResult<CardTemplateDto>> CreateTemplateAsync(CreateCardTemplateDto dto)
         {
             var template = _mapper.Map<CardTemplate>(dto);
-            template.TenantId = null;
 
             await _unitOfWork.Repository<CardTemplate>().AddAsync(template);
             await _unitOfWork.SaveChangesAsync();
@@ -500,61 +507,6 @@ namespace NFC.Platform.Application.Services;
 
             tenant.IsActive = dto.IsActive;
             await _unitOfWork.SaveChangesAsync();
-
-            return ServiceResult.Success(_messageService.Get("RecordUpdated"));
-        }
-
-        public async Task<ServiceResult> UpdateCardPricingAsync(UpdateCardPricingDto dto)
-        {
-            if (dto == null)
-                return ServiceResult.Fail(_messageService.Get("InvalidRequest"), 400);
-
-            var normalizedCurrency = dto.Currency?.Trim().ToUpper();
-            if (string.IsNullOrEmpty(normalizedCurrency) || normalizedCurrency.Length != 3)
-            {
-                return ServiceResult.Fail(_messageService.Get("CurrencyMustBeThreeLetters"), 400);
-            }
-
-            await _unitOfWork.BeginTransactionAsync();
-            try
-            {
-                var repo = _unitOfWork.Repository<CardPricing>();
-
-                var activePricing = await repo.GetQueryable()
-                    .FirstOrDefaultAsync(p => p.CardType == dto.CardType && p.IsActive);
-
-                if (activePricing != null)
-                {
-                    if (activePricing.UnitPrice == dto.UnitPrice && activePricing.Currency == normalizedCurrency)
-                    {
-                        await _unitOfWork.CommitTransactionAsync();
-                        return ServiceResult.Success(_messageService.Get("RecordUpdated"));
-                    }
-
-                    activePricing.EffectiveTo = DateTime.UtcNow;
-                    activePricing.IsActive = false;
-                }
-
-                var newPricing = new CardPricing
-                {
-                    CardType = dto.CardType,
-                    UnitPrice = dto.UnitPrice,
-                    Currency = normalizedCurrency,
-                    EffectiveFrom = DateTime.UtcNow,
-                    EffectiveTo = null,
-                    IsActive = true
-                };
-
-                await repo.AddAsync(newPricing);
-                await _unitOfWork.SaveChangesAsync();
-
-                await _unitOfWork.CommitTransactionAsync();
-            }
-            catch
-            {
-                await _unitOfWork.RollbackTransactionAsync();
-                throw;
-            }
 
             return ServiceResult.Success(_messageService.Get("RecordUpdated"));
         }

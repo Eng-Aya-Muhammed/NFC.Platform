@@ -228,7 +228,7 @@ namespace NFC.Platform.Tests.BusinessCycles
             Assert.Equal(TemplateRequestStatus.Completed, request.Status);
 
             // System should have auto-created a template
-            var createdTemplate = _cardTemplates.SingleOrDefault(t => t.Name == "My Custom Design");
+            var createdTemplate = _cardTemplates.SingleOrDefault(t => t.NameAr == "My Custom Design");
             Assert.NotNull(createdTemplate);
             Assert.True(createdTemplate.IsActive);
 

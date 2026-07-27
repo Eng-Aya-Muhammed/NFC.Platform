@@ -367,4 +367,13 @@
   <data name="TemplateRequestCancelled" xml:space="preserve">
     <value>تم إلغاء طلب القالب واسترجاع الرصيد بنجاح.</value>
   </data>
+  <data name="InvalidOrInactiveCardType" xml:space="preserve">
+    <value>نوع البطاقة غير صالح أو غير مفعل.</value>
+  </data>
+  <data name="InvalidOrInactiveCardPackage" xml:space="preserve">
+    <value>باقة البطاقات غير صالحة أو غير مفعلة.</value>
+  </data>
+  <data name="CardPackageCapacityExceeded" xml:space="preserve">
+    <value>تم تجاوز سعة باقة البطاقات.</value>
+  </data>
 </root>

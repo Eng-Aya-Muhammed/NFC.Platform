@@ -20,7 +20,8 @@ namespace NFC.Platform.Tests.Controllers
         {
             var request = new CreateCardOrderRequest
             {
-                CardType = CardType.Plastic,
+                CardTypeId = Guid.NewGuid(),
+                CardPackageId = Guid.NewGuid(),
                 CardDesignType = CardDesignType.CustomArtwork,
                 FrontDesignUrl = "https://cdn.example.com/front.png",
                 BackDesignUrl = "https://cdn.example.com/back.png",
@@ -42,7 +43,8 @@ namespace NFC.Platform.Tests.Controllers
             // Arrange
             var request = new CreateCardOrderRequest
             {
-                CardType = CardType.Plastic,
+                CardTypeId = Guid.NewGuid(),
+                CardPackageId = Guid.NewGuid(),
                 CardDesignType = CardDesignType.CustomArtwork,
                 FrontDesignUrl = "https://cdn.example.com/front.png",
                 Quantity = 1
@@ -76,11 +78,10 @@ namespace NFC.Platform.Tests.Controllers
             validator.ValidateAsync(Arg.Any<CreateCardOrderRequest>(), default)
                 .Returns(Task.FromResult(validationResult));
 
-            var cardPricingService = Substitute.For<ICardPricingService>();
             var backgroundJobClient = Substitute.For<Hangfire.IBackgroundJobClient>();
             var otpSettingsOptions = Substitute.For<IOptions<OtpSettings>>();
             otpSettingsOptions.Value.Returns(new OtpSettings { CooldownSeconds = 60, MaxResendAttempts = 5 });
-            var service = new CardOrderService(unitOfWork, mapper, messageService, currentTenant, cardPricingService, validator, Substitute.For<IValidator<UpdateCardOrderRequest>>(), backgroundJobClient, Substitute.For<IEmployeeService>(), otpSettingsOptions);
+            var service = new CardOrderService(unitOfWork, mapper, messageService, currentTenant, validator, Substitute.For<IValidator<UpdateCardOrderRequest>>(), backgroundJobClient, Substitute.For<IEmployeeService>(), otpSettingsOptions);
             var request = new CreateCardOrderRequest { Quantity = 1 };
 
             // Act

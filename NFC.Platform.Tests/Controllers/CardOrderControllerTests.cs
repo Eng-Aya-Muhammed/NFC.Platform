@@ -3,7 +3,6 @@ namespace NFC.Platform.Tests.Controllers
     public class CardOrderControllerTests
     {
         private readonly ICardOrderService _cardOrderService;
-        private readonly ICardPricingService _cardPricingService;
         private readonly IEmployeeImportService _employeeImportService;
         private readonly IMessageService _messageService;
         private readonly CardOrderController _sut;
@@ -11,10 +10,9 @@ namespace NFC.Platform.Tests.Controllers
         public CardOrderControllerTests()
         {
             _cardOrderService = Substitute.For<ICardOrderService>();
-            _cardPricingService = Substitute.For<ICardPricingService>();
             _employeeImportService = Substitute.For<IEmployeeImportService>();
             _messageService = Substitute.For<IMessageService>();
-            _sut = new CardOrderController(_cardOrderService, _cardPricingService, _employeeImportService, _messageService);
+            _sut = new CardOrderController(_cardOrderService, _employeeImportService, _messageService);
         }
 
         [Fact]
@@ -28,32 +26,6 @@ namespace NFC.Platform.Tests.Controllers
             var routeAttributes = type.GetCustomAttributes(typeof(RouteAttribute), true).Cast<RouteAttribute>().ToList();
             Assert.NotEmpty(routeAttributes);
             Assert.Equal("api/card-orders", routeAttributes.First().Template);
-        }
-
-        [Fact]
-        public async Task GetPricing_CallsService_AndReturnsOk()
-        {
-            var pricing = new OrderPricingResponseDto();
-            _cardPricingService.CalculateOrderPricingAsync(CardType.Plastic, 5).Returns(ServiceResult<OrderPricingResponseDto>.Success(pricing));
-
-            var result = await _sut.GetPricing(CardType.Plastic, 5) as OkObjectResult;
-
-            Assert.NotNull(result);
-            Assert.Equal(200, result.StatusCode);
-            await _cardPricingService.Received(1).CalculateOrderPricingAsync(CardType.Plastic, 5);
-        }
-
-        [Fact]
-        public async Task GetActivePricingCatalog_CallsService_AndReturnsOk()
-        {
-            var catalog = new List<CardPricingDto>();
-            _cardPricingService.GetActiveCatalogAsync().Returns(ServiceResult<IReadOnlyList<CardPricingDto>>.Success(catalog));
-
-            var result = await _sut.GetActivePricingCatalog() as OkObjectResult;
-
-            Assert.NotNull(result);
-            Assert.Equal(200, result.StatusCode);
-            await _cardPricingService.Received(1).GetActiveCatalogAsync();
         }
 
         [Fact]

@@ -25,7 +25,8 @@ public class UpdateCardOrderRequest
     public string? BackDesignUrl { get; set; }
 
     // Pricing factors
-    public CardType? CardType { get; set; }
+    public Guid? CardTypeId { get; set; }
+    public Guid? CardPackageId { get; set; }
     public int? Quantity { get; set; }
 
     // General

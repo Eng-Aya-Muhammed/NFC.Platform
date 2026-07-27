@@ -9,7 +9,7 @@ namespace NFC.Platform.Application.Mapping
         public CardTemplateMappingProfile()
         {
             CreateMap<CardTemplate, CardTemplateDto>()
-                .ForMember(dest => dest.PreviewImageUrl, opt => opt.MapFrom(src => src.ThumbnailUrl));
+                .ForMember(dest => dest.PreviewImageUrl, opt => opt.MapFrom(src => src.PhotoUrl));
         }
     }
 }

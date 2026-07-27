@@ -28,9 +28,7 @@ namespace NFC.Platform.Tests.Services
             var backgroundJobClient = Substitute.For<Hangfire.IBackgroundJobClient>();
 
             var orderRepo = Substitute.For<IGenericRepository<CardOrder>>();
-            var pricingRepo = Substitute.For<IGenericRepository<CardPricing>>();
             unitOfWork.Repository<CardOrder>().Returns(orderRepo);
-            unitOfWork.Repository<CardPricing>().Returns(pricingRepo);
 
             var validationResult = new FluentValidation.Results.ValidationResult();
             validator.ValidateAsync(Arg.Any<CreateCardOrderRequest>(), default)
@@ -45,28 +43,25 @@ namespace NFC.Platform.Tests.Services
             userRepo.GetQueryable().Returns(new List<User> { currentUser }.AsQueryable().BuildMock());
             unitOfWork.Repository<User>().Returns(userRepo);
 
-            var pricing = new CardPricing
-            {
-                CardType = CardType.Plastic,
-                IsActive = true,
-                EffectiveFrom = DateTime.UtcNow.AddDays(-1),
-                UnitPrice = 10,
-                Currency = "KWD"
-            };
-            pricingRepo.GetQueryable().Returns(new List<CardPricing> { pricing }.AsQueryable().BuildMock());
+            var cardTypeRepo = Substitute.For<IGenericRepository<CardType>>();
+            var cardType = new CardType { Id = Guid.NewGuid(), IsActive = true };
+            cardTypeRepo.GetByIdAsync(Arg.Any<Guid>()).Returns(cardType);
+            unitOfWork.Repository<CardType>().Returns(cardTypeRepo);
+
+            var cardPackageRepo = Substitute.For<IGenericRepository<CardPackage>>();
+            var cardPackage = new CardPackage { Id = Guid.NewGuid(), IsActive = true, Price = 10 };
+            cardPackageRepo.GetByIdAsync(Arg.Any<Guid>()).Returns(cardPackage);
+            unitOfWork.Repository<CardPackage>().Returns(cardPackageRepo);
 
             var order = new CardOrder
             {
                 Id = Guid.NewGuid(),
                 Quantity = 1,
-                CardType = CardType.Plastic
+                CardTypeId = cardType.Id,
+                CardPackageId = cardPackage.Id
             };
             mapper.Map<CardOrder>(Arg.Any<CreateCardOrderRequest>()).Returns(order);
             orderRepo.GetQueryable().Returns(new List<CardOrder> { order }.AsQueryable().BuildMock());
-
-            var cardPricingService = Substitute.For<ICardPricingService>();
-            var pricingResponse = new NFC.Platform.Application.DTOs.CardOrder.OrderPricingResponseDto { UnitPrice = 8.5m, TotalPrice = 8.5m };
-            cardPricingService.CalculateOrderPricingAsync(Arg.Any<CardType>(), Arg.Any<int>()).Returns(NFC.Platform.BuildingBlocks.Results.ServiceResult<NFC.Platform.Application.DTOs.CardOrder.OrderPricingResponseDto>.Success(pricingResponse));
 
             var otpSettingsOptions = Substitute.For<IOptions<OtpSettings>>();
             otpSettingsOptions.Value.Returns(new OtpSettings { CooldownSeconds = 60, MaxResendAttempts = 5 });
@@ -80,16 +75,18 @@ namespace NFC.Platform.Tests.Services
                 mapper,
                 messageService,
                 currentTenant,
-                cardPricingService,
                 validator,
                 Substitute.For<IValidator<UpdateCardOrderRequest>>(),
                 backgroundJobClient,
                 Substitute.For<IEmployeeService>(),
                 otpSettingsOptions
-            );  var request = new CreateCardOrderRequest
+            );
+
+            var request = new CreateCardOrderRequest
             {
                 Quantity = 1,
-                CardType = CardType.Plastic,
+                CardTypeId = cardType.Id,
+                CardPackageId = cardPackage.Id,
                 CardDesignType = CardDesignType.NeedCustomDesign
             };
 

@@ -52,17 +52,17 @@ namespace NFC.Platform.Tests.Services
             // Arrange
             var templates = new List<CardTemplate>
             {
-                new() { Id = Guid.NewGuid(), Name = "Second", IsActive = true, DisplayOrder = 2 },
-                new() { Id = Guid.NewGuid(), Name = "First",  IsActive = true, DisplayOrder = 1 },
-                new() { Id = Guid.NewGuid(), Name = "Hidden", IsActive = false, DisplayOrder = 0 }
+                new() { Id = Guid.NewGuid(), NameAr = "Second", NameEn = "Second", IsActive = true, DisplayOrder = 2 },
+                new() { Id = Guid.NewGuid(), NameAr = "First", NameEn = "First", IsActive = true, DisplayOrder = 1 },
+                new() { Id = Guid.NewGuid(), NameAr = "Hidden", NameEn = "Hidden", IsActive = false, DisplayOrder = 0 }
             };
             var queryable = templates.AsQueryable().BuildMock();
             _templateRepo.GetQueryable().Returns(queryable);
 
             var dtos = new List<CardTemplateDto>
             {
-                new() { Name = "First" },
-                new() { Name = "Second" }
+                new() { NameAr = "First", NameEn = "First" },
+                new() { NameAr = "Second", NameEn = "Second" }
             };
             _mapper.Map<IReadOnlyList<CardTemplateDto>>(Arg.Any<object>()).Returns(dtos);
 
@@ -72,7 +72,7 @@ namespace NFC.Platform.Tests.Services
             // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(2, result.Data!.Count);
-            Assert.Equal("First", result.Data![0].Name);
+            Assert.Equal("First", result.Data![0].NameAr);
         }
 
         [Fact]
@@ -81,8 +81,8 @@ namespace NFC.Platform.Tests.Services
             // Arrange
             var templates = new List<CardTemplate>
             {
-                new() { Id = Guid.NewGuid(), Name = "Active1", IsActive = true, DisplayOrder = 1 },
-                new() { Id = Guid.NewGuid(), Name = "Inactive1", IsActive = false, DisplayOrder = 2 }
+                new() { Id = Guid.NewGuid(), NameAr = "Active1", NameEn = "Active1", IsActive = true, DisplayOrder = 1 },
+                new() { Id = Guid.NewGuid(), NameAr = "Inactive1", NameEn = "Inactive1", IsActive = false, DisplayOrder = 2 }
             };
             var queryable = templates.AsQueryable().BuildMock();
             _templateRepo.GetQueryable().Returns(queryable);

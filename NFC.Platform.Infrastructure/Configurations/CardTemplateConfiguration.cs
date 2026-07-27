@@ -11,20 +11,18 @@ namespace NFC.Platform.Infrastructure.Configurations
             builder.ToTable("CardTemplates");
             builder.HasKey(t => t.Id);
 
-            builder.Property(t => t.IsActive).IsRequired();
+            builder.Property(t => t.NameAr).IsRequired().HasMaxLength(200);
+            builder.Property(t => t.NameEn).IsRequired().HasMaxLength(200);
+            builder.Property(t => t.PhotoUrl).HasMaxLength(1000);
+            builder.Property(t => t.FileUrl).HasMaxLength(1000);
 
-            builder.Property(t => t.TenantId);
-            builder.HasIndex(t => t.TenantId);
-
-            builder.HasOne(t => t.Tenant)
+            builder.Property(t => t.CategoryId).IsRequired();
+            builder.HasOne(t => t.Category)
                 .WithMany()
-                .HasForeignKey(t => t.TenantId)
+                .HasForeignKey(t => t.CategoryId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            builder.Property(t => t.Name).IsRequired().HasMaxLength(150);
-            builder.Property(t => t.Category).IsRequired().HasMaxLength(100);
-            builder.Property(t => t.ThumbnailUrl).HasMaxLength(1000);
-            builder.Property(t => t.StyleConfigJson).IsRequired().HasColumnType("nvarchar(max)");
+            builder.Property(t => t.IsActive).IsRequired();
             builder.Property(t => t.DisplayOrder).HasDefaultValue(0);
         }
     }

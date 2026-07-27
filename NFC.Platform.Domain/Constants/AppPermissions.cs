@@ -47,7 +47,32 @@ namespace NFC.Platform.Domain.Constants
             public const string View    = "Templates.View";
             public const string Create  = "Templates.Create";
             public const string Update  = "Templates.Update";
+            public const string Delete  = "Templates.Delete";
             public const string Cancel  = "Templates.Cancel";
+        }
+
+        public static class CardTypes
+        {
+            public const string View   = "CardTypes.View";
+            public const string Create = "CardTypes.Create";
+            public const string Update = "CardTypes.Update";
+            public const string Delete = "CardTypes.Delete";
+        }
+
+        public static class CardPackages
+        {
+            public const string View   = "CardPackages.View";
+            public const string Create = "CardPackages.Create";
+            public const string Update = "CardPackages.Update";
+            public const string Delete = "CardPackages.Delete";
+        }
+
+        public static class TemplateCategories
+        {
+            public const string View   = "TemplateCategories.View";
+            public const string Create = "TemplateCategories.Create";
+            public const string Update = "TemplateCategories.Update";
+            public const string Delete = "TemplateCategories.Delete";
         }
 
         public static class Company

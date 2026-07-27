@@ -271,29 +271,7 @@ namespace NFC.Platform.Tests.Controllers
             Assert.Equal(400, result.StatusCode);
         }
 
-        [Fact]
-        public async Task UpdateCardPricing_CallsAdminService_AndReturnsOk_OnSuccess()
-        {
-            var dto = new UpdateCardPricingDto();
-            _adminService.UpdateCardPricingAsync(dto).Returns(ServiceResult.Success());
 
-            var result = await _sut.UpdateCardPricing(dto) as OkObjectResult;
-
-            Assert.NotNull(result);
-            Assert.Equal(200, result.StatusCode);
-        }
-
-        [Fact]
-        public async Task UpdateCardPricing_ReturnsError_OnFailure()
-        {
-            var dto = new UpdateCardPricingDto();
-            _adminService.UpdateCardPricingAsync(dto).Returns(ServiceResult.Fail("Error", 400));
-
-            var result = await _sut.UpdateCardPricing(dto) as ObjectResult;
-
-            Assert.NotNull(result);
-            Assert.Equal(400, result.StatusCode);
-        }
         [Fact]
         public async Task VerifyDeliveryOtp_ReturnsOk_WhenValid()
         {

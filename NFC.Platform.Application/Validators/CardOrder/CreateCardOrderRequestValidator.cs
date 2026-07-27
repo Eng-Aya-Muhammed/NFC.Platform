@@ -12,9 +12,13 @@ namespace NFC.Platform.Application.Validators.CardOrder
                 .IsInEnum()
                 .WithMessage(_ => messageService.Get("CardDesignTypeRequired"));
 
-            RuleFor(x => x.CardType)
-                .IsInEnum()
+            RuleFor(x => x.CardTypeId)
+                .NotEmpty()
                 .WithMessage(_ => messageService.Get("CardTypeRequired"));
+
+            RuleFor(x => x.CardPackageId)
+                .NotEmpty()
+                .WithMessage(_ => messageService.Get("InvalidOrInactiveCardPackage"));
 
             RuleFor(x => x.Quantity)
                 .GreaterThan(0)

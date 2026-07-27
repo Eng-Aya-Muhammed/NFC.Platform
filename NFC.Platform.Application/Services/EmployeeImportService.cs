@@ -272,20 +272,22 @@ public class EmployeeImportService(
                     }
                 }
 
-                var pricing = await _unitOfWork.Repository<CardPricing>().GetQueryable()
-                    .AsNoTracking()
-                    .Where(p => p.CardType == job.CardType && p.IsActive && p.EffectiveFrom <= DateTime.UtcNow && (p.EffectiveTo == null || p.EffectiveTo > DateTime.UtcNow))
-                    .OrderByDescending(p => p.EffectiveFrom)
-                    .FirstOrDefaultAsync();
-
-                if (pricing == null)
+                var cardType = await _unitOfWork.Repository<CardType>().GetByIdAsync(job.CardTypeId);
+                if (cardType == null || !cardType.IsActive)
                 {
-                    throw new BusinessException("PricingNotConfigured", job.CardType.ToString());
+                    throw new BusinessException("InvalidOrInactiveCardType", job.CardTypeId.ToString());
+                }
+
+                var cardPackage = await _unitOfWork.Repository<CardPackage>().GetByIdAsync(job.CardPackageId);
+                if (cardPackage == null || !cardPackage.IsActive)
+                {
+                    throw new BusinessException("InvalidOrInactiveCardPackage", job.CardPackageId.ToString());
                 }
 
                 var cardOrder = new CardOrder
                 {
-                    CardType = job.CardType,
+                    CardTypeId = job.CardTypeId,
+                    CardPackageId = job.CardPackageId,
                     CardDesignType = job.CardDesignType,
                     Quantity = itemsToOrder.Count,
                     Notes = job.Notes,
@@ -293,9 +295,9 @@ public class EmployeeImportService(
                     TenantId = job.TenantId,
                     Status = OrderStatus.PendingReview,
                     Items = itemsToOrder,
-                    UnitPrice = pricing.UnitPrice,
-                    Currency = pricing.Currency,
-                    TotalPrice = pricing.UnitPrice * itemsToOrder.Count
+                    UnitPrice = cardPackage.Price,
+                    Currency = "KWD",
+                    TotalPrice = cardPackage.Price
                 };
 
                 await _unitOfWork.Repository<CardOrder>().AddAsync(cardOrder);

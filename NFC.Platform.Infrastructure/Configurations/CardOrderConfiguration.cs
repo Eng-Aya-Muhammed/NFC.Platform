@@ -12,7 +12,19 @@ namespace NFC.Platform.Infrastructure.Configurations
             builder.HasKey(o => o.Id);
 
             builder.Property(o => o.CardName).IsRequired().HasMaxLength(200);
-            builder.Property(o => o.CardType).IsRequired();
+
+            builder.Property(o => o.CardTypeId).IsRequired();
+            builder.HasOne(o => o.CardType)
+                .WithMany()
+                .HasForeignKey(o => o.CardTypeId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Property(o => o.CardPackageId).IsRequired();
+            builder.HasOne(o => o.CardPackage)
+                .WithMany()
+                .HasForeignKey(o => o.CardPackageId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             builder.Property(o => o.CardDesignType).IsRequired();
             builder.Property(o => o.Quantity).IsRequired();
 

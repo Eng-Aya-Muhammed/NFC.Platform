@@ -24,7 +24,6 @@ namespace NFC.Platform.Application.Interfaces.Services
         Task<ServiceResult> DeleteTemplateAsync(Guid id);
         Task<ServiceResult<PagedResult<TenantSummaryDto>>> GetTenantsPagedAsync(PaginationRequest request, CancellationToken cancellationToken = default);
         Task<ServiceResult> UpdateTenantStatusAsync(Guid id, UpdateTenantStatusDto dto);
-        Task<ServiceResult> UpdateCardPricingAsync(UpdateCardPricingDto dto);
 
         //  Subdomain management (Super Admin) 
         Task<ServiceResult<PagedResult<ProfileSubdomainSummaryDto>>> GetAllProfileSubdomainsAsync(PaginationRequest request, string? search, CancellationToken cancellationToken = default);

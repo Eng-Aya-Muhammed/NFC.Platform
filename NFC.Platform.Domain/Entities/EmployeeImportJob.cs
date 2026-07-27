@@ -19,7 +19,12 @@ namespace NFC.Platform.Domain.Entities
         public string? ExcelFilePublicId { get; set; }
 
         // Card Order parameters — physical design sourced from FrontDesignUrl/BackDesignUrl on the resulting order
-        public CardType CardType { get; set; }
+        public Guid CardTypeId { get; set; }
+        public CardType? CardType { get; set; }
+
+        public Guid CardPackageId { get; set; }
+        public CardPackage? CardPackage { get; set; }
+
         public CardDesignType CardDesignType { get; set; }
         public string? Notes { get; set; }
 

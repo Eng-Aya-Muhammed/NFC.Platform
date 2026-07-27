@@ -40,7 +40,9 @@ namespace NFC.Platform.Infrastructure.Contexts
         public DbSet<ProfileMetric> ProfileMetrics { get; set; }
         public DbSet<TemplateRequest> TemplateRequests { get; set; }
         public DbSet<EmployeeImportJob> EmployeeImportJobs { get; set; }
-        public DbSet<CardPricing> CardPricings { get; set; }
+        public DbSet<CardType> CardTypes { get; set; }
+        public DbSet<CardPackage> CardPackages { get; set; }
+        public DbSet<TemplateCategory> TemplateCategories { get; set; }
 
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

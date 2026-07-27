@@ -37,8 +37,6 @@ namespace NFC.Platform.Application.Mapping
 
             CreateMap<CardOrderItem, CardOrderItemDto>();
 
-            CreateMap<CardPricing, CardPricingDto>();
-
             CreateMap<CreateCardOrderRequest, CardOrder>()
                 .ForMember(dest => dest.CardName, opt => opt.MapFrom(src => string.IsNullOrWhiteSpace(src.CardName) ? null : src.CardName))
                 .ForMember(dest => dest.Id, opt => opt.Ignore())
@@ -57,7 +55,8 @@ namespace NFC.Platform.Application.Mapping
                 .ForMember(dest => dest.Items, opt => opt.Ignore());
 
             CreateMap<UpdateCardOrderRequest, CardOrder>()
-                .ForMember(dest => dest.CardType, opt => opt.Ignore())
+                .ForMember(dest => dest.CardTypeId, opt => opt.Ignore())
+                .ForMember(dest => dest.CardPackageId, opt => opt.Ignore())
                 .ForMember(dest => dest.Quantity, opt => opt.Ignore())
                 .ForMember(dest => dest.ExcelDataUrl, opt => opt.Ignore())
                 .ForMember(dest => dest.Items, opt => opt.Ignore())

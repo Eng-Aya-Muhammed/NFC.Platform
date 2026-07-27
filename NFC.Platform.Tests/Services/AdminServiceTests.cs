@@ -13,7 +13,6 @@ namespace NFC.Platform.Tests.Services
         private readonly IGenericRepository<CardTemplate> _cardTemplateRepo;
         private readonly IGenericRepository<Tenant> _tenantRepo;
         private readonly IGenericRepository<UserSubscription> _subscriptionRepo;
-        private readonly IGenericRepository<CardPricing> _cardPricingRepo;
         private readonly IGenericRepository<Company> _companyRepo;
         private readonly IGenericRepository<UserProfile> _userProfileRepo;
         private readonly IBackgroundJobClient _backgroundJobClient;
@@ -34,7 +33,6 @@ namespace NFC.Platform.Tests.Services
             _cardTemplateRepo    = Substitute.For<IGenericRepository<CardTemplate>>();
             _tenantRepo          = Substitute.For<IGenericRepository<Tenant>>();
             _subscriptionRepo    = Substitute.For<IGenericRepository<UserSubscription>>();
-            _cardPricingRepo     = Substitute.For<IGenericRepository<CardPricing>>();
             _companyRepo         = Substitute.For<IGenericRepository<Company>>();
             _userProfileRepo     = Substitute.For<IGenericRepository<UserProfile>>();
 
@@ -243,9 +241,8 @@ namespace NFC.Platform.Tests.Services
             Assert.Contains("Admin Notes: Design complete", request.Notes);
 
             await _cardTemplateRepo.Received(1).AddAsync(Arg.Is<CardTemplate>(t =>
-                t.TenantId == tenantId &&
-                t.Name == "Corporate Template 1" &&
-                t.StyleConfigJson == "{\"color\": \"blue\"}"));
+                t.NameAr == "Corporate Template 1" &&
+                t.NameEn == "Corporate Template 1"));
 
             await _unitOfWork.Received(1).SaveChangesAsync();
         }
@@ -258,30 +255,27 @@ namespace NFC.Platform.Tests.Services
             // Arrange
             var createDto = new CreateCardTemplateDto
             {
-                Name = "Modern Template",
-                Category = "Professional",
-                StyleConfigJson = "{}",
-                ThumbnailUrl = "thumb.png"
+                NameAr = "Modern Template",
+                NameEn = "Modern Template",
+                CategoryId = Guid.NewGuid()
             };
 
             var mappedTemplate = new CardTemplate
             {
-                Name = "Modern Template",
-                Category = "Professional",
-                StyleConfigJson = "{}",
-                ThumbnailUrl = "thumb.png"
+                NameAr = "Modern Template",
+                NameEn = "Modern Template",
+                CategoryId = createDto.CategoryId
             };
 
             _mapper.Map<CardTemplate>(createDto).Returns(mappedTemplate);
-            _mapper.Map<CardTemplateDto>(mappedTemplate).Returns(new CardTemplateDto { Name = "Modern Template", PreviewImageUrl = "thumb.png" });
+            _mapper.Map<CardTemplateDto>(mappedTemplate).Returns(new CardTemplateDto { NameAr = "Modern Template", NameEn = "Modern Template" });
 
             // Act
             var result = await _sut.CreateTemplateAsync(createDto);
 
             // Assert
             Assert.True(result.IsSuccess);
-            Assert.Null(mappedTemplate.TenantId);
-            Assert.Equal("Modern Template", result.Data!.Name);
+            Assert.Equal("Modern Template", result.Data!.NameAr);
             await _cardTemplateRepo.Received(1).AddAsync(mappedTemplate);
             await _unitOfWork.Received(1).SaveChangesAsync();
         }
@@ -308,12 +302,12 @@ namespace NFC.Platform.Tests.Services
         {
             // Arrange
             var templateId = Guid.NewGuid();
-            var template = new CardTemplate { Id = templateId, Name = "Old Name" };
+            var template = new CardTemplate { Id = templateId, NameAr = "Old Name", NameEn = "Old Name" };
             _cardTemplateRepo.GetByIdAsync(templateId).Returns(template);
 
-            var updateDto = new UpdateCardTemplateDto { Name = "New Name" };
+            var updateDto = new UpdateCardTemplateDto { NameAr = "New Name", NameEn = "New Name" };
             _mapper.Map(updateDto, template).Returns(template);
-            _mapper.Map<CardTemplateDto>(template).Returns(new CardTemplateDto { Id = templateId, Name = "New Name" });
+            _mapper.Map<CardTemplateDto>(template).Returns(new CardTemplateDto { Id = templateId, NameAr = "New Name", NameEn = "New Name" });
 
             // Act
             var result = await _sut.UpdateTemplateAsync(templateId, updateDto);
@@ -382,127 +376,15 @@ namespace NFC.Platform.Tests.Services
             await _unitOfWork.Received(1).SaveChangesAsync();
         }
 
-        //  UpdateCardPricingAsync 
-
-        [Theory]
-        [InlineData(null)]
-        [InlineData("")]
-        [InlineData("KW")]
-        [InlineData("KWD1")]
-        public async Task UpdateCardPricingAsync_ReturnsFailure_WhenCurrencyIsInvalid(string invalidCurrency)
-        {
-            // Arrange
-            var dto = new UpdateCardPricingDto
-            {
-                CardType = CardType.Plastic,
-                UnitPrice = 5.0m,
-                Currency = invalidCurrency
-            };
-
-            // Act
-            var result = await _sut.UpdateCardPricingAsync(dto);
-
-            // Assert
-            Assert.False(result.IsSuccess);
-            Assert.Equal(400, result.StatusCode);
-        }
-
-        [Fact]
-        public async Task UpdateCardPricingAsync_ClosesOutOldAndInsertsNewPricingRecord()
-        {
-            // Arrange
-            var existingPricing = new CardPricing
-            {
-                Id = Guid.NewGuid(),
-                CardType = CardType.Plastic,
-                UnitPrice = 4.5m,
-                Currency = "KWD",
-                IsActive = true,
-                EffectiveFrom = DateTime.UtcNow.AddDays(-10)
-            };
-
-            var pricingsList = new List<CardPricing> { existingPricing };
-            var mockQueryable = pricingsList.AsQueryable().BuildMock();
-            _cardPricingRepo.GetQueryable().Returns(mockQueryable);
-
-            var dto = new UpdateCardPricingDto
-            {
-                CardType = CardType.Plastic,
-                UnitPrice = 5.0m,
-                Currency = "kwd " // Will be normalized to KWD
-            };
-
-            // Act
-            var result = await _sut.UpdateCardPricingAsync(dto);
-
-            // Assert
-            Assert.True(result.IsSuccess);
-            Assert.False(existingPricing.IsActive);
-            Assert.NotNull(existingPricing.EffectiveTo);
-            await _cardPricingRepo.Received(1).AddAsync(Arg.Is<CardPricing>(p => 
-                p.CardType == CardType.Plastic && 
-                p.UnitPrice == 5.0m && 
-                p.Currency == "KWD" && 
-                p.IsActive == true && 
-                p.EffectiveTo == null));
-
-            await _unitOfWork.Received(1).SaveChangesAsync();
-            await _unitOfWork.Received(1).CommitTransactionAsync();
-        }
-
-        [Fact]
-        public async Task UpdateCardPricingAsync_ReturnsFail_WhenDtoIsNull()
-        {
-            // Act
-            var result = await _sut.UpdateCardPricingAsync(null!);
-
-            // Assert
-            Assert.False(result.IsSuccess);
-            Assert.Equal(400, result.StatusCode);
-        }
-
-        [Fact]
-        public async Task UpdateCardPricingAsync_ReturnsFail_WhenCurrencyIsInvalid()
-        {
-            // Arrange
-            var dto = new UpdateCardPricingDto { CardType = CardType.Plastic, UnitPrice = 5.0m, Currency = "US" }; // Not 3 chars
-
-            // Act
-            var result = await _sut.UpdateCardPricingAsync(dto);
-
-            // Assert
-            Assert.False(result.IsSuccess);
-            Assert.Equal(400, result.StatusCode);
-        }
-
-        [Fact]
-        public async Task UpdateCardPricingAsync_ReturnsSuccessNoOp_WhenPriceAndCurrencyMatch()
-        {
-            // Arrange
-            var existingPricing = new CardPricing { CardType = CardType.Plastic, UnitPrice = 5.0m, Currency = "KWD", IsActive = true };
-            _cardPricingRepo.GetQueryable().Returns(new List<CardPricing> { existingPricing }.AsQueryable().BuildMock());
-
-            var dto = new UpdateCardPricingDto { CardType = CardType.Plastic, UnitPrice = 5.0m, Currency = "KWD" };
-
-            // Act
-            var result = await _sut.UpdateCardPricingAsync(dto);
-
-            // Assert
-            Assert.True(result.IsSuccess);
-            Assert.True(existingPricing.IsActive);
-            await _cardPricingRepo.DidNotReceive().AddAsync(Arg.Any<CardPricing>());
-            await _unitOfWork.Received(1).CommitTransactionAsync();
-        }
-
         [Fact]
         public async Task CreateTemplateAsync_CreatesGlobalTemplate()
         {
             // Arrange
-            var dto = new CreateCardTemplateDto { Name = "Global Temp", Category = "General" };
-            var mappedTemplate = new CardTemplate { Name = "Global Temp", Category = "General" };
+            var dto = new CreateCardTemplateDto { NameAr = "Global Temp", NameEn = "Global Temp" };
+            var mappedTemplate = new CardTemplate { NameAr = "Global Temp", NameEn = "Global Temp" };
             _mapper.Map<CardTemplate>(dto).Returns(mappedTemplate);
 
-            var expectedDto = new CardTemplateDto { Name = "Global Temp" };
+            var expectedDto = new CardTemplateDto { NameAr = "Global Temp", NameEn = "Global Temp" };
             _mapper.Map<CardTemplateDto>(mappedTemplate).Returns(expectedDto);
 
             // Act
@@ -510,7 +392,6 @@ namespace NFC.Platform.Tests.Services
 
             // Assert
             Assert.True(result.IsSuccess);
-            Assert.Null(mappedTemplate.TenantId);
             await _cardTemplateRepo.Received(1).AddAsync(mappedTemplate);
             await _unitOfWork.Received(1).SaveChangesAsync();
         }

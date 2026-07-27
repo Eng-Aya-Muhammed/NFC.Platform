@@ -48,8 +48,9 @@ public class CreateCardOrderRequest
     /// </summary>
     public string? BackDesignUrl { get; set; }
 
-    //  Step 4: Card Material 
-    public CardType CardType { get; set; }
+    //  Step 4: Card Material & Package 
+    public Guid CardTypeId { get; set; }
+    public Guid CardPackageId { get; set; }
 
     //  Step 5: Quantity 
     public int Quantity { get; set; }

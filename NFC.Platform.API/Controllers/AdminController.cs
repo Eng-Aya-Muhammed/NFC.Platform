@@ -163,20 +163,6 @@ namespace NFC.Platform.API.Controllers
             return Ok(result);
         }
 
-        /// <summary>
-        /// Updates global pricing structure for a card material.
-        /// </summary>
-        [HttpPost("pricing")]
-        public async Task<IActionResult> UpdateCardPricing([FromBody] UpdateCardPricingDto dto)
-        {
-            var result = await _adminService.UpdateCardPricingAsync(dto);
-            if (!result.IsSuccess)
-            {
-                return StatusCode(result.StatusCode, result);
-            }
-            return Ok(result);
-        }
-
 
 
         //  Subdomain management 

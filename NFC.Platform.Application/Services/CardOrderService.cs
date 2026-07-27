@@ -5,7 +5,6 @@ public class CardOrderService(
     IMapper mapper,
     IMessageService messageService,
     ICurrentTenant currentTenant,
-    ICardPricingService cardPricingService,
     IValidator<CreateCardOrderRequest> validator,
     IValidator<UpdateCardOrderRequest> updateValidator,
     IBackgroundJobClient backgroundJobClient,
@@ -16,7 +15,6 @@ public class CardOrderService(
     private readonly IMapper _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
     private readonly IMessageService _messageService = messageService ?? throw new ArgumentNullException(nameof(messageService));
     private readonly ICurrentTenant _currentTenant = currentTenant ?? throw new ArgumentNullException(nameof(currentTenant));
-    private readonly ICardPricingService _cardPricingService = cardPricingService ?? throw new ArgumentNullException(nameof(cardPricingService));
     private readonly IValidator<CreateCardOrderRequest> _validator = validator ?? throw new ArgumentNullException(nameof(validator));
     private readonly IValidator<UpdateCardOrderRequest> _updateValidator = updateValidator ?? throw new ArgumentNullException(nameof(updateValidator));
     private readonly IBackgroundJobClient _backgroundJobClient = backgroundJobClient ?? throw new ArgumentNullException(nameof(backgroundJobClient));
@@ -108,14 +106,21 @@ public class CardOrderService(
             itemsToOrder = itemsResult.Data ?? [];
             request.Quantity = itemsToOrder.Count;
 
-            var pricingResult = await _cardPricingService.CalculateOrderPricingAsync(request.CardType, request.Quantity);
-            if (!pricingResult.IsSuccess)
+            var cardType = await _unitOfWork.Repository<CardType>().GetByIdAsync(request.CardTypeId);
+            if (cardType == null || !cardType.IsActive)
             {
                 await _unitOfWork.RollbackTransactionAsync();
-                return ServiceResult<CardOrderDto>.Fail(pricingResult.Message, pricingResult.StatusCode);
+                return ServiceResult<CardOrderDto>.Fail(_messageService.Get("InvalidOrInactiveCardType"), 400);
             }
 
-            var order = BuildNewOrder(request, userId.Value, pricingResult.Data!);
+            var cardPackage = await _unitOfWork.Repository<CardPackage>().GetByIdAsync(request.CardPackageId);
+            if (cardPackage == null || !cardPackage.IsActive)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                return ServiceResult<CardOrderDto>.Fail(_messageService.Get("InvalidOrInactiveCardPackage"), 400);
+            }
+
+            var order = BuildNewOrder(request, userId.Value, cardPackage);
             if (itemsToOrder.Count > 0)
             {
                 order.Items = itemsToOrder;
@@ -155,11 +160,11 @@ public class CardOrderService(
         if (!itemsResult.IsSuccess)
             return ServiceResult<CardOrderDto>.Fail(itemsResult.Message ?? string.Join(", ", itemsResult.Errors), itemsResult.StatusCode);
 
-        var pricingResult = await _cardPricingService.CalculateOrderPricingAsync(parentOrder.CardType, request.Quantity);
-        if (!pricingResult.IsSuccess)
-            return ServiceResult<CardOrderDto>.Fail(pricingResult.Message, pricingResult.StatusCode);
+        var cardPackage = await _unitOfWork.Repository<CardPackage>().GetByIdAsync(parentOrder.CardPackageId);
+        if (cardPackage == null || !cardPackage.IsActive)
+            return ServiceResult<CardOrderDto>.Fail(_messageService.Get("InvalidOrInactiveCardPackage"), 400);
 
-        var reorder = BuildReorder(parentOrder, request, userId.Value, pricingResult.Data!, itemsResult.Data!);
+        var reorder = BuildReorder(parentOrder, request, userId.Value, cardPackage, itemsResult.Data!);
         await _unitOfWork.Repository<CardOrder>().AddAsync(reorder);
         await _unitOfWork.SaveChangesAsync();
 
@@ -194,15 +199,23 @@ public class CardOrderService(
         {
             bool recalculatePricing = false;
             
-            if (request.CardType.HasValue && request.CardType.Value != order.CardType)
+            if (request.CardTypeId.HasValue && request.CardTypeId.Value != order.CardTypeId)
             {
-                order.CardType = request.CardType.Value;
-                recalculatePricing = true;
+                order.CardTypeId = request.CardTypeId.Value;
+            }
+            if (request.CardPackageId.HasValue && request.CardPackageId.Value != order.CardPackageId)
+            {
+                order.CardPackageId = request.CardPackageId.Value;
+                var pkg = await _unitOfWork.Repository<CardPackage>().GetByIdAsync(order.CardPackageId);
+                if (pkg != null)
+                {
+                    order.UnitPrice = pkg.Price;
+                    order.TotalPrice = pkg.Price;
+                }
             }
             if (request.Quantity.HasValue && request.Quantity.Value != order.Quantity)
             {
                 order.Quantity = request.Quantity.Value;
-                recalculatePricing = true;
             }
 
             if (request.AssignmentScope == AssignmentScope.ExcelUpload && !string.IsNullOrWhiteSpace(request.ExcelDataUrl))
@@ -280,20 +293,6 @@ public class CardOrderService(
 
             _mapper.Map(request, order);
 
-            if (recalculatePricing)
-            {
-                var pricingResult = await _cardPricingService.CalculateOrderPricingAsync(order.CardType, order.Quantity);
-                if (!pricingResult.IsSuccess)
-                {
-                    await _unitOfWork.RollbackTransactionAsync();
-                    return ServiceResult<CardOrderDto>.Fail(pricingResult.Message, pricingResult.StatusCode);
-                }
-
-                order.UnitPrice = pricingResult.Data!.UnitPrice;
-                order.TotalPrice = pricingResult.Data.TotalPrice;
-                order.Currency = pricingResult.Data.Currency;
-            }
-
             await _unitOfWork.SaveChangesAsync();
             await _unitOfWork.CommitTransactionAsync();
 
@@ -361,37 +360,37 @@ public class CardOrderService(
 
     // Private helpers
 
-
-
-    private static CardOrder BuildNewOrder(CreateCardOrderRequest request, Guid userId, OrderPricingResponseDto pricing)
+    private static CardOrder BuildNewOrder(CreateCardOrderRequest request, Guid userId, CardPackage package)
     {
         return new CardOrder
         {
             UserId         = userId,
             CardDesignType = request.CardDesignType,
-            CardType       = request.CardType,
+            CardTypeId     = request.CardTypeId,
+            CardPackageId  = request.CardPackageId,
             CardName       = request.CardName ?? string.Empty,
             ExcelDataUrl   = request.ExcelDataUrl,
             FrontDesignUrl = request.FrontDesignUrl,
             BackDesignUrl  = request.BackDesignUrl,
             Quantity       = request.Quantity,
             Notes          = request.Notes,
-            UnitPrice      = pricing.UnitPrice,
-            TotalPrice     = pricing.TotalPrice,
-            Currency       = pricing.Currency,
+            UnitPrice      = package.Price,
+            TotalPrice     = package.Price,
+            Currency       = "KWD",
             Status         = OrderStatus.PendingReview,
         };
     }
 
     private static CardOrder BuildReorder(CardOrder parent, ReorderRequest request, Guid userId,
-        OrderPricingResponseDto pricing, List<CardOrderItem> items)
+        CardPackage package, List<CardOrderItem> items)
     {
         return new CardOrder
         {
             UserId          = userId,
             ParentOrderId   = parent.Id,
             CardDesignType  = parent.CardDesignType,
-            CardType        = parent.CardType,
+            CardTypeId      = parent.CardTypeId,
+            CardPackageId   = parent.CardPackageId,
             CardName        = parent.CardName,
             FrontDesignUrl  = parent.FrontDesignUrl,
             BackDesignUrl   = parent.BackDesignUrl,
@@ -399,9 +398,9 @@ public class CardOrderService(
             Notes           = parent.Notes,
             DeliveryMethod  = request.DeliveryMethod,
             ShippingAddress = request.ShippingAddress,
-            UnitPrice       = pricing.UnitPrice,
-            TotalPrice      = pricing.TotalPrice,
-            Currency        = pricing.Currency,
+            UnitPrice       = package.Price,
+            TotalPrice      = package.Price,
+            Currency        = "KWD",
             Status          = OrderStatus.PendingReview,
             Items           = items,
         };

@@ -215,10 +215,6 @@ namespace NFC.Platform.Tests.Services
                 validator.ValidateAsync(Arg.Any<CreateCardOrderRequest>(), default)
                     .Returns(Task.FromResult(new ValidationResult()));
 
-                var cardPricingService = Substitute.For<ICardPricingService>();
-                cardPricingService.CalculateOrderPricingAsync(Arg.Any<CardType>(), Arg.Any<int>())
-                    .Returns(NFC.Platform.BuildingBlocks.Results.ServiceResult<OrderPricingResponseDto>.Success(new OrderPricingResponseDto { UnitPrice = 10, TotalPrice = 10 }));
-
                 var backgroundJobClient = Substitute.For<Hangfire.IBackgroundJobClient>();
 
                 var httpClientFactory = Substitute.For<IHttpClientFactory>();
@@ -241,7 +237,6 @@ namespace NFC.Platform.Tests.Services
                     mapper,
                     messageService,
                     currentTenant,
-                    cardPricingService,
                     validator,
                     Substitute.For<IValidator<UpdateCardOrderRequest>>(),
                     backgroundJobClient,
@@ -256,7 +251,8 @@ namespace NFC.Platform.Tests.Services
                 var request = new CreateCardOrderRequest
                 {
                     Quantity = 1,
-                    CardType = CardType.Plastic,
+                    CardTypeId = Guid.NewGuid(),
+                    CardPackageId = Guid.NewGuid(),
                     CardDesignType = CardDesignType.NeedCustomDesign,
                     ExcelDataUrl = cloudinaryExcelUrl,
                     AssignmentScope = AssignmentScope.ExcelUpload
@@ -305,17 +301,13 @@ namespace NFC.Platform.Tests.Services
             unitOfWork.Repository<User>().Returns(userRepo);
 
             var cardOrderRepo = Substitute.For<IGenericRepository<CardOrder>>();
-            var createdOrder = new CardOrder { Id = Guid.NewGuid(), Quantity = 1, CardType = CardType.Plastic };
+            var createdOrder = new CardOrder { Id = Guid.NewGuid(), Quantity = 1, CardTypeId = Guid.NewGuid(), CardPackageId = Guid.NewGuid() };
             cardOrderRepo.GetQueryable().Returns(new List<CardOrder> { createdOrder }.AsQueryable().BuildMock());
             unitOfWork.Repository<CardOrder>().Returns(cardOrderRepo);
 
             var validator = Substitute.For<IValidator<CreateCardOrderRequest>>();
             validator.ValidateAsync(Arg.Any<CreateCardOrderRequest>(), default)
                 .Returns(Task.FromResult(new ValidationResult()));
-
-            var cardPricingService = Substitute.For<ICardPricingService>();
-            cardPricingService.CalculateOrderPricingAsync(Arg.Any<CardType>(), Arg.Any<int>())
-                .Returns(NFC.Platform.BuildingBlocks.Results.ServiceResult<OrderPricingResponseDto>.Success(new OrderPricingResponseDto { UnitPrice = 10, TotalPrice = 10 }));
 
             var backgroundJobClient = Substitute.For<Hangfire.IBackgroundJobClient>();
             var httpClientFactory = Substitute.For<IHttpClientFactory>();
@@ -330,7 +322,6 @@ namespace NFC.Platform.Tests.Services
                 mapper,
                 messageService,
                 currentTenant,
-                cardPricingService,
                 validator,
                 Substitute.For<IValidator<UpdateCardOrderRequest>>(),
                 backgroundJobClient,
@@ -341,7 +332,8 @@ namespace NFC.Platform.Tests.Services
             var request = new CreateCardOrderRequest
             {
                 Quantity = 1,
-                CardType = CardType.Plastic,
+                CardTypeId = Guid.NewGuid(),
+                CardPackageId = Guid.NewGuid(),
                 CardDesignType = CardDesignType.NeedCustomDesign,
                 ExcelDataUrl = "https://res.cloudinary.com/fake-url-with-invalid-data.xlsx"
             };

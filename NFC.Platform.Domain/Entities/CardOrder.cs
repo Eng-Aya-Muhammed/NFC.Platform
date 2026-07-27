@@ -14,7 +14,11 @@ namespace NFC.Platform.Domain.Entities
 
         public string CardName { get; set; } = string.Empty;
 
-        public CardType CardType { get; set; }
+        public Guid CardTypeId { get; set; }
+        public CardType? CardType { get; set; }
+
+        public Guid CardPackageId { get; set; }
+        public CardPackage? CardPackage { get; set; }
 
         public CardDesignType CardDesignType { get; set; }
 
