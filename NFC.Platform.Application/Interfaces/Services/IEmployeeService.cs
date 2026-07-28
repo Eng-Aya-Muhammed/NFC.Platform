@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using NFC.Platform.Application.DTOs;
+using NFC.Platform.BuildingBlocks.Common.Models;
 using NFC.Platform.BuildingBlocks.Results;
 
 namespace NFC.Platform.Application.Interfaces.Services
@@ -12,6 +13,8 @@ namespace NFC.Platform.Application.Interfaces.Services
         Task<ServiceResult<EmployeeDetailsDto>> CreateEmployeeAsync(CreateEmployeeRequest request);
         Task<ServiceResult<EmployeeDetailsDto>> UpdateEmployeeJobDetailsAsync(Guid id, UpdateEmployeeRequest request);
         Task<ServiceResult> SoftDeleteEmployeeAsync(Guid id);
+        
+        Task<ServiceResult<byte[]>> ExportEmployeesAsync(ExportFormat format, string? search);
         
         /// <summary>
         /// Parses Excel from URL, validates for duplicates, and upserts employees.

@@ -1,3 +1,5 @@
+using NFC.Platform.BuildingBlocks.Common.Models;
+
 namespace NFC.Platform.API.Controllers;
 
 [ApiController]
@@ -21,6 +23,28 @@ public class CardOrderController(
     {
         var result = await _cardOrderService.GetPagedOrdersAsync(request, status);
         return Ok(result);
+    }
+
+    [HttpGet("export/excel")]
+    [HasPermission(AppPermissions.CardOrders.View)]
+    public async Task<IActionResult> ExportExcel([FromQuery] string? status = null)
+    {
+        var result = await _cardOrderService.ExportOrdersAsync(ExportFormat.Excel, status);
+        if (!result.IsSuccess) return StatusCode(result.StatusCode, result);
+
+        var fileName = $"CardOrders_{DateTime.Now:yyyy-MM-dd_HH-mm}.xlsx";
+        return File(result.Data!, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+    }
+
+    [HttpGet("export/pdf")]
+    [HasPermission(AppPermissions.CardOrders.View)]
+    public async Task<IActionResult> ExportPdf([FromQuery] string? status = null)
+    {
+        var result = await _cardOrderService.ExportOrdersAsync(ExportFormat.Pdf, status);
+        if (!result.IsSuccess) return StatusCode(result.StatusCode, result);
+
+        var fileName = $"CardOrders_{DateTime.Now:yyyy-MM-dd_HH-mm}.pdf";
+        return File(result.Data!, "application/pdf", fileName);
     }
 
     /// <summary>

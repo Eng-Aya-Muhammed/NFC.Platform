@@ -4,6 +4,8 @@ using NFC.Platform.Application.DTOs;
 using NFC.Platform.Application.DTOs.CardOrder;
 using NFC.Platform.BuildingBlocks.Common.Helpers;
 using NFC.Platform.BuildingBlocks.Common.Exceptions;
+using NFC.Platform.BuildingBlocks.Common.Interfaces;
+using NFC.Platform.BuildingBlocks.Common.Models;
 using NFC.Platform.BuildingBlocks.Localization;
 using NFC.Platform.BuildingBlocks.Results;
 
@@ -50,4 +52,6 @@ public interface ICardOrderService
     /// Enforces 60-second cooldown and maximum 5 resends.
     /// </summary>
     Task<ServiceResult> ResendOrderOtpAsync(Guid orderId);
+
+    Task<ServiceResult<byte[]>> ExportOrdersAsync(ExportFormat format, string? statusFilter);
 }

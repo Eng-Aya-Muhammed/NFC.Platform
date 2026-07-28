@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -9,20 +10,29 @@ using NFC.Platform.Application.DTOs.DiscountCode;
 using NFC.Platform.Application.Interfaces.Repositories;
 using NFC.Platform.Application.Interfaces.Services;
 using NFC.Platform.BuildingBlocks.Common.Helpers;
+using NFC.Platform.BuildingBlocks.Common.Interfaces;
+using NFC.Platform.BuildingBlocks.Common.Models;
 using NFC.Platform.BuildingBlocks.Localization;
 using NFC.Platform.BuildingBlocks.Results;
 using NFC.Platform.Domain.Entities;
+using NFC.Platform.Domain.Enums;
 
 namespace NFC.Platform.Application.Services;
 
 public class DiscountCodeService(
     IUnitOfWork unitOfWork,
     IMapper mapper,
-    IMessageService messageService) : IDiscountCodeService
+    IMessageService messageService,
+    ExportBuilder? exportBuilder = null,
+    IExcelExportService? excelExportService = null,
+    IPdfExportService? pdfExportService = null) : IDiscountCodeService
 {
     private readonly IUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
     private readonly IMapper _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
     private readonly IMessageService _messageService = messageService ?? throw new ArgumentNullException(nameof(messageService));
+    private readonly ExportBuilder? _exportBuilder = exportBuilder;
+    private readonly IExcelExportService? _excelExportService = excelExportService;
+    private readonly IPdfExportService? _pdfExportService = pdfExportService;
 
     public async Task<ServiceResult<PagedResult<DiscountCodeDto>>> GetPagedAdminAsync(
         PaginationRequest request, CancellationToken cancellationToken = default)
@@ -34,6 +44,32 @@ public class DiscountCodeService(
 
         var pagedResult = await query.ToPagedResultAsync(request, c => _mapper.Map<DiscountCodeDto>(c), cancellationToken);
         return ServiceResult<PagedResult<DiscountCodeDto>>.Success(pagedResult);
+    }
+
+    public async Task<ServiceResult<byte[]>> ExportDiscountCodesAsync(ExportFormat format, CancellationToken cancellationToken = default)
+    {
+        if (_exportBuilder == null || _excelExportService == null || _pdfExportService == null)
+        {
+            return ServiceResult<byte[]>.Fail(_messageService.Get("RecordNotFound"), 500);
+        }
+
+        var codes = await _unitOfWork.Repository<DiscountCode>()
+            .GetQueryable()
+            .AsNoTracking()
+            .OrderByDescending(c => c.CreatedAt)
+            .ToListAsync(cancellationToken);
+
+        var exportDtos = _mapper.Map<List<DiscountCodeExportDto>>(codes);
+        var dataContainer = _exportBuilder.BuildContainer(exportDtos, "Export_Title_DiscountCodes");
+
+        byte[] fileBytes = format switch
+        {
+            ExportFormat.Excel => _excelExportService.GenerateExcel(dataContainer),
+            ExportFormat.Pdf => _pdfExportService.GeneratePdf(dataContainer),
+            _ => throw new ArgumentOutOfRangeException(nameof(format), format, null)
+        };
+
+        return ServiceResult<byte[]>.Success(fileBytes);
     }
 
     public async Task<ServiceResult<DiscountCodeDto>> GetByIdAsync(Guid id)

@@ -3,6 +3,10 @@ using NFC.Platform.Application.DTOs.Employee;
 using NFC.Platform.Application.Interfaces.Services;
 using NFC.Platform.Domain.Constants;
 
+using NFC.Platform.BuildingBlocks.Common.Helpers;
+using NFC.Platform.BuildingBlocks.Common.Interfaces;
+using NFC.Platform.BuildingBlocks.Common.Models;
+
 namespace NFC.Platform.Application.Services;
 
     public class EmployeeService(
@@ -11,7 +15,10 @@ namespace NFC.Platform.Application.Services;
         IMessageService messageService,
         ICurrentTenant currentTenant,
         IExcelParser excelParser,
-        IHttpClientFactory httpClientFactory) : IEmployeeService
+        IHttpClientFactory httpClientFactory,
+        ExportBuilder? exportBuilder = null,
+        IExcelExportService? excelExportService = null,
+        IPdfExportService? pdfExportService = null) : IEmployeeService
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
         private readonly IMapper _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
@@ -19,6 +26,9 @@ namespace NFC.Platform.Application.Services;
         private readonly ICurrentTenant _currentTenant = currentTenant ?? throw new ArgumentNullException(nameof(currentTenant));
         private readonly IExcelParser _excelParser = excelParser ?? throw new ArgumentNullException(nameof(excelParser));
         private readonly IHttpClientFactory _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
+        private readonly ExportBuilder? _exportBuilder = exportBuilder;
+        private readonly IExcelExportService? _excelExportService = excelExportService;
+        private readonly IPdfExportService? _pdfExportService = pdfExportService;
 
         public async Task<ServiceResult<PagedResult<EmployeeDto>>> GetPagedEmployeesAsync(PaginationRequest request, string? search)
         {
@@ -41,6 +51,44 @@ namespace NFC.Platform.Application.Services;
                 .ToPagedResultAsync(request, e => _mapper.Map<EmployeeDto>(e));
 
             return ServiceResult<PagedResult<EmployeeDto>>.Success(pagedResult);
+        }
+
+        public async Task<ServiceResult<byte[]>> ExportEmployeesAsync(ExportFormat format, string? search)
+        {
+            if (_exportBuilder == null || _excelExportService == null || _pdfExportService == null)
+            {
+                return ServiceResult<byte[]>.Fail(_messageService.Get("RecordNotFound"), 500);
+            }
+
+            var query = _unitOfWork.Repository<Employee>()
+                .GetQueryable()
+                .AsNoTracking()
+                .Include(e => e.UserProfile)
+                .AsQueryable();
+
+            if (!string.IsNullOrEmpty(search))
+            {
+                query = query.Where(e => e.FullName.Contains(search) || 
+                                         e.Email.Contains(search) || 
+                                         e.JobTitle.Contains(search) || 
+                                         e.Department.Contains(search));
+            }
+
+            var employees = await query
+                .OrderByDescending(e => e.CreatedAt)
+                .ToListAsync();
+
+            var exportDtos = _mapper.Map<List<EmployeeExportDto>>(employees);
+            var dataContainer = _exportBuilder.BuildContainer(exportDtos, "Export_Title_Employees");
+
+            byte[] fileBytes = format switch
+            {
+                ExportFormat.Excel => _excelExportService.GenerateExcel(dataContainer),
+                ExportFormat.Pdf => _pdfExportService.GeneratePdf(dataContainer),
+                _ => throw new ArgumentOutOfRangeException(nameof(format), format, null)
+            };
+
+            return ServiceResult<byte[]>.Success(fileBytes);
         }
 
         public async Task<ServiceResult<EmployeeDetailsDto>> GetEmployeeDetailsAsync(Guid id)

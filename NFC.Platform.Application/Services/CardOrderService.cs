@@ -1,5 +1,9 @@
 
 
+using NFC.Platform.BuildingBlocks.Common.Helpers;
+using NFC.Platform.BuildingBlocks.Common.Interfaces;
+using NFC.Platform.BuildingBlocks.Common.Models;
+
 namespace NFC.Platform.Application.Services;
 
 public class CardOrderService(
@@ -11,7 +15,10 @@ public class CardOrderService(
     IValidator<UpdateCardOrderRequest> updateValidator,
     IBackgroundJobClient backgroundJobClient,
     IEmployeeService employeeService,
-    IOptions<OtpSettings> otpSettings) : ICardOrderService
+    IOptions<OtpSettings> otpSettings,
+    ExportBuilder? exportBuilder = null,
+    IExcelExportService? excelExportService = null,
+    IPdfExportService? pdfExportService = null) : ICardOrderService
 {
     private readonly IUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
     private readonly IMapper _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
@@ -22,6 +29,9 @@ public class CardOrderService(
     private readonly IBackgroundJobClient _backgroundJobClient = backgroundJobClient ?? throw new ArgumentNullException(nameof(backgroundJobClient));
     private readonly IEmployeeService _employeeService = employeeService ?? throw new ArgumentNullException(nameof(employeeService));
     private readonly OtpSettings _otpSettings = otpSettings?.Value ?? throw new ArgumentNullException(nameof(otpSettings));
+    private readonly ExportBuilder? _exportBuilder = exportBuilder;
+    private readonly IExcelExportService? _excelExportService = excelExportService;
+    private readonly IPdfExportService? _pdfExportService = pdfExportService;
 
     // Queries
 
@@ -44,6 +54,42 @@ public class CardOrderService(
             .ToPagedResultAsync(request, o => _mapper.Map<CardOrderDto>(o));
 
         return ServiceResult<PagedResult<CardOrderDto>>.Success(pagedResult);
+    }
+
+    public async Task<ServiceResult<byte[]>> ExportOrdersAsync(ExportFormat format, string? statusFilter)
+    {
+        if (_exportBuilder == null || _excelExportService == null || _pdfExportService == null)
+        {
+            return ServiceResult<byte[]>.Fail(_messageService.Get("RecordNotFound"), 500);
+        }
+
+        var query = _unitOfWork.Repository<CardOrder>()
+            .GetQueryable()
+            .AsNoTracking()
+            .Include(o => o.Items)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(statusFilter)
+            && Enum.TryParse<OrderStatus>(statusFilter, ignoreCase: true, out var parsedStatus))
+        {
+            query = query.Where(o => o.Status == parsedStatus);
+        }
+
+        var orders = await query
+            .OrderByDescending(o => o.CreatedAt)
+            .ToListAsync();
+
+        var exportDtos = _mapper.Map<List<CardOrderExportDto>>(orders);
+        var dataContainer = _exportBuilder.BuildContainer(exportDtos, "Export_Title_CardOrders");
+
+        byte[] fileBytes = format switch
+        {
+            ExportFormat.Excel => _excelExportService.GenerateExcel(dataContainer),
+            ExportFormat.Pdf => _pdfExportService.GeneratePdf(dataContainer),
+            _ => throw new ArgumentOutOfRangeException(nameof(format), format, null)
+        };
+
+        return ServiceResult<byte[]>.Success(fileBytes);
     }
 
     public async Task<ServiceResult<CardOrderDto>> GetOrderByIdAsync(Guid id)

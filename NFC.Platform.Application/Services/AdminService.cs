@@ -1,5 +1,9 @@
 
 
+using NFC.Platform.BuildingBlocks.Common.Helpers;
+using NFC.Platform.BuildingBlocks.Common.Interfaces;
+using NFC.Platform.BuildingBlocks.Common.Models;
+
 namespace NFC.Platform.Application.Services;
 
 public class AdminService : IAdminService
@@ -9,19 +13,28 @@ public class AdminService : IAdminService
     private readonly IMessageService _messageService;
     private readonly IStorageService _storageService;
     private readonly IBackgroundJobClient _backgroundJobClient;
+    private readonly ExportBuilder? _exportBuilder;
+    private readonly IExcelExportService? _excelExportService;
+    private readonly IPdfExportService? _pdfExportService;
 
     public AdminService(
         IUnitOfWork unitOfWork,
         IMapper mapper,
         IMessageService messageService,
         IStorageService storageService,
-        IBackgroundJobClient backgroundJobClient)
+        IBackgroundJobClient backgroundJobClient,
+        ExportBuilder? exportBuilder = null,
+        IExcelExportService? excelExportService = null,
+        IPdfExportService? pdfExportService = null)
     {
         _unitOfWork           = unitOfWork           ?? throw new ArgumentNullException(nameof(unitOfWork));
         _mapper               = mapper               ?? throw new ArgumentNullException(nameof(mapper));
         _messageService       = messageService       ?? throw new ArgumentNullException(nameof(messageService));
         _storageService       = storageService       ?? throw new ArgumentNullException(nameof(storageService));
         _backgroundJobClient  = backgroundJobClient  ?? throw new ArgumentNullException(nameof(backgroundJobClient));
+        _exportBuilder        = exportBuilder;
+        _excelExportService   = excelExportService;
+        _pdfExportService     = pdfExportService;
     }
 
     public async Task<ServiceResult<PagedResult<AdminOrderSummaryDto>>> GetOrdersPagedAsync(PaginationRequest request, OrderStatus? statusFilter, Guid? companyId = null, CancellationToken cancellationToken = default)
@@ -46,6 +59,91 @@ public class AdminService : IAdminService
 
         var pagedResult = await query.ToPagedResultAsync(request, o => _mapper.Map<AdminOrderSummaryDto>(o), cancellationToken);
         return ServiceResult<PagedResult<AdminOrderSummaryDto>>.Success(pagedResult);
+    }
+
+    public async Task<ServiceResult<byte[]>> ExportAdminOrdersAsync(ExportFormat format, OrderStatus? statusFilter, Guid? companyId, CancellationToken cancellationToken = default)
+    {
+        if (_exportBuilder == null || _excelExportService == null || _pdfExportService == null)
+        {
+            return ServiceResult<byte[]>.Fail(_messageService.Get("RecordNotFound"), 500);
+        }
+
+        var query = _unitOfWork.Repository<CardOrder>()
+            .GetQueryable()
+            .AsNoTracking()
+            .Include(o => o.Tenant)
+                .ThenInclude(t => t.Company)
+            .OrderByDescending(o => o.CreatedAt)
+            .AsQueryable();
+
+        if (statusFilter.HasValue)
+        {
+            query = query.Where(o => o.Status == statusFilter.Value);
+        }
+
+        if (companyId.HasValue)
+        {
+            query = query.Where(o => o.Tenant.Company != null && o.Tenant.Company.Id == companyId.Value);
+        }
+
+        var orders = await query.ToListAsync(cancellationToken);
+        var exportDtos = orders.Select(o => new AdminOrderExportDto
+        {
+            Id = o.Id,
+            CardName = o.CardName,
+            CompanyName = o.Tenant?.Company?.Name ?? string.Empty,
+            Quantity = o.Quantity,
+            TotalAmount = o.TotalPrice,
+            Status = o.Status,
+            DeliveryMethod = o.DeliveryMethod,
+            CreatedAt = o.CreatedAt
+        }).ToList();
+
+        var dataContainer = _exportBuilder.BuildContainer(exportDtos, "Export_Title_AdminOrders");
+
+        byte[] fileBytes = format switch
+        {
+            ExportFormat.Excel => _excelExportService.GenerateExcel(dataContainer),
+            ExportFormat.Pdf => _pdfExportService.GeneratePdf(dataContainer),
+            _ => throw new ArgumentOutOfRangeException(nameof(format), format, null)
+        };
+
+        return ServiceResult<byte[]>.Success(fileBytes);
+    }
+
+    public async Task<ServiceResult<byte[]>> ExportTenantsAsync(ExportFormat format, CancellationToken cancellationToken = default)
+    {
+        if (_exportBuilder == null || _excelExportService == null || _pdfExportService == null)
+        {
+            return ServiceResult<byte[]>.Fail(_messageService.Get("RecordNotFound"), 500);
+        }
+
+        var query = _unitOfWork.Repository<Tenant>()
+            .GetQueryable()
+            .AsNoTracking()
+            .Include(t => t.Company)
+            .OrderByDescending(t => t.CreatedAt)
+            .AsQueryable();
+
+        var tenants = await query.ToListAsync(cancellationToken);
+        var exportDtos = tenants.Select(t => new TenantSummaryDto
+        {
+            Id = t.Id,
+            Name = t.Company?.Name ?? t.Name,
+            IsActive = t.IsActive,
+            AccountType = t.Company != null ? "Company" : "Individual"
+        }).ToList();
+
+        var dataContainer = _exportBuilder.BuildContainer(exportDtos, "Export_Title_Tenants");
+
+        byte[] fileBytes = format switch
+        {
+            ExportFormat.Excel => _excelExportService.GenerateExcel(dataContainer),
+            ExportFormat.Pdf => _pdfExportService.GeneratePdf(dataContainer),
+            _ => throw new ArgumentOutOfRangeException(nameof(format), format, null)
+        };
+
+        return ServiceResult<byte[]>.Success(fileBytes);
     }
 
     public async Task<ServiceResult<AdminOrderDetailDto>> GetOrderByIdAsync(Guid id)

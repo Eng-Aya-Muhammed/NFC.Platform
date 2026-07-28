@@ -1,7 +1,9 @@
+using NFC.Platform.Application.DTOs.Admin;
+using NFC.Platform.Application.DTOs.CardOrder;
+using NFC.Platform.Application.DTOs.Employee;
+
 namespace NFC.Platform.Application.Mapping
 {
-    using NFC.Platform.Application.DTOs.Employee;
-
     public class CardOrderMappingProfile : Profile
     {
         public CardOrderMappingProfile()
@@ -34,6 +36,15 @@ namespace NFC.Platform.Application.Mapping
 
             CreateMap<CardOrder, CardOrderDto>()
                 .ForMember(dest => dest.Items, opt => opt.MapFrom(src => src.Items));
+
+            CreateMap<CardOrder, CardOrderExportDto>()
+                .ForMember(dest => dest.CardName, opt => opt.MapFrom(src => src.CardName ?? string.Empty))
+                .ForMember(dest => dest.TotalAmount, opt => opt.MapFrom(src => src.TotalPrice));
+
+            CreateMap<CardOrder, AdminOrderExportDto>()
+                .ForMember(dest => dest.CardName, opt => opt.MapFrom(src => src.CardName ?? string.Empty))
+                .ForMember(dest => dest.CompanyName, opt => opt.MapFrom(src => src.Tenant != null ? src.Tenant.Name : string.Empty))
+                .ForMember(dest => dest.TotalAmount, opt => opt.MapFrom(src => src.TotalPrice));
 
             CreateMap<CardOrderItem, CardOrderItemDto>();
 

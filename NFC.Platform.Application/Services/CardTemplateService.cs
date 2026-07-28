@@ -4,22 +4,35 @@ using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
+using NFC.Platform.Application.DTOs;
 using NFC.Platform.Application.DTOs.CardTemplate;
 using NFC.Platform.Application.Extensions;
 using NFC.Platform.Application.Interfaces.Repositories;
 using NFC.Platform.Application.Interfaces.Services;
-
+using NFC.Platform.BuildingBlocks.Common.Helpers;
+using NFC.Platform.BuildingBlocks.Common.Interfaces;
+using NFC.Platform.BuildingBlocks.Common.Models;
+using NFC.Platform.BuildingBlocks.Localization;
+using NFC.Platform.BuildingBlocks.Results;
+using NFC.Platform.Domain.Entities;
+using NFC.Platform.Domain.Enums;
 
 namespace NFC.Platform.Application.Services;
 
 public class CardTemplateService(
     IUnitOfWork unitOfWork,
     IMapper mapper,
-    IMessageService messageService) : ICardTemplateService
+    IMessageService messageService,
+    ExportBuilder? exportBuilder = null,
+    IExcelExportService? excelExportService = null,
+    IPdfExportService? pdfExportService = null) : ICardTemplateService
 {
     private readonly IUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
     private readonly IMapper _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
     private readonly IMessageService _messageService = messageService ?? throw new ArgumentNullException(nameof(messageService));
+    private readonly ExportBuilder? _exportBuilder = exportBuilder;
+    private readonly IExcelExportService? _excelExportService = excelExportService;
+    private readonly IPdfExportService? _pdfExportService = pdfExportService;
 
     public async Task<ServiceResult<IReadOnlyList<CardTemplateDto>>> GetActiveTemplatesAsync()
     {
@@ -43,6 +56,32 @@ public class CardTemplateService(
 
         var pagedResult = await query.ToPagedResultAsync(request, t => _mapper.Map<CardTemplateAdminDto>(t));
         return ServiceResult<PagedResult<CardTemplateAdminDto>>.Success(pagedResult);
+    }
+
+    public async Task<ServiceResult<byte[]>> ExportCardTemplatesAsync(ExportFormat format)
+    {
+        if (_exportBuilder == null || _excelExportService == null || _pdfExportService == null)
+        {
+            return ServiceResult<byte[]>.Fail(_messageService.Get("RecordNotFound"), 500);
+        }
+
+        var templates = await _unitOfWork.Repository<CardTemplate>()
+            .GetQueryable()
+            .AsNoTracking()
+            .OrderBy(t => t.DisplayOrder)
+            .ToListAsync();
+
+        var exportDtos = _mapper.Map<List<CardTemplateExportDto>>(templates);
+        var dataContainer = _exportBuilder.BuildContainer(exportDtos, "Export_Title_CardTemplates");
+
+        byte[] fileBytes = format switch
+        {
+            ExportFormat.Excel => _excelExportService.GenerateExcel(dataContainer),
+            ExportFormat.Pdf => _pdfExportService.GeneratePdf(dataContainer),
+            _ => throw new ArgumentOutOfRangeException(nameof(format), format, null)
+        };
+
+        return ServiceResult<byte[]>.Success(fileBytes);
     }
 
     public async Task<ServiceResult<CardTemplateAdminDto>> GetByIdAsync(Guid id)

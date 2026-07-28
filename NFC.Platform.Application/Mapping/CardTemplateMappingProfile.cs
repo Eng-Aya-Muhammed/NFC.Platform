@@ -17,6 +17,7 @@ public class CardTemplateMappingProfile : Profile
                     : (string.IsNullOrWhiteSpace(src.NameEn) ? src.NameAr : src.NameEn)));
 
         CreateMap<CardTemplate, CardTemplateAdminDto>();
+        CreateMap<CardTemplate, CardTemplateExportDto>();
 
         CreateMap<CreateCardTemplateRequest, CardTemplate>();
 

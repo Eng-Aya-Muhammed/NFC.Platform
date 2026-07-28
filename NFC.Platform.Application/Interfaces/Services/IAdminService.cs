@@ -7,6 +7,7 @@ using NFC.Platform.Application.DTOs.Admin;
 using NFC.Platform.Application.DTOs.CardTemplate;
 using NFC.Platform.Application.DTOs.Subscription;
 using NFC.Platform.Application.DTOs.Template;
+using NFC.Platform.BuildingBlocks.Common.Models;
 using NFC.Platform.BuildingBlocks.Results;
 using NFC.Platform.Domain.Enums;
 
@@ -38,4 +39,7 @@ public interface IAdminService
     Task<ServiceResult<IReadOnlyList<CardTemplateSummaryDto>>> GetPlanTemplatesAsync(Guid planId);
     Task<ServiceResult> AssignTemplateAsync(Guid planId, Guid templateId);
     Task<ServiceResult> UnassignTemplateAsync(Guid planId, Guid templateId);
+
+    Task<ServiceResult<byte[]>> ExportAdminOrdersAsync(ExportFormat format, OrderStatus? statusFilter, Guid? companyId, CancellationToken cancellationToken = default);
+    Task<ServiceResult<byte[]>> ExportTenantsAsync(ExportFormat format, CancellationToken cancellationToken = default);
 }

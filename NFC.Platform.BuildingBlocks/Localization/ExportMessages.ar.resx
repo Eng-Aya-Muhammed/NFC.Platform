@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="0" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <!-- Booleans -->
+  <data name="Export_Bool_Yes" xml:space="preserve">
+    <value>نعم</value>
+  </data>
+  <data name="Export_Bool_No" xml:space="preserve">
+    <value>لا</value>
+  </data>
+
+  <!-- Titles -->
+  <data name="Export_Title_Employees" xml:space="preserve">
+    <value>قائمة الموظفين</value>
+  </data>
+  <data name="Export_Title_CardOrders" xml:space="preserve">
+    <value>طلبات الكروت</value>
+  </data>
+  <data name="Export_Title_AdminOrders" xml:space="preserve">
+    <value>طلبات النظام</value>
+  </data>
+  <data name="Export_Title_Tenants" xml:space="preserve">
+    <value>قائمة الشركات</value>
+  </data>
+  <data name="Export_Title_CardTemplates" xml:space="preserve">
+    <value>قوالب الكروت</value>
+  </data>
+  <data name="Export_Title_CardPackages" xml:space="preserve">
+    <value>باقات الكروت</value>
+  </data>
+  <data name="Export_Title_CardTypes" xml:space="preserve">
+    <value>أنواع الكروت</value>
+  </data>
+  <data name="Export_Title_DiscountCodes" xml:space="preserve">
+    <value>أكواد الخصم</value>
+  </data>
+  <data name="Export_Title_SubscriptionPlans" xml:space="preserve">
+    <value>خطط الاشتراك</value>
+  </data>
+  <data name="Export_Title_VipCustomers" xml:space="preserve">
+    <value>العملاء المميزون</value>
+  </data>
+  <data name="Export_Title_TemplateRequests" xml:space="preserve">
+    <value>طلبات القوالب</value>
+  </data>
+  <data name="Export_Title_TemplateCategories" xml:space="preserve">
+    <value>أقسام القوالب</value>
+  </data>
+
+  <!-- Common Column Headers -->
+  <data name="Export_Col_NameAr" xml:space="preserve">
+    <value>الاسم بالعربية</value>
+  </data>
+  <data name="Export_Col_NameEn" xml:space="preserve">
+    <value>الاسم بالإنجليزية</value>
+  </data>
+  <data name="Export_Col_DisplayOrder" xml:space="preserve">
+    <value>ترتيب العرض</value>
+  </data>
+  <data name="Export_Col_Id" xml:space="preserve">
+    <value>المعرف</value>
+  </data>
+  <data name="Export_Col_FullName" xml:space="preserve">
+    <value>الاسم الكامل</value>
+  </data>
+  <data name="Export_Col_Email" xml:space="preserve">
+    <value>البريد الإلكتروني</value>
+  </data>
+  <data name="Export_Col_PhoneNumber" xml:space="preserve">
+    <value>رقم الهاتف</value>
+  </data>
+  <data name="Export_Col_JobTitle" xml:space="preserve">
+    <value>المسمى الوظيفي</value>
+  </data>
+  <data name="Export_Col_Department" xml:space="preserve">
+    <value>القسم</value>
+  </data>
+  <data name="Export_Col_Status" xml:space="preserve">
+    <value>الحالة</value>
+  </data>
+  <data name="Export_Col_IsActive" xml:space="preserve">
+    <value>نشط</value>
+  </data>
+  <data name="Export_Col_CreatedAt" xml:space="preserve">
+    <value>تاريخ الإنشاء</value>
+  </data>
+  <data name="Export_Col_OrderNumber" xml:space="preserve">
+    <value>رقم الطلب</value>
+  </data>
+  <data name="Export_Col_CompanyName" xml:space="preserve">
+    <value>اسم الشركة</value>
+  </data>
+  <data name="Export_Col_TotalAmount" xml:space="preserve">
+    <value>المبلغ الإجمالي</value>
+  </data>
+  <data name="Export_Col_DeliveryMethod" xml:space="preserve">
+    <value>طريقة التوصيل</value>
+  </data>
+  <data name="Export_Col_Quantity" xml:space="preserve">
+    <value>الكمية</value>
+  </data>
+  <data name="Export_Col_Sequence" xml:space="preserve">
+    <value>#</value>
+  </data>
+  <data name="Export_Col_Code" xml:space="preserve">
+    <value>الكود</value>
+  </data>
+  <data name="Export_Col_DiscountValue" xml:space="preserve">
+    <value>قيمة الخصم</value>
+  </data>
+  <data name="Export_Col_StartDate" xml:space="preserve">
+    <value>تاريخ البداية</value>
+  </data>
+  <data name="Export_Col_EndDate" xml:space="preserve">
+    <value>تاريخ النهاية</value>
+  </data>
+  <data name="Export_Col_NumberOfCards" xml:space="preserve">
+    <value>عدد الكروت</value>
+  </data>
+  <data name="Export_Col_AccountType" xml:space="preserve">
+    <value>نوع الحساب</value>
+  </data>
+  <data name="Export_Col_ActivePlanName" xml:space="preserve">
+    <value>الباقة النشطة</value>
+  </data>
+  <data name="Export_Col_SubscriptionExpiry" xml:space="preserve">
+    <value>تاريخ انتهاء الاشتراك</value>
+  </data>
+  <data name="Export_Col_DaysRemaining" xml:space="preserve">
+    <value>الأيام المتبقية</value>
+  </data>
+  <data name="Export_Col_DiscountPercentage" xml:space="preserve">
+    <value>نسبة الخصم %</value>
+  </data>
+  <data name="Export_Col_ExpiryDate" xml:space="preserve">
+    <value>تاريخ الانتهاء</value>
+  </data>
+  <data name="Export_Col_MaxUses" xml:space="preserve">
+    <value>الحد الأقصى للاستخدام</value>
+  </data>
+  <data name="Export_Col_UsedCount" xml:space="preserve">
+    <value>عدد الاستخدامات</value>
+  </data>
+  <data name="Export_Col_Price" xml:space="preserve">
+    <value>السعر</value>
+  </data>
+
+  <!-- Order Status Enum -->
+  <data name="Export_Enum_OrderStatus_PendingReview" xml:space="preserve">
+    <value>قيد المراجعة</value>
+  </data>
+  <data name="Export_Enum_OrderStatus_InPrinting" xml:space="preserve">
+    <value>قيد الطباعة</value>
+  </data>
+  <data name="Export_Enum_OrderStatus_Shipped" xml:space="preserve">
+    <value>تم الشحن</value>
+  </data>
+  <data name="Export_Enum_OrderStatus_Delivered" xml:space="preserve">
+    <value>تم التسليم</value>
+  </data>
+  <data name="Export_Enum_OrderStatus_Cancelled" xml:space="preserve">
+    <value>ملغى</value>
+  </data>
+
+  <!-- Delivery Method Enum -->
+  <data name="Export_Enum_DeliveryMethod_HomeDelivery" xml:space="preserve">
+    <value>توصيل منزلي</value>
+  </data>
+  <data name="Export_Enum_DeliveryMethod_BranchPickup" xml:space="preserve">
+    <value>استلام من الفرع</value>
+  </data>
+</root>

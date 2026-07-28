@@ -1,15 +1,36 @@
-
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using AutoMapper;
+using Microsoft.EntityFrameworkCore;
+using NFC.Platform.Application.DTOs;
+using NFC.Platform.Application.DTOs.TemplateCategory;
+using NFC.Platform.Application.Interfaces.Services;
+using NFC.Platform.BuildingBlocks.Common.Helpers;
+using NFC.Platform.BuildingBlocks.Common.Interfaces;
+using NFC.Platform.BuildingBlocks.Common.Models;
+using NFC.Platform.BuildingBlocks.Localization;
+using NFC.Platform.BuildingBlocks.Results;
+using NFC.Platform.Domain.Entities;
+using NFC.Platform.Domain.Enums;
 
 namespace NFC.Platform.Application.Services;
 
 public class TemplateCategoryService(
     IUnitOfWork unitOfWork,
     IMapper mapper,
-    IMessageService messageService) : ITemplateCategoryService
+    IMessageService messageService,
+    ExportBuilder? exportBuilder = null,
+    IExcelExportService? excelExportService = null,
+    IPdfExportService? pdfExportService = null) : ITemplateCategoryService
 {
     private readonly IUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
     private readonly IMapper _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
     private readonly IMessageService _messageService = messageService ?? throw new ArgumentNullException(nameof(messageService));
+    private readonly ExportBuilder? _exportBuilder = exportBuilder;
+    private readonly IExcelExportService? _excelExportService = excelExportService;
+    private readonly IPdfExportService? _pdfExportService = pdfExportService;
 
     public async Task<ServiceResult<IReadOnlyList<TemplateCategoryDto>>> GetActiveCategoriesAsync()
     {
@@ -33,6 +54,32 @@ public class TemplateCategoryService(
 
         var pagedResult = await query.ToPagedResultAsync(request, c => _mapper.Map<TemplateCategoryAdminDto>(c));
         return ServiceResult<PagedResult<TemplateCategoryAdminDto>>.Success(pagedResult);
+    }
+
+    public async Task<ServiceResult<byte[]>> ExportTemplateCategoriesAsync(ExportFormat format)
+    {
+        if (_exportBuilder == null || _excelExportService == null || _pdfExportService == null)
+        {
+            return ServiceResult<byte[]>.Fail(_messageService.Get("RecordNotFound"), 500);
+        }
+
+        var categories = await _unitOfWork.Repository<TemplateCategory>()
+            .GetQueryable()
+            .AsNoTracking()
+            .OrderBy(c => c.DisplayOrder)
+            .ToListAsync();
+
+        var exportDtos = _mapper.Map<List<TemplateCategoryExportDto>>(categories);
+        var dataContainer = _exportBuilder.BuildContainer(exportDtos, "Export_Title_TemplateCategories");
+
+        byte[] fileBytes = format switch
+        {
+            ExportFormat.Excel => _excelExportService.GenerateExcel(dataContainer),
+            ExportFormat.Pdf => _pdfExportService.GeneratePdf(dataContainer),
+            _ => throw new ArgumentOutOfRangeException(nameof(format), format, null)
+        };
+
+        return ServiceResult<byte[]>.Success(fileBytes);
     }
 
     public async Task<ServiceResult<TemplateCategoryAdminDto>> GetByIdAsync(Guid id)

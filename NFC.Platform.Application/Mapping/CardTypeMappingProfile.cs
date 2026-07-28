@@ -13,6 +13,7 @@ public class CardTypeMappingProfile : Profile
                     : (string.IsNullOrWhiteSpace(src.NameEn) ? src.NameAr : src.NameEn)));
 
         CreateMap<CardType, CardTypeAdminDto>();
+        CreateMap<CardType, CardTypeExportDto>();
 
         CreateMap<CreateCardTypeRequest, CardType>();
 

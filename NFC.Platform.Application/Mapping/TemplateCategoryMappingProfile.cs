@@ -12,6 +12,7 @@ public class TemplateCategoryMappingProfile : Profile
                     : (string.IsNullOrWhiteSpace(src.NameEn) ? src.NameAr : src.NameEn)));
 
         CreateMap<TemplateCategory, TemplateCategoryAdminDto>();
+        CreateMap<TemplateCategory, TemplateCategoryExportDto>();
 
         CreateMap<CreateTemplateCategoryRequest, TemplateCategory>();
 

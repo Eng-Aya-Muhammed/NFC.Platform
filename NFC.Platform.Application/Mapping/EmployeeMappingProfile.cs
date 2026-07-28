@@ -13,6 +13,10 @@ public class EmployeeMappingProfile : Profile
         CreateMap<Employee, EmployeeDto>()
             .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()));
 
+        CreateMap<Employee, EmployeeExportDto>()
+            .ForMember(dest => dest.PhoneNumber, opt => opt.MapFrom(src => src.UserProfile != null ? src.UserProfile.Phone : string.Empty))
+            .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => src.Status == UserStatus.Active));
+
         CreateMap<Employee, EmployeeDetailsDto>()
             .ConvertUsing((src, dest, ctx) =>
             {

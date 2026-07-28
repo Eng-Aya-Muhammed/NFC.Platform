@@ -9,6 +9,7 @@ public class DiscountCodeMappingProfile : Profile
     public DiscountCodeMappingProfile()
     {
         CreateMap<DiscountCode, DiscountCodeDto>();
+        CreateMap<DiscountCode, DiscountCodeExportDto>();
 
         CreateMap<CreateDiscountCodeRequest, DiscountCode>()
             .ForMember(dest => dest.Code, opt => opt.MapFrom(src => src.Code.Trim().ToUpperInvariant()));

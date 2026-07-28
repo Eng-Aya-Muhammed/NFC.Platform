@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using NFC.Platform.BuildingBlocks.Common.Helpers;
+using NFC.Platform.BuildingBlocks.Common.Interfaces;
 using NFC.Platform.BuildingBlocks.Common.Seeders;
 using NFC.Platform.BuildingBlocks.Settings;
 using NFC.Platform.Infrastructure.Authorization;
@@ -42,6 +43,10 @@ namespace NFC.Platform.Infrastructure.Extensions
             services.AddScoped<ITokenService, TokenService>();
             services.AddScoped<ICurrentTenant, CurrentTenantService>();
             services.AddScoped<IExcelParser, ExcelParser>();
+            services.AddScoped<IExportValueFormatter, ExportValueFormatter>();
+            services.AddScoped<ExportBuilder>();
+            services.AddScoped<IExcelExportService, ExcelExportService>();
+            services.AddScoped<IPdfExportService, PdfExportService>();
             
             // Cloudinary Registration
             services.Configure<CloudinarySettings>(configuration.GetSection("CloudinarySettings"));

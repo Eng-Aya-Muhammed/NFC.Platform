@@ -9,6 +9,7 @@ using NFC.Platform.Application.DTOs.Employee;
 using NFC.Platform.Application.DTOs.CardOrder;
 using NFC.Platform.Application.Interfaces.Services;
 using NFC.Platform.BuildingBlocks.Common.Helpers;
+using NFC.Platform.BuildingBlocks.Common.Models;
 using NFC.Platform.BuildingBlocks.Common.Constants;
 using NFC.Platform.Domain.Constants;
 using NFC.Platform.Domain.Enums;
@@ -33,6 +34,28 @@ namespace NFC.Platform.API.Controllers
             return Ok(result);
         }
 
+        [HttpGet("export/excel")]
+        [HasPermission(AppPermissions.Employees.View)]
+        public async Task<IActionResult> ExportExcel([FromQuery] string? search)
+        {
+            var result = await _employeeService.ExportEmployeesAsync(ExportFormat.Excel, search);
+            if (!result.IsSuccess) return StatusCode(result.StatusCode, result);
+
+            var fileName = $"Employees_{DateTime.Now:yyyy-MM-dd_HH-mm}.xlsx";
+            return File(result.Data!, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+        }
+
+        [HttpGet("export/pdf")]
+        [HasPermission(AppPermissions.Employees.View)]
+        public async Task<IActionResult> ExportPdf([FromQuery] string? search)
+        {
+            var result = await _employeeService.ExportEmployeesAsync(ExportFormat.Pdf, search);
+            if (!result.IsSuccess) return StatusCode(result.StatusCode, result);
+
+            var fileName = $"Employees_{DateTime.Now:yyyy-MM-dd_HH-mm}.pdf";
+            return File(result.Data!, "application/pdf", fileName);
+        }
+
         [HttpGet("{id:guid}")]
         [HasPermission(AppPermissions.Employees.View)]
         public async Task<IActionResult> GetById([FromRoute] Guid id)
@@ -54,7 +77,7 @@ namespace NFC.Platform.API.Controllers
             {
                 return StatusCode(result.StatusCode, result);
             }
-            return StatusCode(result.StatusCode, result); // Returns 201 Created or custom response format
+            return StatusCode(result.StatusCode, result);
         }
 
         [HttpPut("{id:guid}")]

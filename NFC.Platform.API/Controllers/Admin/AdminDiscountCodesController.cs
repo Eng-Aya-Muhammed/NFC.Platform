@@ -7,7 +7,9 @@ using NFC.Platform.Application.DTOs;
 using NFC.Platform.Application.DTOs.DiscountCode;
 using NFC.Platform.Application.Interfaces.Services;
 using NFC.Platform.BuildingBlocks.Common.Constants;
+using NFC.Platform.BuildingBlocks.Common.Models;
 using NFC.Platform.Domain.Constants;
+using NFC.Platform.Domain.Enums;
 using NFC.Platform.Infrastructure.Authorization;
 
 namespace NFC.Platform.API.Controllers.Admin;
@@ -25,6 +27,28 @@ public class AdminDiscountCodesController(IDiscountCodeService discountCodeServi
     {
         var result = await _discountCodeService.GetPagedAdminAsync(request, cancellationToken);
         return Ok(result);
+    }
+
+    [HttpGet("export/excel")]
+    [HasPermission(AppPermissions.Platform.DiscountCodes.View)]
+    public async Task<IActionResult> ExportExcel(CancellationToken cancellationToken)
+    {
+        var result = await _discountCodeService.ExportDiscountCodesAsync(ExportFormat.Excel, cancellationToken);
+        if (!result.IsSuccess) return StatusCode(result.StatusCode, result);
+
+        var fileName = $"DiscountCodes_{DateTime.Now:yyyy-MM-dd_HH-mm}.xlsx";
+        return File(result.Data!, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+    }
+
+    [HttpGet("export/pdf")]
+    [HasPermission(AppPermissions.Platform.DiscountCodes.View)]
+    public async Task<IActionResult> ExportPdf(CancellationToken cancellationToken)
+    {
+        var result = await _discountCodeService.ExportDiscountCodesAsync(ExportFormat.Pdf, cancellationToken);
+        if (!result.IsSuccess) return StatusCode(result.StatusCode, result);
+
+        var fileName = $"DiscountCodes_{DateTime.Now:yyyy-MM-dd_HH-mm}.pdf";
+        return File(result.Data!, "application/pdf", fileName);
     }
 
     [HttpGet("{id:guid}")]

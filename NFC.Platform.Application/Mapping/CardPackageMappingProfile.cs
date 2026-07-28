@@ -7,6 +7,7 @@ public class CardPackageMappingProfile : Profile
     {
         CreateMap<CardPackage, CardPackageDto>();
         CreateMap<CardPackage, CardPackageAdminDto>();
+        CreateMap<CardPackage, CardPackageExportDto>();
 
         CreateMap<CreateCardPackageRequest, CardPackage>();
 

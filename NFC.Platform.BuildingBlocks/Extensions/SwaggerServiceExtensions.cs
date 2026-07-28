@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Models;
+using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace NFC.Platform.BuildingBlocks.Extensions
 {
@@ -24,6 +26,9 @@ namespace NFC.Platform.BuildingBlocks.Extensions
                     Version = "v1",
                     Description = "NFC Card Selling Platform API backend services."
                 });
+
+                // Add Accept-Language header to all Swagger endpoints with 'ar' as default
+                options.OperationFilter<AcceptLanguageHeaderOperationFilter>();
 
                 // Configure Bearer authentication in Swagger UI
                 options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -55,6 +60,30 @@ namespace NFC.Platform.BuildingBlocks.Extensions
             });
 
             return services;
+        }
+    }
+
+    /// <summary>
+    /// Swagger Operation Filter to add Accept-Language header parameter to API documentation.
+    /// </summary>
+    public class AcceptLanguageHeaderOperationFilter : IOperationFilter
+    {
+        public void Apply(OpenApiOperation operation, OperationFilterContext context)
+        {
+            operation.Parameters ??= new List<OpenApiParameter>();
+
+            operation.Parameters.Add(new OpenApiParameter
+            {
+                Name = "Accept-Language",
+                In = ParameterLocation.Header,
+                Required = false,
+                Description = "Preferred language: 'ar' (Arabic) or 'en' (English)",
+                Schema = new OpenApiSchema
+                {
+                    Type = "string",
+                    Default = new OpenApiString("ar")
+                }
+            });
         }
     }
 }

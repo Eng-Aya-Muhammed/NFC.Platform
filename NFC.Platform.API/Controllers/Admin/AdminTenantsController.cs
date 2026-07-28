@@ -29,6 +29,28 @@ public class AdminTenantsController(IAdminService adminService, ISubscriptionSer
         return Ok(result);
     }
 
+    [HttpGet("export/excel")]
+    [HasPermission(AppPermissions.Platform.Tenants.View)]
+    public async Task<IActionResult> ExportExcel(CancellationToken cancellationToken)
+    {
+        var result = await _adminService.ExportTenantsAsync(NFC.Platform.BuildingBlocks.Common.Models.ExportFormat.Excel, cancellationToken);
+        if (!result.IsSuccess) return StatusCode(result.StatusCode, result);
+
+        var fileName = $"Tenants_{DateTime.Now:yyyy-MM-dd_HH-mm}.xlsx";
+        return File(result.Data!, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+    }
+
+    [HttpGet("export/pdf")]
+    [HasPermission(AppPermissions.Platform.Tenants.View)]
+    public async Task<IActionResult> ExportPdf(CancellationToken cancellationToken)
+    {
+        var result = await _adminService.ExportTenantsAsync(NFC.Platform.BuildingBlocks.Common.Models.ExportFormat.Pdf, cancellationToken);
+        if (!result.IsSuccess) return StatusCode(result.StatusCode, result);
+
+        var fileName = $"Tenants_{DateTime.Now:yyyy-MM-dd_HH-mm}.pdf";
+        return File(result.Data!, "application/pdf", fileName);
+    }
+
     [HttpPut("{id:guid}/status")]
     [HasPermission(AppPermissions.Platform.Tenants.UpdateStatus)]
     public async Task<IActionResult> UpdateTenantStatus([FromRoute] Guid id, [FromBody] UpdateTenantStatusDto dto)
