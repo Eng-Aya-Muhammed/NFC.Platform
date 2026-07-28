@@ -374,7 +374,7 @@
     <value>باقة البطاقات غير صالحة أو غير مفعلة.</value>
   </data>
   <data name="CardPackageCapacityExceeded" xml:space="preserve">
-    <value>تم تجاوز سعة باقة البطاقات.</value>
+    <value>باقة البطاقات المختارة غير كافية لعدد الكروت المطلوبة ({0} كارت)، سعة الباقة القصوى هي ({1} كارت). يرجى اختيار باقة أكبر.</value>
   </data>
   <data name="CannotSetVipForEmployeeProfile" xml:space="preserve">
     <value>لا يمكن تعيين حالة عميل VIP لموظف تابع لشركة.</value>
@@ -390,5 +390,14 @@
   </data>
   <data name="NoSubscriptionFoundToExtend" xml:space="preserve">
     <value>لا يمكن تمديد اشتراك لعميل ليس لديه اشتراك سابق.</value>
+  </data>
+  <data name="EmployeesRequired" xml:space="preserve">
+    <value>يرجى تحديد موظف واحد على الأقل لطباعة كروت له عند اختار موظفين محددين.</value>
+  </data>
+  <data name="ExcelUrlRequired" xml:space="preserve">
+    <value>رابط ملف الإكسيل مطلوب عند اختيار نطاق رفع ملف الإكسيل.</value>
+  </data>
+  <data name="NoEmployeesFoundInCompany" xml:space="preserve">
+    <value>لا يوجد موظفون نشطون بالشركة لإنشاء كروت لهم.</value>
   </data>
 </root>

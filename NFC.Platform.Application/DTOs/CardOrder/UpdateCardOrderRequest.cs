@@ -27,7 +27,6 @@ public class UpdateCardOrderRequest
     // Pricing factors
     public Guid? CardTypeId { get; set; }
     public Guid? CardPackageId { get; set; }
-    public int? Quantity { get; set; }
 
     // General
     public string? Notes { get; set; }

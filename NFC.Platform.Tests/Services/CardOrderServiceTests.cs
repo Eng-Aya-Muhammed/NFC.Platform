@@ -49,6 +49,10 @@ namespace NFC.Platform.Tests.Services
             _unitOfWork.Repository<EmployeeImportJob>().Returns(_jobRepo);
             _unitOfWork.Repository<UserProfile>().Returns(_userProfileRepo);
             
+            var cardPackageRepo = Substitute.For<IGenericRepository<CardPackage>>();
+            cardPackageRepo.GetByIdAsync(Arg.Any<Guid>()).Returns(callInfo => new CardPackage { Id = callInfo.Arg<Guid>(), IsActive = true, NumberOfCards = 100, Price = 50.0m });
+            _unitOfWork.Repository<CardPackage>().Returns(cardPackageRepo);
+
             var _companyRepo = Substitute.For<IGenericRepository<Company>>();
             _companyRepo.GetQueryable().Returns(new List<Company> { new Company { TenantId = Guid.NewGuid(), Id = Guid.NewGuid() } }.AsQueryable().BuildMock());
             _unitOfWork.Repository<Company>().Returns(_companyRepo);
@@ -163,7 +167,7 @@ namespace NFC.Platform.Tests.Services
         {
             // Arrange
             _currentTenant.UserId.Returns((Guid?)null);
-            var request = new CreateCardOrderRequest { Quantity = 10 };
+            var request = new CreateCardOrderRequest { CardPackageId = Guid.NewGuid() };
 
             // Act
             var result = await _sut.CreateOrderAsync(request);
@@ -182,7 +186,7 @@ namespace NFC.Platform.Tests.Services
             _currentTenant.UserId.Returns(userId);
             _currentTenant.TenantId.Returns(Guid.NewGuid());
 
-            var request = new CreateCardOrderRequest { Quantity = 5, CardTypeId = Guid.NewGuid(), CardPackageId = Guid.NewGuid() };
+            var request = new CreateCardOrderRequest { CardTypeId = Guid.NewGuid(), CardPackageId = Guid.NewGuid() };
             var order = new CardOrder { Id = Guid.NewGuid(), Quantity = 5, CardTypeId = request.CardTypeId, CardPackageId = request.CardPackageId, Items = [] };
 
             var currentUser = new User { Id = userId, AccountType = AccountType.Individual };
@@ -228,7 +232,6 @@ namespace NFC.Platform.Tests.Services
 
             var request = new CreateCardOrderRequest 
             { 
-                Quantity = 10, 
                 CardTypeId = Guid.NewGuid(),
                 CardPackageId = Guid.NewGuid(),
                 ExcelDataUrl = "https://example.com/employees.xlsx",
@@ -258,7 +261,6 @@ namespace NFC.Platform.Tests.Services
 
             var request = new ReorderRequest
             {
-                Quantity = 5,
                 AssignmentScope = AssignmentScope.Individual,
                 DeliveryMethod = DeliveryMethod.Courier,
                 ShippingAddress = null
@@ -431,7 +433,6 @@ namespace NFC.Platform.Tests.Services
             var request = new UpdateCardOrderRequest
             {
                 CardDesignType = CardDesignType.CustomArtwork,
-                Quantity = 5,
                 // Missing FrontDesignUrl and BackDesignUrl
             };
 
@@ -469,15 +470,16 @@ namespace NFC.Platform.Tests.Services
 
             var request = new UpdateCardOrderRequest
             {
-                Quantity = 10,
                 AssignmentScope = AssignmentScope.SpecificEmployees,
                 EmployeeIds = new List<Guid> { Guid.NewGuid(), Guid.NewGuid() } // Only 2 employees provided but Quantity is 10
             };
 
+            var empRepo = Substitute.For<IGenericRepository<Employee>>();
+            empRepo.GetQueryable().Returns(new List<Employee>().AsQueryable().BuildMock());
+            _unitOfWork.Repository<Employee>().Returns(empRepo);
+
             var queryable = new List<CardOrder> { order }.AsQueryable().BuildMock();
             _orderRepo.GetQueryable().Returns(queryable);
-
-            _messageService.Get("EmployeeCountMismatch").Returns("Mismatch");
 
             // Act
             var result = await _sut.UpdateOrderAsync(id, request);
@@ -485,7 +487,6 @@ namespace NFC.Platform.Tests.Services
             // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(422, result.StatusCode);
-            Assert.Contains("Mismatch", result.Message ?? string.Join(",", result.Errors));
             await _unitOfWork.DidNotReceive().SaveChangesAsync();
         }
 
@@ -547,11 +548,14 @@ namespace NFC.Platform.Tests.Services
             var parentOrder = new CardOrder { Id = parentId, CardTypeId = Guid.NewGuid(), CardPackageId = Guid.NewGuid() };
             _orderRepo.GetQueryable().Returns(new List<CardOrder> { parentOrder }.AsQueryable().BuildMock());
 
+            var empRepo = Substitute.For<IGenericRepository<Employee>>();
+            empRepo.GetQueryable().Returns(new List<Employee>().AsQueryable().BuildMock());
+            _unitOfWork.Repository<Employee>().Returns(empRepo);
+
             var request = new ReorderRequest
             {
                 AssignmentScope = AssignmentScope.SpecificEmployees,
-                EmployeeIds = new List<Guid> { Guid.NewGuid() },
-                Quantity = 5
+                EmployeeIds = new List<Guid> { Guid.NewGuid() }
             };
 
             // Act
@@ -573,14 +577,14 @@ namespace NFC.Platform.Tests.Services
             var parentOrder = new CardOrder { Id = parentId, CardTypeId = Guid.NewGuid(), CardPackageId = Guid.NewGuid(), CardName = "Parent Card" };
             _orderRepo.GetQueryable().Returns(new List<CardOrder> { parentOrder }.AsQueryable().BuildMock());
 
-            var request = new ReorderRequest { Quantity = 5, AssignmentScope = AssignmentScope.Individual };
+            var request = new ReorderRequest { AssignmentScope = AssignmentScope.Individual };
 
             // Act
             var result = await _sut.CreateReorderAsync(parentId, request);
 
             // Assert
             Assert.True(result.IsSuccess);
-            await _orderRepo.Received(1).AddAsync(Arg.Is<CardOrder>(o => o.ParentOrderId == parentId && o.Quantity == 5));
+            await _orderRepo.Received(1).AddAsync(Arg.Is<CardOrder>(o => o.ParentOrderId == parentId && o.Quantity == 100));
             await _unitOfWork.Received(1).SaveChangesAsync();
         }
 
@@ -599,8 +603,7 @@ namespace NFC.Platform.Tests.Services
             var request = new ReorderRequest
             {
                 AssignmentScope = AssignmentScope.SpecificEmployees,
-                EmployeeIds = new List<Guid> { employeeId1, employeeId2 },
-                Quantity = 2
+                EmployeeIds = new List<Guid> { employeeId1, employeeId2 }
             };
 
             var userProfile1 = new UserProfile { Id = Guid.NewGuid(), Phone = "123456" };
@@ -626,7 +629,7 @@ namespace NFC.Platform.Tests.Services
             Assert.True(result.IsSuccess);
             await _orderRepo.Received(1).AddAsync(Arg.Is<CardOrder>(o =>
                 o.ParentOrderId == parentId &&
-                o.Quantity == 2 &&
+                o.Quantity == 100 &&
                 o.Items.Count == 2 &&
                 o.Items.Any(i => i.UserProfileId == userProfile1.Id) &&
                 o.Items.Any(i => i.UserProfileId == userProfile2.Id)));
@@ -646,8 +649,7 @@ namespace NFC.Platform.Tests.Services
             var request = new ReorderRequest
             {
                 AssignmentScope = AssignmentScope.SpecificEmployees,
-                EmployeeIds = new List<Guid> { employeeId },
-                Quantity = 1
+                EmployeeIds = new List<Guid> { employeeId }
             };
 
             var employeeRepo = Substitute.For<IGenericRepository<Employee>>();
@@ -676,8 +678,7 @@ namespace NFC.Platform.Tests.Services
             var request = new ReorderRequest
             {
                 AssignmentScope = AssignmentScope.SpecificEmployees,
-                EmployeeIds = new List<Guid> { employeeId },
-                Quantity = 1
+                EmployeeIds = new List<Guid> { employeeId }
             };
 
             var employees = new List<Employee>
@@ -709,8 +710,7 @@ namespace NFC.Platform.Tests.Services
 
             var request = new ReorderRequest
             {
-                AssignmentScope = AssignmentScope.AllEmployees,
-                Quantity = 2
+                AssignmentScope = AssignmentScope.AllEmployees
             };
 
             var userProfile1 = new UserProfile { Id = Guid.NewGuid() };
@@ -736,7 +736,7 @@ namespace NFC.Platform.Tests.Services
             Assert.True(result.IsSuccess);
             await _orderRepo.Received(1).AddAsync(Arg.Is<CardOrder>(o =>
                 o.ParentOrderId == parentId &&
-                o.Quantity == 2 &&
+                o.Quantity == 100 &&
                 o.Items.Count == 2 &&
                 o.Items.Any(i => i.UserProfileId == userProfile1.Id) &&
                 o.Items.Any(i => i.UserProfileId == userProfile2.Id)));
@@ -764,7 +764,6 @@ namespace NFC.Platform.Tests.Services
 
             var request = new ReorderRequest
             {
-                Quantity = 1,
                 AssignmentScope = AssignmentScope.AllEmployees,
                 DeliveryMethod = DeliveryMethod.Pickup
             };
@@ -982,11 +981,15 @@ namespace NFC.Platform.Tests.Services
             companyRepo.GetQueryable().Returns(new List<Company> { new Company { TenantId = tenantId, Id = Guid.NewGuid() } }.AsQueryable().BuildMock());
             _unitOfWork.Repository<Company>().Returns(companyRepo);
 
+            var cardPackageId = Guid.NewGuid();
+            var cardPackageRepo = Substitute.For<IGenericRepository<CardPackage>>();
+            cardPackageRepo.GetByIdAsync(cardPackageId).Returns(new CardPackage { Id = cardPackageId, IsActive = true, NumberOfCards = 100 });
+            _unitOfWork.Repository<CardPackage>().Returns(cardPackageRepo);
+
             var request = new CreateCardOrderRequest
             {
-                Quantity = 10,
                 CardTypeId = Guid.NewGuid(),
-                CardPackageId = Guid.NewGuid(),
+                CardPackageId = cardPackageId,
                 ExcelDataUrl = "https://example.com/invalid-file.xlsx",
                 AssignmentScope = AssignmentScope.ExcelUpload
             };

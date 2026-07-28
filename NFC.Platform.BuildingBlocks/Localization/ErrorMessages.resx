@@ -374,7 +374,7 @@
     <value>Invalid or inactive card package.</value>
   </data>
   <data name="CardPackageCapacityExceeded" xml:space="preserve">
-    <value>Card package capacity exceeded.</value>
+    <value>The selected card package capacity ({1} cards) is insufficient for the required number of cards ({0} cards). Please select a larger card package.</value>
   </data>
   <data name="CannotSetVipForEmployeeProfile" xml:space="preserve">
     <value>Cannot set VIP status for a company employee profile.</value>
@@ -390,5 +390,14 @@
   </data>
   <data name="NoSubscriptionFoundToExtend" xml:space="preserve">
     <value>Cannot extend subscription for a customer with no prior subscription.</value>
+  </data>
+  <data name="EmployeesRequired" xml:space="preserve">
+    <value>Please select at least one employee when choosing specific employees scope.</value>
+  </data>
+  <data name="ExcelUrlRequired" xml:space="preserve">
+    <value>Excel data URL is required when choosing excel upload scope.</value>
+  </data>
+  <data name="NoEmployeesFoundInCompany" xml:space="preserve">
+    <value>No active employees with profiles found in the company to print cards for.</value>
   </data>
 </root>

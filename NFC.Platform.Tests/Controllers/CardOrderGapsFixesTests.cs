@@ -25,7 +25,7 @@ namespace NFC.Platform.Tests.Controllers
                 CardDesignType = CardDesignType.CustomArtwork,
                 FrontDesignUrl = "https://cdn.example.com/front.png",
                 BackDesignUrl = "https://cdn.example.com/back.png",
-                Quantity = 1
+
             };
 
             // Act
@@ -47,7 +47,7 @@ namespace NFC.Platform.Tests.Controllers
                 CardPackageId = Guid.NewGuid(),
                 CardDesignType = CardDesignType.CustomArtwork,
                 FrontDesignUrl = "https://cdn.example.com/front.png",
-                Quantity = 1
+
             };
 
             // Act
@@ -82,7 +82,7 @@ namespace NFC.Platform.Tests.Controllers
             var otpSettingsOptions = Substitute.For<IOptions<OtpSettings>>();
             otpSettingsOptions.Value.Returns(new OtpSettings { CooldownSeconds = 60, MaxResendAttempts = 5 });
             var service = new CardOrderService(unitOfWork, mapper, messageService, currentTenant, validator, Substitute.For<IValidator<UpdateCardOrderRequest>>(), backgroundJobClient, Substitute.For<IEmployeeService>(), otpSettingsOptions);
-            var request = new CreateCardOrderRequest { Quantity = 1 };
+            var request = new CreateCardOrderRequest { CardPackageId = Guid.NewGuid() };
 
             // Act
             var result = await service.CreateOrderAsync(request);

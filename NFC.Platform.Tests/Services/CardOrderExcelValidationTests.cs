@@ -248,11 +248,15 @@ namespace NFC.Platform.Tests.Services
                 orderRepo.GetQueryable().Returns(new List<CardOrder>().AsQueryable().BuildMock());
                 unitOfWork.Repository<CardOrder>().Returns(orderRepo);
 
+                var cardPackageId = Guid.NewGuid();
+                var cardPackageRepo = Substitute.For<IGenericRepository<CardPackage>>();
+                cardPackageRepo.GetByIdAsync(Arg.Any<Guid>()).Returns(new CardPackage { Id = cardPackageId, IsActive = true, NumberOfCards = 100 });
+                unitOfWork.Repository<CardPackage>().Returns(cardPackageRepo);
+
                 var request = new CreateCardOrderRequest
                 {
-                    Quantity = 1,
                     CardTypeId = Guid.NewGuid(),
-                    CardPackageId = Guid.NewGuid(),
+                    CardPackageId = cardPackageId,
                     CardDesignType = CardDesignType.NeedCustomDesign,
                     ExcelDataUrl = cloudinaryExcelUrl,
                     AssignmentScope = AssignmentScope.ExcelUpload
@@ -329,11 +333,15 @@ namespace NFC.Platform.Tests.Services
                 otpSettingsOptions
             );
 
+            var cardPackageId = Guid.NewGuid();
+            var cardPackageRepo = Substitute.For<IGenericRepository<CardPackage>>();
+            cardPackageRepo.GetByIdAsync(Arg.Any<Guid>()).Returns(new CardPackage { Id = cardPackageId, IsActive = true, NumberOfCards = 1, Price = 10.0m });
+            unitOfWork.Repository<CardPackage>().Returns(cardPackageRepo);
+
             var request = new CreateCardOrderRequest
             {
-                Quantity = 1,
                 CardTypeId = Guid.NewGuid(),
-                CardPackageId = Guid.NewGuid(),
+                CardPackageId = cardPackageId,
                 CardDesignType = CardDesignType.NeedCustomDesign,
                 ExcelDataUrl = "https://res.cloudinary.com/fake-url-with-invalid-data.xlsx"
             };

@@ -21,12 +21,6 @@ public class CreateCardOrderRequestValidator : AbstractValidator<CreateCardOrder
             .NotEmpty()
             .WithMessage(_ => messageService.Get("InvalidOrInactiveCardPackage"));
 
-        RuleFor(x => x.Quantity)
-            .GreaterThan(0)
-            .WithMessage(_ => messageService.Get("QuantityRequired"))
-            .LessThanOrEqualTo(10000)
-            .WithMessage(_ => messageService.Get("QuantityRequired"));
-
         RuleFor(x => x.ExcelDataUrl)
             .MustBeValidUrl()
             .WithMessage(_ => messageService.Get("InvalidUrlFormat", "Excel Data URL"))
@@ -39,6 +33,16 @@ public class CreateCardOrderRequestValidator : AbstractValidator<CreateCardOrder
             .NotEmpty()
             .WithMessage(_ => messageService.Get("ShippingAddressRequired"))
             .When(x => x.DeliveryMethod == DeliveryMethod.Courier);
+
+        RuleFor(x => x.EmployeeIds)
+            .NotEmpty()
+            .WithMessage(_ => messageService.Get("EmployeesRequired"))
+            .When(x => x.AssignmentScope == AssignmentScope.SpecificEmployees);
+
+        RuleFor(x => x.ExcelDataUrl)
+            .NotEmpty()
+            .WithMessage(_ => messageService.Get("ExcelUrlRequired"))
+            .When(x => x.AssignmentScope == AssignmentScope.ExcelUpload);
 
         When(x => x.CardDesignType == CardDesignType.CustomArtwork, () =>
         {

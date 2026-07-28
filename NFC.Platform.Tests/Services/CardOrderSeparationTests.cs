@@ -84,7 +84,6 @@ namespace NFC.Platform.Tests.Services
 
             var request = new CreateCardOrderRequest
             {
-                Quantity = 1,
                 CardTypeId = cardType.Id,
                 CardPackageId = cardPackage.Id,
                 CardDesignType = CardDesignType.NeedCustomDesign

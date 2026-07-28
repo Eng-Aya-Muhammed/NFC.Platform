@@ -8,11 +8,10 @@ namespace NFC.Platform.Application.Validators.CardOrder
     {
         public ReorderRequestValidator(IMessageService messageService)
         {
-            RuleFor(x => x.Quantity)
-                .GreaterThan(0)
-                .WithMessage(_ => messageService.Get("QuantityRequired"))
-                .LessThanOrEqualTo(10000)
-                .WithMessage(_ => messageService.Get("QuantityRequired"));
+            RuleFor(x => x.CardPackageId)
+                .NotEmpty()
+                .WithMessage(_ => messageService.Get("InvalidOrInactiveCardPackage"))
+                .When(x => x.CardPackageId.HasValue);
 
             RuleFor(x => x.AssignmentScope)
                 .IsInEnum()

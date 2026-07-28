@@ -22,8 +22,6 @@ public class CreateCardOrderRequest
     public Guid CardTypeId { get; set; }
     public Guid CardPackageId { get; set; }
 
-    public int Quantity { get; set; }
-
     public string? Notes { get; set; }
 
     public DeliveryMethod DeliveryMethod { get; set; } = DeliveryMethod.Pickup;

@@ -22,7 +22,7 @@ namespace NFC.Platform.BuildingBlocks.Extensions
         public static IServiceCollection AddFluentValidationConfig(this IServiceCollection services)
         {
             services.AddFluentValidationAutoValidation();
-            services.AddValidatorsFromAssemblies(AppDomain.CurrentDomain.GetAssemblies());
+            services.AddValidatorsFromAssemblies(AppDomain.CurrentDomain.GetAssemblies().Where(a => !a.IsDynamic));
 
             // Override ASP.NET Core automatic model state invalid response to unify validation errors
             services.Configure<ApiBehaviorOptions>(options =>

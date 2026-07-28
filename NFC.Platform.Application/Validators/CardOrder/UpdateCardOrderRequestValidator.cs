@@ -24,18 +24,6 @@ public class UpdateCardOrderRequestValidator : AbstractValidator<UpdateCardOrder
             .WithMessage(_ => messageService.Get("InvalidOrInactiveCardPackage"))
             .When(x => x.CardPackageId.HasValue);
 
-        RuleFor(x => x.Quantity)
-            .GreaterThan(0)
-            .WithMessage(_ => messageService.Get("QuantityRequired"))
-            .LessThanOrEqualTo(10000)
-            .WithMessage(_ => messageService.Get("QuantityRequired"))
-            .Must((request, quantity) => !request.AssignmentScope.HasValue || 
-                                         request.AssignmentScope != AssignmentScope.SpecificEmployees || 
-                                         request.EmployeeIds == null || 
-                                         request.EmployeeIds.Count == quantity)
-            .WithMessage(x => messageService.Get("EmployeeCountMismatch", x.EmployeeIds != null ? x.EmployeeIds.Count.ToString() : "0", x.Quantity.ToString()))
-            .When(x => x.Quantity.HasValue);
-
         RuleFor(x => x.ExcelDataUrl)
             .MustBeValidUrl()
             .WithMessage(_ => messageService.Get("InvalidUrlFormat", "Excel Data URL"))
@@ -49,6 +37,16 @@ public class UpdateCardOrderRequestValidator : AbstractValidator<UpdateCardOrder
             .NotEmpty()
             .WithMessage(_ => messageService.Get("ShippingAddressRequired"))
             .When(x => x.DeliveryMethod == DeliveryMethod.Courier);
+
+        RuleFor(x => x.EmployeeIds)
+            .NotEmpty()
+            .WithMessage(_ => messageService.Get("EmployeesRequired"))
+            .When(x => x.AssignmentScope == AssignmentScope.SpecificEmployees);
+
+        RuleFor(x => x.ExcelDataUrl)
+            .NotEmpty()
+            .WithMessage(_ => messageService.Get("ExcelUrlRequired"))
+            .When(x => x.AssignmentScope == AssignmentScope.ExcelUpload);
 
         RuleFor(x => x.FrontDesignUrl)
             .NotEmpty()

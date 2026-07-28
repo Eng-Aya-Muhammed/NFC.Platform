@@ -87,15 +87,11 @@ public class CardOrderService(
             }
 
             // 2. Validate CardPackage (exists & IsActive)
-            CardPackage? cardPackage = null;
-            if (request.CardPackageId != Guid.Empty)
+            var cardPackage = await _unitOfWork.Repository<CardPackage>().GetByIdAsync(request.CardPackageId);
+            if (cardPackage == null || !cardPackage.IsActive)
             {
-                cardPackage = await _unitOfWork.Repository<CardPackage>().GetByIdAsync(request.CardPackageId);
-                if (cardPackage != null && !cardPackage.IsActive)
-                {
-                    await _unitOfWork.RollbackTransactionAsync();
-                    return ServiceResult<CardOrderDto>.Fail(_messageService.Get("InvalidOrInactiveCardPackage"), 400);
-                }
+                await _unitOfWork.RollbackTransactionAsync();
+                return ServiceResult<CardOrderDto>.Fail(_messageService.Get("InvalidOrInactiveCardPackage"), 400);
             }
 
             // 3. Build CardOrderItems (from Assignment Scope / Excel Upload)
@@ -120,7 +116,7 @@ public class CardOrderService(
                 request.EmployeeIds = excelResult.Data;
             }
 
-            var itemsResult = await BuildOrderItemsAsync(request.AssignmentScope, request.EmployeeIds, request.Quantity);
+            var itemsResult = await BuildOrderItemsAsync(request.AssignmentScope, request.EmployeeIds);
             if (!itemsResult.IsSuccess)
             {
                 await _unitOfWork.RollbackTransactionAsync();
@@ -133,21 +129,19 @@ public class CardOrderService(
             var totalRequiredCards = itemsToOrder.Where(i => i.RequiresCard).Sum(i => i.NumberOfCardsRequired);
 
             // 5. Validate Package Capacity
-            if (cardPackage != null && totalRequiredCards > cardPackage.NumberOfCards)
+            if (totalRequiredCards > cardPackage.NumberOfCards)
             {
                 await _unitOfWork.RollbackTransactionAsync();
-                return ServiceResult<CardOrderDto>.Fail(_messageService.Get("CardPackageCapacityExceeded"), 400);
+                return ServiceResult<CardOrderDto>.Fail(_messageService.Get("CardPackageCapacityExceeded", totalRequiredCards.ToString(), cardPackage.NumberOfCards.ToString()), 400);
             }
 
             // 6. Apply Package Pricing & Map Order via AutoMapper Profile
             var order = _mapper.Map<CardOrder>(request) ?? new CardOrder();
             order.UserId = userId.Value;
             order.TenantId = tenantId.Value;
-            order.Quantity = cardPackage?.NumberOfCards ?? request.Quantity;
-            order.TotalPrice = cardPackage?.Price ?? 0;
-            order.UnitPrice = cardPackage != null
-                ? (cardPackage.NumberOfCards > 0 ? cardPackage.Price / cardPackage.NumberOfCards : cardPackage.Price)
-                : 0;
+            order.Quantity = cardPackage.NumberOfCards;
+            order.TotalPrice = cardPackage.Price;
+            order.UnitPrice = cardPackage.NumberOfCards > 0 ? cardPackage.Price / cardPackage.NumberOfCards : cardPackage.Price;
             order.Currency = "KWD";
             order.Status = OrderStatus.PendingReview;
 
@@ -187,19 +181,20 @@ public class CardOrderService(
         if (parentOrder == null)
             return ServiceResult<CardOrderDto>.NotFound(_messageService.Get("RecordNotFound"));
 
-        var itemsResult = await BuildOrderItemsAsync(request.AssignmentScope, request.EmployeeIds, request.Quantity);
+        var packageIdToUse = request.CardPackageId ?? parentOrder.CardPackageId;
+        var cardPackage = await _unitOfWork.Repository<CardPackage>().GetByIdAsync(packageIdToUse);
+        if (cardPackage == null || !cardPackage.IsActive)
+            return ServiceResult<CardOrderDto>.Fail(_messageService.Get("InvalidOrInactiveCardPackage"), 400);
+
+        var itemsResult = await BuildOrderItemsAsync(request.AssignmentScope, request.EmployeeIds);
         if (!itemsResult.IsSuccess)
             return ServiceResult<CardOrderDto>.Fail(itemsResult.Message ?? string.Join(", ", itemsResult.Errors), itemsResult.StatusCode);
-
-        var cardPackage = await _unitOfWork.Repository<CardPackage>().GetByIdAsync(parentOrder.CardPackageId);
-        if (cardPackage != null && !cardPackage.IsActive)
-            return ServiceResult<CardOrderDto>.Fail(_messageService.Get("InvalidOrInactiveCardPackage"), 400);
 
         var itemsToOrder = itemsResult.Data ?? [];
         var totalRequiredCards = itemsToOrder.Where(i => i.RequiresCard).Sum(i => i.NumberOfCardsRequired);
 
-        if (cardPackage != null && totalRequiredCards > cardPackage.NumberOfCards)
-            return ServiceResult<CardOrderDto>.Fail(_messageService.Get("CardPackageCapacityExceeded"), 400);
+        if (totalRequiredCards > cardPackage.NumberOfCards)
+            return ServiceResult<CardOrderDto>.Fail(_messageService.Get("CardPackageCapacityExceeded", totalRequiredCards.ToString(), cardPackage.NumberOfCards.ToString()), 400);
 
         var reorder = BuildReorder(parentOrder, request, userId.Value, cardPackage, itemsToOrder);
         await _unitOfWork.Repository<CardOrder>().AddAsync(reorder);
@@ -228,6 +223,16 @@ public class CardOrderService(
 
         if (order.Status != OrderStatus.PendingReview)
             return ServiceResult<CardOrderDto>.Fail(_messageService.Get("OrderCannotBeUpdated"), 400);
+
+        var userId = _currentTenant.UserId;
+        if (userId.HasValue)
+        {
+            var currentUser = await _unitOfWork.Repository<User>().GetQueryable().AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId.Value);
+            if (currentUser != null && currentUser.AccountType == AccountType.Individual)
+            {
+                request.AssignmentScope = AssignmentScope.Individual;
+            }
+        }
 
         await _unitOfWork.BeginTransactionAsync();
         try
@@ -284,9 +289,7 @@ public class CardOrderService(
 
             if (request.AssignmentScope.HasValue || (request.EmployeeIds != null && request.EmployeeIds.Count > 0))
             {
-                var quantityToUse = request.Quantity ?? order.Quantity;
-
-                var itemsResult = await BuildOrderItemsAsync(currentScope, request.EmployeeIds, quantityToUse);
+                var itemsResult = await BuildOrderItemsAsync(currentScope, request.EmployeeIds);
                 if (!itemsResult.IsSuccess)
                 {
                     await _unitOfWork.RollbackTransactionAsync();
@@ -301,7 +304,7 @@ public class CardOrderService(
                     if (totalRequiredCards > pkg.NumberOfCards)
                     {
                         await _unitOfWork.RollbackTransactionAsync();
-                        return ServiceResult<CardOrderDto>.Fail(_messageService.Get("CardPackageCapacityExceeded"), 400);
+                        return ServiceResult<CardOrderDto>.Fail(_messageService.Get("CardPackageCapacityExceeded", totalRequiredCards.ToString(), pkg.NumberOfCards.ToString()), 400);
                     }
                 }
 
@@ -390,13 +393,11 @@ public class CardOrderService(
     // Private helpers
 
     private static CardOrder BuildReorder(CardOrder parent, ReorderRequest request, Guid userId,
-        CardPackage? package, List<CardOrderItem> items)
+        CardPackage package, List<CardOrderItem> items)
     {
-        var quantity = package?.NumberOfCards ?? request.Quantity;
-        var unitPrice = package != null
-            ? (package.NumberOfCards > 0 ? package.Price / package.NumberOfCards : package.Price)
-            : parent.UnitPrice;
-        var totalPrice = package?.Price ?? parent.TotalPrice;
+        var quantity = package.NumberOfCards;
+        var unitPrice = package.NumberOfCards > 0 ? package.Price / package.NumberOfCards : package.Price;
+        var totalPrice = package.Price;
 
         return new CardOrder
         {
@@ -404,7 +405,7 @@ public class CardOrderService(
             ParentOrderId   = parent.Id,
             CardDesignType  = parent.CardDesignType,
             CardTypeId      = parent.CardTypeId,
-            CardPackageId   = parent.CardPackageId,
+            CardPackageId   = package.Id,
             CardName        = parent.CardName,
             FrontDesignUrl  = parent.FrontDesignUrl,
             BackDesignUrl   = parent.BackDesignUrl,
@@ -427,16 +428,19 @@ public class CardOrderService(
             .FirstOrDefaultAsync(o => o.Id == id);
 
     private async Task<ServiceResult<List<CardOrderItem>>> BuildOrderItemsAsync(
-        AssignmentScope? scope, List<Guid>? employeeIds, int quantity)
+        AssignmentScope? scope, List<Guid>? employeeIds)
     {
         if (!scope.HasValue)
             return ServiceResult<List<CardOrderItem>>.Success([]);
 
         if (scope == AssignmentScope.SpecificEmployees || scope == AssignmentScope.ExcelUpload)
         {
-            if (employeeIds == null || employeeIds.Count != quantity)
+            var empCount = employeeIds?.Count ?? 0;
+            if (empCount == 0)
+            {
                 return ServiceResult<List<CardOrderItem>>.Fail(
-                    _messageService.Get("EmployeeCountMismatch", (employeeIds?.Count ?? 0).ToString(), quantity.ToString()), 422);
+                    _messageService.Get("NoValidEmployeeRows"), 422);
+            }
 
             var employees = await _unitOfWork.Repository<Employee>()
                 .GetQueryable().AsNoTracking()
@@ -465,10 +469,6 @@ public class CardOrderService(
                 .Include(e => e.UserProfile)
                 .Where(e => !e.IsDeleted && e.UserProfile != null)
                 .ToListAsync();
-
-            if (quantity != allEmployees.Count)
-                return ServiceResult<List<CardOrderItem>>.Fail(
-                    _messageService.Get("EmployeeCountMismatch", allEmployees.Count.ToString(), quantity.ToString()), 422);
 
             return ServiceResult<List<CardOrderItem>>.Success(
                 allEmployees.Select(e => _mapper.Map<CardOrderItem>(e)).ToList());

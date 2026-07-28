@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using NFC.Platform.Domain.Enums;
 
@@ -10,7 +10,7 @@ namespace NFC.Platform.Application.DTOs.CardOrder;
 /// </summary>
 public class ReorderRequest
 {
-    public int Quantity { get; set; }
+    public Guid? CardPackageId { get; set; }
 
     /// <summary>
     /// Assignment scope (AllEmployees, SpecificEmployees, or Individual).
