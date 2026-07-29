@@ -301,4 +301,16 @@
   <data name="DuplicatePackageNumberOfCards" xml:space="preserve">
     <value>توجد باقة بنفس عدد البطاقات بالفعل.</value>
   </data>
+  <data name="CardDesignId" xml:space="preserve">
+    <value>تصميم الكارت</value>
+  </data>
+  <data name="QuantityPerEmployee" xml:space="preserve">
+    <value>الكمية لكل موظف</value>
+  </data>
+  <data name="CustomQuantity" xml:space="preserve">
+    <value>الكمية المخصصة</value>
+  </data>
+  <data name="AssignmentScope" xml:space="preserve">
+    <value>نطاق التعيين</value>
+  </data>
 </root>

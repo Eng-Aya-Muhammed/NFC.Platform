@@ -400,4 +400,31 @@
   <data name="NoEmployeesFoundInCompany" xml:space="preserve">
     <value>No active employees with profiles found in the company to print cards for.</value>
   </data>
+  <data name="DesignNotFound" xml:space="preserve">
+    <value>Card design not found.</value>
+  </data>
+  <data name="DesignPaymentRequired" xml:space="preserve">
+    <value>Payment is required before placing an order. Please complete the payment first.</value>
+  </data>
+  <data name="DesignAlreadyPaid" xml:space="preserve">
+    <value>This design has already been paid for.</value>
+  </data>
+  <data name="DesignRemainingQuantityExceeded" xml:space="preserve">
+    <value>The required quantity ({0}) exceeds the design's remaining balance ({1}).</value>
+  </data>
+  <data name="UnitCardPackageNotFound" xml:space="preserve">
+    <value>No active unit card package (1 card) was found for pricing. Please contact support.</value>
+  </data>
+  <data name="InvalidPaymentSignature" xml:space="preserve">
+    <value>Invalid payment gateway signature.</value>
+  </data>
+  <data name="ConcurrentUpdateConflict" xml:space="preserve">
+    <value>A concurrent update conflict occurred. Please retry your request.</value>
+  </data>
+  <data name="CustomQuantityRequired" xml:space="preserve">
+    <value>Quantity is required for company accounts.</value>
+  </data>
+  <data name="CardPackageIdRequired" xml:space="preserve">
+    <value>A card package must be selected for individual accounts.</value>
+  </data>
 </root>

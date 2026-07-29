@@ -11,8 +11,7 @@ namespace NFC.Platform.Domain.Entities
         public decimal Price { get; set; }
         public int DurationInDays { get; set; }
 
-        //  Limits 
-        public int MaxEmployees { get; set; }
+
 
         /// <summary>
         /// Maximum number of template switches allowed per subscription period.

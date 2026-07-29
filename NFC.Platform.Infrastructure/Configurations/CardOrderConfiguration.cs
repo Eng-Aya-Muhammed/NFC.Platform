@@ -11,28 +11,15 @@ namespace NFC.Platform.Infrastructure.Configurations
             builder.ToTable("CardOrders");
             builder.HasKey(o => o.Id);
 
-            builder.Property(o => o.CardName).IsRequired().HasMaxLength(200);
-
-            builder.Property(o => o.CardTypeId).IsRequired();
-            builder.HasOne(o => o.CardType)
-                .WithMany()
-                .HasForeignKey(o => o.CardTypeId)
+            // FK to the pre-paid CardDesign (holds CardTypeId, CardPackageId, artwork URLs, etc.)
+            builder.Property(o => o.CardDesignId).IsRequired(false);
+            builder.HasOne(o => o.CardDesign)
+                .WithMany(d => d.Orders)
+                .HasForeignKey(o => o.CardDesignId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            builder.Property(o => o.CardPackageId).IsRequired();
-            builder.HasOne(o => o.CardPackage)
-                .WithMany()
-                .HasForeignKey(o => o.CardPackageId)
-                .OnDelete(DeleteBehavior.Restrict);
-
-            builder.Property(o => o.CardDesignType).IsRequired();
             builder.Property(o => o.Quantity).IsRequired();
-
-            builder.Property(o => o.ExcelDataUrl).HasMaxLength(1000);
-            builder.Property(o => o.FrontDesignUrl).HasMaxLength(1000);
-            builder.Property(o => o.BackDesignUrl).HasMaxLength(1000);
-
-
+            builder.Property(o => o.QuantityPerEmployee).IsRequired().HasDefaultValue(1);
 
             builder.Property(o => o.Notes).HasMaxLength(2000);
             builder.Property(o => o.Status).IsRequired();
@@ -53,8 +40,6 @@ namespace NFC.Platform.Infrastructure.Configurations
                 .WithMany()
                 .HasForeignKey(o => o.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
-
-            // PrintTemplateId FK removed — physical card design sourced only from FrontDesignUrl/BackDesignUrl
         }
     }
 }

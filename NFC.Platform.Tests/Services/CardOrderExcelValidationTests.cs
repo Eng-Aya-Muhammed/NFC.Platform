@@ -186,9 +186,9 @@ namespace NFC.Platform.Tests.Services
 
             try
             {
-                // 3. Setup Mocks for CardOrderService (CompanyAdmin User)
+                var mapperConfig = new AutoMapper.MapperConfiguration(cfg => cfg.AddProfile(new CardDesignMappingProfile()));
+                var mapper = mapperConfig.CreateMapper();
                 var unitOfWork = Substitute.For<IUnitOfWork>();
-                var mapper = Substitute.For<AutoMapper.IMapper>();
                 var messageService = Substitute.For<IMessageService>();
                 messageService.Get(Arg.Any<string>(), Arg.Any<object[]>()).Returns(c => (string)c.Args()[0]);
                 messageService.Get(Arg.Any<string>()).Returns(c => (string)c.Args()[0]);
@@ -245,30 +245,46 @@ namespace NFC.Platform.Tests.Services
                 );
 
                 var orderRepo = Substitute.For<IGenericRepository<CardOrder>>();
-                orderRepo.GetQueryable().Returns(new List<CardOrder>().AsQueryable().BuildMock());
-                unitOfWork.Repository<CardOrder>().Returns(orderRepo);
 
-                var cardPackageId = Guid.NewGuid();
-                var cardPackageRepo = Substitute.For<IGenericRepository<CardPackage>>();
-                cardPackageRepo.GetByIdAsync(Arg.Any<Guid>()).Returns(new CardPackage { Id = cardPackageId, IsActive = true, NumberOfCards = 100 });
-                unitOfWork.Repository<CardPackage>().Returns(cardPackageRepo);
+                var cardDesignRepo = Substitute.For<IGenericRepository<CardDesign>>();
+                var designsList = new List<CardDesign>();
+                cardDesignRepo.AddAsync(Arg.Do<CardDesign>(d => designsList.Add(d))).Returns(Task.CompletedTask);
+                cardDesignRepo.GetQueryable().Returns(_ => designsList.AsQueryable().BuildMock());
+                unitOfWork.Repository<CardDesign>().Returns(cardDesignRepo);
 
-                var request = new CreateCardOrderRequest
+                var unitPackage = new CardPackage { Id = Guid.NewGuid(), NumberOfCards = 1, Price = 10, IsActive = true };
+                var packageRepo = Substitute.For<IGenericRepository<CardPackage>>();
+                packageRepo.GetQueryable().Returns(new List<CardPackage> { unitPackage }.AsQueryable().BuildMock());
+                unitOfWork.Repository<CardPackage>().Returns(packageRepo);
+
+                var cardTypeRepo = Substitute.For<IGenericRepository<CardType>>();
+                cardTypeRepo.GetByIdAsync(Arg.Any<Guid>()).Returns(new CardType { Id = Guid.NewGuid(), IsActive = true });
+                unitOfWork.Repository<CardType>().Returns(cardTypeRepo);
+
+                var request = new CreateCardDesignRequest
                 {
                     CardTypeId = Guid.NewGuid(),
-                    CardPackageId = cardPackageId,
+                    CustomQuantity = 10,
                     CardDesignType = CardDesignType.NeedCustomDesign,
-                    ExcelDataUrl = cloudinaryExcelUrl,
-                    AssignmentScope = AssignmentScope.ExcelUpload
+                    ExcelDataUrl = cloudinaryExcelUrl
                 };
 
-                // 4. Act: Call CreateOrderAsync for CompanyAdmin
-                var result = await cardOrderService.CreateOrderAsync(request);
+                var cardDesignService = new CardDesignService(
+                    unitOfWork,
+                    mapper,
+                    messageService,
+                    currentTenant,
+                    employeeService,
+                    Substitute.For<IConfiguration>()
+                );
+
+                // 4. Act: Call CreateDesignAsync for CompanyAdmin
+                var result = await cardDesignService.CreateDesignAsync(request);
 
                 Console.WriteLine($"[CompanyAdmin Result] IsSuccess: {result.IsSuccess}, StatusCode: {result.StatusCode}, Errors: {string.Join(" | ", result.Errors ?? new List<string>())}");
 
                 // Validation MUST fail (IsSuccess = false, 422 status code)
-                Assert.False(result.IsSuccess, "Order creation should fail validation for invalid Excel data.");
+                Assert.False(result.IsSuccess, "Design creation should fail validation for invalid Excel data.");
                 Assert.Equal(422, result.StatusCode);
             }
             finally
@@ -283,7 +299,8 @@ namespace NFC.Platform.Tests.Services
         {
             // Setup Mocks for Individual User
             var unitOfWork = Substitute.For<IUnitOfWork>();
-            var mapper = Substitute.For<AutoMapper.IMapper>();
+            var mapperConfig = new AutoMapper.MapperConfiguration(cfg => cfg.AddProfile(new CardDesignMappingProfile()));
+            var mapper = mapperConfig.CreateMapper();
             var messageService = Substitute.For<IMessageService>();
             messageService.Get(Arg.Any<string>(), Arg.Any<object[]>()).Returns(c => (string)c.Args()[0]);
             messageService.Get(Arg.Any<string>()).Returns(c => (string)c.Args()[0]);
@@ -305,7 +322,7 @@ namespace NFC.Platform.Tests.Services
             unitOfWork.Repository<User>().Returns(userRepo);
 
             var cardOrderRepo = Substitute.For<IGenericRepository<CardOrder>>();
-            var createdOrder = new CardOrder { Id = Guid.NewGuid(), Quantity = 1, CardTypeId = Guid.NewGuid(), CardPackageId = Guid.NewGuid() };
+            var createdOrder = new CardOrder { Id = Guid.NewGuid(), Quantity = 1 };
             cardOrderRepo.GetQueryable().Returns(new List<CardOrder> { createdOrder }.AsQueryable().BuildMock());
             unitOfWork.Repository<CardOrder>().Returns(cardOrderRepo);
 
@@ -321,6 +338,10 @@ namespace NFC.Platform.Tests.Services
             var companyRepo = Substitute.For<IGenericRepository<Company>>();
             companyRepo.GetQueryable().Returns(new List<Company> { new Company { TenantId = tenantId, Id = Guid.NewGuid() } }.AsQueryable().BuildMock());
             unitOfWork.Repository<Company>().Returns(companyRepo);
+
+            var indCardTypeRepo = Substitute.For<IGenericRepository<CardType>>();
+            indCardTypeRepo.GetByIdAsync(Arg.Any<Guid>()).Returns(new CardType { Id = Guid.NewGuid(), IsActive = true });
+            unitOfWork.Repository<CardType>().Returns(indCardTypeRepo);
             var cardOrderService = new CardOrderService(
                 unitOfWork,
                 mapper,
@@ -338,7 +359,13 @@ namespace NFC.Platform.Tests.Services
             cardPackageRepo.GetByIdAsync(Arg.Any<Guid>()).Returns(new CardPackage { Id = cardPackageId, IsActive = true, NumberOfCards = 1, Price = 10.0m });
             unitOfWork.Repository<CardPackage>().Returns(cardPackageRepo);
 
-            var request = new CreateCardOrderRequest
+            var cardDesignRepo = Substitute.For<IGenericRepository<CardDesign>>();
+            var designsList = new List<CardDesign>();
+            cardDesignRepo.AddAsync(Arg.Do<CardDesign>(d => designsList.Add(d))).Returns(Task.CompletedTask);
+            cardDesignRepo.GetQueryable().Returns(_ => designsList.AsQueryable().BuildMock());
+            unitOfWork.Repository<CardDesign>().Returns(cardDesignRepo);
+
+            var request = new CreateCardDesignRequest
             {
                 CardTypeId = Guid.NewGuid(),
                 CardPackageId = cardPackageId,
@@ -346,14 +373,59 @@ namespace NFC.Platform.Tests.Services
                 ExcelDataUrl = "https://res.cloudinary.com/fake-url-with-invalid-data.xlsx"
             };
 
-            // Act: Call CreateOrderAsync for Individual Account with invalid ExcelDataUrl
-            var result = await cardOrderService.CreateOrderAsync(request);
+            var cardDesignService = new CardDesignService(
+                unitOfWork,
+                mapper,
+                messageService,
+                currentTenant,
+                Substitute.For<IEmployeeService>(),
+                Substitute.For<IConfiguration>()
+            );
+
+            // Act: Call CreateDesignAsync for Individual Account with ExcelDataUrl
+            var result = await cardDesignService.CreateDesignAsync(request);
 
             Console.WriteLine($"[Individual User Result] IsSuccess: {result.IsSuccess}, StatusCode: {result.StatusCode}");
 
-            // ExcelDataUrl is ignored for Individual accounts (AssignmentScope != ExcelUpload)
+            // ExcelDataUrl is ignored for Individual accounts
             Assert.True(result.IsSuccess);
             Assert.Equal(200, result.StatusCode);
+        }
+
+        [Fact]
+        public void GenerateSampleExcelFileForUserTesting()
+        {
+            var headers = new List<string>
+            {
+                "الاسم الكامل", "البريد الإلكتروني", "رقم الهاتف", "المسمى الوظيفي", "القسم",
+                "واتساب", "فيسبوك", "إنستغرام", "لينكدإن", "موقع إلكتروني", "تويتر", "رابط إضافي"
+            };
+
+            var dataRows = new List<List<string>>
+            {
+                new List<string> { "آسر أحمد", "aser.ahmed@nfcplatform.com", "+96590001111", "مدير التقنية CTO", "تكنولوجيا المعلومات", "+96590001111", "https://facebook.com/aser.ahmed", "https://instagram.com/aser.ahmed", "https://linkedin.com/in/aser-ahmed", "https://nfcplatform.com", "https://x.com/aser_ahmed", "https://github.com/aser-ahmed" },
+                new List<string> { "سارة المحمود", "sara.almahmoud@nfcplatform.com", "+96590002222", "مدير التسويق CMO", "التسويق والإعلام", "+96590002222", "https://facebook.com/sara.almahmoud", "https://instagram.com/sara.almahmoud", "https://linkedin.com/in/sara-almahmoud", "https://nfcplatform.com", "https://x.com/sara_m", "https://behance.net/sara-m" },
+                new List<string> { "محمد الكندري", "mohammed.alkandari@nfcplatform.com", "+96590003333", "مهندس برمجيات أول", "التطوير والبرمجة", "+96590003333", "https://facebook.com/m.alkandari", "https://instagram.com/m.alkandari", "https://linkedin.com/in/m-alkandari", "https://nfcplatform.com", "https://x.com/m_alkandari", "https://dev.to/m-alkandari" }
+            };
+
+            using var workbook = new ClosedXML.Excel.XLWorkbook();
+            var worksheet = workbook.Worksheets.Add("Employees");
+
+            for (int col = 0; col < headers.Count; col++)
+            {
+                worksheet.Cell(1, col + 1).Value = headers[col];
+            }
+
+            for (int rowIdx = 0; rowIdx < dataRows.Count; rowIdx++)
+            {
+                for (int col = 0; col < headers.Count; col++)
+                {
+                    worksheet.Cell(rowIdx + 2, col + 1).Value = dataRows[rowIdx][col];
+                }
+            }
+
+            workbook.SaveAs(@"d:\NFC.Platform\sample_employees_import.xlsx");
+            workbook.SaveAs(@"C:\Users\DELL\.gemini\antigravity-ide\brain\34144dcf-2199-4ff9-aaf5-251ed9cd0165\sample_employees_import.xlsx");
         }
     }
 }

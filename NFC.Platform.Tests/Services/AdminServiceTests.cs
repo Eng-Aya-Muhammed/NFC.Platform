@@ -83,8 +83,8 @@ namespace NFC.Platform.Tests.Services
             // Arrange
             var orders = new List<CardOrder>
             {
-                new() { Id = Guid.NewGuid(), CardName = "Order 1", Status = OrderStatus.PendingReview },
-                new() { Id = Guid.NewGuid(), CardName = "Order 2", Status = OrderStatus.UnderReview }
+                new() { Id = Guid.NewGuid(), Status = OrderStatus.PendingReview },
+                new() { Id = Guid.NewGuid(), Status = OrderStatus.UnderReview }
             };
             var mockQueryable = orders.AsQueryable().BuildMock();
             _orderRepo.GetQueryable().Returns(mockQueryable);
@@ -92,7 +92,7 @@ namespace NFC.Platform.Tests.Services
             var pagination = new PaginationRequest { PageNumber = 1, PageSize = 10 };
 
             _mapper.Map<AdminOrderSummaryDto>(Arg.Any<CardOrder>())
-                .Returns(x => new AdminOrderSummaryDto { CardName = ((CardOrder)x[0]).CardName });
+                .Returns(x => new AdminOrderSummaryDto { Id = ((CardOrder)x[0]).Id });
 
             // Act
             var result = await _sut.GetOrdersPagedAsync(pagination, null);
@@ -108,8 +108,8 @@ namespace NFC.Platform.Tests.Services
             // Arrange
             var orders = new List<CardOrder>
             {
-                new() { Id = Guid.NewGuid(), CardName = "Order 1", Status = OrderStatus.PendingReview },
-                new() { Id = Guid.NewGuid(), CardName = "Order 2", Status = OrderStatus.UnderReview }
+                new() { Id = Guid.NewGuid(), Status = OrderStatus.PendingReview },
+                new() { Id = Guid.NewGuid(), Status = OrderStatus.UnderReview }
             };
             var mockQueryable = orders.AsQueryable().BuildMock();
             _orderRepo.GetQueryable().Returns(mockQueryable);
@@ -117,7 +117,7 @@ namespace NFC.Platform.Tests.Services
             var pagination = new PaginationRequest { PageNumber = 1, PageSize = 10 };
 
             _mapper.Map<AdminOrderSummaryDto>(Arg.Any<CardOrder>())
-                .Returns(x => new AdminOrderSummaryDto { CardName = ((CardOrder)x[0]).CardName, Status = ((CardOrder)x[0]).Status });
+                .Returns(x => new AdminOrderSummaryDto { Id = ((CardOrder)x[0]).Id, Status = ((CardOrder)x[0]).Status });
 
             // Act
             var result = await _sut.GetOrdersPagedAsync(pagination, OrderStatus.UnderReview);
@@ -152,12 +152,12 @@ namespace NFC.Platform.Tests.Services
             var orderId = Guid.NewGuid();
             var orders = new List<CardOrder>
             {
-                new() { Id = orderId, CardName = "Special Order" }
+                new() { Id = orderId }
             };
             var mockQueryable = orders.AsQueryable().BuildMock();
             _orderRepo.GetQueryable().Returns(mockQueryable);
 
-            var dto = new AdminOrderDetailDto { Id = orderId, CardName = "Special Order" };
+            var dto = new AdminOrderDetailDto { Id = orderId };
             _mapper.Map<AdminOrderDetailDto>(Arg.Any<CardOrder>()).Returns(dto);
 
             // Act
@@ -165,7 +165,7 @@ namespace NFC.Platform.Tests.Services
 
             // Assert
             Assert.True(result.IsSuccess);
-            Assert.Equal("Special Order", result.Data!.CardName);
+            Assert.Equal(orderId, result.Data!.Id);
         }
 
         //  UpdateOrderStatusAsync 
@@ -703,7 +703,6 @@ namespace NFC.Platform.Tests.Services
             {
                 Id                   = orderId,
                 Status               = OrderStatus.ReadyForDelivery,
-                CardName             = "My NFC Card",
                 DeliveryOtp          = "111111",
                 DeliveryOtpLastSentAt = DateTime.UtcNow.AddMinutes(-2), // > 60s ago
                 DeliveryOtpResendCount = 2,
@@ -756,7 +755,6 @@ namespace NFC.Platform.Tests.Services
                 Description = "Business plan",
                 Price = 199m,
                 DurationInDays = 365,
-                MaxEmployees = 50,
                 MaxTemplateChanges = 5,
                 MaxCustomDesignRequests = 2
             };

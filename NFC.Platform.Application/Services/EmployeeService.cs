@@ -1,5 +1,6 @@
 using System.Net.Http;
 using NFC.Platform.Application.DTOs.Employee;
+using NFC.Platform.Application.Extensions;
 using NFC.Platform.Application.Interfaces.Services;
 using NFC.Platform.Domain.Constants;
 
@@ -270,11 +271,7 @@ namespace NFC.Platform.Application.Services;
                 }
                 else
                 {
-                    if (context.ActiveSub.SubscriptionPlan.MaxEmployees != SubscriptionConstants.UnlimitedQuota && 
-                        context.CurrentEmployeesCount + newEmployeesCount >= context.ActiveSub.SubscriptionPlan.MaxEmployees)
-                    {
-                        return ServiceResult<List<Guid>>.Fail(_messageService.Get("MaxEmployeesLimitReached"), 422);
-                    }
+
 
                     var (newEmployee, userProfile) = await CreateNewEmployeeAsync(row, companyId, tenantId, context.CompanyName, localCache);
 
@@ -342,6 +339,14 @@ namespace NFC.Platform.Application.Services;
                 existingEmployee.UserProfile.JobTitle = row.JobTitle ?? string.Empty;
                 existingEmployee.UserProfile.Department = row.Department;
                 existingEmployee.UserProfile.Phone = row.Phone;
+                if (!string.IsNullOrWhiteSpace(row.WhatsApp))
+                {
+                    existingEmployee.UserProfile.WhatsApp = row.WhatsApp;
+                }
+                if (row.CustomLinks != null && row.CustomLinks.Count > 0)
+                {
+                    existingEmployee.UserProfile.UpdateCustomLinks(row.CustomLinks);
+                }
             }
         }
 
@@ -356,6 +361,14 @@ namespace NFC.Platform.Application.Services;
             userProfile.Id = Guid.NewGuid();
             userProfile.CompanyName = companyName;
             userProfile.TenantId = tenantId;
+            if (!string.IsNullOrWhiteSpace(row.WhatsApp))
+            {
+                userProfile.WhatsApp = row.WhatsApp;
+            }
+            if (row.CustomLinks != null && row.CustomLinks.Count > 0)
+            {
+                userProfile.UpdateCustomLinks(row.CustomLinks);
+            }
 
             newEmployee.UserProfile = userProfile;
             userProfile.Employee = newEmployee;
@@ -379,12 +392,6 @@ namespace NFC.Platform.Application.Services;
             if (activeSub == null)
                 return _messageService.Get("SubscriptionExpiredOrMissing");
 
-            var currentEmployeesCount = await _unitOfWork.Repository<Employee>()
-                .CountAsync(e => e.TenantId == tenantId && !e.IsDeleted);
-
-            if (activeSub.SubscriptionPlan.MaxEmployees != SubscriptionConstants.UnlimitedQuota && currentEmployeesCount >= activeSub.SubscriptionPlan.MaxEmployees)
-                return _messageService.Get("MaxEmployeesLimitReached");
-            
             return null; 
         }
 

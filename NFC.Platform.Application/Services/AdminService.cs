@@ -44,6 +44,10 @@ public class AdminService : IAdminService
             .AsNoTracking()
             .Include(o => o.Tenant)
                 .ThenInclude(t => t.Company)
+            .Include(o => o.CardDesign)
+                .ThenInclude(d => d!.CardType)
+            .Include(o => o.CardDesign)
+                .ThenInclude(d => d!.CardPackage)
             .OrderByDescending(o => o.CreatedAt)
             .AsQueryable();
 
@@ -73,6 +77,10 @@ public class AdminService : IAdminService
             .AsNoTracking()
             .Include(o => o.Tenant)
                 .ThenInclude(t => t.Company)
+            .Include(o => o.CardDesign)
+                .ThenInclude(d => d!.CardType)
+            .Include(o => o.CardDesign)
+                .ThenInclude(d => d!.CardPackage)
             .OrderByDescending(o => o.CreatedAt)
             .AsQueryable();
 
@@ -90,12 +98,10 @@ public class AdminService : IAdminService
         var exportDtos = orders.Select(o => new AdminOrderExportDto
         {
             Id = o.Id,
-            CardName = o.CardName,
             CompanyName = o.Tenant?.Company?.Name ?? string.Empty,
             Quantity = o.Quantity,
             TotalAmount = o.TotalPrice,
             Status = o.Status,
-            DeliveryMethod = o.DeliveryMethod,
             CreatedAt = o.CreatedAt
         }).ToList();
 
@@ -154,8 +160,10 @@ public class AdminService : IAdminService
             .Include(o => o.Tenant)
             .Include(o => o.User)
                 .ThenInclude(u => u.UserProfile)
-            .Include(o => o.CardType)
-            .Include(o => o.CardPackage)
+            .Include(o => o.CardDesign)
+                .ThenInclude(d => d!.CardType)
+            .Include(o => o.CardDesign)
+                .ThenInclude(d => d!.CardPackage)
             .Include(o => o.Items)
             .FirstOrDefaultAsync(o => o.Id == id);
 
@@ -205,6 +213,8 @@ public class AdminService : IAdminService
                         .ThenInclude(u => u!.UserProfile)
             .Include(o => o.User)
                 .ThenInclude(u => u.UserProfile)
+            .Include(o => o.CardDesign)
+                .ThenInclude(d => d!.CardType)
             .FirstOrDefaultAsync(o => o.Id == id);
 
         if (order == null)
@@ -222,7 +232,7 @@ public class AdminService : IAdminService
             order.RejectionReason = dto.RejectionReason;
         }
 
-        if (dto.Status == OrderStatus.ReadyForDelivery && order.DeliveryMethod == DeliveryMethod.Courier)
+        if (dto.Status == OrderStatus.ReadyForDelivery)
         {
             if (string.IsNullOrWhiteSpace(dto.TrackingNumber))
                 return ServiceResult.Fail(_messageService.Get("TrackingNumberRequired"), 422);
@@ -232,6 +242,25 @@ public class AdminService : IAdminService
             order.TrackingNumber = dto.TrackingNumber;
 
         order.Status = dto.Status;
+
+        // ── Deduct card quantity from CardDesign when order is Approved ───────
+        if (dto.Status == OrderStatus.Approved)
+        {
+            var design = await _unitOfWork.Repository<CardDesign>()
+                .GetQueryable()
+                .FirstOrDefaultAsync(d => d.Id == order.CardDesignId);
+
+            if (design != null)
+            {
+                // Determine how many cards to deduct based on account type
+                var isCompanyOrder = order.Items != null && order.Items.Count > 0;
+                var deducted = isCompanyOrder
+                    ? order.Items!.Sum(i => i.NumberOfCardsRequired)
+                    : order.Quantity;
+
+                design.UsedQuantity += deducted;
+            }
+        }
 
         if (dto.Status == OrderStatus.ReadyForDelivery)
         {
@@ -244,11 +273,21 @@ public class AdminService : IAdminService
                 order.DeliveryOtpLastSentAt = DateTime.UtcNow;
                 order.DeliveryOtpResendCount = 0;
 
-                EnqueueOtpNotifications(recipient, otp, order.CardName, isResend: false);
+                EnqueueOtpNotifications(recipient, otp, order.CardDesign?.CardType?.NameAr ?? "Physical Card", isResend: false);
             }
         }
 
-        await _unitOfWork.SaveChangesAsync();
+        try
+        {
+            await _unitOfWork.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            // Another admin approved a concurrent order at the same time.
+            // Surface a 409 so the caller can retry.
+            return ServiceResult.Fail(_messageService.Get("ConcurrentUpdateConflict"), 409);
+        }
+
         return ServiceResult.Success(_messageService.Get("RecordUpdated"));
     }
 
@@ -290,6 +329,8 @@ public class AdminService : IAdminService
                         .ThenInclude(u => u!.UserProfile)
             .Include(o => o.User)
                 .ThenInclude(u => u.UserProfile)
+            .Include(o => o.CardDesign)
+                .ThenInclude(d => d!.CardType)
             .FirstOrDefaultAsync(o => o.Id == orderId);
 
         if (order == null)
@@ -321,7 +362,7 @@ public class AdminService : IAdminService
 
         if (recipient != null)
         {
-            EnqueueOtpNotifications(recipient, newOtp, order.CardName, isResend: true);
+            EnqueueOtpNotifications(recipient, newOtp, order.CardDesign?.CardType?.NameAr ?? "Physical Card", isResend: true);
         }
 
         return ServiceResult.Success(_messageService.Get("OtpResent"));

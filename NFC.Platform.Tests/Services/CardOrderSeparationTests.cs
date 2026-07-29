@@ -56,9 +56,7 @@ namespace NFC.Platform.Tests.Services
             var order = new CardOrder
             {
                 Id = Guid.NewGuid(),
-                Quantity = 1,
-                CardTypeId = cardType.Id,
-                CardPackageId = cardPackage.Id
+                Quantity = 1
             };
             mapper.Map<CardOrder>(Arg.Any<CreateCardOrderRequest>()).Returns(order);
             orderRepo.GetQueryable().Returns(new List<CardOrder> { order }.AsQueryable().BuildMock());
@@ -82,11 +80,25 @@ namespace NFC.Platform.Tests.Services
                 otpSettingsOptions
             );
 
+            var cardDesign = new CardDesign
+            {
+                Id = Guid.NewGuid(),
+                IsPaid = true,
+                TotalQuantity = 10,
+                UsedQuantity = 0,
+                CardPackageId = cardPackage.Id,
+                UnitPrice = 10,
+                TotalPrice = 10,
+                Currency = "KWD"
+            };
+            var designRepo = Substitute.For<IGenericRepository<CardDesign>>();
+            designRepo.GetQueryable().Returns(new List<CardDesign> { cardDesign }.AsQueryable().BuildMock());
+            unitOfWork.Repository<CardDesign>().Returns(designRepo);
+
             var request = new CreateCardOrderRequest
             {
-                CardTypeId = cardType.Id,
-                CardPackageId = cardPackage.Id,
-                CardDesignType = CardDesignType.NeedCustomDesign
+                CardDesignId = cardDesign.Id,
+                Quantity = 1
             };
 
             // Act

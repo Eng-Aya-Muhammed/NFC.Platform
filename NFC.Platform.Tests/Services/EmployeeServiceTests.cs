@@ -100,34 +100,7 @@ namespace NFC.Platform.Tests.Services
             Assert.Equal("SubscriptionExpiredOrMissing", result.Message);
         }
 
-        [Fact]
-        public async Task CreateEmployeeAsync_ReturnsFail_WhenMaxEmployeesLimitReached()
-        {
-            // Arrange
-            var tenantId = Guid.NewGuid();
-            _currentTenant.TenantId.Returns(tenantId);
 
-            var company = new Company { Id = Guid.NewGuid() };
-            var queryableCompany = new List<Company> { company }.BuildMock();
-            _companyRepo.GetQueryable().Returns(queryableCompany);
-
-            var plan = new SubscriptionPlan { MaxEmployees = 2 };
-            var subscription = new UserSubscription { TenantId = tenantId, IsActive = true, EndDate = DateTime.UtcNow.AddDays(10), SubscriptionPlan = plan };
-            var queryableSub = new List<UserSubscription> { subscription }.BuildMock();
-            _subscriptionRepo.GetQueryable().Returns(queryableSub);
-
-            // Count is 2 (which is equal to MaxEmployees = 2)
-            _employeeRepo.CountAsync(Arg.Any<Expression<Func<Employee, bool>>>()).Returns(2);
-
-            var request = new CreateEmployeeRequest { Email = "test@test.com" };
-
-            // Act
-            var result = await _sut.CreateEmployeeAsync(request);
-
-            // Assert
-            Assert.False(result.IsSuccess);
-            Assert.Equal("MaxEmployeesLimitReached", result.Message);
-        }
 
         [Fact]
         public async Task CreateEmployeeAsync_ReturnsFail_WhenEmployeeAlreadyExistsWithEmail()
@@ -140,7 +113,7 @@ namespace NFC.Platform.Tests.Services
             var queryableCompany = new List<Company> { company }.BuildMock();
             _companyRepo.GetQueryable().Returns(queryableCompany);
 
-            var plan = new SubscriptionPlan { MaxEmployees = 10 };
+            var plan = new SubscriptionPlan();
             var subscription = new UserSubscription { TenantId = tenantId, IsActive = true, EndDate = DateTime.UtcNow.AddDays(10), SubscriptionPlan = plan };
             var queryableSub = new List<UserSubscription> { subscription }.BuildMock();
             _subscriptionRepo.GetQueryable().Returns(queryableSub);
@@ -175,7 +148,7 @@ namespace NFC.Platform.Tests.Services
             var queryableCompany = new List<Company> { company }.BuildMock();
             _companyRepo.GetQueryable().Returns(queryableCompany);
 
-            var plan = new SubscriptionPlan { MaxEmployees = 100 };
+            var plan = new SubscriptionPlan();
             var subscription = new UserSubscription { TenantId = tenantId, IsActive = true, EndDate = DateTime.UtcNow.AddDays(10), SubscriptionPlan = plan };
             var queryableSub = new List<UserSubscription> { subscription }.BuildMock();
             _subscriptionRepo.GetQueryable().Returns(queryableSub);
@@ -263,7 +236,7 @@ namespace NFC.Platform.Tests.Services
             var queryableCompany = new List<Company> { company }.BuildMock();
             _companyRepo.GetQueryable().Returns(queryableCompany);
 
-            var plan = new SubscriptionPlan { MaxEmployees = 50 };
+            var plan = new SubscriptionPlan();
             var subscription = new UserSubscription { TenantId = tenantId, IsActive = true, EndDate = DateTime.UtcNow.AddDays(30), SubscriptionPlan = plan };
             var queryableSub = new List<UserSubscription> { subscription }.BuildMock();
             _subscriptionRepo.GetQueryable().Returns(queryableSub);

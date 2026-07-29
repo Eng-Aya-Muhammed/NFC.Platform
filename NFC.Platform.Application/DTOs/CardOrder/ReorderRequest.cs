@@ -22,8 +22,4 @@ public class ReorderRequest
     /// Count must equal Quantity.
     /// </summary>
     public List<Guid> EmployeeIds { get; set; } = [];
-
-    public DeliveryMethod DeliveryMethod { get; set; } = DeliveryMethod.Pickup;
-
-    public string? ShippingAddress { get; set; }
 }

@@ -11,15 +11,15 @@ namespace NFC.Platform.Application.Mapping
         {
             CreateMap<CardOrder, AdminOrderSummaryDto>()
                 .ForMember(dest => dest.TenantName, opt => opt.MapFrom(src => src.Tenant != null ? src.Tenant.Name : string.Empty))
-                .ForMember(dest => dest.DesignType, opt => opt.MapFrom(src => src.CardDesignType));
+                .ForMember(dest => dest.DesignType, opt => opt.MapFrom(src => src.CardDesign != null ? src.CardDesign.CardDesignType : default));
 
             CreateMap<CardOrder, AdminOrderDetailDto>()
                 .ForMember(dest => dest.TenantName, opt => opt.MapFrom(src => src.Tenant != null ? src.Tenant.Name : string.Empty))
                 .ForMember(dest => dest.CustomerName, opt => opt.MapFrom(src => src.User != null ? (src.User.UserProfile != null ? src.User.UserProfile.FullName : src.User.Username) : string.Empty))
                 .ForMember(dest => dest.CustomerEmail, opt => opt.MapFrom(src => src.User != null ? src.User.Email : string.Empty))
-                .ForMember(dest => dest.DesignType, opt => opt.MapFrom(src => src.CardDesignType))
-                .ForMember(dest => dest.CardType, opt => opt.MapFrom(src => src.CardType))
-                .ForMember(dest => dest.CardPackage, opt => opt.MapFrom(src => src.CardPackage))
+                .ForMember(dest => dest.DesignType, opt => opt.MapFrom(src => src.CardDesign != null ? src.CardDesign.CardDesignType : default))
+                .ForMember(dest => dest.CardType, opt => opt.MapFrom(src => src.CardDesign != null ? src.CardDesign.CardType : null))
+                .ForMember(dest => dest.CardPackage, opt => opt.MapFrom(src => src.CardDesign != null ? src.CardDesign.CardPackage : null))
                 .ForMember(dest => dest.Items, opt => opt.MapFrom(src => src.Items));
 
             CreateMap<Tenant, TenantSummaryDto>();

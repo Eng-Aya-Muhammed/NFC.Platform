@@ -116,6 +116,10 @@ namespace NFC.Platform.Tests.Services
             var empRepo = Substitute.For<IGenericRepository<Employee>>();
             empRepo.GetQueryable().Returns(new List<Employee>().AsQueryable().BuildMock());
             _unitOfWork.Repository<Employee>().Returns(empRepo);
+
+            var userRepo = Substitute.For<IGenericRepository<User>>();
+            userRepo.GetQueryable().Returns(new List<User> { new User { Id = _userId, AccountType = AccountType.Individual } }.AsQueryable().BuildMock());
+            _unitOfWork.Repository<User>().Returns(userRepo);
         }
 
         // ==========================================
@@ -123,19 +127,18 @@ namespace NFC.Platform.Tests.Services
         // ==========================================
 
         [Fact]
-        public async Task CreateOrderAsync_Fails_WhenPackageNotFoundOrInactive()
+        public async Task CreateOrderAsync_Fails_WhenDesignNotFound()
         {
             // Arrange
-            var pkgId = Guid.NewGuid();
-            var pkgRepo = Substitute.For<IGenericRepository<CardPackage>>();
-            pkgRepo.GetByIdAsync(pkgId).Returns((CardPackage?)null);
-            _unitOfWork.Repository<CardPackage>().Returns(pkgRepo);
+            var designId = Guid.NewGuid();
+            var designRepo = Substitute.For<IGenericRepository<CardDesign>>();
+            designRepo.GetQueryable().Returns(new List<CardDesign>().AsQueryable().BuildMock());
+            _unitOfWork.Repository<CardDesign>().Returns(designRepo);
 
             var request = new CreateCardOrderRequest
             {
-                CardPackageId = pkgId,
-                CardTypeId = Guid.NewGuid(),
-                CardDesignType = CardDesignType.CustomArtwork
+                CardDesignId = designId,
+                Quantity = 1
             };
 
             // Act
@@ -143,34 +146,36 @@ namespace NFC.Platform.Tests.Services
 
             // Assert
             Assert.False(result.IsSuccess);
-            Assert.Equal(400, result.StatusCode);
-            Assert.Equal("InvalidOrInactiveCardPackage", result.Message);
+            Assert.Equal(404, result.StatusCode);
+            Assert.Equal("DesignNotFound", result.Message);
         }
 
         [Fact]
-        public async Task CreateOrderAsync_Fails_WhenEmployeeCountExceedsPackageCapacity()
+        public async Task CreateOrderAsync_Fails_WhenQuantityExceedsDesignCapacity()
         {
             // Arrange
-            var pkgId = Guid.NewGuid();
-            var pkg = new CardPackage { Id = pkgId, IsActive = true, NumberOfCards = 5, Price = 500 };
-            var pkgRepo = Substitute.For<IGenericRepository<CardPackage>>();
-            pkgRepo.GetByIdAsync(pkgId).Returns(pkg);
-            _unitOfWork.Repository<CardPackage>().Returns(pkgRepo);
+            var designId = Guid.NewGuid();
+            var design = new CardDesign { Id = designId, IsPaid = true, TotalQuantity = 5, UsedQuantity = 0, CardPackageId = Guid.NewGuid(), UnitPrice = 10, TotalPrice = 50, Currency = "KWD" };
+            var designRepo = Substitute.For<IGenericRepository<CardDesign>>();
+            designRepo.GetQueryable().Returns(new List<CardDesign> { design }.AsQueryable().BuildMock());
+            _unitOfWork.Repository<CardDesign>().Returns(designRepo);
 
-            // Create 6 employee IDs (exceeding package capacity of 5)
             var empIds = Enumerable.Range(0, 6).Select(_ => Guid.NewGuid()).ToList();
             var employees = empIds.Select(id => new Employee { Id = id, FullName = "Emp", UserProfile = new UserProfile() }).ToList();
             var empRepo = Substitute.For<IGenericRepository<Employee>>();
             empRepo.GetQueryable().Returns(employees.AsQueryable().BuildMock());
             _unitOfWork.Repository<Employee>().Returns(empRepo);
 
+            var userRepo = Substitute.For<IGenericRepository<User>>();
+            userRepo.GetQueryable().Returns(new List<User> { new User { Id = _userId, AccountType = AccountType.CompanyAdmin } }.AsQueryable().BuildMock());
+            _unitOfWork.Repository<User>().Returns(userRepo);
+
             var request = new CreateCardOrderRequest
             {
-                CardPackageId = pkgId,
-                CardTypeId = Guid.NewGuid(),
-                CardDesignType = CardDesignType.CustomArtwork,
+                CardDesignId = designId,
                 AssignmentScope = AssignmentScope.SpecificEmployees,
-                EmployeeIds = empIds
+                EmployeeIds = empIds,
+                QuantityPerEmployee = 1
             };
 
             // Act
@@ -179,25 +184,29 @@ namespace NFC.Platform.Tests.Services
             // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(400, result.StatusCode);
-            Assert.Contains("CardPackageCapacityExceeded", result.Message);
+            Assert.Contains("DesignRemainingQuantityExceeded", result.Message);
         }
 
         [Fact]
         public async Task CreateOrderAsync_Succeeds_WithPackageCapacityAndEmployees()
         {
             // Arrange
-            var pkgId = Guid.NewGuid();
+            var designId = Guid.NewGuid();
             var typeId = Guid.NewGuid();
-            var pkg = new CardPackage { Id = pkgId, IsActive = true, NumberOfCards = 10, Price = 1000 };
+            var design = new CardDesign { Id = designId, CardTypeId = typeId, IsPaid = true, TotalQuantity = 10, UsedQuantity = 0, CardPackageId = Guid.NewGuid(), UnitPrice = 100, TotalPrice = 1000, Currency = "KWD" };
             var type = new CardType { Id = typeId, IsActive = true };
 
-            var pkgRepo = Substitute.For<IGenericRepository<CardPackage>>();
-            pkgRepo.GetByIdAsync(pkgId).Returns(pkg);
-            _unitOfWork.Repository<CardPackage>().Returns(pkgRepo);
+            var designRepo = Substitute.For<IGenericRepository<CardDesign>>();
+            designRepo.GetQueryable().Returns(new List<CardDesign> { design }.AsQueryable().BuildMock());
+            _unitOfWork.Repository<CardDesign>().Returns(designRepo);
 
             var typeRepo = Substitute.For<IGenericRepository<CardType>>();
             typeRepo.GetByIdAsync(typeId).Returns(type);
             _unitOfWork.Repository<CardType>().Returns(typeRepo);
+
+            var userRepo = Substitute.For<IGenericRepository<User>>();
+            userRepo.GetQueryable().Returns(new List<User> { new User { Id = _userId, AccountType = AccountType.CompanyAdmin } }.AsQueryable().BuildMock());
+            _unitOfWork.Repository<User>().Returns(userRepo);
 
             var empIds = Enumerable.Range(0, 3).Select(_ => Guid.NewGuid()).ToList();
             var employees = empIds.Select(id => new Employee { Id = id, FullName = "Emp", UserProfile = new UserProfile() }).ToList();
@@ -207,14 +216,10 @@ namespace NFC.Platform.Tests.Services
 
             var request = new CreateCardOrderRequest
             {
-                CardPackageId = pkgId,
-                CardTypeId = typeId,
-                CardDesignType = CardDesignType.CustomArtwork,
-                FrontDesignUrl = "https://cdn.example.com/front.png",
-                BackDesignUrl = "https://cdn.example.com/back.png",
+                CardDesignId = designId,
                 AssignmentScope = AssignmentScope.SpecificEmployees,
                 EmployeeIds = empIds,
-                DeliveryMethod = DeliveryMethod.Pickup
+                QuantityPerEmployee = 1
             };
 
             // Act
@@ -224,7 +229,7 @@ namespace NFC.Platform.Tests.Services
             Assert.True(result.IsSuccess);
             Assert.Equal(200, result.StatusCode);
             Assert.NotNull(result.Data);
-            Assert.Equal(10, result.Data.Quantity);
+            Assert.Equal(3, result.Data.Quantity);
             Assert.Equal(1000, result.Data.TotalPrice);
             Assert.Equal(100, result.Data.UnitPrice);
         }
@@ -244,8 +249,7 @@ namespace NFC.Platform.Tests.Services
 
             var request = new ReorderRequest
             {
-                AssignmentScope = AssignmentScope.AllEmployees,
-                DeliveryMethod = DeliveryMethod.Pickup
+                AssignmentScope = AssignmentScope.AllEmployees
             };
 
             // Act
@@ -259,14 +263,24 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task CreateReorderAsync_Succeeds_UsingParentCardPackage()
         {
-            // Arrange
+            _currentTenant.UserId.Returns(_userId);
+            _currentTenant.TenantId.Returns(_tenantId);
+
+            var userRepo = Substitute.For<IGenericRepository<User>>();
+            userRepo.GetQueryable().Returns(new List<User> { new User { Id = _userId, AccountType = AccountType.Individual } }.AsQueryable().BuildMock());
+            _unitOfWork.Repository<User>().Returns(userRepo);
+
             var parentId = Guid.NewGuid();
             var pkgId = Guid.NewGuid();
+            var designId = Guid.NewGuid();
+            var cardDesign = new CardDesign { Id = designId, TenantId = _tenantId, CardPackageId = pkgId, IsPaid = true, TotalQuantity = 20, UsedQuantity = 10, UnitPrice = 50, TotalPrice = 500, Currency = "KWD" };
             var parentOrder = new CardOrder
             {
                 Id = parentId,
                 TenantId = _tenantId,
-                CardPackageId = pkgId,
+                CardDesignId = designId,
+                CardDesign = cardDesign,
+                Status = OrderStatus.Approved,
                 UnitPrice = 50,
                 TotalPrice = 500,
                 Quantity = 10
@@ -274,9 +288,16 @@ namespace NFC.Platform.Tests.Services
 
             var pkg = new CardPackage { Id = pkgId, IsActive = true, NumberOfCards = 10, Price = 500 };
 
+            var ordersList = new List<CardOrder> { parentOrder };
             var orderRepo = Substitute.For<IGenericRepository<CardOrder>>();
-            orderRepo.GetQueryable().Returns(new List<CardOrder> { parentOrder }.AsQueryable().BuildMock());
+            orderRepo.AddAsync(Arg.Do<CardOrder>(o => ordersList.Add(o))).Returns(Task.CompletedTask);
+            orderRepo.GetQueryable().Returns(_ => ordersList.AsQueryable().BuildMock());
             _unitOfWork.Repository<CardOrder>().Returns(orderRepo);
+
+            var designRepo = Substitute.For<IGenericRepository<CardDesign>>();
+            designRepo.GetByIdAsync(designId).Returns(cardDesign);
+            designRepo.GetQueryable().Returns(new List<CardDesign> { cardDesign }.AsQueryable().BuildMock());
+            _unitOfWork.Repository<CardDesign>().Returns(designRepo);
 
             var pkgRepo = Substitute.For<IGenericRepository<CardPackage>>();
             pkgRepo.GetByIdAsync(pkgId).Returns(pkg);
@@ -284,8 +305,7 @@ namespace NFC.Platform.Tests.Services
 
             var request = new ReorderRequest
             {
-                AssignmentScope = AssignmentScope.AllEmployees,
-                DeliveryMethod = DeliveryMethod.Pickup
+                AssignmentScope = AssignmentScope.Individual
             };
 
             // Act
@@ -334,38 +354,37 @@ namespace NFC.Platform.Tests.Services
         }
 
         [Fact]
-        public async Task UpdateOrderAsync_Succeeds_WhenUpdatingPackageAndRecalculating()
+        public async Task UpdateOrderAsync_Succeeds_WhenUpdatingNotesAndQuantity()
         {
             // Arrange
             var orderId = Guid.NewGuid();
-            var oldPkgId = Guid.NewGuid();
-            var newPkgId = Guid.NewGuid();
+            var designId = Guid.NewGuid();
 
             var order = new CardOrder
             {
                 Id = orderId,
                 TenantId = _tenantId,
-                CardPackageId = oldPkgId,
+                CardDesignId = designId,
                 Status = OrderStatus.PendingReview,
                 Quantity = 5,
                 TotalPrice = 250,
                 Items = []
             };
 
-            var newPkg = new CardPackage { Id = newPkgId, IsActive = true, NumberOfCards = 20, Price = 800 };
+            var design = new CardDesign { Id = designId, IsPaid = true, TotalQuantity = 50, UsedQuantity = 5 };
 
             var orderRepo = Substitute.For<IGenericRepository<CardOrder>>();
             orderRepo.GetQueryable().Returns(new List<CardOrder> { order }.AsQueryable().BuildMock());
             _unitOfWork.Repository<CardOrder>().Returns(orderRepo);
 
-            var pkgRepo = Substitute.For<IGenericRepository<CardPackage>>();
-            pkgRepo.GetByIdAsync(newPkgId).Returns(newPkg);
-            _unitOfWork.Repository<CardPackage>().Returns(pkgRepo);
+            var designRepo = Substitute.For<IGenericRepository<CardDesign>>();
+            designRepo.GetQueryable().Returns(new List<CardDesign> { design }.AsQueryable().BuildMock());
+            _unitOfWork.Repository<CardDesign>().Returns(designRepo);
 
             var request = new UpdateCardOrderRequest
             {
-                CardPackageId = newPkgId,
-                Notes = "Upgraded to 20 cards package"
+                Quantity = 10,
+                Notes = "Upgraded to 10 cards"
             };
 
             // Act
@@ -374,9 +393,7 @@ namespace NFC.Platform.Tests.Services
             // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(200, result.StatusCode);
-            Assert.Equal(20, order.Quantity);
-            Assert.Equal(800, order.TotalPrice);
-            Assert.Equal(40, order.UnitPrice);
+            Assert.Equal(10, order.Quantity);
         }
     }
 }

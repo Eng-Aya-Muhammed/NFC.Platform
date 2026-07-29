@@ -197,11 +197,7 @@ public class EmployeeImportService(
                     }
                     else
                     {
-                        // Validate subscription limit
-                        if (currentEmployeesCount + newEmployeesCount >= activeSub.SubscriptionPlan.MaxEmployees)
-                        {
-                            throw new BusinessException("MaxEmployeesLimitReached");
-                        }
+
 
                         // Create employee record
                         var newEmployee = _mapper.Map<Employee>(row);
@@ -271,20 +267,38 @@ public class EmployeeImportService(
                     throw new BusinessException("InvalidOrInactiveCardPackage", job.CardPackageId.ToString());
                 }
 
+                var cardDesign = new CardDesign
+                {
+                    TenantId = job.TenantId,
+                    UserId = job.UserId,
+                    CardPackageId = job.CardPackageId,
+                    TotalQuantity = cardPackage.NumberOfCards,
+                    UsedQuantity = itemsToOrder.Count,
+                    UnitPrice = cardPackage.NumberOfCards > 0 ? cardPackage.Price / cardPackage.NumberOfCards : cardPackage.Price,
+                    TotalPrice = cardPackage.Price,
+                    Currency = "KWD",
+                    CardDesignType = job.CardDesignType,
+                    IsPaid = true,
+                    PaymentStatus = CardDesignPaymentStatus.Paid,
+                    PaidAt = DateTime.UtcNow,
+                    Notes = job.Notes
+                };
+
+                await _unitOfWork.Repository<CardDesign>().AddAsync(cardDesign);
+                await _unitOfWork.SaveChangesAsync();
+
                 var cardOrder = new CardOrder
                 {
-                    CardTypeId = job.CardTypeId,
-                    CardPackageId = job.CardPackageId,
-                    CardDesignType = job.CardDesignType,
+                    CardDesignId = cardDesign.Id,
                     Quantity = itemsToOrder.Count,
                     Notes = job.Notes,
                     UserId = job.UserId,
                     TenantId = job.TenantId,
                     Status = OrderStatus.PendingReview,
                     Items = itemsToOrder,
-                    UnitPrice = cardPackage.Price,
+                    UnitPrice = cardDesign.UnitPrice,
                     Currency = "KWD",
-                    TotalPrice = cardPackage.Price
+                    TotalPrice = cardDesign.TotalPrice
                 };
 
                 await _unitOfWork.Repository<CardOrder>().AddAsync(cardOrder);

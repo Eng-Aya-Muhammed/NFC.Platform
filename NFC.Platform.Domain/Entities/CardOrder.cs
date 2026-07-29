@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using NFC.Platform.Domain.Common;
 using NFC.Platform.Domain.Enums;
 
@@ -12,33 +13,26 @@ namespace NFC.Platform.Domain.Entities
         public Guid UserId { get; set; }
         public User User { get; set; } = null!;
 
-        public string CardName { get; set; } = string.Empty;
-
-        public Guid CardTypeId { get; set; }
-        public CardType? CardType { get; set; }
-
-        public Guid CardPackageId { get; set; }
-        public CardPackage? CardPackage { get; set; }
-
-        public CardDesignType CardDesignType { get; set; }
+        /// <summary>
+        /// FK to the CardDesign that was created (and paid for) before this order.
+        /// Holds the design files, quantity allocation, card type, and pricing.
+        /// </summary>
+        public Guid? CardDesignId { get; set; }
+        public CardDesign? CardDesign { get; set; }
 
         /// <summary>
-        /// For reorders: the parent order whose design/template is being reused.
+        /// Number of cards requested per employee (Company orders only).
+        /// Individual orders use Quantity directly.
+        /// </summary>
+        public int QuantityPerEmployee { get; set; } = 1;
+
+        /// <summary>
+        /// For reorders: the parent order whose design is being reused.
         /// </summary>
         public Guid? ParentOrderId { get; set; }
         public CardOrder? ParentOrder { get; set; }
 
         public int Quantity { get; set; }
-
-        public string? ExcelDataUrl { get; set; }
-
-        /// <summary>
-        /// Physical card design — customer upload or design-team deliverable (via TemplateRequest).
-        /// This is the sole source of truth for the printed card design.
-        /// </summary>
-        public string? FrontDesignUrl { get; set; }
-
-        public string? BackDesignUrl { get; set; }
 
         public string? Notes { get; set; }
 
@@ -76,16 +70,6 @@ namespace NFC.Platform.Domain.Entities
         /// </summary>
         public int DeliveryOtpResendCount { get; set; } = 0;
 
-        public DeliveryMethod DeliveryMethod { get; set; } = DeliveryMethod.Pickup;
-
-        /// <summary>
-        /// Delivery address. Required when DeliveryMethod = Courier.
-        /// Stored as free-text to match Gulf address conventions.
-        /// </summary>
-        public string? ShippingAddress { get; set; }
-
         public ICollection<CardOrderItem> Items { get; set; } = [];
-
-
     }
 }

@@ -1,3 +1,6 @@
+using System.Collections.Generic;
+using NFC.Platform.Application.DTOs.Profile;
+
 namespace NFC.Platform.Application.DTOs.Employee
 {
     public class ExcelEmployeeImportDto
@@ -7,7 +10,7 @@ namespace NFC.Platform.Application.DTOs.Employee
         public string? Phone { get; set; }
         public string? JobTitle { get; set; }
         public string? Department { get; set; }
-        public bool RequiresCard { get; set; } = true;
-        public int NumberOfCardsRequired { get; set; } = 1;
+        public string? WhatsApp { get; set; }
+        public List<CustomLinkInput> CustomLinks { get; set; } = [];
     }
 }

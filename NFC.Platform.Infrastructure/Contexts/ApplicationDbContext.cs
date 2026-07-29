@@ -35,6 +35,7 @@ namespace NFC.Platform.Infrastructure.Contexts
         public DbSet<CardTemplate> CardTemplates { get; set; }
         public DbSet<CardOrder> CardOrders { get; set; }
         public DbSet<CardOrderItem> CardOrderItems { get; set; }
+        public DbSet<CardDesign> CardDesigns { get; set; }
         public DbSet<SubscriptionPlan> SubscriptionPlans { get; set; }
         public DbSet<UserSubscription> UserSubscriptions { get; set; }
         public DbSet<ProfileMetric> ProfileMetrics { get; set; }

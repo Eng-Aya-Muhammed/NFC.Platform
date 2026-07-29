@@ -1,6 +1,11 @@
+using AutoMapper;
 using NFC.Platform.Application.DTOs.Admin;
 using NFC.Platform.Application.DTOs.CardOrder;
 using NFC.Platform.Application.DTOs.Employee;
+using NFC.Platform.Domain.Entities;
+using NFC.Platform.Domain.Enums;
+using System;
+using System.Collections.Generic;
 
 namespace NFC.Platform.Application.Mapping
 {
@@ -19,7 +24,8 @@ namespace NFC.Platform.Application.Mapping
                 .ForMember(dest => dest.ParentOrderId, opt => opt.Ignore())
                 .ForMember(dest => dest.ParentOrder, opt => opt.Ignore())
                 .ForMember(dest => dest.Quantity, opt => opt.Ignore())
-                .ForMember(dest => dest.ExcelDataUrl, opt => opt.Ignore())
+                .ForMember(dest => dest.CardDesignId, opt => opt.Ignore())
+                .ForMember(dest => dest.CardDesign, opt => opt.Ignore())
                 .ForMember(dest => dest.Status, opt => opt.Ignore())
                 .ForMember(dest => dest.RejectionReason, opt => opt.Ignore())
                 .ForMember(dest => dest.TotalPrice, opt => opt.Ignore())
@@ -30,46 +36,54 @@ namespace NFC.Platform.Application.Mapping
                 .ForMember(dest => dest.DeliveryOtpExpiresAt, opt => opt.Ignore())
                 .ForMember(dest => dest.DeliveryOtpLastSentAt, opt => opt.Ignore())
                 .ForMember(dest => dest.DeliveryOtpResendCount, opt => opt.Ignore())
-                .ForMember(dest => dest.DeliveryMethod, opt => opt.Ignore())
-                .ForMember(dest => dest.ShippingAddress, opt => opt.Ignore())
                 .ForMember(dest => dest.Items, opt => opt.Ignore());
 
             CreateMap<CardOrder, CardOrderDto>()
                 .ForMember(dest => dest.Items, opt => opt.MapFrom(src => src.Items));
 
             CreateMap<CardOrder, CardOrderExportDto>()
-                .ForMember(dest => dest.CardName, opt => opt.MapFrom(src => src.CardName ?? string.Empty))
                 .ForMember(dest => dest.TotalAmount, opt => opt.MapFrom(src => src.TotalPrice));
 
             CreateMap<CardOrder, AdminOrderExportDto>()
-                .ForMember(dest => dest.CardName, opt => opt.MapFrom(src => src.CardName ?? string.Empty))
                 .ForMember(dest => dest.CompanyName, opt => opt.MapFrom(src => src.Tenant != null ? src.Tenant.Name : string.Empty))
                 .ForMember(dest => dest.TotalAmount, opt => opt.MapFrom(src => src.TotalPrice));
 
             CreateMap<CardOrderItem, CardOrderItemDto>();
 
             CreateMap<CreateCardOrderRequest, CardOrder>()
-                .ForMember(dest => dest.CardName, opt => opt.MapFrom(src => string.IsNullOrWhiteSpace(src.CardName) ? null : src.CardName))
+                .ForMember(dest => dest.CardDesignId, opt => opt.MapFrom(src => src.CardDesignId))
+                .ForMember(dest => dest.QuantityPerEmployee, opt => opt.MapFrom(
+                    src => src.QuantityPerEmployee.HasValue ? src.QuantityPerEmployee.Value : 1))
                 .ForMember(dest => dest.Id, opt => opt.Ignore())
                 .ForMember(dest => dest.TenantId, opt => opt.Ignore())
                 .ForMember(dest => dest.Tenant, opt => opt.Ignore())
                 .ForMember(dest => dest.UserId, opt => opt.Ignore())
                 .ForMember(dest => dest.User, opt => opt.Ignore())
+                .ForMember(dest => dest.CardDesign, opt => opt.Ignore())
                 .ForMember(dest => dest.Status, opt => opt.Ignore())
-                .ForMember(dest => dest.UnitPrice, opt => opt.Ignore())
-                .ForMember(dest => dest.TotalPrice, opt => opt.Ignore())
-                .ForMember(dest => dest.Currency, opt => opt.Ignore())
+                .ForMember(dest => dest.UnitPrice, opt => opt.Ignore())  // sourced from CardDesign
+                .ForMember(dest => dest.TotalPrice, opt => opt.Ignore()) // sourced from CardDesign
+                .ForMember(dest => dest.Currency, opt => opt.Ignore())   // sourced from CardDesign
                 .ForMember(dest => dest.ParentOrderId, opt => opt.Ignore())
                 .ForMember(dest => dest.ParentOrder, opt => opt.Ignore())
+                .ForMember(dest => dest.Quantity, opt => opt.Ignore())   // computed in Service
+                .ForMember(dest => dest.RejectionReason, opt => opt.Ignore())
+                .ForMember(dest => dest.TrackingNumber, opt => opt.Ignore())
+                .ForMember(dest => dest.DeliveryOtp, opt => opt.Ignore())
+                .ForMember(dest => dest.DeliveryOtpExpiresAt, opt => opt.Ignore())
+                .ForMember(dest => dest.DeliveryOtpLastSentAt, opt => opt.Ignore())
+                .ForMember(dest => dest.DeliveryOtpResendCount, opt => opt.Ignore())
                 .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
                 .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.UpdatedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.IsDeleted, opt => opt.Ignore())
                 .ForMember(dest => dest.Items, opt => opt.Ignore());
 
             CreateMap<UpdateCardOrderRequest, CardOrder>()
-                .ForMember(dest => dest.CardTypeId, opt => opt.Ignore())
-                .ForMember(dest => dest.CardPackageId, opt => opt.Ignore())
+                .ForMember(dest => dest.CardDesignId, opt => opt.Ignore())
+                .ForMember(dest => dest.CardDesign, opt => opt.Ignore())
                 .ForMember(dest => dest.Quantity, opt => opt.Ignore())
-                .ForMember(dest => dest.ExcelDataUrl, opt => opt.Ignore())
                 .ForMember(dest => dest.Items, opt => opt.Ignore())
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
 
@@ -128,8 +142,8 @@ namespace NFC.Platform.Application.Mapping
 
             CreateMap<EmployeeImportJob, EmployeesImportStatusDto>()
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
-                .ForMember(dest => dest.Errors, opt => opt.MapFrom(src => string.IsNullOrWhiteSpace(src.ErrorsJson) 
-                    ? new List<string>() 
+                .ForMember(dest => dest.Errors, opt => opt.MapFrom(src => string.IsNullOrWhiteSpace(src.ErrorsJson)
+                    ? new List<string>()
                     : System.Text.Json.JsonSerializer.Deserialize<List<string>>(src.ErrorsJson, (System.Text.Json.JsonSerializerOptions)null!) ?? new List<string>()));
         }
     }

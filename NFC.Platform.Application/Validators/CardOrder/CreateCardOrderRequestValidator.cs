@@ -5,58 +5,40 @@ using NFC.Platform.Domain.Enums;
 
 namespace NFC.Platform.Application.Validators.CardOrder;
 
+/// <summary>
+/// Validates structural rules for CreateCardOrderRequest.
+/// AccountType-specific rules (AssignmentScope vs Quantity) are enforced
+/// inside CardOrderService after reading AccountType from the JWT.
+/// </summary>
 public class CreateCardOrderRequestValidator : AbstractValidator<CreateCardOrderRequest>
 {
     public CreateCardOrderRequestValidator(IMessageService messageService)
     {
-        RuleFor(x => x.CardDesignType)
-            .IsInEnum()
-            .WithMessage(_ => messageService.Get("CardDesignTypeRequired"));
-
-        RuleFor(x => x.CardTypeId)
+        // CardDesignId — optional (auto-resolved when omitted)
+        RuleFor(x => x.CardDesignId)
             .NotEmpty()
-            .WithMessage(_ => messageService.Get("InvalidOrInactiveCardType"));
+            .WithMessage(_ => messageService.Get("RequiredField",
+                messageService.Get("CardDesignId")))
+            .When(x => x.CardDesignId.HasValue);
 
-        RuleFor(x => x.CardPackageId)
-            .NotEmpty()
-            .WithMessage(_ => messageService.Get("InvalidOrInactiveCardPackage"));
-
-        RuleFor(x => x.ExcelDataUrl)
-            .MustBeValidUrl()
-            .WithMessage(_ => messageService.Get("InvalidUrlFormat", "Excel Data URL"))
-            .When(x => !string.IsNullOrWhiteSpace(x.ExcelDataUrl));
-
-        RuleFor(x => x.DeliveryMethod)
-            .IsInEnum();
-
-        RuleFor(x => x.ShippingAddress)
-            .NotEmpty()
-            .WithMessage(_ => messageService.Get("ShippingAddressRequired"))
-            .When(x => x.DeliveryMethod == DeliveryMethod.Courier);
-
+        // EmployeeIds — required when AssignmentScope = SpecificEmployees
         RuleFor(x => x.EmployeeIds)
             .NotEmpty()
             .WithMessage(_ => messageService.Get("EmployeesRequired"))
             .When(x => x.AssignmentScope == AssignmentScope.SpecificEmployees);
 
-        RuleFor(x => x.ExcelDataUrl)
-            .NotEmpty()
-            .WithMessage(_ => messageService.Get("ExcelUrlRequired"))
-            .When(x => x.AssignmentScope == AssignmentScope.ExcelUpload);
+        // QuantityPerEmployee — if provided must be > 0
+        RuleFor(x => x.QuantityPerEmployee)
+            .GreaterThan(0)
+            .WithMessage(_ => messageService.Get("InvalidRange",
+                messageService.Get("QuantityPerEmployee"), "1", int.MaxValue.ToString()))
+            .When(x => x.QuantityPerEmployee.HasValue);
 
-        When(x => x.CardDesignType == CardDesignType.CustomArtwork, () =>
-        {
-            RuleFor(x => x.FrontDesignUrl)
-                .NotEmpty()
-                .WithMessage(_ => messageService.Get("FrontDesignRequired"))
-                .MustBeValidUrl()
-                .WithMessage(_ => messageService.Get("InvalidUrlFormat", "Front Design URL"));
-
-            RuleFor(x => x.BackDesignUrl)
-                .NotEmpty()
-                .WithMessage(_ => messageService.Get("BackDesignRequired"))
-                .MustBeValidUrl()
-                .WithMessage(_ => messageService.Get("InvalidUrlFormat", "Back Design URL"));
-        });
+        // Quantity — if provided must be > 0
+        RuleFor(x => x.Quantity)
+            .GreaterThan(0)
+            .WithMessage(_ => messageService.Get("InvalidRange",
+                messageService.Get("Quantity"), "1", int.MaxValue.ToString()))
+            .When(x => x.Quantity.HasValue);
     }
 }

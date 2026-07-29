@@ -8,7 +8,7 @@ namespace NFC.Platform.Application.DTOs.Subscription
         public string? Description { get; set; }
         public decimal? Price { get; set; }
         public int? DurationInDays { get; set; }
-        public int? MaxEmployees { get; set; }
+
 
         /// <summary>SubscriptionConstants.UnlimitedQuota means unlimited. null = no change.</summary>
         public int? MaxTemplateChanges { get; set; }

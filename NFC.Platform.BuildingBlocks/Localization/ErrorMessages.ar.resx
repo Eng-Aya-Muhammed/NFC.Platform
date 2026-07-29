@@ -400,4 +400,31 @@
   <data name="NoEmployeesFoundInCompany" xml:space="preserve">
     <value>لا يوجد موظفون نشطون بالشركة لإنشاء كروت لهم.</value>
   </data>
+  <data name="DesignNotFound" xml:space="preserve">
+    <value>تصميم الكارت غير موجود.</value>
+  </data>
+  <data name="DesignPaymentRequired" xml:space="preserve">
+    <value>يجب إتمام الدفع قبل تقديم الطلب. يرجى إتمام عملية الدفع أولاً.</value>
+  </data>
+  <data name="DesignAlreadyPaid" xml:space="preserve">
+    <value>تم الدفع مسبقاً لهذا التصميم.</value>
+  </data>
+  <data name="DesignRemainingQuantityExceeded" xml:space="preserve">
+    <value>الكمية المطلوبة ({0}) تتجاوز الرصيد المتبقي للتصميم ({1}).</value>
+  </data>
+  <data name="UnitCardPackageNotFound" xml:space="preserve">
+    <value>لم يتم العثور على باقة كارت واحد نشطة للتسعير. يرجى التواصل مع الدعم.</value>
+  </data>
+  <data name="InvalidPaymentSignature" xml:space="preserve">
+    <value>توقيع بوابة الدفع غير صحيح.</value>
+  </data>
+  <data name="ConcurrentUpdateConflict" xml:space="preserve">
+    <value>حدث تعارض في التحديث المتزامن. يرجى إعادة المحاولة.</value>
+  </data>
+  <data name="CustomQuantityRequired" xml:space="preserve">
+    <value>الكمية مطلوبة لحسابات الشركات.</value>
+  </data>
+  <data name="CardPackageIdRequired" xml:space="preserve">
+    <value>يجب اختيار باقة كروت للحسابات الفردية.</value>
+  </data>
 </root>

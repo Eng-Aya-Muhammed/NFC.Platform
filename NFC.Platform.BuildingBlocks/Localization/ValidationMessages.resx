@@ -307,4 +307,16 @@
   <data name="DuplicatePackageNumberOfCards" xml:space="preserve">
     <value>A package with the same number of cards already exists.</value>
   </data>
+  <data name="CardDesignId" xml:space="preserve">
+    <value>Card Design</value>
+  </data>
+  <data name="QuantityPerEmployee" xml:space="preserve">
+    <value>Quantity Per Employee</value>
+  </data>
+  <data name="CustomQuantity" xml:space="preserve">
+    <value>Custom Quantity</value>
+  </data>
+  <data name="AssignmentScope" xml:space="preserve">
+    <value>Assignment Scope</value>
+  </data>
 </root>

@@ -5,31 +5,20 @@ using NFC.Platform.Domain.Enums;
 namespace NFC.Platform.Application.DTOs.CardOrder;
 
 /// <summary>
-/// Request payload for updating an existing CardOrder.
-/// Allows updating general order information or modifying items via new Excel or explicit EmployeeIds.
+/// Request payload for updating an existing CardOrder (PendingReview only).
+/// Design and payment fields are now owned by CardDesign and cannot be changed here.
 /// </summary>
 public class UpdateCardOrderRequest
 {
-    // Design & Structure
-    public CardDesignType? CardDesignType { get; set; }
+    // ── Employee Assignment (Company-only) ───────────────────────────────
+    /// <summary>AllEmployees or SpecificEmployees (ExcelUpload is not valid here).</summary>
     public AssignmentScope? AssignmentScope { get; set; }
-    
-    public string? CardName { get; set; }
-
-    // Employee Assignment Data
     public List<Guid>? EmployeeIds { get; set; }
-    public string? ExcelDataUrl { get; set; }
+    public int? QuantityPerEmployee { get; set; }
 
-    // Design Files
-    public string? FrontDesignUrl { get; set; }
-    public string? BackDesignUrl { get; set; }
+    // ── Individual-only ───────────────────────────────────────────────────
+    public int? Quantity { get; set; }
 
-    // Pricing factors
-    public Guid? CardTypeId { get; set; }
-    public Guid? CardPackageId { get; set; }
-
-    // General
+    // ── Delivery Notes ───────────────────────────────────────────────────
     public string? Notes { get; set; }
-    public DeliveryMethod? DeliveryMethod { get; set; }
-    public string? ShippingAddress { get; set; }
 }

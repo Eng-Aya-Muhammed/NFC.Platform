@@ -22,8 +22,7 @@ namespace NFC.Platform.Infrastructure.Seeders
                     NameEn = "Premium Annual Plan",
                     Description = "Premium Annual Subscription",
                     Price = 699.00m,
-                    DurationInDays = 365,
-                    MaxEmployees = 100
+                    DurationInDays = 365
                 },
                 new SubscriptionPlan
                 {
@@ -31,8 +30,7 @@ namespace NFC.Platform.Infrastructure.Seeders
                     NameEn = "Premium 3-Year Plan",
                     Description = "Premium 3-Year Subscription",
                     Price = 699.00m,
-                    DurationInDays = 1095,
-                    MaxEmployees = 100
+                    DurationInDays = 1095
                 },
                 new SubscriptionPlan
                 {
@@ -40,8 +38,7 @@ namespace NFC.Platform.Infrastructure.Seeders
                     NameEn = "Premium 5-Year Plan",
                     Description = "Premium 5-Year Subscription",
                     Price = 699.00m,
-                    DurationInDays = 1825,
-                    MaxEmployees = 100
+                    DurationInDays = 1825
                 }
             };
 
