@@ -15,7 +15,7 @@ public class CardDesignController(
     /// Creates a new card design with calculated pricing based on account type (Company vs Individual).
     /// </summary>
     [HttpPost]
-    [HasPermission(AppPermissions.CardOrders.Create)]
+    [HasPermission(AppPermissions.CardDesigns.Create)]
     public async Task<IActionResult> Create([FromBody] CreateCardDesignRequest request)
     {
         var result = await _cardDesignService.CreateDesignAsync(request);
@@ -27,7 +27,7 @@ public class CardDesignController(
     /// Returns a single card design by ID for the current tenant.
     /// </summary>
     [HttpGet("{id:guid}")]
-    [HasPermission(AppPermissions.CardOrders.View)]
+    [HasPermission(AppPermissions.CardDesigns.View)]
     public async Task<IActionResult> GetById([FromRoute] Guid id)
     {
         var result = await _cardDesignService.GetDesignByIdAsync(id);
@@ -39,7 +39,7 @@ public class CardDesignController(
     /// Returns a paged list of card designs for the current tenant.
     /// </summary>
     [HttpGet]
-    [HasPermission(AppPermissions.CardOrders.View)]
+    [HasPermission(AppPermissions.CardDesigns.View)]
     public async Task<IActionResult> GetPaged([FromQuery] PaginationRequest request)
     {
         var result = await _cardDesignService.GetPagedDesignsAsync(request);
@@ -50,7 +50,7 @@ public class CardDesignController(
     /// Gets the payment gateway URL for a pending design.
     /// </summary>
     [HttpGet("{id:guid}/payment-url")]
-    [HasPermission(AppPermissions.CardOrders.View)]
+    [HasPermission(AppPermissions.CardDesigns.View)]
     public async Task<IActionResult> GetPaymentUrl([FromRoute] Guid id)
     {
         var result = await _cardDesignService.GetPaymentUrlAsync(id);

@@ -26,6 +26,14 @@ namespace NFC.Platform.Domain.Constants
             public const string Cancel = "CardOrders.Cancel";
         }
 
+        public static class CardDesigns
+        {
+            public const string View   = "CardDesigns.View";
+            public const string Create = "CardDesigns.Create";
+            public const string Update = "CardDesigns.Update";
+            public const string Delete = "CardDesigns.Delete";
+        }
+
         public static class Analytics
         {
             public const string View = "Analytics.View";
@@ -159,6 +167,7 @@ namespace NFC.Platform.Domain.Constants
             {
                 typeof(Employees),
                 typeof(CardOrders),
+                typeof(CardDesigns),
                 typeof(Analytics),
                 typeof(Company),
                 typeof(Subscriptions),

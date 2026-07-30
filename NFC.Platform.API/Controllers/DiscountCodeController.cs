@@ -9,7 +9,7 @@ namespace NFC.Platform.API.Controllers;
 
 [ApiController]
 [Route("api/discount-codes")]
-[AllowAnonymous]
+[Authorize]
 public class DiscountCodeController(IDiscountCodeService discountCodeService) : ControllerBase
 {
     private readonly IDiscountCodeService _discountCodeService = discountCodeService ?? throw new ArgumentNullException(nameof(discountCodeService));

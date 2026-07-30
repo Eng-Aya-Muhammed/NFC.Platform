@@ -21,16 +21,36 @@ namespace NFC.Platform.Infrastructure.Seeders
 
             [AppRole.Customer] =
             [
+                // Profiles
                 AppPermissions.Profiles.View,
                 AppPermissions.Profiles.Update,
+
+                // Subscriptions
+                AppPermissions.Subscriptions.View,
+                AppPermissions.Subscriptions.Update,
+
+                // Card Designs
+                AppPermissions.CardDesigns.View,
+                AppPermissions.CardDesigns.Create,
+                AppPermissions.CardDesigns.Update,
+                AppPermissions.CardDesigns.Delete,
+
+                // Card Orders
                 AppPermissions.CardOrders.View,
                 AppPermissions.CardOrders.Create,
                 AppPermissions.CardOrders.Update,
                 AppPermissions.CardOrders.Cancel,
+
+                // Template Requests
                 AppPermissions.TemplateRequests.View,
                 AppPermissions.TemplateRequests.Create,
                 AppPermissions.TemplateRequests.Update,
                 AppPermissions.TemplateRequests.Cancel,
+
+                // Analytics
+                AppPermissions.Analytics.View,
+
+                // No Employees (individual user)
             ],
         };
 
