@@ -313,4 +313,34 @@
   <data name="AssignmentScope" xml:space="preserve">
     <value>نطاق التعيين</value>
   </data>
+  <data name="CardTypeRequired" xml:space="preserve">
+    <value>نوع البطاقة مطلوب.</value>
+  </data>
+  <data name="QuantityRequired" xml:space="preserve">
+    <value>الكمية مطلوبة.</value>
+  </data>
+  <data name="CardTypeId" xml:space="preserve">
+    <value>نوع البطاقة</value>
+  </data>
+  <data name="FieldRequired" xml:space="preserve">
+    <value>هذا الحقل مطلوب.</value>
+  </data>
+  <data name="MaxLengthExceeded" xml:space="preserve">
+    <value>تجاوزت الحد الأقصى للأحرف المسموح بها.</value>
+  </data>
+  <data name="ValueMustBePositive" xml:space="preserve">
+    <value>يجب أن تكون القيمة عدداً موجباً.</value>
+  </data>
+  <data name="EndDateMustBeAfterStartDate" xml:space="preserve">
+    <value>تاريخ النهاية يجب أن يكون بعد تاريخ البداية.</value>
+  </data>
+  <data name="InvalidPhoneFormat" xml:space="preserve">
+    <value>الحقل '{0}' يجب أن يكون رقم هاتف صحيح.</value>
+  </data>
+  <data name="InvalidUrlFormat" xml:space="preserve">
+    <value>الحقل '{0}' يجب أن يكون رابطاً صحيحاً.</value>
+  </data>
+  <data name="Code" xml:space="preserve">
+    <value>كود الخصم</value>
+  </data>
 </root>

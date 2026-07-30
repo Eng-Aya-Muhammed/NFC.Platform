@@ -11,8 +11,8 @@ public class UpdateDiscountCodeRequestValidator : AbstractValidator<UpdateDiscou
         When(x => x.Code != null, () =>
         {
             RuleFor(x => x.Code!)
-                .NotEmpty().WithMessage(messageService.Get("FieldRequired"))
-                .MaximumLength(50).WithMessage(messageService.Get("MaxLengthExceeded"));
+                .NotEmpty().WithMessage(messageService.Get("RequiredField", messageService.Get("Code")))
+                .MaximumLength(50).WithMessage(messageService.Get("MaxLength", messageService.Get("Code"), 50));
         });
 
         When(x => x.DiscountValue.HasValue, () =>

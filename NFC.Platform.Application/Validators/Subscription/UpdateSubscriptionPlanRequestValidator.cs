@@ -11,15 +11,15 @@ public class UpdateSubscriptionPlanRequestValidator : AbstractValidator<UpdateSu
         When(x => x.NameAr != null, () =>
         {
             RuleFor(x => x.NameAr!)
-                .NotEmpty().WithMessage(messageService.Get("FieldRequired"))
-                .MaximumLength(100).WithMessage(messageService.Get("MaxLengthExceeded"));
+                .NotEmpty().WithMessage(messageService.Get("RequiredField", messageService.Get("NameAr")))
+                .MaximumLength(100).WithMessage(messageService.Get("MaxLength", messageService.Get("NameAr"), 100));
         });
 
         When(x => x.NameEn != null, () =>
         {
             RuleFor(x => x.NameEn!)
-                .NotEmpty().WithMessage(messageService.Get("FieldRequired"))
-                .MaximumLength(100).WithMessage(messageService.Get("MaxLengthExceeded"));
+                .NotEmpty().WithMessage(messageService.Get("RequiredField", messageService.Get("NameEn")))
+                .MaximumLength(100).WithMessage(messageService.Get("MaxLength", messageService.Get("NameEn"), 100));
         });
 
         When(x => x.Price.HasValue, () =>

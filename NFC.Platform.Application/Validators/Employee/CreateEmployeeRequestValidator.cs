@@ -30,22 +30,21 @@ namespace NFC.Platform.Application.Validators.Employee;
 
             RuleFor(x => x.ProfilePictureUrl)
                 .MaximumLength(1000)
-                .WithMessage(x => messageService.Get("MaxLength", "ProfilePictureUrl", 1000))
+                .WithMessage(x => messageService.Get("MaxLength", messageService.Get("ProfilePictureUrl"), 1000))
                 .MustBeValidUrl()
-                .WithMessage(x => messageService.Get("InvalidUrlFormat", "Profile Picture URL"));
+                .WithMessage(x => messageService.Get("InvalidUrlFormat", messageService.Get("ProfilePictureUrl")));
 
             RuleFor(x => x.Phone)
                 .MaximumLength(50)
-                .WithMessage(x => messageService.Get("MaxLength", "Phone", 50))
+                .WithMessage(x => messageService.Get("MaxLength", messageService.Get("Phone"), 50))
                 .MustBeValidPhoneNumber()
-                .WithMessage(_ => messageService.Get("InvalidPhoneFormat"));
+                .WithMessage(_ => messageService.Get("InvalidPhoneFormat", messageService.Get("Phone")));
 
             RuleFor(x => x.WhatsApp)
                 .MaximumLength(50)
-                .WithMessage(x => messageService.Get("MaxLength", "WhatsApp", 50))
+                .WithMessage(x => messageService.Get("MaxLength", messageService.Get("WhatsApp"), 50))
                 .MustBeValidPhoneNumber()
-                .WithMessage(_ => messageService.Get("InvalidPhoneFormat"));
-
+                .WithMessage(_ => messageService.Get("InvalidPhoneFormat", messageService.Get("WhatsApp")));
         }
     }
 

@@ -9,8 +9,8 @@ public class CreateDiscountCodeRequestValidator : AbstractValidator<CreateDiscou
     public CreateDiscountCodeRequestValidator(IMessageService messageService)
     {
         RuleFor(x => x.Code)
-            .NotEmpty().WithMessage(messageService.Get("FieldRequired"))
-            .MaximumLength(50).WithMessage(messageService.Get("MaxLengthExceeded"));
+            .NotEmpty().WithMessage(messageService.Get("RequiredField", messageService.Get("Code")))
+            .MaximumLength(50).WithMessage(messageService.Get("MaxLength", messageService.Get("Code"), 50));
 
         RuleFor(x => x.DiscountValue)
             .GreaterThan(0).WithMessage(messageService.Get("ValueMustBePositive"));

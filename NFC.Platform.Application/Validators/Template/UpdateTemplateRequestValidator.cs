@@ -20,13 +20,13 @@ public class UpdateTemplateRequestValidator : AbstractValidator<UpdateTemplateRe
             .MaximumLength(1000)
             .WithMessage(x => messageService.Get("MaxLength", messageService.Get("LogoUrl"), 1000))
             .MustBeValidUrl()
-            .WithMessage(x => messageService.Get("InvalidUrlFormat", "Logo URL"));
+            .WithMessage(x => messageService.Get("InvalidUrlFormat", messageService.Get("LogoUrl")));
 
         RuleFor(x => x.ReferenceImageUrl)
             .MaximumLength(1000)
             .WithMessage(x => messageService.Get("MaxLength", messageService.Get("ReferenceImageUrl"), 1000))
             .MustBeValidUrl()
-            .WithMessage(x => messageService.Get("InvalidUrlFormat", "Reference Image URL"));
+            .WithMessage(x => messageService.Get("InvalidUrlFormat", messageService.Get("ReferenceImageUrl")));
 
         RuleFor(x => x.Notes)
             .MaximumLength(1000)

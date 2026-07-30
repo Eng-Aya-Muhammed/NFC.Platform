@@ -475,4 +475,19 @@
   <data name="ViewsLabel" xml:space="preserve">
     <value>views</value>
   </data>
+  <data name="EmployeeNotFound" xml:space="preserve">
+    <value>Employee was not found.</value>
+  </data>
+  <data name="Quantity" xml:space="preserve">
+    <value>Quantity</value>
+  </data>
+  <data name="DuplicateDiscountCode" xml:space="preserve">
+    <value>Discount code already exists.</value>
+  </data>
+  <data name="DiscountCodeNotStartedYet" xml:space="preserve">
+    <value>Discount code is not active yet.</value>
+  </data>
+  <data name="DiscountCodeExpired" xml:space="preserve">
+    <value>Discount code has expired.</value>
+  </data>
 </root>

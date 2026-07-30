@@ -319,4 +319,28 @@
   <data name="AssignmentScope" xml:space="preserve">
     <value>Assignment Scope</value>
   </data>
+  <data name="CardTypeId" xml:space="preserve">
+    <value>Card Type</value>
+  </data>
+  <data name="FieldRequired" xml:space="preserve">
+    <value>This field is required.</value>
+  </data>
+  <data name="MaxLengthExceeded" xml:space="preserve">
+    <value>Maximum character limit exceeded.</value>
+  </data>
+  <data name="ValueMustBePositive" xml:space="preserve">
+    <value>Value must be a positive number.</value>
+  </data>
+  <data name="EndDateMustBeAfterStartDate" xml:space="preserve">
+    <value>End date must be after start date.</value>
+  </data>
+  <data name="InvalidPhoneFormat" xml:space="preserve">
+    <value>The field '{0}' must be a valid phone number.</value>
+  </data>
+  <data name="InvalidUrlFormat" xml:space="preserve">
+    <value>The field '{0}' must be a valid URL.</value>
+  </data>
+  <data name="Code" xml:space="preserve">
+    <value>Discount Code</value>
+  </data>
 </root>

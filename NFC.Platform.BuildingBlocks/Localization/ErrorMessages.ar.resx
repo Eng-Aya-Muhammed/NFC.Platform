@@ -475,4 +475,19 @@
   <data name="ViewsLabel" xml:space="preserve">
     <value>زيارات</value>
   </data>
+  <data name="EmployeeNotFound" xml:space="preserve">
+    <value>الموظف غير موجود.</value>
+  </data>
+  <data name="Quantity" xml:space="preserve">
+    <value>الكمية</value>
+  </data>
+  <data name="DuplicateDiscountCode" xml:space="preserve">
+    <value>كود الخصم موجود بالفعل.</value>
+  </data>
+  <data name="DiscountCodeNotStartedYet" xml:space="preserve">
+    <value>كود الخصم غير مفعل بعد.</value>
+  </data>
+  <data name="DiscountCodeExpired" xml:space="preserve">
+    <value>كود الخصم منتهي الصلاحية.</value>
+  </data>
 </root>
