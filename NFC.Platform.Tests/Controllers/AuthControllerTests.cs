@@ -50,8 +50,7 @@ namespace NFC.Platform.Tests.Controllers
         public async Task Register_CallsService_AndReturnsOk_OnSuccess()
         {
             var request = new RegisterRequest();
-            var dto = new AuthDto();
-            _authService.RegisterAsync(request).Returns(ServiceResult<AuthDto>.Success(dto));
+            _authService.RegisterAsync(request).Returns(ServiceResult<bool>.Success(true));
 
             var result = await _sut.Register(request) as OkObjectResult;
 
@@ -64,7 +63,7 @@ namespace NFC.Platform.Tests.Controllers
         public async Task Register_ReturnsError_OnFailure()
         {
             var request = new RegisterRequest();
-            _authService.RegisterAsync(request).Returns(ServiceResult<AuthDto>.Fail("Error", 400));
+            _authService.RegisterAsync(request).Returns(ServiceResult<bool>.Fail("Error", 400));
 
             var result = await _sut.Register(request) as ObjectResult;
 

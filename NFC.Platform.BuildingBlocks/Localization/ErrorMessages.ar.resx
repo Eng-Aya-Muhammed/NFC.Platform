@@ -427,4 +427,52 @@
   <data name="CardPackageIdRequired" xml:space="preserve">
     <value>يجب اختيار باقة كروت للحسابات الفردية.</value>
   </data>
+  <data name="GoogleTokenInvalid" xml:space="preserve">
+    <value>رمز التحقق من جوجل غير صالحة أو منتهي الصلاحية.</value>
+  </data>
+  <data name="OtpSent" xml:space="preserve">
+    <value>تم إرسال رمز التحقق إلى بريدك الإلكتروني.</value>
+  </data>
+  <data name="OtpInvalid" xml:space="preserve">
+    <value>رمز التحقق غير صحيح.</value>
+  </data>
+  <data name="OtpExpired" xml:space="preserve">
+    <value>رمز التحقق منتهي الصلاحية.</value>
+  </data>
+  <data name="OtpVerifiedSuccess" xml:space="preserve">
+    <value>تم التحقق من الحساب بنجاح.</value>
+  </data>
+  <data name="EmailNotVerified" xml:space="preserve">
+    <value>يرجى تأكيد بريدك الإلكتروني أولاً قبل تسجيل الدخول.</value>
+  </data>
+  <data name="Username" xml:space="preserve">
+    <value>اسم المستخدم</value>
+  </data>
+  <data name="CompanyName" xml:space="preserve">
+    <value>اسم الشركة</value>
+  </data>
+  <data name="ConfirmPassword" xml:space="preserve">
+    <value>تأكيد كلمة المرور</value>
+  </data>
+  <data name="Phone" xml:space="preserve">
+    <value>رقم الهاتف</value>
+  </data>
+  <data name="CompanySize" xml:space="preserve">
+    <value>حجم الشركة</value>
+  </data>
+  <data name="AccountType" xml:space="preserve">
+    <value>نوع الحساب</value>
+  </data>
+  <data name="Address" xml:space="preserve">
+    <value>العنوان</value>
+  </data>
+  <data name="IndustryType" xml:space="preserve">
+    <value>نوع نشاط الشركة</value>
+  </data>
+  <data name="CommercialRegistrationNumber" xml:space="preserve">
+    <value>رقم السجل التجاري</value>
+  </data>
+  <data name="ViewsLabel" xml:space="preserve">
+    <value>زيارات</value>
+  </data>
 </root>

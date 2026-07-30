@@ -9,9 +9,12 @@ namespace NFC.Platform.Application.Validators.Auth;
     {
         public RegisterRequestValidator(IMessageService messageService)
         {
-            RuleFor(x => x.Username)
+            RuleFor(x => x.Username!)
                 .NotEmpty()
-                .WithMessage(x => messageService.Get("RequiredField", "Username"));
+                .When(x => x.AccountType == AccountType.Individual)
+                .WithMessage(x => messageService.Get("RequiredField", "Username"))
+                .MaximumLength(150)
+                .WithMessage(x => messageService.Get("MaxLength", "Username", 150));
 
             RuleFor(x => x.Email)
                 .NotEmpty()
@@ -35,12 +38,23 @@ namespace NFC.Platform.Application.Validators.Auth;
                 .IsInEnum()
                 .WithMessage(x => messageService.Get("InvalidValue", "AccountType"));
 
-            RuleFor(x => x.CompanyName)
+            RuleFor(x => x.CompanyName!)
                 .NotEmpty()
                 .When(x => x.AccountType == AccountType.CompanyAdmin)
                 .WithMessage(x => messageService.Get("RequiredField", "CompanyName"))
                 .MaximumLength(200)
                 .WithMessage(x => messageService.Get("MaxLength", "CompanyName", 200));
+
+            RuleFor(x => (x.WhatsApp ?? x.Phone)!)
+                .NotEmpty()
+                .WithMessage(x => messageService.Get("RequiredField", "Phone"))
+                .MustBeValidPhoneNumber()
+                .WithMessage(x => messageService.Get("InvalidPhoneFormat"));
+
+            RuleFor(x => x.CompanySize!.Value)
+                .IsInEnum()
+                .When(x => x.CompanySize.HasValue)
+                .WithMessage(x => messageService.Get("InvalidValue", "CompanySize"));
         }
     }
 

@@ -46,11 +46,28 @@ namespace NFC.Platform.API.Controllers
         /// Returns the company employee analytics leaderboard, ranked by total interactions.
         /// Accessible to company admins only.
         /// </summary>
-        [HttpGet("/api/company/analytics/leaderboard")]
+        [HttpGet("leaderboard")]
+        [Authorize(Policy = AppPolicies.CompanyAdminOnly)]
         [HasPermission(AppPermissions.Analytics.View)]
         public async Task<IActionResult> GetCompanyLeaderboard(CancellationToken cancellationToken)
         {
             var result = await _analyticsService.GetCompanyLeaderboardAsync(cancellationToken);
+            if (!result.IsSuccess)
+                return StatusCode(result.StatusCode, result);
+
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// Returns full Figma-designed analytics dashboard metrics for a specific employee viewed by Company Admin.
+        /// GET /api/analytics/employee/{employeeId}
+        /// </summary>
+        [HttpGet("employee/{employeeId:guid}")]
+        [Authorize(Policy = AppPolicies.CompanyAdminOnly)]
+        [HasPermission(AppPermissions.Analytics.View)]
+        public async Task<IActionResult> GetEmployeeDashboardAnalytics([FromRoute] Guid employeeId, CancellationToken cancellationToken = default)
+        {
+            var result = await _analyticsService.GetEmployeeDashboardAnalyticsAsync(employeeId, cancellationToken);
             if (!result.IsSuccess)
                 return StatusCode(result.StatusCode, result);
 

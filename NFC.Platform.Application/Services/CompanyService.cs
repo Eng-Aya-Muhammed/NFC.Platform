@@ -56,7 +56,15 @@ public class CompanyService(
             _mapper.Map(request, company);
             if (company.AdminUser != null)
             {
-                company.AdminUser.PhoneNumber = request.Phone;
+                if (!string.IsNullOrWhiteSpace(request.Phone))
+                    company.AdminUser.PhoneNumber = request.Phone;
+
+                if (!string.IsNullOrWhiteSpace(request.Email))
+                {
+                    company.AdminUser.Email = request.Email;
+                    if (company.AdminUser.UserProfile != null)
+                        company.AdminUser.UserProfile.ContactEmail = request.Email;
+                }
 
                 if (request.Links?.Count > 0)
                 {
@@ -183,30 +191,69 @@ public class CompanyService(
                 return ServiceResult<CompanyDashboardDto>.Unauthorized(_messageService.Get("Unauthorized"));
 
             // 1. Employee Count
-            var totalEmployees = await _unitOfWork.Repository<Employee>().CountAsync();
+            var totalEmployees = await _unitOfWork.Repository<Employee>()
+                .GetQueryable()
+                .AsNoTracking()
+                .CountAsync(e => e.TenantId == tenantId.Value && !e.IsDeleted);
 
             // 2. Card Orders Count
-            var cardRequests = await _unitOfWork.Repository<CardOrder>().CountAsync();
+            var cardRequests = await _unitOfWork.Repository<CardOrder>()
+                .GetQueryable()
+                .AsNoTracking()
+                .CountAsync(o => o.TenantId == tenantId.Value && !o.IsDeleted);
 
             // 3. Contact Saves Count
             var contactSaves = await _unitOfWork.Repository<ProfileMetric>()
-                .CountAsync(m => m.InteractionType == InteractionType.ContactSaved);
-
-            // 4. Top Employee (Most active profile, projection join)
-            var topEmployeeName = await _unitOfWork.Repository<ProfileMetric>()
                 .GetQueryable()
                 .AsNoTracking()
-                .GroupBy(m => new { m.UserProfileId, m.UserProfile.FullName })
-                .OrderByDescending(g => g.Count())
-                .Select(g => g.Key.FullName)
-                .FirstOrDefaultAsync() ?? "-";
+                .CountAsync(m => m.TenantId == tenantId.Value && m.InteractionType == InteractionType.ContactSaved);
 
-            // 5. Monthly Metric statistics for the last 6 months (optimized database aggregation)
-            var sixMonthsAgo = DateTime.UtcNow.AddMonths(-6);
+            // 4. Top Employee Details
+            DTOs.Analytics.TopEmployeeDto? topEmployee = null;
+            var topMetricGroup = await _unitOfWork.Repository<ProfileMetric>()
+                .GetQueryable()
+                .AsNoTracking()
+                .Where(m => m.TenantId == tenantId.Value)
+                .GroupBy(m => new { m.UserProfileId, m.UserProfile.FullName, m.UserProfile.EmployeeId, m.UserProfile.ProfilePictureUrl })
+                .OrderByDescending(g => g.Count())
+                .Select(g => new
+                {
+                    g.Key.UserProfileId,
+                    g.Key.FullName,
+                    g.Key.EmployeeId,
+                    g.Key.ProfilePictureUrl,
+                    ViewsCount = g.Count(x => x.InteractionType == InteractionType.ProfileView),
+                    SavesCount = g.Count(x => x.InteractionType == InteractionType.ContactSaved)
+                })
+                .FirstOrDefaultAsync();
+
+            var topName = topMetricGroup?.FullName ?? "-";
+
+            if (topMetricGroup != null && topMetricGroup.EmployeeId.HasValue)
+            {
+                var emp = await _unitOfWork.Repository<Employee>()
+                    .GetByIdAsync(topMetricGroup.EmployeeId.Value);
+
+                topEmployee = new DTOs.Analytics.TopEmployeeDto
+                {
+                    EmployeeId = topMetricGroup.EmployeeId.Value,
+                    FullName = topMetricGroup.FullName,
+                    JobTitle = emp?.JobTitle ?? string.Empty,
+                    Department = emp?.Department ?? string.Empty,
+                    ProfilePictureUrl = topMetricGroup.ProfilePictureUrl,
+                    TotalViews = topMetricGroup.ViewsCount,
+                    TotalContactSaves = topMetricGroup.SavesCount
+                };
+            }
+
+            // 5. Monthly Metric statistics for the last 12 months (yearly trend)
+            var twelveMonthsAgo = DateTime.UtcNow.AddMonths(-11);
+            var startDate = new DateTime(twelveMonthsAgo.Year, twelveMonthsAgo.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+
             var monthlyData = await _unitOfWork.Repository<ProfileMetric>()
                 .GetQueryable()
                 .AsNoTracking()
-                .Where(m => m.CreatedAt >= sixMonthsAgo)
+                .Where(m => m.TenantId == tenantId.Value && m.CreatedAt >= startDate)
                 .GroupBy(m => new { m.CreatedAt.Year, m.CreatedAt.Month })
                 .Select(g => new
                 {
@@ -218,7 +265,7 @@ public class CompanyService(
 
             var monthlyStats = new List<MonthlyMetricDto>();
 
-            for (var i = 5; i >= 0; i--)
+            for (var i = 11; i >= 0; i--)
             {
                 var targetMonth = DateTime.UtcNow.AddMonths(-i);
                 var match = monthlyData.FirstOrDefault(d => d.Year == targetMonth.Year && d.Month == targetMonth.Month);
@@ -236,7 +283,8 @@ public class CompanyService(
                 ContactSavesCount = contactSaves,
                 TotalEmployeesCount = totalEmployees,
                 CardRequestsCount = cardRequests,
-                TopEmployeeName = topEmployeeName,
+                TopEmployeeName = topName,
+                TopPerformingEmployee = topEmployee,
                 MonthlyMetrics = monthlyStats
             };
 

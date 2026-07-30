@@ -36,6 +36,49 @@ namespace NFC.Platform.API.Controllers
             return Ok(result);
         }
 
+        [HttpPost("google-register")]
+        [AllowAnonymous]
+        [EnableRateLimiting("RegisterPolicy")]
+        public async Task<IActionResult> RegisterWithGoogle([FromBody] GoogleRegisterRequest request)
+        {
+            var result = await _authService.RegisterWithGoogleAsync(request);
+            if (!result.IsSuccess)
+            {
+                return StatusCode(result.StatusCode, result);
+            }
+
+            return Ok(result);
+        }
+
+        [HttpPost("verify-otp")]
+        [HttpPost("verify-whatsapp-otp")]
+        [AllowAnonymous]
+        [EnableRateLimiting("RegisterPolicy")]
+        public async Task<IActionResult> VerifyOtp([FromBody] VerifyOtpRequest request)
+        {
+            var result = await _authService.VerifyOtpAsync(request);
+            if (!result.IsSuccess)
+            {
+                return StatusCode(result.StatusCode, result);
+            }
+
+            return Ok(result);
+        }
+
+        [HttpPost("resend-otp")]
+        [HttpPost("resend-whatsapp-otp")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ResendOtp([FromBody] ResendOtpRequest request)
+        {
+            var result = await _authService.ResendOtpAsync(request);
+            if (!result.IsSuccess)
+            {
+                return StatusCode(result.StatusCode, result);
+            }
+
+            return Ok(result);
+        }
+
         [HttpPost("refresh")]
         [AllowAnonymous]
         public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequest request)

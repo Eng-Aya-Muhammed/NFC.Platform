@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NFC.Platform.Infrastructure.Contexts;
 
@@ -11,9 +12,11 @@ using NFC.Platform.Infrastructure.Contexts;
 namespace NFC.Platform.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260729224926_AddFigmaCompanyFieldsToCompany")]
+    partial class AddFigmaCompanyFieldsToCompany
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1203,17 +1206,10 @@ namespace NFC.Platform.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
-                    b.Property<bool>("IsEmailVerified")
+                    b.Property<bool>("IsWhatsAppVerified")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
                         .HasDefaultValue(false);
-
-                    b.Property<string>("OtpCode")
-                        .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)");
-
-                    b.Property<DateTime?>("OtpExpiresAt")
-                        .HasColumnType("datetime2");
 
                     b.Property<string>("PasswordHash")
                         .HasMaxLength(500)
@@ -1248,6 +1244,13 @@ namespace NFC.Platform.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("WhatsAppOtpCode")
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<DateTime?>("WhatsAppOtpExpiresAt")
+                        .HasColumnType("datetime2");
 
                     b.HasKey("Id");
 

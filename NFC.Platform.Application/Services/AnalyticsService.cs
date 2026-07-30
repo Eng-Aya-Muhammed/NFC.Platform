@@ -17,7 +17,6 @@ namespace NFC.Platform.Application.Services;
             if (!userId.HasValue)
                 return ServiceResult<UserAnalyticsSummaryDto>.Unauthorized(_messageService.Get("UserNotAuthenticated"));
 
-            // Resolve the user's profile
             var profile = await _unitOfWork.Repository<UserProfile>()
                 .GetQueryable()
                 .AsNoTracking()
@@ -26,45 +25,112 @@ namespace NFC.Platform.Application.Services;
             if (profile == null)
                 return ServiceResult<UserAnalyticsSummaryDto>.NotFound(_messageService.Get("ProfileNotFound"));
 
+            // 1. Calculate Subscription Remaining Days
+            int remainingDays = 0;
+            int totalSubDays = 365;
+            var tenantId = _currentTenant.TenantId;
+            if (tenantId.HasValue)
+            {
+                var activeSubscription = await _unitOfWork.Repository<UserSubscription>()
+                    .GetQueryable()
+                    .AsNoTracking()
+                    .Where(s => s.TenantId == tenantId.Value && s.IsActive && !s.IsDeleted)
+                    .OrderByDescending(s => s.EndDate)
+                    .FirstOrDefaultAsync(cancellationToken);
+
+                if (activeSubscription != null)
+                {
+                    remainingDays = Math.Max(0, (activeSubscription.EndDate.Date - DateTime.UtcNow.Date).Days);
+                    totalSubDays = Math.Max(1, (activeSubscription.EndDate.Date - activeSubscription.StartDate.Date).Days);
+                }
+            }
+
+            // 2. Metrics Aggregation
             var metricRepo = _unitOfWork.Repository<ProfileMetric>();
+            var oneYearAgo = DateTime.UtcNow.AddMonths(-11);
+            var startDate = new DateTime(oneYearAgo.Year, oneYearAgo.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+            var thirtyDaysAgo = DateTime.UtcNow.AddDays(-30);
 
-            // Sequential aggregation queries
-            var viewsCount = await metricRepo.CountAsync(m => m.UserProfileId == profile.Id && m.InteractionType == InteractionType.ProfileView, cancellationToken);
-            var savesCount = await metricRepo.CountAsync(m => m.UserProfileId == profile.Id && m.InteractionType == InteractionType.ContactSaved, cancellationToken);
-            var clicksCount = await metricRepo.CountAsync(m => m.UserProfileId == profile.Id && m.InteractionType == InteractionType.LinkClick, cancellationToken);
-
-
-            // Last 6 months of views, broken down monthly
-            var sixMonthsAgo = DateTime.UtcNow.AddMonths(-6);
-            var monthlyData = await metricRepo
-                .GetQueryable()
+            var metricsList = await metricRepo.GetQueryable()
                 .AsNoTracking()
-                .Where(m => m.UserProfileId == profile.Id
-                         && m.InteractionType == InteractionType.ProfileView
-                         && m.CreatedAt >= sixMonthsAgo)
-                .GroupBy(m => new { m.CreatedAt.Year, m.CreatedAt.Month })
-                .Select(g => new { g.Key.Year, g.Key.Month, Count = g.Count() })
+                .Where(m => m.UserProfileId == profile.Id && m.CreatedAt >= startDate)
+                .Select(m => new { m.InteractionType, m.CreatedAt })
                 .ToListAsync(cancellationToken);
 
-            var monthlyViews = new List<MonthlyMetricDto>();
-            for (var i = 5; i >= 0; i--)
+            var monthlyViewsCount = metricsList.Count(m => m.InteractionType == InteractionType.ProfileView && m.CreatedAt >= thirtyDaysAgo);
+            var contactSavesCount = metricsList.Count(m => m.InteractionType == InteractionType.ContactSaved && m.CreatedAt >= thirtyDaysAgo);
+            if (contactSavesCount == 0)
             {
-                var target = DateTime.UtcNow.AddMonths(-i);
-                var match = monthlyData.FirstOrDefault(d => d.Year == target.Year && d.Month == target.Month);
-                monthlyViews.Add(new MonthlyMetricDto
-                {
-                    MonthName = target.ToString("MMMM", System.Globalization.CultureInfo.CurrentUICulture),
-                    Value = match?.Count ?? 0
-                });
+                contactSavesCount = metricsList.Count(m => m.InteractionType == InteractionType.ContactSaved);
             }
+            var clicksCount = metricsList.Count(m => m.InteractionType == InteractionType.LinkClick);
+
+            // 3. Yearly Monthly Views Breakdown (12 Months)
+            var yearlyViewsTrend = new List<MonthlyViewsTrendDto>();
+            var monthlyViewsLegacy = new List<MonthlyMetricDto>();
+            var now = DateTime.UtcNow;
+
+            for (int i = 11; i >= 0; i--)
+            {
+                var monthDate = now.AddMonths(-i);
+                var viewsInMonth = metricsList.Count(m =>
+                    m.InteractionType == InteractionType.ProfileView &&
+                    m.CreatedAt.Year == monthDate.Year &&
+                    m.CreatedAt.Month == monthDate.Month);
+
+                var monthName = monthDate.ToString("MMMM", System.Globalization.CultureInfo.CurrentUICulture);
+
+                yearlyViewsTrend.Add(new MonthlyViewsTrendDto
+                {
+                    Year = monthDate.Year,
+                    Month = monthDate.Month,
+                    MonthName = monthName,
+                    ViewsCount = viewsInMonth
+                });
+
+                if (i < 6)
+                {
+                    monthlyViewsLegacy.Add(new MonthlyMetricDto
+                    {
+                        MonthName = monthName,
+                        Value = viewsInMonth
+                    });
+                }
+            }
+
+            // 4. Calculations
+            int totalYearlyViews = metricsList.Count(m => m.InteractionType == InteractionType.ProfileView);
+            double saveRate = monthlyViewsCount > 0
+                ? Math.Round(((double)contactSavesCount / monthlyViewsCount) * 100.0, 1)
+                : (totalYearlyViews > 0 ? Math.Round(((double)contactSavesCount / totalYearlyViews) * 100.0, 1) : 0);
+
+            var peakMonthItem = yearlyViewsTrend.OrderByDescending(x => x.ViewsCount).FirstOrDefault();
+            var peakMonth = new PeakMonthDto
+            {
+                MonthName = peakMonthItem?.MonthName ?? string.Empty,
+                ViewsCount = peakMonthItem?.ViewsCount ?? 0,
+                FormattedText = peakMonthItem != null
+                    ? $"{peakMonthItem.MonthName} - {peakMonthItem.ViewsCount} {_messageService.Get("ViewsLabel")}"
+                    : string.Empty
+            };
+
+            double avgDailyViews = Math.Round((double)totalYearlyViews / 365.0, 1);
 
             var dto = new UserAnalyticsSummaryDto
             {
-                TotalProfileViews = viewsCount,
-                TotalContactSaves = savesCount,
+                TotalProfileViews = totalYearlyViews,
+                TotalContactSaves = contactSavesCount,
                 TotalLinkClicks = clicksCount,
-
-                MonthlyViews = monthlyViews
+                SubscriptionRemainingDays = remainingDays,
+                TotalSubscriptionDays = totalSubDays,
+                MonthlyViewsCount = monthlyViewsCount,
+                ContactSavesCount = contactSavesCount,
+                YearlyViewsTrend = yearlyViewsTrend,
+                MonthlyViews = monthlyViewsLegacy,
+                ContactSaveRate = saveRate,
+                PeakMonth = peakMonth,
+                TotalYearlyViews = totalYearlyViews,
+                AverageDailyViews = avgDailyViews
             };
 
             return ServiceResult<UserAnalyticsSummaryDto>.Success(dto);
@@ -197,6 +263,121 @@ namespace NFC.Platform.Application.Services;
                 .ToList();
 
             return ServiceResult<List<EmployeeLeaderboardEntryDto>>.Success(leaderboard);
+        }
+
+        public async Task<ServiceResult<EmployeeDashboardAnalyticsDto>> GetEmployeeDashboardAnalyticsAsync(Guid employeeId, CancellationToken cancellationToken = default)
+        {
+            var tenantId = _currentTenant.TenantId;
+
+            var employee = await _unitOfWork.Repository<Employee>()
+                .GetQueryable()
+                .AsNoTracking()
+                .FirstOrDefaultAsync(e => e.Id == employeeId && !e.IsDeleted, cancellationToken);
+
+            if (employee == null)
+                return ServiceResult<EmployeeDashboardAnalyticsDto>.NotFound(_messageService.Get("EmployeeNotFound"));
+
+            if (tenantId.HasValue && employee.TenantId != tenantId.Value)
+                return ServiceResult<EmployeeDashboardAnalyticsDto>.Unauthorized(_messageService.Get("Unauthorized"));
+
+            var profile = await _unitOfWork.Repository<UserProfile>()
+                .GetQueryable()
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.EmployeeId == employee.Id, cancellationToken);
+
+            if (profile == null)
+                return ServiceResult<EmployeeDashboardAnalyticsDto>.NotFound(_messageService.Get("ProfileNotFound"));
+
+            // 1. Calculate Subscription Remaining Days
+            int remainingDays = 0;
+            int totalSubDays = 365;
+            if (tenantId.HasValue)
+            {
+                var activeSubscription = await _unitOfWork.Repository<UserSubscription>()
+                    .GetQueryable()
+                    .AsNoTracking()
+                    .Where(s => s.TenantId == tenantId.Value && s.IsActive && !s.IsDeleted)
+                    .OrderByDescending(s => s.EndDate)
+                    .FirstOrDefaultAsync(cancellationToken);
+
+                if (activeSubscription != null)
+                {
+                    remainingDays = Math.Max(0, (activeSubscription.EndDate.Date - DateTime.UtcNow.Date).Days);
+                    totalSubDays = Math.Max(1, (activeSubscription.EndDate.Date - activeSubscription.StartDate.Date).Days);
+                }
+            }
+
+            // 2. Metrics Queries for 12 months
+            var metricRepo = _unitOfWork.Repository<ProfileMetric>();
+            var oneYearAgo = DateTime.UtcNow.AddMonths(-11);
+            var startDate = new DateTime(oneYearAgo.Year, oneYearAgo.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+            var thirtyDaysAgo = DateTime.UtcNow.AddDays(-30);
+
+            var metricsList = await metricRepo.GetQueryable()
+                .AsNoTracking()
+                .Where(m => m.UserProfileId == profile.Id && m.CreatedAt >= startDate)
+                .Select(m => new { m.InteractionType, m.CreatedAt })
+                .ToListAsync(cancellationToken);
+
+            var monthlyViews = metricsList.Count(m => m.InteractionType == InteractionType.ProfileView && m.CreatedAt >= thirtyDaysAgo);
+            var contactSavesCount = metricsList.Count(m => m.InteractionType == InteractionType.ContactSaved && m.CreatedAt >= thirtyDaysAgo);
+            if (contactSavesCount == 0)
+            {
+                contactSavesCount = metricsList.Count(m => m.InteractionType == InteractionType.ContactSaved);
+            }
+
+            // 3. Yearly Monthly Views Breakdown (12 Months)
+            var yearlyViewsTrend = new List<MonthlyViewsTrendDto>();
+            var now = DateTime.UtcNow;
+            for (int i = 11; i >= 0; i--)
+            {
+                var monthDate = now.AddMonths(-i);
+                var viewsInMonth = metricsList.Count(m =>
+                    m.InteractionType == InteractionType.ProfileView &&
+                    m.CreatedAt.Year == monthDate.Year &&
+                    m.CreatedAt.Month == monthDate.Month);
+
+                yearlyViewsTrend.Add(new MonthlyViewsTrendDto
+                {
+                    Year = monthDate.Year,
+                    Month = monthDate.Month,
+                    MonthName = monthDate.ToString("MMMM", System.Globalization.CultureInfo.CurrentUICulture),
+                    ViewsCount = viewsInMonth
+                });
+            }
+
+            // 4. Calculations
+            int totalYearlyViews = metricsList.Count(m => m.InteractionType == InteractionType.ProfileView);
+            double saveRate = monthlyViews > 0
+                ? Math.Round(((double)contactSavesCount / monthlyViews) * 100.0, 1)
+                : (totalYearlyViews > 0 ? Math.Round(((double)contactSavesCount / totalYearlyViews) * 100.0, 1) : 0);
+
+            var peakMonthItem = yearlyViewsTrend.OrderByDescending(x => x.ViewsCount).FirstOrDefault();
+            var peakMonth = new PeakMonthDto
+            {
+                MonthName = peakMonthItem?.MonthName ?? string.Empty,
+                ViewsCount = peakMonthItem?.ViewsCount ?? 0,
+                FormattedText = peakMonthItem != null
+                    ? $"{peakMonthItem.MonthName} - {peakMonthItem.ViewsCount} {_messageService.Get("ViewsLabel")}"
+                    : string.Empty
+            };
+
+            double avgDailyViews = Math.Round((double)totalYearlyViews / 365.0, 1);
+
+            var result = new EmployeeDashboardAnalyticsDto
+            {
+                SubscriptionRemainingDays = remainingDays,
+                TotalSubscriptionDays = totalSubDays,
+                MonthlyViews = monthlyViews,
+                ContactSavesCount = contactSavesCount,
+                YearlyViewsTrend = yearlyViewsTrend,
+                ContactSaveRate = saveRate,
+                PeakMonth = peakMonth,
+                TotalYearlyViews = totalYearlyViews,
+                AverageDailyViews = avgDailyViews
+            };
+
+            return ServiceResult<EmployeeDashboardAnalyticsDto>.Success(result);
         }
 
         //  Helpers 

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using NFC.Platform.Domain.Common;
+using NFC.Platform.Domain.Enums;
 
 namespace NFC.Platform.Domain.Entities
 {
@@ -10,10 +11,15 @@ namespace NFC.Platform.Domain.Entities
         public string Activity { get; set; } = string.Empty;
         public string CommercialRegistry { get; set; } = string.Empty;
         public string Size { get; set; } = string.Empty;
+        public CompanySize? CompanySize { get; set; }
         public string Address { get; set; } = string.Empty;
         public string? LogoUrl { get; set; }
         public string? Bio { get; set; }
         public string? WebsiteUrl { get; set; }
+
+        // Aliases for UI DTO consistency
+        public string? IndustryType { get => Activity; set => Activity = value ?? string.Empty; }
+        public string? CommercialRegistrationNumber { get => CommercialRegistry; set => CommercialRegistry = value ?? string.Empty; }
         public bool IsVip { get; set; } = false;
         public int VipDisplayOrder { get; set; } = 0;
 

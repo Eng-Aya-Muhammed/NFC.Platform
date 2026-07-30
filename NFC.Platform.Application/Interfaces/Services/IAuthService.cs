@@ -7,7 +7,10 @@ namespace NFC.Platform.Application.Interfaces.Services
     public interface IAuthService
     {
         Task<ServiceResult<AuthDto>> LoginAsync(LoginRequest request);
-        Task<ServiceResult<AuthDto>> RegisterAsync(RegisterRequest request);
+        Task<ServiceResult<bool>> RegisterAsync(RegisterRequest request);
+        Task<ServiceResult<bool>> RegisterWithGoogleAsync(GoogleRegisterRequest request);
+        Task<ServiceResult<AuthDto>> VerifyOtpAsync(VerifyOtpRequest request);
+        Task<ServiceResult<bool>> ResendOtpAsync(ResendOtpRequest request);
         Task<ServiceResult<AuthDto>> RefreshTokenAsync(RefreshTokenRequest request);
         Task<ServiceResult> RevokeTokenAsync(RefreshTokenRequest request);
         Task<ServiceResult> ForgotPasswordAsync(ForgotPasswordRequest request);

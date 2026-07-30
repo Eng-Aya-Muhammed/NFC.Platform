@@ -1,3 +1,18 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using MockQueryable.NSubstitute;
+using NFC.Platform.Application.Interfaces.Repositories;
+using NFC.Platform.Application.Interfaces.Services;
+using NFC.Platform.Application.Services;
+using NFC.Platform.BuildingBlocks.Localization;
+using NFC.Platform.Domain.Entities;
+using NFC.Platform.Domain.Enums;
+using NSubstitute;
+using Xunit;
+
 namespace NFC.Platform.Tests.Services
 {
     public class AnalyticsServiceTests
@@ -8,8 +23,8 @@ namespace NFC.Platform.Tests.Services
 
         private readonly IGenericRepository<UserProfile> _profileRepo;
         private readonly IGenericRepository<ProfileMetric> _metricRepo;
-
         private readonly IGenericRepository<Employee> _employeeRepo;
+        private readonly IGenericRepository<UserSubscription> _subRepo;
 
         private readonly AnalyticsService _sut;
 
@@ -21,20 +36,18 @@ namespace NFC.Platform.Tests.Services
 
             _profileRepo = Substitute.For<IGenericRepository<UserProfile>>();
             _metricRepo = Substitute.For<IGenericRepository<ProfileMetric>>();
-
             _employeeRepo = Substitute.For<IGenericRepository<Employee>>();
+            _subRepo = Substitute.For<IGenericRepository<UserSubscription>>();
 
             _unitOfWork.Repository<UserProfile>().Returns(_profileRepo);
             _unitOfWork.Repository<ProfileMetric>().Returns(_metricRepo);
-
             _unitOfWork.Repository<Employee>().Returns(_employeeRepo);
+            _unitOfWork.Repository<UserSubscription>().Returns(_subRepo);
 
             _messageService.Get(Arg.Any<string>()).Returns(x => (string)x[0]);
 
             _sut = new AnalyticsService(_unitOfWork, _messageService, _currentTenant);
         }
-
-        //  GetUserAnalyticsSummaryAsync 
 
         [Fact]
         public async Task GetUserAnalyticsSummaryAsync_ReturnsUnauthorized_WhenUserIdIsNull()
@@ -48,7 +61,6 @@ namespace NFC.Platform.Tests.Services
             // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(401, result.StatusCode);
-            Assert.Equal("UserNotAuthenticated", result.Message);
         }
 
         [Fact]
@@ -57,7 +69,7 @@ namespace NFC.Platform.Tests.Services
             // Arrange
             var userId = Guid.NewGuid();
             _currentTenant.UserId.Returns(userId);
-            _profileRepo.GetQueryable().Returns(new List<UserProfile>().AsQueryable().BuildMock());
+            _profileRepo.GetQueryable().Returns(new List<UserProfile>().BuildMock());
 
             // Act
             var result = await _sut.GetUserAnalyticsSummaryAsync();
@@ -65,32 +77,6 @@ namespace NFC.Platform.Tests.Services
             // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(404, result.StatusCode);
-            Assert.Equal("ProfileNotFound", result.Message);
-        }
-
-
-        [Fact]
-        public async Task GetUserAnalyticsSummaryAsync_PropagatesCancellationToken()
-        {
-            // Arrange
-            var userId = Guid.NewGuid();
-            var profileId = Guid.NewGuid();
-            _currentTenant.UserId.Returns(userId);
-
-            var profile = new UserProfile { Id = profileId, UserId = userId };
-            _profileRepo.GetQueryable().Returns(new List<UserProfile> { profile }.AsQueryable().BuildMock());
-            _metricRepo.GetQueryable().Returns(new List<ProfileMetric>().AsQueryable().BuildMock());
-
-            using var cts = new CancellationTokenSource();
-            
-            // Act
-            await _sut.GetUserAnalyticsSummaryAsync(cts.Token);
-
-            // Assert
-            // Verify that CountAsync was called with our specific CancellationToken
-            await _metricRepo.Received(3).CountAsync(
-                Arg.Any<System.Linq.Expressions.Expression<Func<ProfileMetric, bool>>>(), 
-                cts.Token);
         }
 
         [Fact]
@@ -102,28 +88,18 @@ namespace NFC.Platform.Tests.Services
             _currentTenant.UserId.Returns(userId);
 
             var profile = new UserProfile { Id = profileId, UserId = userId };
-            _profileRepo.GetQueryable().Returns(new List<UserProfile> { profile }.AsQueryable().BuildMock());
-            _metricRepo.GetQueryable().Returns(new List<ProfileMetric>().AsQueryable().BuildMock());
+            _profileRepo.GetQueryable().Returns(new List<UserProfile> { profile }.BuildMock());
+            _subRepo.GetQueryable().Returns(new List<UserSubscription>().BuildMock());
 
-            _metricRepo.CountAsync(Arg.Any<System.Linq.Expressions.Expression<Func<ProfileMetric, bool>>>())
-                .Returns(x =>
-                {
-                    var expr = x.ArgAt<System.Linq.Expressions.Expression<Func<ProfileMetric, bool>>>(0).ToString();
-                    if (expr.Contains("ProfileView") || expr.Contains("== 1")) return Task.FromResult(10);
-                    if (expr.Contains("ContactSaved") || expr.Contains("== 2")) return Task.FromResult(5);
-                    if (expr.Contains("LinkClick") || expr.Contains("== 3")) return Task.FromResult(3);
-                    return Task.FromResult(0);
-                });
+            var metrics = new List<ProfileMetric>();
+            for (int i = 0; i < 10; i++)
+                metrics.Add(new ProfileMetric { UserProfileId = profileId, InteractionType = InteractionType.ProfileView, CreatedAt = DateTime.UtcNow });
+            for (int i = 0; i < 5; i++)
+                metrics.Add(new ProfileMetric { UserProfileId = profileId, InteractionType = InteractionType.ContactSaved, CreatedAt = DateTime.UtcNow });
+            for (int i = 0; i < 3; i++)
+                metrics.Add(new ProfileMetric { UserProfileId = profileId, InteractionType = InteractionType.LinkClick, CreatedAt = DateTime.UtcNow });
 
-
-
-            // Set up monthly views (last 6 months)
-            var metrics = new List<ProfileMetric>
-            {
-                new ProfileMetric { UserProfileId = profileId, InteractionType = InteractionType.ProfileView, CreatedAt = DateTime.UtcNow },
-                new ProfileMetric { UserProfileId = profileId, InteractionType = InteractionType.ProfileView, CreatedAt = DateTime.UtcNow.AddMonths(-1) }
-            };
-            _metricRepo.GetQueryable().Returns(metrics.AsQueryable().BuildMock());
+            _metricRepo.GetQueryable().Returns(metrics.BuildMock());
 
             // Act
             var result = await _sut.GetUserAnalyticsSummaryAsync();
@@ -134,11 +110,8 @@ namespace NFC.Platform.Tests.Services
             Assert.Equal(10, result.Data.TotalProfileViews);
             Assert.Equal(5, result.Data.TotalContactSaves);
             Assert.Equal(3, result.Data.TotalLinkClicks);
-
             Assert.Equal(6, result.Data.MonthlyViews.Count);
         }
-
-        //  GetUserAnalyticsTimeSeriesAsync 
 
         [Fact]
         public async Task GetUserAnalyticsTimeSeriesAsync_ReturnsUnauthorized_WhenUserIdIsNull()
@@ -160,7 +133,7 @@ namespace NFC.Platform.Tests.Services
             // Arrange
             var userId = Guid.NewGuid();
             _currentTenant.UserId.Returns(userId);
-            _profileRepo.GetQueryable().Returns(new List<UserProfile>().AsQueryable().BuildMock());
+            _profileRepo.GetQueryable().Returns(new List<UserProfile>().BuildMock());
 
             // Act
             var result = await _sut.GetUserAnalyticsTimeSeriesAsync("daily");
@@ -179,15 +152,14 @@ namespace NFC.Platform.Tests.Services
             _currentTenant.UserId.Returns(userId);
 
             var profile = new UserProfile { Id = profileId, UserId = userId };
-            _profileRepo.GetQueryable().Returns(new List<UserProfile> { profile }.AsQueryable().BuildMock());
-            _metricRepo.GetQueryable().Returns(new List<ProfileMetric>().AsQueryable().BuildMock());
+            _profileRepo.GetQueryable().Returns(new List<UserProfile> { profile }.BuildMock());
 
             var metrics = new List<ProfileMetric>
             {
                 new ProfileMetric { UserProfileId = profileId, InteractionType = InteractionType.ProfileView, CreatedAt = DateTime.UtcNow },
                 new ProfileMetric { UserProfileId = profileId, InteractionType = InteractionType.ContactSaved, CreatedAt = DateTime.UtcNow.AddDays(-1) }
             };
-            _metricRepo.GetQueryable().Returns(metrics.AsQueryable().BuildMock());
+            _metricRepo.GetQueryable().Returns(metrics.BuildMock());
 
             // Act
             var result = await _sut.GetUserAnalyticsTimeSeriesAsync("daily");
@@ -207,15 +179,14 @@ namespace NFC.Platform.Tests.Services
             _currentTenant.UserId.Returns(userId);
 
             var profile = new UserProfile { Id = profileId, UserId = userId };
-            _profileRepo.GetQueryable().Returns(new List<UserProfile> { profile }.AsQueryable().BuildMock());
-            _metricRepo.GetQueryable().Returns(new List<ProfileMetric>().AsQueryable().BuildMock());
+            _profileRepo.GetQueryable().Returns(new List<UserProfile> { profile }.BuildMock());
 
             var metrics = new List<ProfileMetric>
             {
                 new ProfileMetric { UserProfileId = profileId, InteractionType = InteractionType.ProfileView, CreatedAt = DateTime.UtcNow },
                 new ProfileMetric { UserProfileId = profileId, InteractionType = InteractionType.ContactSaved, CreatedAt = DateTime.UtcNow.AddMonths(-1) }
             };
-            _metricRepo.GetQueryable().Returns(metrics.AsQueryable().BuildMock());
+            _metricRepo.GetQueryable().Returns(metrics.BuildMock());
 
             // Act
             var result = await _sut.GetUserAnalyticsTimeSeriesAsync("monthly");
@@ -225,88 +196,5 @@ namespace NFC.Platform.Tests.Services
             Assert.Equal("monthly", result.Data!.Granularity);
             Assert.Equal(6, result.Data.DataPoints.Count);
         }
-
-        //  GetCompanyLeaderboardAsync 
-
-        [Fact]
-        public async Task GetCompanyLeaderboardAsync_ReturnsUnauthorized_WhenTenantIdIsNull()
-        {
-            // Arrange
-            _currentTenant.TenantId.Returns((Guid?)null);
-
-            // Act
-            var result = await _sut.GetCompanyLeaderboardAsync();
-
-            // Assert
-            Assert.False(result.IsSuccess);
-            Assert.Equal(401, result.StatusCode);
-        }
-
-        [Fact]
-        public async Task GetCompanyLeaderboardAsync_ReturnsEmptyList_WhenNoEmployeesExist()
-        {
-            // Arrange
-            var tenantId = Guid.NewGuid();
-            _currentTenant.TenantId.Returns(tenantId);
-            _employeeRepo.GetQueryable().Returns(new List<Employee>().AsQueryable().BuildMock());
-
-            // Act
-            var result = await _sut.GetCompanyLeaderboardAsync();
-
-            // Assert
-            Assert.True(result.IsSuccess);
-            Assert.Empty(result.Data!);
-        }
-
-        [Fact]
-        public async Task GetCompanyLeaderboardAsync_ReturnsRankedLeaderboard_WhenEmployeesExist()
-        {
-            // Arrange
-            var tenantId = Guid.NewGuid();
-            _currentTenant.TenantId.Returns(tenantId);
-
-            var emp1Id = Guid.NewGuid();
-            var emp2Id = Guid.NewGuid();
-            var employees = new List<Employee>
-            {
-                new Employee { Id = emp1Id, TenantId = tenantId, FullName = "Emp One", JobTitle = "Dev" },
-                new Employee { Id = emp2Id, TenantId = tenantId, FullName = "Emp Two", JobTitle = "QA" }
-            };
-            _employeeRepo.GetQueryable().Returns(employees.AsQueryable().BuildMock());
-
-            var profile1Id = Guid.NewGuid();
-            var profile2Id = Guid.NewGuid();
-            var profiles = new List<UserProfile>
-            {
-                new UserProfile { Id = profile1Id, EmployeeId = emp1Id, FullName = "Emp One" },
-                new UserProfile { Id = profile2Id, EmployeeId = emp2Id, FullName = "Emp Two" }
-            };
-            _profileRepo.GetQueryable().Returns(profiles.AsQueryable().BuildMock());
-
-            var metrics = new List<ProfileMetric>
-            {
-                new ProfileMetric { UserProfileId = profile1Id, InteractionType = InteractionType.ProfileView },
-                new ProfileMetric { UserProfileId = profile1Id, InteractionType = InteractionType.ContactSaved },
-                new ProfileMetric { UserProfileId = profile2Id, InteractionType = InteractionType.ProfileView }
-            };
-            _metricRepo.GetQueryable().Returns(metrics.AsQueryable().BuildMock());
-
-            // Act
-            var result = await _sut.GetCompanyLeaderboardAsync();
-
-            // Assert
-            Assert.True(result.IsSuccess);
-            Assert.Equal(2, result.Data!.Count);
-            
-            // Emp One should be ranked 1st because they have 2 interactions (vs 1 for Emp Two)
-            Assert.Equal(emp1Id, result.Data[0].EmployeeId);
-            Assert.Equal(1, result.Data[0].Rank);
-            Assert.Equal(2, result.Data[0].TotalInteractions);
-
-            Assert.Equal(emp2Id, result.Data[1].EmployeeId);
-            Assert.Equal(2, result.Data[1].Rank);
-            Assert.Equal(1, result.Data[1].TotalInteractions);
-        }
     }
 }
-

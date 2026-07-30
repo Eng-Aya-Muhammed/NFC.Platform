@@ -15,6 +15,7 @@ namespace NFC.Platform.Infrastructure.Configurations
             builder.Property(c => c.Activity).HasMaxLength(256);
             builder.Property(c => c.CommercialRegistry).HasMaxLength(100);
             builder.Property(c => c.Size).HasMaxLength(50);
+            builder.Property(c => c.CompanySize).HasConversion<int>();
             builder.Property(c => c.Address).HasMaxLength(500);
             builder.Property(c => c.LogoUrl).HasMaxLength(1000);
             builder.Property(c => c.Bio).HasMaxLength(1000);

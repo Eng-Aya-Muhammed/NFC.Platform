@@ -9,6 +9,7 @@ namespace NFC.Platform.API.Controllers
 {
     [ApiController]
     [Route("api/company")]
+    [Microsoft.AspNetCore.Authorization.Authorize(Policy = AppPolicies.CompanyAdminOnly)]
     [HasPermission(AppPermissions.Company.View)]
     public class CompanyController(ICompanyService companyService) : ControllerBase
     {

@@ -198,20 +198,22 @@ namespace NFC.Platform.Tests.Services
             var tenantId = Guid.NewGuid();
             _currentTenant.TenantId.Returns(tenantId);
 
-            _employeeRepo.CountAsync().Returns(10);
-            _orderRepo.CountAsync().Returns(5);
-            _metricRepo.CountAsync(Arg.Any<Expression<Func<ProfileMetric, bool>>>()).Returns(100);
+            var empList = Enumerable.Range(1, 10).Select(_ => new Employee { TenantId = tenantId }).ToList();
+            var orderList = Enumerable.Range(1, 5).Select(_ => new CardOrder { TenantId = tenantId }).ToList();
+            _employeeRepo.GetQueryable().Returns(empList.BuildMock());
+            _orderRepo.GetQueryable().Returns(orderList.BuildMock());
 
             // Mock Top Employee query
             var profileId1 = Guid.NewGuid();
             var profileId2 = Guid.NewGuid();
-            var metrics = new List<ProfileMetric>
+            var metrics = new List<ProfileMetric>();
+            for (int i = 0; i < 100; i++)
             {
-                new() { UserProfileId = profileId1, UserProfile = new UserProfile { FullName = "Sara" }, CreatedAt = DateTime.UtcNow },
-                new() { UserProfileId = profileId1, UserProfile = new UserProfile { FullName = "Sara" }, CreatedAt = DateTime.UtcNow },
-                new() { UserProfileId = profileId2, UserProfile = new UserProfile { FullName = "John" }, CreatedAt = DateTime.UtcNow }
-            };
-            _metricRepo.GetQueryable().Returns(metrics.AsQueryable().BuildMock());
+                metrics.Add(new ProfileMetric { TenantId = tenantId, UserProfileId = profileId1, UserProfile = new UserProfile { FullName = "Sara" }, InteractionType = InteractionType.ContactSaved, CreatedAt = DateTime.UtcNow });
+            }
+            metrics.Add(new ProfileMetric { TenantId = tenantId, UserProfileId = profileId2, UserProfile = new UserProfile { FullName = "John" }, InteractionType = InteractionType.ProfileView, CreatedAt = DateTime.UtcNow });
+
+            _metricRepo.GetQueryable().Returns(metrics.BuildMock());
 
             // Act
             var result = await _sut.GetCompanyDashboardAsync();
@@ -223,7 +225,7 @@ namespace NFC.Platform.Tests.Services
             Assert.Equal(5, result.Data!.CardRequestsCount);
             Assert.Equal(100, result.Data!.ContactSavesCount);
             Assert.Equal("Sara", result.Data!.TopEmployeeName);
-            Assert.Equal(6, result.Data!.MonthlyMetrics.Count);
+            Assert.Equal(12, result.Data!.MonthlyMetrics.Count);
         }
 
         [Fact]
@@ -375,12 +377,11 @@ namespace NFC.Platform.Tests.Services
             var tenantId = Guid.NewGuid();
             _currentTenant.TenantId.Returns(tenantId);
 
-            _employeeRepo.CountAsync().Returns(0);
-            _orderRepo.CountAsync().Returns(0);
-            _metricRepo.CountAsync(Arg.Any<System.Linq.Expressions.Expression<Func<ProfileMetric, bool>>>()).Returns(0);
+            _employeeRepo.GetQueryable().Returns(new List<Employee>().BuildMock());
+            _orderRepo.GetQueryable().Returns(new List<CardOrder>().BuildMock());
 
             // No metrics → top employee = "-"
-            _metricRepo.GetQueryable().Returns(new List<ProfileMetric>().AsQueryable().BuildMock());
+            _metricRepo.GetQueryable().Returns(new List<ProfileMetric>().BuildMock());
 
             // Act
             var result = await _sut.GetCompanyDashboardAsync();
@@ -388,7 +389,7 @@ namespace NFC.Platform.Tests.Services
             // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal("-", result.Data!.TopEmployeeName);
-            Assert.Equal(6, result.Data!.MonthlyMetrics.Count);
+            Assert.Equal(12, result.Data!.MonthlyMetrics.Count);
         }
 
         [Fact]
@@ -412,15 +413,17 @@ namespace NFC.Platform.Tests.Services
             var tenantId = Guid.NewGuid();
             _currentTenant.TenantId.Returns(tenantId);
 
-            _employeeRepo.CountAsync().Returns(5);
-            _orderRepo.CountAsync().Returns(3);
-            _metricRepo.CountAsync(Arg.Any<System.Linq.Expressions.Expression<Func<ProfileMetric, bool>>>()).Returns(15);
+            var empList = Enumerable.Range(1, 5).Select(_ => new Employee { TenantId = tenantId }).ToList();
+            var orderList = Enumerable.Range(1, 3).Select(_ => new CardOrder { TenantId = tenantId }).ToList();
+            _employeeRepo.GetQueryable().Returns(empList.BuildMock());
+            _orderRepo.GetQueryable().Returns(orderList.BuildMock());
 
-            var profileMetrics = new List<ProfileMetric>
+            var profileMetrics = new List<ProfileMetric>();
+            for (int i = 0; i < 15; i++)
             {
-                new ProfileMetric { UserProfile = new UserProfile { FullName = "Top Employee" }, CreatedAt = DateTime.UtcNow }
-            };
-            _metricRepo.GetQueryable().Returns(profileMetrics.AsQueryable().BuildMock());
+                profileMetrics.Add(new ProfileMetric { TenantId = tenantId, UserProfile = new UserProfile { FullName = "Top Employee" }, InteractionType = InteractionType.ContactSaved, CreatedAt = DateTime.UtcNow });
+            }
+            _metricRepo.GetQueryable().Returns(profileMetrics.BuildMock());
 
             // Act
             var result = await _sut.GetCompanyDashboardAsync();

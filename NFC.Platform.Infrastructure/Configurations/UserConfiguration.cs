@@ -14,9 +14,13 @@ namespace NFC.Platform.Infrastructure.Configurations
 
             builder.Property(u => u.Username).IsRequired().HasMaxLength(150);
             builder.Property(u => u.Email).IsRequired().HasMaxLength(256);
-            builder.Property(u => u.PasswordHash).IsRequired().HasMaxLength(500);
+            builder.Property(u => u.PasswordHash).IsRequired(false).HasMaxLength(500);
             builder.Property(u => u.PhoneNumber).HasMaxLength(50);
             builder.Property(u => u.Status).HasDefaultValue(UserStatus.Active);
+
+            builder.Property(u => u.GoogleId).HasMaxLength(150);
+            builder.Property(u => u.IsEmailVerified).HasDefaultValue(false);
+            builder.Property(u => u.OtpCode).HasMaxLength(10);
 
             builder.Property(u => u.TenantId).IsRequired();
 

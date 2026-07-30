@@ -28,6 +28,11 @@ namespace NFC.Platform.Application.Interfaces.Services
         /// across the current company tenant.
         /// </summary>
         Task<ServiceResult<List<EmployeeLeaderboardEntryDto>>> GetCompanyLeaderboardAsync(CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Returns full Figma-designed analytics dashboard metrics for a specific employee viewed by Company Admin.
+        /// </summary>
+        Task<ServiceResult<EmployeeDashboardAnalyticsDto>> GetEmployeeDashboardAnalyticsAsync(Guid employeeId, CancellationToken cancellationToken = default);
     }
 }
 

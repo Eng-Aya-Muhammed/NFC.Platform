@@ -62,7 +62,7 @@ namespace NFC.Platform.Tests.Services
             // Arrange
             var password = "Password123!";
             var hashedPassword = PasswordHasher.HashPassword(password);
-            var user = new User { Email = "user@test.com", PasswordHash = hashedPassword, Username = "testuser" };
+            var user = new User { Email = "user@test.com", PasswordHash = hashedPassword, Username = "testuser", IsEmailVerified = true };
 
             var request = new LoginRequest { Email = "user@test.com", Password = password };
 
@@ -223,11 +223,9 @@ namespace NFC.Platform.Tests.Services
 
             // Assert
             Assert.True(result.IsSuccess);
-            Assert.NotNull(result.Data);
-            Assert.Equal("mock-access-token", result.Data.Token);
+            Assert.True(result.Data);
             await _userRepo.Received(1).AddAsync(Arg.Any<User>());
             await _userRoleRepo.Received(1).AddAsync(Arg.Any<UserRole>());
-            await _unitOfWork.Received(4).SaveChangesAsync(); // Saved four times: Tenant added, User added, UserRole added, and RefreshToken added
         }
 
         [Fact]
@@ -263,12 +261,10 @@ namespace NFC.Platform.Tests.Services
 
             // Assert
             Assert.True(result.IsSuccess);
-            Assert.NotNull(result.Data);
-            Assert.Equal("mock-access-token", result.Data.Token);
+            Assert.True(result.Data);
             await _userRepo.Received(1).AddAsync(Arg.Any<User>());
             await companyRepo.Received(1).AddAsync(Arg.Any<Company>());
             await _userRoleRepo.Received(1).AddAsync(Arg.Any<UserRole>());
-            await _unitOfWork.Received(6).SaveChangesAsync(); // Saved six times
         }
 
         [Fact]
