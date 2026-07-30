@@ -6,6 +6,7 @@ using NFC.Platform.Domain.Entities;
 using NFC.Platform.Domain.Enums;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 
 namespace NFC.Platform.Application.Mapping
 {
@@ -39,6 +40,12 @@ namespace NFC.Platform.Application.Mapping
                 .ForMember(dest => dest.Items, opt => opt.Ignore());
 
             CreateMap<CardOrder, CardOrderDto>()
+                .ForMember(dest => dest.CardName, opt => opt.MapFrom(src =>
+                    src.CardDesign != null && src.CardDesign.CardType != null
+                        ? (CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("ar", StringComparison.OrdinalIgnoreCase)
+                            ? (string.IsNullOrWhiteSpace(src.CardDesign.CardType.NameAr) ? src.CardDesign.CardType.NameEn : src.CardDesign.CardType.NameAr)
+                            : (string.IsNullOrWhiteSpace(src.CardDesign.CardType.NameEn) ? src.CardDesign.CardType.NameAr : src.CardDesign.CardType.NameEn))
+                        : string.Empty))
                 .ForMember(dest => dest.Items, opt => opt.MapFrom(src => src.Items));
 
             CreateMap<CardOrder, CardOrderExportDto>()

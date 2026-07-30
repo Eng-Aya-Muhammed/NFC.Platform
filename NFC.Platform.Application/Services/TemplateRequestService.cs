@@ -120,7 +120,9 @@ namespace NFC.Platform.Application.Services;
             var requests = await _unitOfWork.Repository<TemplateRequest>()
                 .GetQueryable()
                 .AsNoTracking()
+                .Include(r => r.Tenant)
                 .Include(r => r.RequestedByUser)
+                    .ThenInclude(u => u.UserProfile)
                 .OrderByDescending(r => r.CreatedAt)
                 .ToListAsync();
 
@@ -134,7 +136,9 @@ namespace NFC.Platform.Application.Services;
             var request = await _unitOfWork.Repository<TemplateRequest>()
                 .GetQueryable()
                 .AsNoTracking()
+                .Include(r => r.Tenant)
                 .Include(r => r.RequestedByUser)
+                    .ThenInclude(u => u.UserProfile)
                 .FirstOrDefaultAsync(r => r.Id == id);
 
             if (request == null)

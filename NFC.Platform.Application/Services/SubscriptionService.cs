@@ -18,6 +18,8 @@ public class SubscriptionService(
         var plans = await _unitOfWork.Repository<SubscriptionPlan>()
             .GetQueryable()
             .AsNoTracking()
+            .Include(p => p.PlanTemplates)
+                .ThenInclude(pt => pt.CardTemplate)
             .OrderBy(p => p.DurationInDays)
             .ToListAsync();
 

@@ -376,13 +376,15 @@ public class AdminService : IAdminService
             .AsNoTracking()
             .Include(r => r.Tenant)
             .Include(r => r.RequestedByUser)
-            .OrderByDescending(r => r.CreatedAt)
+                .ThenInclude(u => u.UserProfile)
             .AsQueryable();
 
         if (status.HasValue)
         {
             query = query.Where(r => r.Status == status.Value);
         }
+
+        query = query.OrderByDescending(r => r.CreatedAt);
 
         var pagedResult = await query.ToPagedResultAsync(request, r => _mapper.Map<TemplateRequestDto>(r), cancellationToken);
         return ServiceResult<PagedResult<TemplateRequestDto>>.Success(pagedResult);

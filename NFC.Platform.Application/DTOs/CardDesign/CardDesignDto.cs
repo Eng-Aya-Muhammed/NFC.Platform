@@ -18,6 +18,7 @@ public class CardDesignDto
 
     // ── Quantity & Pricing ────────────────────────────────────────────────
     public Guid CardPackageId { get; set; }
+    public string? CardPackageName { get; set; }
     public int? CustomQuantity { get; set; }
     public int TotalQuantity { get; set; }
     public int UsedQuantity { get; set; }

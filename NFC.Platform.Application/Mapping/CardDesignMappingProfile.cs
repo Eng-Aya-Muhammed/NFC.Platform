@@ -1,3 +1,5 @@
+using System;
+using System.Globalization;
 using AutoMapper;
 using NFC.Platform.Application.DTOs.CardDesign;
 using NFC.Platform.Domain.Entities;
@@ -11,7 +13,13 @@ public class CardDesignMappingProfile : Profile
         // ── CardDesign → CardDesignDto ─────────────────────────────────────────
         CreateMap<CardDesign, CardDesignDto>()
             .ForMember(dest => dest.CardTypeName,
-                       opt => opt.MapFrom(src => src.CardType != null ? src.CardType.NameAr : null))
+                       opt => opt.MapFrom(src => src.CardType != null
+                           ? (CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("ar", StringComparison.OrdinalIgnoreCase)
+                               ? (string.IsNullOrWhiteSpace(src.CardType.NameAr) ? src.CardType.NameEn : src.CardType.NameAr)
+                               : (string.IsNullOrWhiteSpace(src.CardType.NameEn) ? src.CardType.NameAr : src.CardType.NameEn))
+                           : null))
+            .ForMember(dest => dest.CardPackageName,
+                       opt => opt.MapFrom(src => src.CardPackage != null ? $"{src.CardPackage.NumberOfCards} Cards Package" : null))
             .ForMember(dest => dest.RemainingQuantity,
                        opt => opt.MapFrom(src => src.TotalQuantity - src.UsedQuantity));
 

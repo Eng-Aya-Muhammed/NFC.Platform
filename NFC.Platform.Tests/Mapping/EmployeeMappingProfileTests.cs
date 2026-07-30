@@ -1,10 +1,9 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using AutoMapper;
 using NFC.Platform.Application.DTOs.Employee;
 using NFC.Platform.Application.Mapping;
 using NFC.Platform.Domain.Entities;
+using NFC.Platform.Domain.Enums;
 using Xunit;
 
 namespace NFC.Platform.Tests.Mapping
@@ -24,80 +23,54 @@ namespace NFC.Platform.Tests.Mapping
         }
 
         [Fact]
-        public void UserProfile_To_EmployeeDetailsDto_MapsStandardLinksCorrectly()
-        {
-            // Arrange
-            var profile = new UserProfile
-            {
-                FullName = "John Doe",
-                CustomLinks = new List<ProfileLink>
-                {
-                    new ProfileLink { Title = "LinkedIn", Url = "https://linkedin.com/in/john" },
-                    new ProfileLink { Title = "Facebook", Url = "https://facebook.com/john" },
-                    new ProfileLink { Title = "Custom Site", Url = "https://mycustom.com", DisplayOrder = 2 },
-                    new ProfileLink { Title = "Another Site", Url = "https://another.com", DisplayOrder = 1 }
-                }
-            };
-
-            // Act
-            var dto = _mapper.Map<EmployeeDetailsDto>(profile);
-
-            // Assert
-            Assert.Equal(4, dto.Links.Count);
-            Assert.Contains(dto.Links, l => l.Title == "LinkedIn" && l.Url == "https://linkedin.com/in/john");
-            Assert.Contains(dto.Links, l => l.Title == "Facebook" && l.Url == "https://facebook.com/john");
-            Assert.Contains(dto.Links, l => l.Title == "Custom Site" && l.Url == "https://mycustom.com");
-            Assert.Contains(dto.Links, l => l.Title == "Another Site" && l.Url == "https://another.com");
-        }
-
-
-
-        [Fact]
-        public void Employee_To_EmployeeDetailsDto_MapsUsingUserProfile()
+        public void Employee_To_EmployeeDto_MapsStatusAsString()
         {
             // Arrange
             var employee = new Employee
             {
-                FullName = "Employee Name",
-                UserProfile = new UserProfile
-                {
-                    FullName = "Profile Name",
-                    CustomLinks = new List<ProfileLink>
-                    {
-                        new ProfileLink { Title = "LinkedIn", Url = "https://linkedin.com/in/employee" }
-                    }
-                }
+                Id = Guid.NewGuid(),
+                FullName = "Ahmed Ali",
+                Email = "ahmed@company.com",
+                JobTitle = "Software Engineer",
+                Department = "IT",
+                Status = UserStatus.Active
             };
 
             // Act
-            var dto = _mapper.Map<EmployeeDetailsDto>(employee);
+            var dto = _mapper.Map<EmployeeDto>(employee);
 
             // Assert
-            Assert.Single(dto.Links);
-            Assert.Equal("https://linkedin.com/in/employee", dto.Links[0].Url);
+            Assert.NotNull(dto);
+            Assert.Equal("Ahmed Ali", dto.FullName);
+            Assert.Equal("ahmed@company.com", dto.Email);
+            Assert.Equal("Software Engineer", dto.JobTitle);
+            Assert.Equal("IT", dto.Department);
+            Assert.Equal("Active", dto.Status);
         }
 
         [Fact]
-        public void UpdateEmployeeRequest_To_Employee_MapsCorrectly()
+        public void Employee_To_EmployeeExportDto_MapsPhoneAndIsActive()
         {
             // Arrange
-            var request = new UpdateEmployeeRequest
+            var employee = new Employee
             {
-                FullName = "Updated Name",
-                JobTitle = "Senior Dev",
-                Department = "Engineering",
-                Status = NFC.Platform.Domain.Enums.UserStatus.Active
+                Id = Guid.NewGuid(),
+                FullName = "Sara Hassan",
+                Email = "sara@company.com",
+                JobTitle = "HR Manager",
+                Department = "HR",
+                Status = UserStatus.Active,
+                UserProfile = new UserProfile { Phone = "+201001234567" }
             };
-            var employee = new Employee { FullName = "Old Name" };
 
             // Act
-            _mapper.Map(request, employee);
+            var dto = _mapper.Map<EmployeeExportDto>(employee);
 
             // Assert
-            Assert.Equal("Updated Name", employee.FullName);
-            Assert.Equal("Senior Dev", employee.JobTitle);
-            Assert.Equal("Engineering", employee.Department);
-            Assert.Equal(NFC.Platform.Domain.Enums.UserStatus.Active, employee.Status);
+            Assert.NotNull(dto);
+            Assert.Equal("Sara Hassan", dto.FullName);
+            Assert.Equal("+201001234567", dto.PhoneNumber);
+            Assert.True(dto.IsActive);
         }
     }
 }

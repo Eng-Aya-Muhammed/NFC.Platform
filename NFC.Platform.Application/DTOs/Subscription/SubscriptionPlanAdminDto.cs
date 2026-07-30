@@ -12,7 +12,6 @@ public class SubscriptionPlanAdminDto
     public string Description { get; set; } = string.Empty;
     public decimal Price { get; set; }
     public int DurationInDays { get; set; }
-    public int MaxEmployees { get; set; }
     public int MaxTemplateChanges { get; set; }
     public int MaxCustomDesignRequests { get; set; }
 

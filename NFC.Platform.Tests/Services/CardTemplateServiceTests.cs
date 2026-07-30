@@ -82,7 +82,7 @@ public class CardTemplateServiceTests
         // Arrange
         var id = Guid.NewGuid();
         var template = new CardTemplate { Id = id, NameAr = "قالب", NameEn = "Template", DisplayOrder = 1 };
-        _templateRepo.GetByIdAsync(id).Returns(template);
+        _templateRepo.GetQueryable().Returns(new List<CardTemplate> { template }.AsQueryable().BuildMock());
 
         // Act
         var result = await _sut.GetByIdAsync(id);
@@ -98,7 +98,7 @@ public class CardTemplateServiceTests
     {
         // Arrange
         var id = Guid.NewGuid();
-        _templateRepo.GetByIdAsync(id).Returns((CardTemplate?)null);
+        _templateRepo.GetQueryable().Returns(new List<CardTemplate>().AsQueryable().BuildMock());
 
         // Act
         var result = await _sut.GetByIdAsync(id);

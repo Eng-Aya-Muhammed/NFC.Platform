@@ -39,6 +39,7 @@ public class CardTemplateService(
         var entities = await _unitOfWork.Repository<CardTemplate>()
             .GetQueryable()
             .AsNoTracking()
+            .Include(t => t.Category)
             .Where(t => t.IsActive)
             .OrderBy(t => t.DisplayOrder)
             .ToListAsync();
@@ -52,6 +53,7 @@ public class CardTemplateService(
         var query = _unitOfWork.Repository<CardTemplate>()
             .GetQueryable()
             .AsNoTracking()
+            .Include(t => t.Category)
             .OrderBy(t => t.DisplayOrder);
 
         var pagedResult = await query.ToPagedResultAsync(request, t => _mapper.Map<CardTemplateAdminDto>(t));
@@ -68,6 +70,7 @@ public class CardTemplateService(
         var templates = await _unitOfWork.Repository<CardTemplate>()
             .GetQueryable()
             .AsNoTracking()
+            .Include(t => t.Category)
             .OrderBy(t => t.DisplayOrder)
             .ToListAsync();
 
@@ -86,7 +89,11 @@ public class CardTemplateService(
 
     public async Task<ServiceResult<CardTemplateAdminDto>> GetByIdAsync(Guid id)
     {
-        var entity = await _unitOfWork.Repository<CardTemplate>().GetByIdAsync(id);
+        var entity = await _unitOfWork.Repository<CardTemplate>()
+            .GetQueryable()
+            .AsNoTracking()
+            .Include(t => t.Category)
+            .FirstOrDefaultAsync(t => t.Id == id);
         if (entity == null)
             return ServiceResult<CardTemplateAdminDto>.NotFound(_messageService.Get("RecordNotFound"));
 

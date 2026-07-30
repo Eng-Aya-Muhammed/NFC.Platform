@@ -61,6 +61,7 @@ public class CardDesignService(
             .GetQueryable()
             .AsNoTracking()
             .Include(d => d.CardType)
+            .Include(d => d.CardPackage)
             .OrderByDescending(d => d.CreatedAt);
 
         var paged = await query.ToPagedResultAsync(request, d => _mapper.Map<CardDesignDto>(d));

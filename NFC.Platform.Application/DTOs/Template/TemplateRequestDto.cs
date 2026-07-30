@@ -7,6 +7,8 @@ namespace NFC.Platform.Application.DTOs.Template;
         public Guid Id { get; set; }
         public Guid RequestedByUserId { get; set; }
         public string RequestedByUsername { get; set; } = string.Empty;
+        public string? RequestedByEmail { get; set; }
+        public string? TenantName { get; set; }
         public string TemplateName { get; set; } = string.Empty;
         public string? LogoUrl { get; set; }
         public string? ReferenceImageUrl { get; set; }

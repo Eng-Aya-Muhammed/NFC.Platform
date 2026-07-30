@@ -17,6 +17,9 @@ public class CardOrderDto
     /// <summary>Reference to the paid CardDesign this order was created from.</summary>
     public Guid? CardDesignId { get; set; }
 
+    /// <summary>Localized card type name based on current UI culture.</summary>
+    public string CardName { get; set; } = string.Empty;
+
     public Guid? ParentOrderId { get; set; }
     public int Quantity { get; set; }
 
