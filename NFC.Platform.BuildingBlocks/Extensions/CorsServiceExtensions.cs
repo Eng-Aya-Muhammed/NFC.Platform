@@ -22,7 +22,7 @@ namespace NFC.Platform.BuildingBlocks.Extensions
             {
                 options.AddPolicy("DefaultPolicy", policy =>
                 {
-                    policy.WithOrigins(origins)
+                    policy.SetIsOriginAllowed(origin => true)
                           .AllowAnyMethod()
                           .AllowAnyHeader()
                           .AllowCredentials();
