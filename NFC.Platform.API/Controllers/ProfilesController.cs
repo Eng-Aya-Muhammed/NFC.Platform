@@ -3,10 +3,11 @@ namespace NFC.Platform.API.Controllers;
 [ApiController]
 [Route("api/user/profile")]
 [Authorize]
-public class ProfilesController(IProfileService profileService, ICurrentTenant currentTenant) : ControllerBase
+public class ProfilesController(IProfileService profileService, ICurrentTenant currentTenant, IMessageService msg) : ControllerBase
 {
     private readonly IProfileService _profileService = profileService ?? throw new ArgumentNullException(nameof(profileService));
     private readonly ICurrentTenant _currentTenant = currentTenant ?? throw new ArgumentNullException(nameof(currentTenant));
+    private readonly IMessageService _msg = msg ?? throw new ArgumentNullException(nameof(msg));
 
     /// <summary>
     /// Retrieves the profile details of the currently authenticated individual user.
@@ -17,7 +18,7 @@ public class ProfilesController(IProfileService profileService, ICurrentTenant c
         var userId = _currentTenant.UserId;
         if (!userId.HasValue)
         {
-            return Unauthorized("User is not authenticated.");
+            return Unauthorized(_msg.Get("UserNotAuthenticated"));
         }
 
         var result = await _profileService.GetProfileAsync(userId.Value);
@@ -37,7 +38,7 @@ public class ProfilesController(IProfileService profileService, ICurrentTenant c
         var userId = _currentTenant.UserId;
         if (!userId.HasValue)
         {
-            return Unauthorized("User is not authenticated.");
+            return Unauthorized(_msg.Get("UserNotAuthenticated"));
         }
 
         if (request.PreferredLanguage.HasValue)
@@ -65,7 +66,7 @@ public class ProfilesController(IProfileService profileService, ICurrentTenant c
         var userId = _currentTenant.UserId;
         if (!userId.HasValue)
         {
-            return Unauthorized("User is not authenticated.");
+            return Unauthorized(_msg.Get("UserNotAuthenticated"));
         }
 
         var result = await _profileService.SynchronizeLinksAsync(userId.Value, request);
@@ -84,7 +85,7 @@ public class ProfilesController(IProfileService profileService, ICurrentTenant c
     public async Task<IActionResult> ApplyPublicProfileTemplate([FromRoute] Guid templateId)
     {
         var userId = _currentTenant.UserId;
-        if (!userId.HasValue) return Unauthorized("User is not authenticated.");
+        if (!userId.HasValue) return Unauthorized(_msg.Get("UserNotAuthenticated"));
         var result = await _profileService.UpdateProfileTemplateAsync(userId.Value, templateId);
         if (!result.IsSuccess) return StatusCode(result.StatusCode, result);
         return Ok(result);
@@ -97,7 +98,7 @@ public class ProfilesController(IProfileService profileService, ICurrentTenant c
     public async Task<IActionResult> RemovePublicProfileTemplate()
     {
         var userId = _currentTenant.UserId;
-        if (!userId.HasValue) return Unauthorized("User is not authenticated.");
+        if (!userId.HasValue) return Unauthorized(_msg.Get("UserNotAuthenticated"));
         var result = await _profileService.UpdateProfileTemplateAsync(userId.Value, null);
         if (!result.IsSuccess) return StatusCode(result.StatusCode, result);
         return Ok(result);

@@ -343,4 +343,22 @@
   <data name="Code" xml:space="preserve">
     <value>كود الخصم</value>
   </data>
+  <data name="EmailOtpVerificationSubject" xml:space="preserve">
+    <value>رمز التحقق OTP - منصة NFC</value>
+  </data>
+  <data name="EmailOtpVerificationSubtitle" xml:space="preserve">
+    <value>تأكيد الحساب</value>
+  </data>
+  <data name="EmailOtpVerificationGreeting" xml:space="preserve">
+    <value>مرحباً بك،</value>
+  </data>
+  <data name="EmailOtpVerificationBody" xml:space="preserve">
+    <value>شكراً لتسجيلك في منصة NFC. يرجى استخدام كود التحقق أدناه لتأكيد حسابك:</value>
+  </data>
+  <data name="EmailOtpVerificationLabel" xml:space="preserve">
+    <value>رمز التحقق الخاص بك</value>
+  </data>
+  <data name="EmailOtpVerificationFooter" xml:space="preserve">
+    <value>منصة NFC - جميع الحقوق محفوظة.</value>
+  </data>
 </root>

@@ -28,7 +28,7 @@ namespace NFC.Platform.Infrastructure.Repositories
         /// <inheritdoc />
         public async Task<T?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
         {
-            return await _dbSet.FindAsync(id);
+            return await _dbSet.FindAsync([id], cancellationToken);
         }
 
         /// <inheritdoc />

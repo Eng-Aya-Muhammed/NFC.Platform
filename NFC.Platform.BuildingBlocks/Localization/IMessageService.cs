@@ -11,6 +11,6 @@ namespace NFC.Platform.BuildingBlocks.Localization
         /// <param name="key">The resource key to search for.</param>
         /// <param name="args">Format arguments to inject into the localized string.</param>
         /// <returns>The localized formatted string, or the key itself if not found.</returns>
-        string Get(string key, params object[] args);
+        string Get(string key, params object[]? args);
     }
 }

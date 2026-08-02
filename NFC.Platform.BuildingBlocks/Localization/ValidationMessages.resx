@@ -343,4 +343,22 @@
   <data name="Code" xml:space="preserve">
     <value>Discount Code</value>
   </data>
+  <data name="EmailOtpVerificationSubject" xml:space="preserve">
+    <value>OTP Verification Code - NFC Platform</value>
+  </data>
+  <data name="EmailOtpVerificationSubtitle" xml:space="preserve">
+    <value>Account Verification</value>
+  </data>
+  <data name="EmailOtpVerificationGreeting" xml:space="preserve">
+    <value>Hello,</value>
+  </data>
+  <data name="EmailOtpVerificationBody" xml:space="preserve">
+    <value>Thank you for registering with NFC Platform. Please use the verification code below to verify your account:</value>
+  </data>
+  <data name="EmailOtpVerificationLabel" xml:space="preserve">
+    <value>Your OTP Code</value>
+  </data>
+  <data name="EmailOtpVerificationFooter" xml:space="preserve">
+    <value>NFC Platform - All rights reserved.</value>
+  </data>
 </root>

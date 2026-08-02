@@ -92,7 +92,7 @@ public class DiscountCodeService(
 
         var exists = await _unitOfWork.Repository<DiscountCode>()
             .GetQueryable()
-            .AnyAsync(c => c.Code.Trim().ToUpper() == normalizedCode);
+            .AnyAsync(c => c.Code == normalizedCode);
 
         if (exists)
             return ServiceResult<DiscountCodeDto>.Fail(_messageService.Get("DuplicateDiscountCode"), 400);
@@ -118,7 +118,7 @@ public class DiscountCodeService(
             var normalizedCode = request.Code.Trim().ToUpperInvariant();
             var exists = await _unitOfWork.Repository<DiscountCode>()
                 .GetQueryable()
-                .AnyAsync(c => c.Code.Trim().ToUpper() == normalizedCode && c.Id != id);
+                .AnyAsync(c => c.Code == normalizedCode && c.Id != id);
 
             if (exists)
                 return ServiceResult<DiscountCodeDto>.Fail(_messageService.Get("DuplicateDiscountCode"), 400);
@@ -156,7 +156,7 @@ public class DiscountCodeService(
         var entity = await _unitOfWork.Repository<DiscountCode>()
             .GetQueryable()
             .AsNoTracking()
-            .FirstOrDefaultAsync(c => c.Code.Trim().ToUpper() == normalizedCode);
+            .FirstOrDefaultAsync(c => c.Code == normalizedCode);
 
         if (entity == null)
         {

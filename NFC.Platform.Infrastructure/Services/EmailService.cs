@@ -172,17 +172,16 @@ namespace NFC.Platform.Infrastructure.Services
         public async Task SendOtpVerificationEmailAsync(string to, string otpCode, string culture)
         {
             SetThreadCulture(culture);
-            var isEn = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("en", StringComparison.OrdinalIgnoreCase);
-            var subject = isEn ? "OTP Verification Code - NFC Platform" : "رمز التحقق OTP - منصة NFC";
-            var subtitle = isEn ? "Account Verification" : "تأكيد الحساب";
-            var greeting = isEn ? "Hello," : "مرحباً بك،";
-            var bodyText = isEn
-                ? "Thank you for registering with NFC Platform. Please use the verification code below to verify your account:"
-                : "شكراً لتسجيلك في منصة NFC. يرجى استخدام كود التحقق أدناه لتأكيد حسابك:";
-            var otpLabel = isEn ? "Your OTP Code" : "رمز التحقق الخاص بك";
-            var footerText = isEn ? "NFC Platform - All rights reserved." : "منصة NFC - جميع الحقوق محفوظة.";
-            var dir = isEn ? "ltr" : "rtl";
-            var lang = isEn ? "en" : "ar";
+            var isArabic = (culture ?? string.Empty).StartsWith("ar", StringComparison.OrdinalIgnoreCase);
+            var dir = isArabic ? "rtl" : "ltr";
+            var lang = isArabic ? "ar" : "en";
+
+            var subject = _messageService.Get("EmailOtpVerificationSubject");
+            var subtitle = _messageService.Get("EmailOtpVerificationSubtitle");
+            var greeting = _messageService.Get("EmailOtpVerificationGreeting");
+            var bodyText = _messageService.Get("EmailOtpVerificationBody");
+            var otpLabel = _messageService.Get("EmailOtpVerificationLabel");
+            var footerText = _messageService.Get("EmailOtpVerificationFooter");
 
             var body = $@"
 <!DOCTYPE html>

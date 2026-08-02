@@ -10,7 +10,7 @@ namespace NFC.Platform.Tests.Controllers
         {
             _profileService = Substitute.For<IProfileService>();
             _currentTenant = Substitute.For<ICurrentTenant>();
-            _sut = new ProfilesController(_profileService, _currentTenant);
+            _sut = new ProfilesController(_profileService, _currentTenant, Substitute.For<IMessageService>());
         }
 
         [Fact]

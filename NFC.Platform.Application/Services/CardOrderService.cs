@@ -680,7 +680,7 @@ public class CardOrderService(
             var query = _unitOfWork.Repository<Employee>()
                 .GetQueryable().AsNoTracking()
                 .Include(e => e.UserProfile)
-                .Where(e => employeeIds.Contains(e.Id));
+                .Where(e => employeeIds!.Contains(e.Id));
 
             List<Employee> employees;
             try
@@ -692,7 +692,7 @@ public class CardOrderService(
                 employees = query.ToList();
             }
 
-            var missingIds = employeeIds.Except(employees.Select(e => e.Id)).ToList();
+            var missingIds = employeeIds!.Except(employees.Select(e => e.Id)).ToList();
             if (missingIds.Count > 0)
                 return ServiceResult<List<CardOrderItem>>.Fail(
                     _messageService.Get("EmployeesNotFound", string.Join(", ", missingIds)), 422);

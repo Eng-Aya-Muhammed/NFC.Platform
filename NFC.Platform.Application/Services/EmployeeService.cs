@@ -327,7 +327,7 @@ namespace NFC.Platform.Application.Services;
         }
 
 
-        private void UpdateExistingEmployee(Employee existingEmployee, ExcelEmployeeImportDto row)
+        private static void UpdateExistingEmployee(Employee existingEmployee, ExcelEmployeeImportDto row)
         {
             existingEmployee.FullName = row.Name;
             existingEmployee.JobTitle = row.JobTitle ?? string.Empty;

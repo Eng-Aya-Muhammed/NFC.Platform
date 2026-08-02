@@ -23,10 +23,7 @@ namespace NFC.Platform.BuildingBlocks.Common.Helpers
         /// <exception cref="ArgumentException">Thrown when password is null or empty.</exception>
         public static string HashPassword(string password)
         {
-            if (string.IsNullOrWhiteSpace(password))
-            {
-                throw new ArgumentException("Password cannot be null or empty.", nameof(password));
-            }
+            ArgumentNullException.ThrowIfNullOrWhiteSpace(password, nameof(password));
 
             var salt = RandomNumberGenerator.GetBytes(SaltSize);
             var hash = Rfc2898DeriveBytes.Pbkdf2(
@@ -54,15 +51,8 @@ namespace NFC.Platform.BuildingBlocks.Common.Helpers
         /// <exception cref="ArgumentException">Thrown when password or hashedPassword is null or empty.</exception>
         public static bool VerifyPassword(string password, string hashedPassword)
         {
-            if (string.IsNullOrWhiteSpace(password))
-            {
-                throw new ArgumentException("Password cannot be null or empty.", nameof(password));
-            }
-
-            if (string.IsNullOrWhiteSpace(hashedPassword))
-            {
-                throw new ArgumentException("Hashed password cannot be null or empty.", nameof(hashedPassword));
-            }
+            ArgumentNullException.ThrowIfNullOrWhiteSpace(password, nameof(password));
+            ArgumentNullException.ThrowIfNullOrWhiteSpace(hashedPassword, nameof(hashedPassword));
 
             var segments = hashedPassword.Split(SegmentDelimiter);
 
