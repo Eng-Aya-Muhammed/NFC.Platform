@@ -326,30 +326,25 @@ namespace NFC.Platform.Application.Services;
 
         public async Task<ServiceResult<AuthDto>> VerifyOtpAsync(VerifyOtpRequest request)
         {
+            if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.OtpCode))
+                return ServiceResult<AuthDto>.Fail(_messageService.Get("OtpInvalid"), 400);
+
             var userRepo = _unitOfWork.Repository<User>();
             User? user = null;
             var query = userRepo.GetQueryable();
 
             if (query != null && query.Provider is Microsoft.EntityFrameworkCore.Query.IAsyncQueryProvider)
             {
-                // إذا الإيميل موجود ابحث بيه، وإلا ابحث بالـ OTP Code للمستخدمين غير المفعلين فقط
-                user = !string.IsNullOrWhiteSpace(request.Email)
-                    ? await query.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Email == request.Email && !u.IsDeleted)
-                    : await query.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.OtpCode == request.OtpCode && !u.IsEmailVerified && !u.IsDeleted);
+                user = await query.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Email == request.Email && !u.IsDeleted);
             }
             else
             {
-                var matched = !string.IsNullOrWhiteSpace(request.Email)
-                    ? await userRepo.FindAsync(u => u.Email == request.Email && !u.IsDeleted)
-                    : await userRepo.FindAsync(u => u.OtpCode == request.OtpCode && !u.IsEmailVerified && !u.IsDeleted);
+                var matched = await userRepo.FindAsync(u => u.Email == request.Email && !u.IsDeleted);
                 user = matched.Count > 0 ? matched[0] : null;
             }
 
             if (user == null)
                 return ServiceResult<AuthDto>.Fail(_messageService.Get("OtpInvalid"), 400);
-
-            if (user.IsEmailVerified)
-                return await GenerateAuthResponseAsync(user, _messageService.Get("OtpVerifiedSuccess"));
 
             if (string.IsNullOrWhiteSpace(user.OtpCode) || user.OtpCode != request.OtpCode)
                 return ServiceResult<AuthDto>.Fail(_messageService.Get("OtpInvalid"), 400);

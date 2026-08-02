@@ -5,13 +5,15 @@ public class EmployeeImportService(
     IMapper mapper,
     IMessageService messageService,
     ICurrentTenant currentTenant,
-    IExcelParser excelParser) : IEmployeeImportService
+    IExcelParser excelParser,
+    IHttpClientFactory httpClientFactory) : IEmployeeImportService
 {
     private readonly IUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
     private readonly IMapper _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
     private readonly IMessageService _messageService = messageService ?? throw new ArgumentNullException(nameof(messageService));
     private readonly ICurrentTenant _currentTenant = currentTenant ?? throw new ArgumentNullException(nameof(currentTenant));
     private readonly IExcelParser _excelParser = excelParser ?? throw new ArgumentNullException(nameof(excelParser));
+    private readonly IHttpClientFactory _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
 
     public async Task ProcessImportJobAsync(Guid jobId)
     {
@@ -48,7 +50,7 @@ public class EmployeeImportService(
             }
             else
             {
-                using var httpClient = new System.Net.Http.HttpClient();
+                var httpClient = _httpClientFactory.CreateClient();
                 byte[] fileBytes;
                 try
                 {

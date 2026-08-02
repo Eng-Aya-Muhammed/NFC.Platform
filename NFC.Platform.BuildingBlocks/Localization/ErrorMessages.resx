@@ -112,6 +112,18 @@
   <data name="UploadError" xml:space="preserve">
     <value>An error occurred during upload: {0}</value>
   </data>
+  <data name="FileTooLarge" xml:space="preserve">
+    <value>File size exceeds the maximum allowed limit.</value>
+  </data>
+  <data name="InvalidFileSignature" xml:space="preserve">
+    <value>File content does not match the allowed file signature.</value>
+  </data>
+  <data name="InvalidPdfExtension" xml:space="preserve">
+    <value>Only PDF files (.pdf) are allowed.</value>
+  </data>
+  <data name="InvalidContentType" xml:space="preserve">
+    <value>The file content type is not supported.</value>
+  </data>
   <data name="FailedToParseExcel" xml:space="preserve">
     <value>Failed to parse Excel file</value>
   </data>

@@ -416,6 +416,7 @@ public class CardOrderService(
         order.DeliveryOtpExpiresAt = DateTime.UtcNow.AddDays(7);
         order.DeliveryOtpLastSentAt = DateTime.UtcNow;
         order.DeliveryOtpResendCount++;
+        order.DeliveryOtpFailedAttempts = 0;
         await _unitOfWork.SaveChangesAsync();
 
         var recipient = order.Tenant?.Company?.AdminUser ?? order.User;

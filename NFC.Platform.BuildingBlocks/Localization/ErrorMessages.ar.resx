@@ -112,6 +112,18 @@
   <data name="UploadError" xml:space="preserve">
     <value>حدث خطأ أثناء الرفع: {0}</value>
   </data>
+  <data name="FileTooLarge" xml:space="preserve">
+    <value>حجم الملف يتجاوز الحد الأقصى المسموح به.</value>
+  </data>
+  <data name="InvalidFileSignature" xml:space="preserve">
+    <value>محتوى الملف لا يطابق الصيغة المسموح بها.</value>
+  </data>
+  <data name="InvalidPdfExtension" xml:space="preserve">
+    <value>مسموح فقط بملفات (PDF).</value>
+  </data>
+  <data name="InvalidContentType" xml:space="preserve">
+    <value>نوع محتوى الملف غير مدعوم.</value>
+  </data>
   <data name="FailedToParseExcel" xml:space="preserve">
     <value>فشل في قراءة ملف الإكسيل</value>
   </data>

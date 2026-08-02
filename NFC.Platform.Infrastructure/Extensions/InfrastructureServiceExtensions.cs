@@ -66,6 +66,9 @@ namespace NFC.Platform.Infrastructure.Extensions
             // Google OAuth Configuration
             services.Configure<GoogleSettings>(configuration.GetSection("GoogleSettings"));
 
+            // Upload Configuration
+            services.Configure<UploadSettings>(configuration.GetSection("UploadSettings"));
+
             // QR Code Generator — Singleton: QRCoder is stateless; one instance per app lifetime is sufficient.
 
             // Hangfire Setup

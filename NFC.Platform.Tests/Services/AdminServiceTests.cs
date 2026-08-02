@@ -636,6 +636,95 @@ namespace NFC.Platform.Tests.Services
         }
 
         [Fact]
+        public async Task VerifyDeliveryOtpAsync_IncrementsFailedAttempts_WhenOtpIsIncorrect()
+        {
+            // Arrange
+            var orderId = Guid.NewGuid();
+            var order = new CardOrder
+            {
+                Id                   = orderId,
+                Status               = OrderStatus.ReadyForDelivery,
+                DeliveryOtp          = "123456",
+                DeliveryOtpExpiresAt = DateTime.UtcNow.AddMinutes(5),
+                DeliveryOtpFailedAttempts = 1
+            };
+
+            var mockQueryable = new List<CardOrder> { order }.AsQueryable().BuildMock();
+            _orderRepo.GetQueryable().Returns(mockQueryable);
+            _messageService.Get("InvalidOtp").Returns("Invalid OTP.");
+
+            // Act
+            var result = await _sut.VerifyDeliveryOtpAsync(orderId, "000000");
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(422, result.StatusCode);
+            Assert.Equal("Invalid OTP.", result.Message);
+            Assert.Equal(2, order.DeliveryOtpFailedAttempts); // Incremented from 1 to 2
+            Assert.Equal("123456", order.DeliveryOtp); // Still intact
+            await _unitOfWork.Received(1).SaveChangesAsync();
+        }
+
+        [Fact]
+        public async Task VerifyDeliveryOtpAsync_InvalidatesOtp_WhenMaxFailedAttemptsReached()
+        {
+            // Arrange
+            var orderId = Guid.NewGuid();
+            var order = new CardOrder
+            {
+                Id                   = orderId,
+                Status               = OrderStatus.ReadyForDelivery,
+                DeliveryOtp          = "123456",
+                DeliveryOtpExpiresAt = DateTime.UtcNow.AddMinutes(5),
+                DeliveryOtpFailedAttempts = 4 // Max is 5, so 4th failed attempt + 1 = 5th attempt => invalidation
+            };
+
+            var mockQueryable = new List<CardOrder> { order }.AsQueryable().BuildMock();
+            _orderRepo.GetQueryable().Returns(mockQueryable);
+            _messageService.Get("OtpExpired").Returns("OTP code has expired.");
+
+            // Act
+            var result = await _sut.VerifyDeliveryOtpAsync(orderId, "999999");
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(422, result.StatusCode);
+            Assert.Equal(5, order.DeliveryOtpFailedAttempts);
+            Assert.Null(order.DeliveryOtp); // Invalidated
+            Assert.Null(order.DeliveryOtpExpiresAt); // Invalidated
+            await _unitOfWork.Received(1).SaveChangesAsync();
+        }
+
+        [Fact]
+        public async Task VerifyDeliveryOtpAsync_ResetsFailedAttempts_WhenOtpIsCorrect()
+        {
+            // Arrange
+            var orderId = Guid.NewGuid();
+            var order = new CardOrder
+            {
+                Id                   = orderId,
+                Status               = OrderStatus.ReadyForDelivery,
+                DeliveryOtp          = "123456",
+                DeliveryOtpExpiresAt = DateTime.UtcNow.AddMinutes(5),
+                DeliveryOtpFailedAttempts = 3
+            };
+
+            var mockQueryable = new List<CardOrder> { order }.AsQueryable().BuildMock();
+            _orderRepo.GetQueryable().Returns(mockQueryable);
+            _messageService.Get("OrderDelivered").Returns("Order delivered.");
+
+            // Act
+            var result = await _sut.VerifyDeliveryOtpAsync(orderId, "123456");
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(OrderStatus.Delivered, order.Status);
+            Assert.Null(order.DeliveryOtp);
+            Assert.Equal(0, order.DeliveryOtpFailedAttempts); // Reset to 0
+            await _unitOfWork.Received(1).SaveChangesAsync();
+        }
+
+        [Fact]
         public async Task ResendDeliveryOtpAsync_ReturnsFail_WhenCooldownActive()
         {
             // Arrange

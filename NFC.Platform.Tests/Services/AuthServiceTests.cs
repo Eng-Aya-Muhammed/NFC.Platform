@@ -601,5 +601,117 @@ namespace NFC.Platform.Tests.Services
                                    (string)job.Args[3] == CultureInfo.CurrentUICulture.Name),
                 Arg.Any<IState>());
         }
+
+        [Fact]
+        public async Task VerifyOtpAsync_ReturnsFail_WhenEmailOrOtpIsEmpty()
+        {
+            // Arrange
+            _messageService.Get("OtpInvalid").Returns("Invalid OTP.");
+
+            // Act
+            var resultNoEmail = await _sut.VerifyOtpAsync(new VerifyOtpRequest { Email = "", OtpCode = "123456" });
+            var resultNoOtp = await _sut.VerifyOtpAsync(new VerifyOtpRequest { Email = "user@test.com", OtpCode = "" });
+
+            // Assert
+            Assert.False(resultNoEmail.IsSuccess);
+            Assert.Equal(400, resultNoEmail.StatusCode);
+            Assert.False(resultNoOtp.IsSuccess);
+            Assert.Equal(400, resultNoOtp.StatusCode);
+        }
+
+        [Fact]
+        public async Task VerifyOtpAsync_ReturnsFail_WhenUserNotFound()
+        {
+            // Arrange
+            _userRepo.GetQueryable().Returns(new List<User>().AsQueryable().BuildMock());
+            _messageService.Get("OtpInvalid").Returns("Invalid OTP.");
+
+            // Act
+            var result = await _sut.VerifyOtpAsync(new VerifyOtpRequest { Email = "notfound@test.com", OtpCode = "123456" });
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(400, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task VerifyOtpAsync_ReturnsFail_WhenOtpIsInvalid()
+        {
+            // Arrange
+            var user = new User { Email = "user@test.com", OtpCode = "654321", OtpExpiresAt = DateTime.UtcNow.AddMinutes(5) };
+            _userRepo.GetQueryable().Returns(new List<User> { user }.AsQueryable().BuildMock());
+            _messageService.Get("OtpInvalid").Returns("Invalid OTP.");
+
+            // Act
+            var result = await _sut.VerifyOtpAsync(new VerifyOtpRequest { Email = "user@test.com", OtpCode = "123456" });
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(400, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task VerifyOtpAsync_ReturnsFail_WhenUserIsAlreadyVerified_AndOtpIsInvalid()
+        {
+            // Arrange
+            var user = new User { Email = "user@test.com", IsEmailVerified = true, OtpCode = "654321", OtpExpiresAt = DateTime.UtcNow.AddMinutes(5) };
+            _userRepo.GetQueryable().Returns(new List<User> { user }.AsQueryable().BuildMock());
+            _messageService.Get("OtpInvalid").Returns("Invalid OTP.");
+
+            // Act - Sending dummy OTP to verified user should fail
+            var result = await _sut.VerifyOtpAsync(new VerifyOtpRequest { Email = "user@test.com", OtpCode = "000000" });
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(400, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task VerifyOtpAsync_ReturnsFail_WhenOtpIsExpired()
+        {
+            // Arrange
+            var user = new User { Email = "user@test.com", OtpCode = "123456", OtpExpiresAt = DateTime.UtcNow.AddMinutes(-5) };
+            _userRepo.GetQueryable().Returns(new List<User> { user }.AsQueryable().BuildMock());
+            _messageService.Get("OtpExpired").Returns("OTP has expired.");
+
+            // Act
+            var result = await _sut.VerifyOtpAsync(new VerifyOtpRequest { Email = "user@test.com", OtpCode = "123456" });
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(400, result.StatusCode);
+            Assert.Equal("OTP has expired.", result.Message);
+        }
+
+        [Fact]
+        public async Task VerifyOtpAsync_ReturnsSuccess_WhenOtpIsValid()
+        {
+            // Arrange
+            var user = new User
+            {
+                Id = Guid.NewGuid(),
+                Email = "user@test.com",
+                OtpCode = "123456",
+                OtpExpiresAt = DateTime.UtcNow.AddMinutes(5),
+                IsEmailVerified = false
+            };
+            _userRepo.GetQueryable().Returns(new List<User> { user }.AsQueryable().BuildMock());
+            _userRoleRepo.FindAsync(Arg.Any<Expression<Func<UserRole, bool>>>()).Returns(new List<UserRole>());
+            _roleRepo.FindAsync(Arg.Any<Expression<Func<Role, bool>>>()).Returns(new List<Role>());
+            _tokenService.GenerateToken(user.Id, user.Email, Arg.Any<IEnumerable<string>>(), Arg.Any<Guid>(), Arg.Any<Guid?>(), Arg.Any<string>()).Returns("valid-jwt-token");
+            _messageService.Get("OtpVerifiedSuccess").Returns("OTP verified successfully.");
+
+            // Act
+            var result = await _sut.VerifyOtpAsync(new VerifyOtpRequest { Email = "user@test.com", OtpCode = "123456" });
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.NotNull(result.Data);
+            Assert.Equal("valid-jwt-token", result.Data.Token);
+            Assert.True(user.IsEmailVerified);
+            Assert.Null(user.OtpCode);
+            Assert.Null(user.OtpExpiresAt);
+            await _unitOfWork.Received(2).SaveChangesAsync();
+        }
     }
 }

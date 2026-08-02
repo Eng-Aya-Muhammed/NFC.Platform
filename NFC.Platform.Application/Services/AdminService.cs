@@ -13,6 +13,7 @@ public class AdminService : IAdminService
     private readonly IMessageService _messageService;
     private readonly IStorageService _storageService;
     private readonly IBackgroundJobClient _backgroundJobClient;
+    private readonly OtpSettings _otpSettings;
     private readonly ExportBuilder? _exportBuilder;
     private readonly IExcelExportService? _excelExportService;
     private readonly IPdfExportService? _pdfExportService;
@@ -23,6 +24,7 @@ public class AdminService : IAdminService
         IMessageService messageService,
         IStorageService storageService,
         IBackgroundJobClient backgroundJobClient,
+        IOptions<OtpSettings>? otpSettings = null,
         ExportBuilder? exportBuilder = null,
         IExcelExportService? excelExportService = null,
         IPdfExportService? pdfExportService = null)
@@ -32,6 +34,7 @@ public class AdminService : IAdminService
         _messageService       = messageService       ?? throw new ArgumentNullException(nameof(messageService));
         _storageService       = storageService       ?? throw new ArgumentNullException(nameof(storageService));
         _backgroundJobClient  = backgroundJobClient  ?? throw new ArgumentNullException(nameof(backgroundJobClient));
+        _otpSettings          = otpSettings?.Value   ?? new OtpSettings();
         _exportBuilder        = exportBuilder;
         _excelExportService   = excelExportService;
         _pdfExportService     = pdfExportService;
@@ -272,6 +275,7 @@ public class AdminService : IAdminService
                 order.DeliveryOtpExpiresAt = DateTime.UtcNow.AddDays(7);
                 order.DeliveryOtpLastSentAt = DateTime.UtcNow;
                 order.DeliveryOtpResendCount = 0;
+                order.DeliveryOtpFailedAttempts = 0;
 
                 EnqueueOtpNotifications(recipient, otp, order.CardDesign?.CardType?.NameAr ?? "Physical Card", isResend: false);
             }
@@ -303,17 +307,32 @@ public class AdminService : IAdminService
         if (order.Status != OrderStatus.ReadyForDelivery)
             return ServiceResult.Fail(_messageService.Get("OrderNotReadyForDelivery"), 422);
 
-        if (order.DeliveryOtpExpiresAt.HasValue && order.DeliveryOtpExpiresAt.Value < DateTime.UtcNow)
+        if (string.IsNullOrWhiteSpace(order.DeliveryOtp) || !order.DeliveryOtpExpiresAt.HasValue || order.DeliveryOtpExpiresAt.Value < DateTime.UtcNow)
             return ServiceResult.Fail(_messageService.Get("OtpExpired"), 422);
 
         if (order.DeliveryOtp != otp)
+        {
+            order.DeliveryOtpFailedAttempts++;
+            var maxFailed = _otpSettings.MaxFailedAttempts > 0 ? _otpSettings.MaxFailedAttempts : 5;
+
+            if (order.DeliveryOtpFailedAttempts >= maxFailed)
+            {
+                order.DeliveryOtp = null;
+                order.DeliveryOtpExpiresAt = null;
+                await _unitOfWork.SaveChangesAsync();
+                return ServiceResult.Fail(_messageService.Get("OtpExpired"), 422);
+            }
+
+            await _unitOfWork.SaveChangesAsync();
             return ServiceResult.Fail(_messageService.Get("InvalidOtp"), 422);
+        }
 
         order.Status = OrderStatus.Delivered;
         order.DeliveryOtp = null;
         order.DeliveryOtpExpiresAt = null;
         order.DeliveryOtpLastSentAt = null;
         order.DeliveryOtpResendCount = 0;
+        order.DeliveryOtpFailedAttempts = 0;
         await _unitOfWork.SaveChangesAsync();
 
         return ServiceResult.Success(_messageService.Get("OrderDelivered"));
@@ -357,6 +376,7 @@ public class AdminService : IAdminService
         order.DeliveryOtpExpiresAt = DateTime.UtcNow.AddDays(7);
         order.DeliveryOtpLastSentAt = DateTime.UtcNow;
         order.DeliveryOtpResendCount++;
+        order.DeliveryOtpFailedAttempts = 0;
 
         await _unitOfWork.SaveChangesAsync();
 

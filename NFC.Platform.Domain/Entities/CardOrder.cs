@@ -70,6 +70,12 @@ namespace NFC.Platform.Domain.Entities
         /// </summary>
         public int DeliveryOtpResendCount { get; set; } = 0;
 
+        /// <summary>
+        /// Total number of failed OTP verification attempts for delivery.
+        /// Reset upon successful verification or when a new OTP is generated.
+        /// </summary>
+        public int DeliveryOtpFailedAttempts { get; set; } = 0;
+
         public ICollection<CardOrderItem> Items { get; set; } = [];
     }
 }
