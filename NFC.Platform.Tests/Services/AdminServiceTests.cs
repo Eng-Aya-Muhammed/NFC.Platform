@@ -617,7 +617,7 @@ namespace NFC.Platform.Tests.Services
             {
                 Id                   = orderId,
                 Status               = OrderStatus.ReadyForDelivery,
-                DeliveryOtp          = "123456",
+                DeliveryOtpHash      = NFC.Platform.BuildingBlocks.Common.Helpers.OtpHasher.HashOtp("123456"),
                 DeliveryOtpExpiresAt = DateTime.UtcNow.AddMinutes(-5) // Expired 5 mins ago
             };
 
@@ -640,11 +640,12 @@ namespace NFC.Platform.Tests.Services
         {
             // Arrange
             var orderId = Guid.NewGuid();
+            var expectedHash = NFC.Platform.BuildingBlocks.Common.Helpers.OtpHasher.HashOtp("123456");
             var order = new CardOrder
             {
                 Id                   = orderId,
                 Status               = OrderStatus.ReadyForDelivery,
-                DeliveryOtp          = "123456",
+                DeliveryOtpHash      = expectedHash,
                 DeliveryOtpExpiresAt = DateTime.UtcNow.AddMinutes(5),
                 DeliveryOtpFailedAttempts = 1
             };
@@ -661,7 +662,7 @@ namespace NFC.Platform.Tests.Services
             Assert.Equal(422, result.StatusCode);
             Assert.Equal("Invalid OTP.", result.Message);
             Assert.Equal(2, order.DeliveryOtpFailedAttempts); // Incremented from 1 to 2
-            Assert.Equal("123456", order.DeliveryOtp); // Still intact
+            Assert.Equal(expectedHash, order.DeliveryOtpHash); // Still intact
             await _unitOfWork.Received(1).SaveChangesAsync();
         }
 
@@ -674,7 +675,7 @@ namespace NFC.Platform.Tests.Services
             {
                 Id                   = orderId,
                 Status               = OrderStatus.ReadyForDelivery,
-                DeliveryOtp          = "123456",
+                DeliveryOtpHash      = NFC.Platform.BuildingBlocks.Common.Helpers.OtpHasher.HashOtp("123456"),
                 DeliveryOtpExpiresAt = DateTime.UtcNow.AddMinutes(5),
                 DeliveryOtpFailedAttempts = 4 // Max is 5, so 4th failed attempt + 1 = 5th attempt => invalidation
             };
@@ -690,7 +691,7 @@ namespace NFC.Platform.Tests.Services
             Assert.False(result.IsSuccess);
             Assert.Equal(422, result.StatusCode);
             Assert.Equal(5, order.DeliveryOtpFailedAttempts);
-            Assert.Null(order.DeliveryOtp); // Invalidated
+            Assert.Null(order.DeliveryOtpHash); // Invalidated
             Assert.Null(order.DeliveryOtpExpiresAt); // Invalidated
             await _unitOfWork.Received(1).SaveChangesAsync();
         }
@@ -704,7 +705,7 @@ namespace NFC.Platform.Tests.Services
             {
                 Id                   = orderId,
                 Status               = OrderStatus.ReadyForDelivery,
-                DeliveryOtp          = "123456",
+                DeliveryOtpHash      = NFC.Platform.BuildingBlocks.Common.Helpers.OtpHasher.HashOtp("123456"),
                 DeliveryOtpExpiresAt = DateTime.UtcNow.AddMinutes(5),
                 DeliveryOtpFailedAttempts = 3
             };
@@ -719,7 +720,7 @@ namespace NFC.Platform.Tests.Services
             // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(OrderStatus.Delivered, order.Status);
-            Assert.Null(order.DeliveryOtp);
+            Assert.Null(order.DeliveryOtpHash);
             Assert.Equal(0, order.DeliveryOtpFailedAttempts); // Reset to 0
             await _unitOfWork.Received(1).SaveChangesAsync();
         }
@@ -733,7 +734,7 @@ namespace NFC.Platform.Tests.Services
             {
                 Id                   = orderId,
                 Status               = OrderStatus.ReadyForDelivery,
-                DeliveryOtp          = "123456",
+                DeliveryOtpHash      = NFC.Platform.BuildingBlocks.Common.Helpers.OtpHasher.HashOtp("123456"),
                 DeliveryOtpLastSentAt = DateTime.UtcNow.AddSeconds(-30), // Sent 30 seconds ago (< 60s)
                 DeliveryOtpResendCount = 1
             };
@@ -760,7 +761,7 @@ namespace NFC.Platform.Tests.Services
             {
                 Id                   = orderId,
                 Status               = OrderStatus.ReadyForDelivery,
-                DeliveryOtp          = "123456",
+                DeliveryOtpHash      = NFC.Platform.BuildingBlocks.Common.Helpers.OtpHasher.HashOtp("123456"),
                 DeliveryOtpLastSentAt = DateTime.UtcNow.AddMinutes(-10),
                 DeliveryOtpResendCount = 5 // Max limit reached (5)
             };
@@ -792,7 +793,7 @@ namespace NFC.Platform.Tests.Services
             {
                 Id                   = orderId,
                 Status               = OrderStatus.ReadyForDelivery,
-                DeliveryOtp          = "111111",
+                DeliveryOtpHash      = NFC.Platform.BuildingBlocks.Common.Helpers.OtpHasher.HashOtp("111111"),
                 DeliveryOtpLastSentAt = DateTime.UtcNow.AddMinutes(-2), // > 60s ago
                 DeliveryOtpResendCount = 2,
                 Tenant               = new Tenant { Company = null },
@@ -809,8 +810,8 @@ namespace NFC.Platform.Tests.Services
             // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal("OTP code has been resent successfully.", result.Message);
-            Assert.NotEqual("111111", order.DeliveryOtp); // New OTP generated
-            Assert.Equal(6, order.DeliveryOtp!.Length);
+            Assert.NotEqual(NFC.Platform.BuildingBlocks.Common.Helpers.OtpHasher.HashOtp("111111"), order.DeliveryOtpHash); // New OTP hash generated
+            Assert.NotNull(order.DeliveryOtpHash);
             Assert.Equal(3, order.DeliveryOtpResendCount); // Incremented from 2 to 3
             Assert.NotNull(order.DeliveryOtpExpiresAt);
             Assert.True(order.DeliveryOtpExpiresAt > DateTime.UtcNow);

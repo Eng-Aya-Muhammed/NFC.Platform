@@ -298,7 +298,7 @@ public class AdminService : IAdminService
             if (recipient != null)
             {
                 var otp = GenerateOtp();
-                order.DeliveryOtp = otp;
+                order.DeliveryOtpHash = OtpHasher.HashOtp(otp);
                 order.DeliveryOtpExpiresAt = DateTime.UtcNow.AddDays(7);
                 order.DeliveryOtpLastSentAt = DateTime.UtcNow;
                 order.DeliveryOtpResendCount = 0;
@@ -338,17 +338,17 @@ public class AdminService : IAdminService
         if (order.Status != OrderStatus.ReadyForDelivery)
             return ServiceResult.Fail(_messageService.Get("OrderNotReadyForDelivery"), 422);
 
-        if (string.IsNullOrWhiteSpace(order.DeliveryOtp) || !order.DeliveryOtpExpiresAt.HasValue || order.DeliveryOtpExpiresAt.Value < DateTime.UtcNow)
+        if (string.IsNullOrWhiteSpace(order.DeliveryOtpHash) || !order.DeliveryOtpExpiresAt.HasValue || order.DeliveryOtpExpiresAt.Value < DateTime.UtcNow)
             return ServiceResult.Fail(_messageService.Get("OtpExpired"), 422);
 
-        if (order.DeliveryOtp != otp)
+        if (!OtpHasher.VerifyOtp(otp, order.DeliveryOtpHash))
         {
             order.DeliveryOtpFailedAttempts++;
             var maxFailed = _otpSettings.MaxFailedAttempts > 0 ? _otpSettings.MaxFailedAttempts : 5;
 
             if (order.DeliveryOtpFailedAttempts >= maxFailed)
             {
-                order.DeliveryOtp = null;
+                order.DeliveryOtpHash = null;
                 order.DeliveryOtpExpiresAt = null;
                 await _unitOfWork.SaveChangesAsync();
                 return ServiceResult.Fail(_messageService.Get("OtpExpired"), 422);
@@ -359,7 +359,7 @@ public class AdminService : IAdminService
         }
 
         order.Status = OrderStatus.Delivered;
-        order.DeliveryOtp = null;
+        order.DeliveryOtpHash = null;
         order.DeliveryOtpExpiresAt = null;
         order.DeliveryOtpLastSentAt = null;
         order.DeliveryOtpResendCount = 0;
@@ -403,7 +403,7 @@ public class AdminService : IAdminService
         var recipient = order.Tenant?.Company?.AdminUser ?? order.User;
 
         var newOtp = GenerateOtp();
-        order.DeliveryOtp = newOtp;
+        order.DeliveryOtpHash = OtpHasher.HashOtp(newOtp);
         order.DeliveryOtpExpiresAt = DateTime.UtcNow.AddDays(7);
         order.DeliveryOtpLastSentAt = DateTime.UtcNow;
         order.DeliveryOtpResendCount++;

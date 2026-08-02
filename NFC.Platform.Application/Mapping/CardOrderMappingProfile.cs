@@ -33,7 +33,7 @@ namespace NFC.Platform.Application.Mapping
                 .ForMember(dest => dest.UnitPrice, opt => opt.Ignore())
                 .ForMember(dest => dest.Currency, opt => opt.Ignore())
                 .ForMember(dest => dest.TrackingNumber, opt => opt.Ignore())
-                .ForMember(dest => dest.DeliveryOtp, opt => opt.Ignore())
+                .ForMember(dest => dest.DeliveryOtpHash, opt => opt.Ignore())
                 .ForMember(dest => dest.DeliveryOtpExpiresAt, opt => opt.Ignore())
                 .ForMember(dest => dest.DeliveryOtpLastSentAt, opt => opt.Ignore())
                 .ForMember(dest => dest.DeliveryOtpResendCount, opt => opt.Ignore())
@@ -76,7 +76,7 @@ namespace NFC.Platform.Application.Mapping
                 .ForMember(dest => dest.Quantity, opt => opt.Ignore())   // computed in Service
                 .ForMember(dest => dest.RejectionReason, opt => opt.Ignore())
                 .ForMember(dest => dest.TrackingNumber, opt => opt.Ignore())
-                .ForMember(dest => dest.DeliveryOtp, opt => opt.Ignore())
+                .ForMember(dest => dest.DeliveryOtpHash, opt => opt.Ignore())
                 .ForMember(dest => dest.DeliveryOtpExpiresAt, opt => opt.Ignore())
                 .ForMember(dest => dest.DeliveryOtpLastSentAt, opt => opt.Ignore())
                 .ForMember(dest => dest.DeliveryOtpResendCount, opt => opt.Ignore())

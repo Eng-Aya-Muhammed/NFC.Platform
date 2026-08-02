@@ -19,7 +19,7 @@ namespace NFC.Platform.Domain.Entities
         //  Google Auth & Email OTP Verification
         public string? GoogleId { get; set; }
         public bool IsEmailVerified { get; set; } = false;
-        public string? OtpCode { get; set; }
+        public string? OtpHash { get; set; }
         public DateTime? OtpExpiresAt { get; set; }
         
         public Guid TenantId { get; set; }

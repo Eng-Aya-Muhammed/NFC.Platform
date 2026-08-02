@@ -27,6 +27,7 @@ namespace NFC.Platform.Infrastructure.Configurations
             builder.Property(o => o.UnitPrice).HasColumnType("decimal(18,3)").IsRequired();
             builder.Property(o => o.Currency).HasMaxLength(10).IsRequired();
             builder.Property(o => o.TrackingNumber).HasMaxLength(100);
+            builder.Property(o => o.DeliveryOtpHash).HasMaxLength(128);
 
             builder.Property(o => o.TenantId).IsRequired();
             builder.HasIndex(o => o.TenantId);

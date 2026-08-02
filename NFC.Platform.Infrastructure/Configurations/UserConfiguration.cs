@@ -20,7 +20,7 @@ namespace NFC.Platform.Infrastructure.Configurations
 
             builder.Property(u => u.GoogleId).HasMaxLength(150);
             builder.Property(u => u.IsEmailVerified).HasDefaultValue(false);
-            builder.Property(u => u.OtpCode).HasMaxLength(10);
+            builder.Property(u => u.OtpHash).HasMaxLength(128);
 
             builder.Property(u => u.TenantId).IsRequired();
 

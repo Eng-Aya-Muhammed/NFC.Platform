@@ -872,7 +872,7 @@ namespace NFC.Platform.Tests.Services
                 Id                    = Guid.NewGuid(),
                 TenantId              = tenantId,
                 Status                = OrderStatus.ReadyForDelivery,
-                DeliveryOtp           = "111111",
+                DeliveryOtpHash      = NFC.Platform.BuildingBlocks.Common.Helpers.OtpHasher.HashOtp("111111"),
                 DeliveryOtpLastSentAt = DateTime.UtcNow.AddMinutes(-3),
                 DeliveryOtpResendCount = 1,
                 Tenant                = new Tenant { Company = null },
@@ -888,8 +888,8 @@ namespace NFC.Platform.Tests.Services
             // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal("OTP code has been resent successfully.", result.Message);
-            Assert.NotEqual("111111", order.DeliveryOtp); // New OTP generated
-            Assert.Equal(6, order.DeliveryOtp!.Length);
+            Assert.NotEqual(NFC.Platform.BuildingBlocks.Common.Helpers.OtpHasher.HashOtp("111111"), order.DeliveryOtpHash); // New OTP hash generated
+            Assert.NotNull(order.DeliveryOtpHash);
             Assert.Equal(2, order.DeliveryOtpResendCount); // Incremented
             Assert.NotNull(order.DeliveryOtpExpiresAt);
 

@@ -121,7 +121,7 @@ namespace NFC.Platform.Application.Services;
                 AccountType = request.AccountType,
                 PhoneNumber = phoneNum,
                 IsEmailVerified = false,
-                OtpCode = otpCode,
+                OtpHash = OtpHasher.HashOtp(otpCode),
                 OtpExpiresAt = DateTime.UtcNow.AddMinutes(10),
                 TenantId = tenant.Id
             };
@@ -262,7 +262,7 @@ namespace NFC.Platform.Application.Services;
                 AccountType = request.AccountType,
                 PhoneNumber = request.WhatsApp ?? string.Empty,
                 IsEmailVerified = false,
-                OtpCode = otpCode,
+                OtpHash = OtpHasher.HashOtp(otpCode),
                 OtpExpiresAt = DateTime.UtcNow.AddMinutes(10),
                 TenantId = tenant.Id
             };
@@ -348,14 +348,14 @@ namespace NFC.Platform.Application.Services;
             if (user == null)
                 return ServiceResult<AuthDto>.Fail(_messageService.Get("OtpInvalid"), 400);
 
-            if (string.IsNullOrWhiteSpace(user.OtpCode) || user.OtpCode != request.OtpCode)
+            if (string.IsNullOrWhiteSpace(user.OtpHash) || !OtpHasher.VerifyOtp(request.OtpCode, user.OtpHash))
                 return ServiceResult<AuthDto>.Fail(_messageService.Get("OtpInvalid"), 400);
 
             if (user.OtpExpiresAt.HasValue && user.OtpExpiresAt.Value < DateTime.UtcNow)
                 return ServiceResult<AuthDto>.Fail(_messageService.Get("OtpExpired"), 400);
 
             user.IsEmailVerified = true;
-            user.OtpCode = null;
+            user.OtpHash = null;
             user.OtpExpiresAt = null;
 
             await _unitOfWork.SaveChangesAsync();
@@ -380,7 +380,7 @@ namespace NFC.Platform.Application.Services;
                 return ServiceResult<bool>.NotFound(_messageService.Get("RecordNotFound"));
 
             var otpCode = GenerateOtp();
-            user.OtpCode = otpCode;
+            user.OtpHash = OtpHasher.HashOtp(otpCode);
             user.OtpExpiresAt = DateTime.UtcNow.AddMinutes(10);
 
             await _unitOfWork.SaveChangesAsync();

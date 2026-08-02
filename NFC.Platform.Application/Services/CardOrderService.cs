@@ -412,7 +412,7 @@ public class CardOrderService(
             return ServiceResult.Fail(_messageService.Get("OtpResendLimitReached"), 422);
 
         var newOtp = GenerateOtp();
-        order.DeliveryOtp = newOtp;
+        order.DeliveryOtpHash = OtpHasher.HashOtp(newOtp);
         order.DeliveryOtpExpiresAt = DateTime.UtcNow.AddDays(7);
         order.DeliveryOtpLastSentAt = DateTime.UtcNow;
         order.DeliveryOtpResendCount++;

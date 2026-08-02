@@ -50,10 +50,10 @@ namespace NFC.Platform.Domain.Entities
         public string? TrackingNumber { get; set; }
 
         /// <summary>
-        /// 6-digit OTP sent to the recipient when order is ReadyForDelivery.
+        /// 6-digit cryptographic hash of the OTP sent to the recipient when order is ReadyForDelivery.
         /// Cleared after successful delivery confirmation.
         /// </summary>
-        public string? DeliveryOtp { get; set; }
+        public string? DeliveryOtpHash { get; set; }
 
         /// <summary>
         /// Expiration timestamp for the delivery OTP (valid for 7 days while ReadyForDelivery).

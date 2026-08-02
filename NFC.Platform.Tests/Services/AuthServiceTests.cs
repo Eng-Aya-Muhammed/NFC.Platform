@@ -638,7 +638,7 @@ namespace NFC.Platform.Tests.Services
         public async Task VerifyOtpAsync_ReturnsFail_WhenOtpIsInvalid()
         {
             // Arrange
-            var user = new User { Email = "user@test.com", OtpCode = "654321", OtpExpiresAt = DateTime.UtcNow.AddMinutes(5) };
+            var user = new User { Email = "user@test.com", OtpHash = NFC.Platform.BuildingBlocks.Common.Helpers.OtpHasher.HashOtp("654321"), OtpExpiresAt = DateTime.UtcNow.AddMinutes(5) };
             _userRepo.GetQueryable().Returns(new List<User> { user }.AsQueryable().BuildMock());
             _messageService.Get("OtpInvalid").Returns("Invalid OTP.");
 
@@ -654,7 +654,7 @@ namespace NFC.Platform.Tests.Services
         public async Task VerifyOtpAsync_ReturnsFail_WhenUserIsAlreadyVerified_AndOtpIsInvalid()
         {
             // Arrange
-            var user = new User { Email = "user@test.com", IsEmailVerified = true, OtpCode = "654321", OtpExpiresAt = DateTime.UtcNow.AddMinutes(5) };
+            var user = new User { Email = "user@test.com", IsEmailVerified = true, OtpHash = NFC.Platform.BuildingBlocks.Common.Helpers.OtpHasher.HashOtp("654321"), OtpExpiresAt = DateTime.UtcNow.AddMinutes(5) };
             _userRepo.GetQueryable().Returns(new List<User> { user }.AsQueryable().BuildMock());
             _messageService.Get("OtpInvalid").Returns("Invalid OTP.");
 
@@ -670,7 +670,7 @@ namespace NFC.Platform.Tests.Services
         public async Task VerifyOtpAsync_ReturnsFail_WhenOtpIsExpired()
         {
             // Arrange
-            var user = new User { Email = "user@test.com", OtpCode = "123456", OtpExpiresAt = DateTime.UtcNow.AddMinutes(-5) };
+            var user = new User { Email = "user@test.com", OtpHash = NFC.Platform.BuildingBlocks.Common.Helpers.OtpHasher.HashOtp("123456"), OtpExpiresAt = DateTime.UtcNow.AddMinutes(-5) };
             _userRepo.GetQueryable().Returns(new List<User> { user }.AsQueryable().BuildMock());
             _messageService.Get("OtpExpired").Returns("OTP has expired.");
 
@@ -691,7 +691,7 @@ namespace NFC.Platform.Tests.Services
             {
                 Id = Guid.NewGuid(),
                 Email = "user@test.com",
-                OtpCode = "123456",
+                OtpHash = NFC.Platform.BuildingBlocks.Common.Helpers.OtpHasher.HashOtp("123456"),
                 OtpExpiresAt = DateTime.UtcNow.AddMinutes(5),
                 IsEmailVerified = false
             };
@@ -709,7 +709,7 @@ namespace NFC.Platform.Tests.Services
             Assert.NotNull(result.Data);
             Assert.Equal("valid-jwt-token", result.Data.Token);
             Assert.True(user.IsEmailVerified);
-            Assert.Null(user.OtpCode);
+            Assert.Null(user.OtpHash);
             Assert.Null(user.OtpExpiresAt);
             await _unitOfWork.Received(2).SaveChangesAsync();
         }
