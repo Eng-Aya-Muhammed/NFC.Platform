@@ -502,4 +502,16 @@
   <data name="DiscountCodeExpired" xml:space="preserve">
     <value>Discount code has expired.</value>
   </data>
+  <data name="FreeNoActivePlan" xml:space="preserve">
+    <value>Free / No Active Plan</value>
+  </data>
+  <data name="AccountTypeCompany" xml:space="preserve">
+    <value>Company</value>
+  </data>
+  <data name="AccountTypeIndividual" xml:space="preserve">
+    <value>Individual</value>
+  </data>
+  <data name="DefaultPhysicalCardName" xml:space="preserve">
+    <value>Physical Card</value>
+  </data>
 </root>

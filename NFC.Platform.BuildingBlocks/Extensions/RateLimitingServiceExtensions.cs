@@ -82,7 +82,50 @@ namespace NFC.Platform.BuildingBlocks.Extensions
                         });
                 });
 
+                // Dedicated Refresh Token policy: 10 requests / 1 minute
+                options.AddPolicy("RefreshTokenPolicy", httpContext =>
+                {
+                    var ip = GetClientIp(httpContext);
+                    return RateLimitPartition.GetSlidingWindowLimiter(
+                        partitionKey: $"refresh_{ip}",
+                        factory: _ => new SlidingWindowRateLimiterOptions
+                        {
+                            PermitLimit = 10,
+                            Window = TimeSpan.FromMinutes(1),
+                            SegmentsPerWindow = 4,
+                            QueueLimit = 0
+                        });
+                });
 
+                // Dedicated Resend OTP policy: 3 requests / 2 minutes (prevents OTP notification flooding)
+                options.AddPolicy("ResendOtpPolicy", httpContext =>
+                {
+                    var ip = GetClientIp(httpContext);
+                    return RateLimitPartition.GetSlidingWindowLimiter(
+                        partitionKey: $"resendotp_{ip}",
+                        factory: _ => new SlidingWindowRateLimiterOptions
+                        {
+                            PermitLimit = 3,
+                            Window = TimeSpan.FromMinutes(2),
+                            SegmentsPerWindow = 4,
+                            QueueLimit = 0
+                        });
+                });
+
+                // Dedicated Verify OTP policy: 5 requests / 1 minute
+                options.AddPolicy("VerifyOtpPolicy", httpContext =>
+                {
+                    var ip = GetClientIp(httpContext);
+                    return RateLimitPartition.GetSlidingWindowLimiter(
+                        partitionKey: $"verifyotp_{ip}",
+                        factory: _ => new SlidingWindowRateLimiterOptions
+                        {
+                            PermitLimit = 5,
+                            Window = TimeSpan.FromMinutes(1),
+                            SegmentsPerWindow = 4,
+                            QueueLimit = 0
+                        });
+                });
 
                 // 3 requests per 10 minutes + distributed lockout after 3 violations
                 options.AddPolicy("ChangePasswordPolicy", httpContext =>
@@ -126,6 +169,19 @@ namespace NFC.Platform.BuildingBlocks.Extensions
                             messageKey = "TooManyForgotPasswordRequests";
                             messageParam = 120;
                             retryAfterSeconds = 120;
+                            break;
+
+                        case "ResendOtpPolicy":
+                            messageKey = "TooManyAuthAttempts";
+                            messageParam = 120;
+                            retryAfterSeconds = 120;
+                            break;
+
+                        case "VerifyOtpPolicy":
+                        case "RefreshTokenPolicy":
+                            messageKey = "TooManyAuthAttempts";
+                            messageParam = 60;
+                            retryAfterSeconds = 60;
                             break;
 
                         case "ResolvePublicProfilePolicy":

@@ -502,4 +502,16 @@
   <data name="DiscountCodeExpired" xml:space="preserve">
     <value>كود الخصم منتهي الصلاحية.</value>
   </data>
+  <data name="FreeNoActivePlan" xml:space="preserve">
+    <value>مجاني / لا يوجد اشتراك مفعّل</value>
+  </data>
+  <data name="AccountTypeCompany" xml:space="preserve">
+    <value>شركة</value>
+  </data>
+  <data name="AccountTypeIndividual" xml:space="preserve">
+    <value>أفراد</value>
+  </data>
+  <data name="DefaultPhysicalCardName" xml:space="preserve">
+    <value>كارت مطبوع</value>
+  </data>
 </root>

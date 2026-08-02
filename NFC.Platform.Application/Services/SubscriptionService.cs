@@ -17,6 +17,7 @@ public class SubscriptionService(
     {
         var plans = await _unitOfWork.Repository<SubscriptionPlan>()
             .GetQueryable()
+            .IgnoreQueryFilters()
             .AsNoTracking()
             .Include(p => p.PlanTemplates)
                 .ThenInclude(pt => pt.CardTemplate)

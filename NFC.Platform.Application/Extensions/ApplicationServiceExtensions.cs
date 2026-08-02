@@ -15,7 +15,6 @@ namespace NFC.Platform.Application.Extensions
 
             services.AddScoped<ICardOrderService, CardOrderService>();
             services.AddScoped<ICardDesignService, CardDesignService>();
-            services.AddScoped<IEmployeeImportService, EmployeeImportService>();
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<ICompanyService, CompanyService>();
             services.AddScoped<IEmployeeService, EmployeeService>();

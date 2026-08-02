@@ -88,5 +88,32 @@ namespace NFC.Platform.Tests.Mapping
             Assert.Equal("User Full Name", dto.FullName);
             Assert.Equal("Active", dto.Status);
         }
+
+        [Fact]
+        public void UpdateEmployeeRequest_To_UserProfile_PreservesJobTitleAndDepartment_WhenNull()
+        {
+            // Arrange
+            var existingProfile = new UserProfile
+            {
+                FullName = "Existing Name",
+                JobTitle = "Senior Developer",
+                Department = "Engineering"
+            };
+
+            var updateRequest = new UpdateEmployeeRequest
+            {
+                FullName = "Updated Name",
+                JobTitle = null,
+                Department = null
+            };
+
+            // Act
+            _mapper.Map(updateRequest, existingProfile);
+
+            // Assert
+            Assert.Equal("Updated Name", existingProfile.FullName);
+            Assert.Equal("Senior Developer", existingProfile.JobTitle);
+            Assert.Equal("Engineering", existingProfile.Department);
+        }
     }
 }

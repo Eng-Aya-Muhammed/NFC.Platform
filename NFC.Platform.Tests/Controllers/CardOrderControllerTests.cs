@@ -19,16 +19,14 @@ namespace NFC.Platform.Tests.Controllers
     public class CardOrderControllerTests
     {
         private readonly ICardOrderService _cardOrderService;
-        private readonly IEmployeeImportService _employeeImportService;
         private readonly IMessageService _messageService;
         private readonly CardOrderController _sut;
 
         public CardOrderControllerTests()
         {
             _cardOrderService = Substitute.For<ICardOrderService>();
-            _employeeImportService = Substitute.For<IEmployeeImportService>();
             _messageService = Substitute.For<IMessageService>();
-            _sut = new CardOrderController(_cardOrderService, _employeeImportService, _messageService);
+            _sut = new CardOrderController(_cardOrderService, _messageService);
         }
 
         [Fact]
@@ -191,31 +189,6 @@ namespace NFC.Platform.Tests.Controllers
             Assert.Equal(400, result.StatusCode);
         }
 
-        [Fact]
-        public async Task GetEmployeesImportStatus_CallsService_AndReturnsOk_OnSuccess()
-        {
-            var id = Guid.NewGuid();
-            var status = new EmployeesImportStatusDto();
-            _employeeImportService.GetImportStatusAsync(id).Returns(ServiceResult<EmployeesImportStatusDto>.Success(status));
-
-            var result = await _sut.GetEmployeesImportStatus(id) as OkObjectResult;
-
-            Assert.NotNull(result);
-            Assert.Equal(200, result.StatusCode);
-            await _employeeImportService.Received(1).GetImportStatusAsync(id);
-        }
-
-        [Fact]
-        public async Task GetEmployeesImportStatus_ReturnsErrorStatusCode_OnFailure()
-        {
-            var id = Guid.NewGuid();
-            _employeeImportService.GetImportStatusAsync(id).Returns(ServiceResult<EmployeesImportStatusDto>.Fail("Error", 404));
-
-            var result = await _sut.GetEmployeesImportStatus(id) as ObjectResult;
-
-            Assert.NotNull(result);
-            Assert.Equal(404, result.StatusCode);
-        }
 
         [Fact]
         public async Task ResendDeliveryOtp_ReturnsOk_WhenSuccess()

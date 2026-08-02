@@ -19,6 +19,7 @@ namespace NFC.Platform.Infrastructure.Configurations
 
             builder.Property(t => t.TenantId).IsRequired();
             builder.HasIndex(t => new { t.TenantId, t.UserId });
+            builder.HasIndex(t => t.Token).IsUnique();
 
             builder.HasOne(t => t.User)
                 .WithMany()

@@ -26,6 +26,7 @@ namespace NFC.Platform.Infrastructure.Configurations
 
             builder.HasIndex(u => new { u.TenantId, u.Email }).IsUnique();
             builder.HasIndex(u => new { u.TenantId, u.Username }).IsUnique();
+            builder.HasIndex(u => new { u.Email, u.IsDeleted }).HasFilter("[IsDeleted] = 0");
 
             builder.HasOne(u => u.Tenant)
                 .WithMany(t => t.Users)

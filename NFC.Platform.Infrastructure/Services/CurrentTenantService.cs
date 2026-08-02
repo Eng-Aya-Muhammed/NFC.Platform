@@ -17,10 +17,13 @@ namespace NFC.Platform.Infrastructure.Services
     /// Implementation of <see cref="ICurrentTenant"/> that resolves the active TenantId
     /// from JWT claims and validates its existence and active status in the database.
     /// </summary>
-    public class CurrentTenantService(IHttpContextAccessor httpContextAccessor, IServiceProvider serviceProvider) : ICurrentTenant
+    /// <summary>
+    /// Implementation of <see cref="ICurrentTenant"/> that resolves active TenantId and roles
+    /// from JWT claims in memory. Async DB validation is handled by TenantMiddleware.
+    /// </summary>
+    public class CurrentTenantService(IHttpContextAccessor httpContextAccessor) : ICurrentTenant
     {
         private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor ?? throw new ArgumentNullException(nameof(httpContextAccessor));
-        private readonly IServiceProvider _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
 
         private bool _isTenantValidated;
         private Guid? _cachedTenantId;
@@ -68,6 +71,21 @@ namespace NFC.Platform.Infrastructure.Services
             ?? _httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.Email));
 
         /// <inheritdoc />
+        public AccountType? AccountType
+        {
+            get
+            {
+                var user = _httpContextAccessor.HttpContext?.User;
+                var claimVal = user?.FindFirstValue(AppClaims.AccountType);
+                if (!string.IsNullOrWhiteSpace(claimVal) && Enum.TryParse<AccountType>(claimVal, ignoreCase: true, out var parsed))
+                {
+                    return parsed;
+                }
+                return null;
+            }
+        }
+
+        /// <inheritdoc />
         public bool IsAuthenticated =>
             _userIdOverride.HasValue || (_httpContextAccessor.HttpContext?.User?.Identity?.IsAuthenticated ?? false);
 
@@ -92,7 +110,7 @@ namespace NFC.Platform.Infrastructure.Services
                 return;
             }
 
-            // 1. Resolve Admin status
+            // 1. Resolve Admin status from claims
             var userRoles = httpContext.User.FindAll(ClaimTypes.Role)
                 .Concat(httpContext.User.FindAll(AppClaims.Role))
                 .Select(c => c.Value);
@@ -124,30 +142,6 @@ namespace NFC.Platform.Infrastructure.Services
             }
 
             _cachedTenantId = tenantId;
-
-            // 3. Synchronous Database validation to avoid async deadlock inside property getter
-            using (var scope = _serviceProvider.CreateScope())
-            {
-                var options = scope.ServiceProvider.GetRequiredService<DbContextOptions<ApplicationDbContext>>();
-                var interceptor = scope.ServiceProvider.GetRequiredService<AuditableEntitySaveChangesInterceptor>();
-
-                using var validationContext = new ApplicationDbContext(options, interceptor, this);
-
-                var tenant = validationContext.Set<Tenant>()
-                    .IgnoreQueryFilters()
-                    .FirstOrDefault(t => t.Id == tenantId);
-
-                if (tenant == null)
-                {
-                    throw new ForbiddenException("TenantNotFound");
-                }
-
-                if (!tenant.IsActive)
-                {
-                    throw new ForbiddenException("TenantInactive");
-                }
-            }
-
             _isTenantValidated = true;
         }
     }

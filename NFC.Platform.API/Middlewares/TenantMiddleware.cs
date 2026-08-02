@@ -1,25 +1,43 @@
 using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
+using NFC.Platform.BuildingBlocks.Common.Exceptions;
 using NFC.Platform.BuildingBlocks.Common.Helpers;
+using NFC.Platform.Domain.Entities;
+using NFC.Platform.Infrastructure.Contexts;
 
 namespace NFC.Platform.API.Middlewares
 {
     /// <summary>
-    /// Middleware that validates that the active tenant for an authenticated user is active and exists.
+    /// Middleware that validates asynchronously that the active tenant for an authenticated non-admin user is active and exists.
     /// </summary>
     public class TenantMiddleware(RequestDelegate next)
     {
         private readonly RequestDelegate _next = next ?? throw new ArgumentNullException(nameof(next));
 
-        public async Task InvokeAsync(HttpContext context, ICurrentTenant currentTenant)
+        public async Task InvokeAsync(HttpContext context, ICurrentTenant currentTenant, ApplicationDbContext dbContext)
         {
-            if (currentTenant.IsAuthenticated)
+            if (currentTenant.IsAuthenticated && !currentTenant.IsAdmin)
             {
-                // Accessing the TenantId property forces validation against the database.
-                // If validation fails, it throws a ForbiddenException which is caught and
-                // handled by the GlobalExceptionMiddleware.
-                _ = currentTenant.TenantId;
+                var tenantId = currentTenant.TenantId;
+                if (tenantId.HasValue)
+                {
+                    var tenant = await dbContext.Set<Tenant>()
+                        .IgnoreQueryFilters()
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(t => t.Id == tenantId.Value);
+
+                    if (tenant == null)
+                    {
+                        throw new ForbiddenException("TenantNotFound");
+                    }
+
+                    if (!tenant.IsActive)
+                    {
+                        throw new ForbiddenException("TenantInactive");
+                    }
+                }
             }
 
             await _next(context);

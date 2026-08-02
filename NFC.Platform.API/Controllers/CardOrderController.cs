@@ -6,11 +6,9 @@ namespace NFC.Platform.API.Controllers;
 [Route("api/card-orders")]
 public class CardOrderController(
     ICardOrderService cardOrderService, 
-    IEmployeeImportService employeeImportService,
     IMessageService messageService) : ControllerBase
 {
     private readonly ICardOrderService _cardOrderService = cardOrderService ?? throw new ArgumentNullException(nameof(cardOrderService));
-    private readonly IEmployeeImportService _employeeImportService = employeeImportService ?? throw new ArgumentNullException(nameof(employeeImportService));
     private readonly IMessageService _messageService = messageService ?? throw new ArgumentNullException(nameof(messageService));
 
     /// <summary>
@@ -117,19 +115,6 @@ public class CardOrderController(
         return Ok(result);
     }
 
-    /// <summary>
-    /// Retrieves the Excel ingestion status for a bulk order.
-    /// </summary>
-    [HttpGet("/api/orders/{id:guid}/employees-import-status")]
-    [HasPermission(AppPermissions.Employees.Import)]
-    public async Task<IActionResult> GetEmployeesImportStatus([FromRoute] Guid id)
-    {
-        var result = await _employeeImportService.GetImportStatusAsync(id);
-        if (!result.IsSuccess)
-            return StatusCode(result.StatusCode, result);
-
-        return Ok(result);
-    }
 
     /// <summary>
     /// Resends the delivery OTP for an order belonging to the current tenant.

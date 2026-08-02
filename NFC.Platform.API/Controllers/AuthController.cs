@@ -53,7 +53,7 @@ namespace NFC.Platform.API.Controllers
         [HttpPost("verify-otp")]
         [HttpPost("verify-whatsapp-otp")]
         [AllowAnonymous]
-        [EnableRateLimiting("RegisterPolicy")]
+        [EnableRateLimiting("VerifyOtpPolicy")]
         public async Task<IActionResult> VerifyOtp([FromBody] VerifyOtpRequest request)
         {
             var result = await _authService.VerifyOtpAsync(request);
@@ -68,6 +68,7 @@ namespace NFC.Platform.API.Controllers
         [HttpPost("resend-otp")]
         [HttpPost("resend-whatsapp-otp")]
         [AllowAnonymous]
+        [EnableRateLimiting("ResendOtpPolicy")]
         public async Task<IActionResult> ResendOtp([FromBody] ResendOtpRequest request)
         {
             var result = await _authService.ResendOtpAsync(request);
@@ -81,6 +82,7 @@ namespace NFC.Platform.API.Controllers
 
         [HttpPost("refresh")]
         [AllowAnonymous]
+        [EnableRateLimiting("RefreshTokenPolicy")]
         public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequest request)
         {
             var result = await _authService.RefreshTokenAsync(request);
@@ -94,6 +96,7 @@ namespace NFC.Platform.API.Controllers
 
         [HttpPost("revoke")]
         [AllowAnonymous]
+        [EnableRateLimiting("RefreshTokenPolicy")]
         public async Task<IActionResult> Revoke([FromBody] RefreshTokenRequest request)
         {
             var result = await _authService.RevokeTokenAsync(request);

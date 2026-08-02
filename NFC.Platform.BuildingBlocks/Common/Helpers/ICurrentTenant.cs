@@ -1,4 +1,5 @@
 using System;
+using NFC.Platform.Domain.Enums;
 
 namespace NFC.Platform.BuildingBlocks.Common.Helpers
 {
@@ -21,6 +22,11 @@ namespace NFC.Platform.BuildingBlocks.Common.Helpers
         /// Gets the email address of the current user. Returns null if not authenticated.
         /// </summary>
         string? Email { get; }
+
+        /// <summary>
+        /// Gets the account type of the current user parsed from JWT claims.
+        /// </summary>
+        AccountType? AccountType { get; }
 
         /// <summary>
         /// Gets a value indicating whether the current request is authenticated.

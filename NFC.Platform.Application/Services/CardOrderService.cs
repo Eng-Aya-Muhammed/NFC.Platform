@@ -411,7 +411,7 @@ public class CardOrderService(
         if (order.DeliveryOtpResendCount >= _otpSettings.MaxResendAttempts)
             return ServiceResult.Fail(_messageService.Get("OtpResendLimitReached"), 422);
 
-        var newOtp = Random.Shared.Next(100000, 999999).ToString();
+        var newOtp = GenerateOtp();
         order.DeliveryOtp = newOtp;
         order.DeliveryOtpExpiresAt = DateTime.UtcNow.AddDays(7);
         order.DeliveryOtpLastSentAt = DateTime.UtcNow;
@@ -421,7 +421,12 @@ public class CardOrderService(
 
         var recipient = order.Tenant?.Company?.AdminUser ?? order.User;
         if (recipient != null)
-            EnqueueOtpNotifications(recipient, newOtp, order.CardDesign?.CardType?.NameAr ?? "Physical Card");
+        {
+            var cardName = order.CardDesign?.CardType?.NameAr 
+                ?? order.CardDesign?.CardType?.NameEn 
+                ?? _messageService.Get("DefaultPhysicalCardName");
+            EnqueueOtpNotifications(recipient, newOtp, cardName);
+        }
 
         return ServiceResult.Success(_messageService.Get("OtpResent"));
     }
@@ -464,12 +469,19 @@ public class CardOrderService(
         int? quantityPerEmployee,
         int? quantity)
     {
-        var currentUser = await _unitOfWork.Repository<User>()
-            .GetQueryable().AsNoTracking()
-            .Select(u => new { u.Id, u.AccountType })
-            .FirstOrDefaultAsync(u => u.Id == userId);
+        // M-11 fix: Read AccountType directly from current tenant claims without issuing a DB query.
+        // If claims are absent (e.g. background job context), fallback to querying DB.
+        var accountType = _currentTenant.AccountType;
+        if (!accountType.HasValue)
+        {
+            var currentUser = await _unitOfWork.Repository<User>()
+                .GetQueryable().AsNoTracking()
+                .Select(u => new { u.Id, u.AccountType })
+                .FirstOrDefaultAsync(u => u.Id == userId);
+            accountType = currentUser?.AccountType;
+        }
 
-        var isCompany = currentUser?.AccountType == AccountType.CompanyAdmin;
+        var isCompany = accountType == AccountType.CompanyAdmin;
 
         var itemsToOrder = new List<CardOrderItem>();
         int totalCards;
@@ -564,6 +576,21 @@ public class CardOrderService(
         ResolvedCardDesignInfo? selectedDesign = null;
         int selectedAvailableQty = 0;
 
+        // H-05 fix: load all pending quantities in a single GROUP BY query
+        // instead of issuing one query per candidate inside the loop.
+        var candidateIds = candidateDesigns.Select(c => c.Id).ToList();
+        var pendingQtyByDesign = await _unitOfWork.Repository<CardOrder>()
+            .GetQueryable()
+            .AsNoTracking()
+            .Where(o => o.CardDesignId.HasValue
+                     && candidateIds.Contains(o.CardDesignId!.Value)
+                     && (o.Status == OrderStatus.PendingReview
+                      || o.Status == OrderStatus.UnderReview
+                      || o.Status == OrderStatus.AwaitingDesign))
+            .GroupBy(o => o.CardDesignId!.Value)
+            .Select(g => new { DesignId = g.Key, PendingQty = g.Sum(o => o.Quantity) })
+            .ToDictionaryAsync(x => x.DesignId, x => x.PendingQty);
+
         foreach (var candidate in candidateDesigns)
         {
             if (!candidate.IsPaid)
@@ -571,7 +598,7 @@ public class CardOrderService(
                 return ServiceResult<ResolvedCardDesignInfo>.Fail(_messageService.Get("DesignPaymentRequired"), 402);
             }
 
-            var pendingQty = await CalculatePendingOrdersQuantityAsync(candidate.Id);
+            var pendingQty = pendingQtyByDesign.GetValueOrDefault(candidate.Id, 0);
 
             var avail = candidate.TotalQuantity - candidate.UsedQuantity - pendingQty;
             if (totalCards <= avail)
@@ -729,6 +756,14 @@ public class CardOrderService(
         }
 
         return ServiceResult<List<CardOrderItem>>.Success([]);
+    }
+
+    private static string GenerateOtp()
+    {
+        // Cryptographically secure 6-digit OTP spanning 000000–999999
+        var bytes = RandomNumberGenerator.GetBytes(4);
+        var value = BitConverter.ToUInt32(bytes, 0) % 1_000_000;
+        return value.ToString("D6");
     }
 
     private void EnqueueOtpNotifications(User recipient, string otp, string cardName)

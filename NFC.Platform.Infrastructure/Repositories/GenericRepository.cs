@@ -58,8 +58,18 @@ namespace NFC.Platform.Infrastructure.Repositories
         /// <inheritdoc />
         public void Update(T entity)
         {
-            _dbSet.Attach(entity);
-            _context.Entry(entity).State = EntityState.Modified;
+            var entry = _context.Entry(entity);
+
+            if (entry.State == EntityState.Detached)
+            {
+                // Disconnected entity (e.g. received from a DTO mapping):
+                // attach and mark ALL columns as modified for a full UPDATE.
+                _dbSet.Attach(entity);
+                entry.State = EntityState.Modified;
+            }
+            // If the entity is Already, Added, Modified, or Deleted,
+            // EF change tracking already knows what changed and will issue
+            // a minimal UPDATE covering only the dirty columns. No action needed.
         }
 
         /// <inheritdoc />

@@ -56,6 +56,21 @@ namespace NFC.Platform.Application.Services;
             var roleRepo = _unitOfWork.Repository<Role>();
             var userRoleRepo = _unitOfWork.Repository<UserRole>();
             var companyRepo = _unitOfWork.Repository<Company>();
+            var profileRepo = _unitOfWork.Repository<UserProfile>();
+
+            // Compute stable values before the transaction so they are available
+            // for the background email job that is enqueued after commit.
+            var effectiveUsername = !string.IsNullOrWhiteSpace(request.Username)
+                ? request.Username
+                : (request.CompanyName ?? request.Email.Split('@')[0]);
+
+            var phoneNum = !string.IsNullOrWhiteSpace(request.Phone)
+                ? request.Phone
+                : (request.WhatsApp ?? string.Empty);
+
+            var tenantName = request.AccountType == AccountType.CompanyAdmin
+                ? (request.CompanyName ?? $"{effectiveUsername} Company")
+                : $"{effectiveUsername}'s Tenant";
 
             // Check if user already exists
             bool userExists = false;
@@ -75,111 +90,96 @@ namespace NFC.Platform.Application.Services;
                 return ServiceResult<bool>.Fail(_messageService.Get("UserAlreadyExists"), 400);
             }
 
-            await _unitOfWork.BeginTransactionAsync();
+            // OTP generated before the transaction so it can be enqueued after commit
+            var otpCode = GenerateOtp();
 
-            try
+        await _unitOfWork.BeginTransactionAsync();
+
+        try
+        {
+            // 1. Determine target role (read-only lookup before any writes)
+            var targetRole = request.AccountType == AccountType.CompanyAdmin
+                ? AppRole.CompanyAdmin
+                : AppRole.Customer;
+
+            var roles = await roleRepo.FindAsync(r => r.Name == targetRole.ToString());
+            var matchingRole = roles.Count > 0 ? roles[0] : null;
+
+            // 2. Build entity graph in memory.
+            //    BaseEntity.Id = Guid.NewGuid() so all IDs are available before SaveChanges.
+            var tenant = new Tenant
             {
-                // 1. Create Tenant
-                var effectiveUsername = !string.IsNullOrWhiteSpace(request.Username)
-                    ? request.Username
-                    : (request.CompanyName ?? request.Email.Split('@')[0]);
+                Name = tenantName,
+                IsActive = true
+            };
 
-                var phoneNum = !string.IsNullOrWhiteSpace(request.Phone) ? request.Phone : (request.WhatsApp ?? string.Empty);
+            var user = new User
+            {
+                Username = effectiveUsername,
+                Email = request.Email,
+                PasswordHash = PasswordHasher.HashPassword(request.Password),
+                AccountType = request.AccountType,
+                PhoneNumber = phoneNum,
+                IsEmailVerified = false,
+                OtpCode = otpCode,
+                OtpExpiresAt = DateTime.UtcNow.AddMinutes(10),
+                TenantId = tenant.Id
+            };
 
-                var tenantName = request.AccountType == AccountType.CompanyAdmin
-                    ? (request.CompanyName ?? $"{effectiveUsername} Company")
-                    : $"{effectiveUsername}'s Tenant";
+            // 3. Company (CompanyAdmin only)
+            Company? company = null;
+            if (request.AccountType == AccountType.CompanyAdmin)
+            {
+                company = _mapper.Map<Company>(request) ?? new Company();
+                company.Name = request.CompanyName ?? "Company";
+                company.TenantId = tenant.Id;
+                company.AdminUserId = user.Id;
+                user.CompanyId = company.Id;
+            }
 
-                var tenant = new Tenant
-                {
-                    Name = tenantName,
-                    IsActive = true
-                };
+            // 4. UserProfile
+            var profile = new UserProfile
+            {
+                UserId = user.Id,
+                TenantId = tenant.Id,
+                FullName = effectiveUsername,
+                ContactEmail = request.Email,
+                WhatsApp = phoneNum,
+                Phone = phoneNum,
+                Address = request.Address,
+                CompanyName = request.CompanyName ?? string.Empty
+            };
 
-                await tenantRepo.AddAsync(tenant);
-                await _unitOfWork.SaveChangesAsync();
+            // 5. Persist entire graph in one round-trip
+            await tenantRepo.AddAsync(tenant);
+            await userRepo.AddAsync(user);
+            if (company != null) await companyRepo.AddAsync(company);
+            await profileRepo.AddAsync(profile);
 
-                // 2. Create User with Email OTP
-                var otpCode = Random.Shared.Next(100000, 999999).ToString();
-                var user = new User
-                {
-                    Username = effectiveUsername,
-                    Email = request.Email,
-                    PasswordHash = PasswordHasher.HashPassword(request.Password),
-                    AccountType = request.AccountType,
-                    PhoneNumber = phoneNum,
-                    IsEmailVerified = false,
-                    OtpCode = otpCode,
-                    OtpExpiresAt = DateTime.UtcNow.AddMinutes(10),
-                    TenantId = tenant.Id
-                };
-
-                await userRepo.AddAsync(user);
-                await _unitOfWork.SaveChangesAsync();
-
-                // 3. Create Company if CompanyAdmin
-                if (request.AccountType == AccountType.CompanyAdmin)
-                {
-                    var company = _mapper.Map<Company>(request) ?? new Company();
-                    company.Name = request.CompanyName ?? "Company";
-                    company.TenantId = tenant.Id;
-                    company.AdminUserId = user.Id;
-
-                    await companyRepo.AddAsync(company);
-                    await _unitOfWork.SaveChangesAsync();
-
-                    user.CompanyId = company.Id;
-                    await _unitOfWork.SaveChangesAsync();
-                }
-
-                // Create UserProfile
-                var profileRepo = _unitOfWork.Repository<UserProfile>();
-                var profile = new UserProfile
+            if (matchingRole != null)
+            {
+                await userRoleRepo.AddAsync(new UserRole
                 {
                     UserId = user.Id,
-                    TenantId = tenant.Id,
-                    FullName = effectiveUsername,
-                    ContactEmail = request.Email,
-                    WhatsApp = phoneNum,
-                    Phone = phoneNum,
-                    Address = request.Address,
-                    CompanyName = request.CompanyName ?? string.Empty
-                };
-                await profileRepo.AddAsync(profile);
-                await _unitOfWork.SaveChangesAsync();
-
-                // 4. Assign Role
-                var targetRole = request.AccountType == AccountType.CompanyAdmin
-                    ? AppRole.CompanyAdmin
-                    : AppRole.Customer;
-
-                var roles = await roleRepo.FindAsync(r => r.Name == targetRole.ToString());
-                var matchingRole = roles.Count > 0 ? roles[0] : null;
-
-                if (matchingRole != null)
-                {
-                    await userRoleRepo.AddAsync(new UserRole
-                    {
-                        UserId = user.Id,
-                        RoleId = matchingRole.Id
-                    });
-                    await _unitOfWork.SaveChangesAsync();
-                }
-
-                await _unitOfWork.CommitTransactionAsync();
-
-                // Enqueue Email OTP message in background job via Hangfire
-                var currentCulture = System.Globalization.CultureInfo.CurrentUICulture.Name;
-                _backgroundJobClient.Enqueue<IEmailService>(x =>
-                    x.SendOtpVerificationEmailAsync(user.Email, otpCode, currentCulture));
-
-                return ServiceResult<bool>.Success(true, _messageService.Get("OtpSent"));
+                    RoleId = matchingRole.Id
+                });
             }
-            catch (Exception)
-            {
-                await _unitOfWork.RollbackTransactionAsync();
-                throw;
-            }
+
+            await _unitOfWork.SaveChangesAsync();   // single DB round-trip
+            await _unitOfWork.CommitTransactionAsync();
+
+            // Enqueue email AFTER commit so the OTP is guaranteed persisted
+            var currentCulture = CultureInfo.CurrentUICulture.Name;
+            _backgroundJobClient.Enqueue<IEmailService>(x =>
+                x.SendOtpVerificationEmailAsync(user.Email, otpCode, currentCulture));
+
+            return ServiceResult<bool>.Success(true, _messageService.Get("OtpSent"));
+        }
+        catch (Exception)
+        {
+            await _unitOfWork.RollbackTransactionAsync();
+            throw;
+        }
         }
 
         public async Task<ServiceResult<bool>> RegisterWithGoogleAsync(GoogleRegisterRequest request)
@@ -192,15 +192,19 @@ namespace NFC.Platform.Application.Services;
                     ? new GoogleJsonWebSignature.ValidationSettings { Audience = new[] { clientId } }
                     : null;
 
-                try
-                {
-                    payload = await GoogleJsonWebSignature.ValidateAsync(request.IdToken, validationSettings);
-                }
-                catch
-                {
-                    // Fallback for development/testing environments (e.g. Google Playground tokens with different Audience)
-                    payload = await GoogleJsonWebSignature.ValidateAsync(request.IdToken);
-                }
+            // C-05 fix: only skip audience validation when no ClientId is configured
+            // (e.g., development without Google credentials).
+            // Never silently retry on validation failure — that would allow tokens
+            // issued for a different Google client to authenticate on this platform.
+            if (!string.IsNullOrWhiteSpace(clientId))
+            {
+                payload = await GoogleJsonWebSignature.ValidateAsync(request.IdToken, validationSettings);
+            }
+            else
+            {
+                // No client ID configured — skip audience check (development / CI only)
+                payload = await GoogleJsonWebSignature.ValidateAsync(request.IdToken);
+            }
             }
             catch (Exception)
             {
@@ -240,88 +244,86 @@ namespace NFC.Platform.Application.Services;
             await _unitOfWork.BeginTransactionAsync();
             try
             {
-                var username = !string.IsNullOrWhiteSpace(payload.Name) ? payload.Name : payload.Email.Split('@')[0];
-                var tenantName = request.AccountType == AccountType.CompanyAdmin
-                    ? (request.CompanyName ?? "Company Tenant")
-                    : $"{username}'s Tenant";
+            // 2. Build entity graph in memory (IDs come from BaseEntity.Id = Guid.NewGuid())
+            var otpCode = GenerateOtp();
+            var username = !string.IsNullOrWhiteSpace(payload.Name) ? payload.Name : payload.Email.Split('@')[0];
+            var tenantName = request.AccountType == AccountType.CompanyAdmin
+                ? (request.CompanyName ?? "Company Tenant")
+                : $"{username}'s Tenant";
 
-                var tenant = new Tenant { Name = tenantName, IsActive = true };
-                await tenantRepo.AddAsync(tenant);
-                await _unitOfWork.SaveChangesAsync();
+            var tenant = new Tenant { Name = tenantName, IsActive = true };
 
-                var otpCode = Random.Shared.Next(100000, 999999).ToString();
-                var user = new User
-                {
-                    GoogleId = payload.Subject,
-                    Username = username,
-                    Email = payload.Email,
-                    PasswordHash = string.Empty,
-                    AccountType = request.AccountType,
-                    PhoneNumber = request.WhatsApp ?? string.Empty,
-                    IsEmailVerified = false,
-                    OtpCode = otpCode,
-                    OtpExpiresAt = DateTime.UtcNow.AddMinutes(10),
-                    TenantId = tenant.Id
-                };
-
-                await userRepo.AddAsync(user);
-                await _unitOfWork.SaveChangesAsync();
-
-                if (request.AccountType == AccountType.CompanyAdmin)
-                {
-                    var company = new Company
-                    {
-                        Name = request.CompanyName ?? "Company",
-                        TenantId = tenant.Id,
-                        AdminUserId = user.Id
-                    };
-                    await companyRepo.AddAsync(company);
-                    await _unitOfWork.SaveChangesAsync();
-
-                    user.CompanyId = company.Id;
-                    await _unitOfWork.SaveChangesAsync();
-                }
-
-                var profile = new UserProfile
-                {
-                    UserId = user.Id,
-                    TenantId = tenant.Id,
-                    FullName = username,
-                    ContactEmail = payload.Email,
-                    ProfilePictureUrl = payload.Picture,
-                    WhatsApp = request.WhatsApp,
-                    Phone = request.WhatsApp,
-                    CompanyName = request.CompanyName ?? string.Empty
-                };
-                await profileRepo.AddAsync(profile);
-                await _unitOfWork.SaveChangesAsync();
-
-                var targetRole = request.AccountType == AccountType.CompanyAdmin
-                    ? AppRole.CompanyAdmin
-                    : AppRole.Customer;
-
-                var roles = await roleRepo.FindAsync(r => r.Name == targetRole.ToString());
-                var matchingRole = roles.Count > 0 ? roles[0] : null;
-
-                if (matchingRole != null)
-                {
-                    await userRoleRepo.AddAsync(new UserRole { UserId = user.Id, RoleId = matchingRole.Id });
-                    await _unitOfWork.SaveChangesAsync();
-                }
-
-                await _unitOfWork.CommitTransactionAsync();
-
-                var currentCulture = System.Globalization.CultureInfo.CurrentUICulture.Name;
-                _backgroundJobClient.Enqueue<IEmailService>(x =>
-                    x.SendOtpVerificationEmailAsync(user.Email, otpCode, currentCulture));
-
-                return ServiceResult<bool>.Success(true, _messageService.Get("OtpSent"));
-            }
-            catch
+            var user = new User
             {
-                await _unitOfWork.RollbackTransactionAsync();
-                throw;
+                GoogleId = payload.Subject,
+                Username = username,
+                Email = payload.Email,
+                PasswordHash = string.Empty,
+                AccountType = request.AccountType,
+                PhoneNumber = request.WhatsApp ?? string.Empty,
+                IsEmailVerified = false,
+                OtpCode = otpCode,
+                OtpExpiresAt = DateTime.UtcNow.AddMinutes(10),
+                TenantId = tenant.Id
+            };
+
+            Company? company = null;
+            if (request.AccountType == AccountType.CompanyAdmin)
+            {
+                company = new Company
+                {
+                    Name = request.CompanyName ?? "Company",
+                    TenantId = tenant.Id,
+                    AdminUserId = user.Id
+                };
+                user.CompanyId = company.Id;
             }
+
+            var profile = new UserProfile
+            {
+                UserId = user.Id,
+                TenantId = tenant.Id,
+                FullName = username,
+                ContactEmail = payload.Email,
+                ProfilePictureUrl = payload.Picture,
+                WhatsApp = request.WhatsApp,
+                Phone = request.WhatsApp,
+                CompanyName = request.CompanyName ?? string.Empty
+            };
+
+            var targetRole = request.AccountType == AccountType.CompanyAdmin
+                ? AppRole.CompanyAdmin
+                : AppRole.Customer;
+
+            var roles = await roleRepo.FindAsync(r => r.Name == targetRole.ToString());
+            var matchingRole = roles.Count > 0 ? roles[0] : null;
+
+            // 3. Persist entire graph in one round-trip
+            await tenantRepo.AddAsync(tenant);
+            await userRepo.AddAsync(user);
+            if (company != null) await companyRepo.AddAsync(company);
+            await profileRepo.AddAsync(profile);
+
+            if (matchingRole != null)
+            {
+                await userRoleRepo.AddAsync(new UserRole { UserId = user.Id, RoleId = matchingRole.Id });
+            }
+
+            await _unitOfWork.SaveChangesAsync();   // single DB round-trip
+            await _unitOfWork.CommitTransactionAsync();
+
+            // Enqueue email AFTER commit
+            var currentCulture = CultureInfo.CurrentUICulture.Name;
+            _backgroundJobClient.Enqueue<IEmailService>(x =>
+                x.SendOtpVerificationEmailAsync(user.Email, otpCode, currentCulture));
+
+            return ServiceResult<bool>.Success(true, _messageService.Get("OtpSent"));
+        }
+        catch
+        {
+            await _unitOfWork.RollbackTransactionAsync();
+            throw;
+        }
         }
 
         public async Task<ServiceResult<AuthDto>> VerifyOtpAsync(VerifyOtpRequest request)
@@ -377,13 +379,13 @@ namespace NFC.Platform.Application.Services;
             if (user == null)
                 return ServiceResult<bool>.NotFound(_messageService.Get("RecordNotFound"));
 
-            var otpCode = Random.Shared.Next(100000, 999999).ToString();
+            var otpCode = GenerateOtp();
             user.OtpCode = otpCode;
             user.OtpExpiresAt = DateTime.UtcNow.AddMinutes(10);
 
             await _unitOfWork.SaveChangesAsync();
 
-            var currentCulture = System.Globalization.CultureInfo.CurrentUICulture.Name;
+            var currentCulture = CultureInfo.CurrentUICulture.Name;
             _backgroundJobClient.Enqueue<IEmailService>(x =>
                 x.SendOtpVerificationEmailAsync(user.Email, otpCode, currentCulture));
 
@@ -618,5 +620,13 @@ namespace NFC.Platform.Application.Services;
             };
 
             return ServiceResult<AuthDto>.Success(authDto, message);
+        }
+
+        private static string GenerateOtp()
+        {
+            // Cryptographically secure 6-digit OTP spanning 000000–999999
+            var bytes = RandomNumberGenerator.GetBytes(4);
+            var value = BitConverter.ToUInt32(bytes, 0) % 1_000_000;
+            return value.ToString("D6");
         }
     }

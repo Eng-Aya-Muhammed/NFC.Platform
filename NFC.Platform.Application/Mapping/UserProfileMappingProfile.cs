@@ -47,8 +47,14 @@ public class UserProfileMappingProfile : Profile
         CreateMap<UpdateMyProfileRequest, UserProfile>();
 
         CreateMap<UpdateEmployeeRequest, UserProfile>()
-            .ForMember(dest => dest.JobTitle, opt => opt.MapFrom(src => src.JobTitle ?? string.Empty))
-            .ForMember(dest => dest.Department, opt => opt.MapFrom(src => src.Department ?? string.Empty))
+            .ForMember(dest => dest.JobTitle, opt => {
+                opt.Condition(src => src.JobTitle != null);
+                opt.MapFrom(src => src.JobTitle);
+            })
+            .ForMember(dest => dest.Department, opt => {
+                opt.Condition(src => src.Department != null);
+                opt.MapFrom(src => src.Department);
+            })
             .ForMember(dest => dest.FullName, opt => {
                 opt.Condition(src => src.FullName != null);
                 opt.MapFrom(src => src.FullName);

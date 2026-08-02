@@ -247,7 +247,7 @@ public class AdminService : IAdminService
         order.Status = dto.Status;
 
         // ── Deduct card quantity from CardDesign when order is Approved ───────
-        if (dto.Status == OrderStatus.Approved)
+        if (dto.Status == OrderStatus.Approved && order.Status != OrderStatus.Approved)
         {
             var design = await _unitOfWork.Repository<CardDesign>()
                 .GetQueryable()
@@ -261,7 +261,34 @@ public class AdminService : IAdminService
                     ? order.Items!.Sum(i => i.NumberOfCardsRequired)
                     : order.Quantity;
 
+                var remainingQty = design.TotalQuantity - design.UsedQuantity;
+                if (deducted > remainingQty)
+                {
+                    return ServiceResult.Fail(
+                        _messageService.Get("DesignRemainingQuantityExceeded", deducted.ToString(), Math.Max(0, remainingQty).ToString()),
+                        422);
+                }
+
                 design.UsedQuantity += deducted;
+            }
+        }
+
+        // ── Refund card quantity if an approved order is Cancelled ─────────
+        if (dto.Status == OrderStatus.Cancelled &&
+            (order.Status is OrderStatus.Approved or OrderStatus.InPrinting or OrderStatus.Encoding or OrderStatus.ReadyForDelivery))
+        {
+            var design = await _unitOfWork.Repository<CardDesign>()
+                .GetQueryable()
+                .FirstOrDefaultAsync(d => d.Id == order.CardDesignId);
+
+            if (design != null)
+            {
+                var isCompanyOrder = order.Items != null && order.Items.Count > 0;
+                var refundQty = isCompanyOrder
+                    ? order.Items!.Sum(i => i.NumberOfCardsRequired)
+                    : order.Quantity;
+
+                design.UsedQuantity = Math.Max(0, design.UsedQuantity - refundQty);
             }
         }
 
@@ -277,7 +304,11 @@ public class AdminService : IAdminService
                 order.DeliveryOtpResendCount = 0;
                 order.DeliveryOtpFailedAttempts = 0;
 
-                EnqueueOtpNotifications(recipient, otp, order.CardDesign?.CardType?.NameAr ?? "Physical Card", isResend: false);
+                var cardName = order.CardDesign?.CardType?.NameAr 
+                    ?? order.CardDesign?.CardType?.NameEn 
+                    ?? _messageService.Get("DefaultPhysicalCardName");
+
+                EnqueueOtpNotifications(recipient, otp, cardName, isResend: false);
             }
         }
 
@@ -359,12 +390,12 @@ public class AdminService : IAdminService
             return ServiceResult.Fail(_messageService.Get("OrderNotReadyForDelivery"), 422);
 
         if (order.DeliveryOtpLastSentAt.HasValue &&
-            (DateTime.UtcNow - order.DeliveryOtpLastSentAt.Value).TotalSeconds < 60)
+            (DateTime.UtcNow - order.DeliveryOtpLastSentAt.Value).TotalSeconds < _otpSettings.CooldownSeconds)
         {
             return ServiceResult.Fail(_messageService.Get("OtpCooldownActive"), 422);
         }
 
-        if (order.DeliveryOtpResendCount >= 5)
+        if (order.DeliveryOtpResendCount >= _otpSettings.MaxResendAttempts)
         {
             return ServiceResult.Fail(_messageService.Get("OtpResendLimitReached"), 422);
         }
@@ -616,7 +647,9 @@ public class AdminService : IAdminService
         foreach (var tenant in pagedTenants.Items)
         {
             var dto = _mapper.Map<TenantSummaryDto>(tenant);
-            dto.AccountType = tenant.Company != null ? "Company" : "Individual";
+            dto.AccountType = tenant.Company != null 
+                ? _messageService.Get("AccountTypeCompany") 
+                : _messageService.Get("AccountTypeIndividual");
 
             if (activeSubByTenant.TryGetValue(tenant.Id, out var activeSub) && activeSub != null)
             {
@@ -628,7 +661,7 @@ public class AdminService : IAdminService
             }
             else
             {
-                dto.ActivePlanName = "Free / No Active Plan";
+                dto.ActivePlanName = _messageService.Get("FreeNoActivePlan");
                 dto.DaysRemaining = 0;
             }
 
@@ -874,10 +907,12 @@ public class AdminService : IAdminService
     private static bool IsValidStatusTransition(OrderStatus current, OrderStatus next)
     {
         if (current == next) return true;
+
         return current switch
         {
-            OrderStatus.PendingReview     => next is OrderStatus.UnderReview or OrderStatus.InPrinting or OrderStatus.ReadyForDelivery or OrderStatus.Approved or OrderStatus.Rejected or OrderStatus.Cancelled,
-            OrderStatus.UnderReview       => next is OrderStatus.InPrinting or OrderStatus.Approved or OrderStatus.ReadyForDelivery or OrderStatus.Cancelled,
+            OrderStatus.PendingReview     => next is OrderStatus.UnderReview or OrderStatus.Approved or OrderStatus.Rejected or OrderStatus.Cancelled,
+            OrderStatus.UnderReview       => next is OrderStatus.Approved or OrderStatus.Rejected or OrderStatus.Cancelled,
+            OrderStatus.Approved          => next is OrderStatus.InPrinting or OrderStatus.ReadyForDelivery or OrderStatus.Cancelled,
             OrderStatus.InPrinting        => next is OrderStatus.Encoding or OrderStatus.ReadyForDelivery or OrderStatus.Cancelled,
             OrderStatus.Encoding          => next is OrderStatus.ReadyForDelivery or OrderStatus.Cancelled,
             OrderStatus.ReadyForDelivery  => next is OrderStatus.Delivered or OrderStatus.Cancelled,
@@ -888,7 +923,13 @@ public class AdminService : IAdminService
         };
     }
 
-    private static string GenerateOtp() => Random.Shared.Next(100000, 999999).ToString();
+    private static string GenerateOtp()
+    {
+        // Cryptographically secure 6-digit OTP spanning 000000–999999
+        var bytes = RandomNumberGenerator.GetBytes(4);
+        var value = BitConverter.ToUInt32(bytes, 0) % 1_000_000;
+        return value.ToString("D6");
+    }
 
     private void EnqueueOtpNotifications(User recipient, string otp, string cardName, bool isResend)
     {

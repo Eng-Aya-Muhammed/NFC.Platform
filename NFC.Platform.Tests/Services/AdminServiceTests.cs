@@ -175,7 +175,7 @@ namespace NFC.Platform.Tests.Services
         {
             // Arrange
             var orderId = Guid.NewGuid();
-            var order = new CardOrder { Id = orderId, Status = OrderStatus.PendingReview };
+            var order = new CardOrder { Id = orderId, Status = OrderStatus.Approved };
             var mockQueryable = new List<CardOrder> { order }.AsQueryable().BuildMock();
             _orderRepo.GetQueryable().Returns(mockQueryable);
 

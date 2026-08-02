@@ -213,6 +213,11 @@ namespace NFC.Platform.Tests.Controllers
         [Theory]
         [InlineData(nameof(AuthController.Login), "LoginPolicy")]
         [InlineData(nameof(AuthController.Register), "RegisterPolicy")]
+        [InlineData(nameof(AuthController.RegisterWithGoogle), "RegisterPolicy")]
+        [InlineData(nameof(AuthController.VerifyOtp), "VerifyOtpPolicy")]
+        [InlineData(nameof(AuthController.ResendOtp), "ResendOtpPolicy")]
+        [InlineData(nameof(AuthController.Refresh), "RefreshTokenPolicy")]
+        [InlineData(nameof(AuthController.Revoke), "RefreshTokenPolicy")]
         [InlineData(nameof(AuthController.ResetPassword), "ResetPasswordPolicy")]
         [InlineData(nameof(AuthController.ForgotPassword), "ForgotPasswordPolicy")]
         public void AuthEndpoints_ShouldHaveCorrectRateLimitingPolicy(string methodName, string expectedPolicy)
@@ -229,8 +234,6 @@ namespace NFC.Platform.Tests.Controllers
         }
 
         [Theory]
-        [InlineData(nameof(AuthController.Refresh))]
-        [InlineData(nameof(AuthController.Revoke))]
         [InlineData(nameof(AuthController.CreateUserByAdmin))]
         public void NonSensitiveEndpoints_ShouldNotHaveRateLimiting(string methodName)
         {
