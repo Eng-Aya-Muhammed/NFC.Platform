@@ -202,6 +202,21 @@
   <data name="ImportRowNameRequired" xml:space="preserve">
     <value>Name is required (Row {0})</value>
   </data>
+  <data name="SubscriptionExpiredSubject" xml:space="preserve">
+    <value>Subscription Expired — NFC Platform</value>
+  </data>
+  <data name="SubscriptionExpiredSubtitle" xml:space="preserve">
+    <value>Important Subscription Notice</value>
+  </data>
+  <data name="SubscriptionExpiredGreeting" xml:space="preserve">
+    <value>Hello,</value>
+  </data>
+  <data name="SubscriptionExpiredBody" xml:space="preserve">
+    <value>Your subscription for plan '{0}' has reached its expiration date and has been deactivated. Please renew your subscription to continue enjoying all platform features.</value>
+  </data>
+  <data name="SubscriptionExpiredFooter" xml:space="preserve">
+    <value>© NFC Platform. All rights reserved.</value>
+  </data>
   <data name="ImportRowEmailRequired" xml:space="preserve">
     <value>Email is required (Row {0})</value>
   </data>

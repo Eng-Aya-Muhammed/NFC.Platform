@@ -202,6 +202,21 @@
   <data name="ImportRowNameRequired" xml:space="preserve">
     <value>الاسم مطلوب (صف {0})</value>
   </data>
+  <data name="SubscriptionExpiredSubject" xml:space="preserve">
+    <value>انتهاء اشتراكك — منصة NFC</value>
+  </data>
+  <data name="SubscriptionExpiredSubtitle" xml:space="preserve">
+    <value>إشعار هام بخصوص اشتراكك</value>
+  </data>
+  <data name="SubscriptionExpiredGreeting" xml:space="preserve">
+    <value>مرحباً،</value>
+  </data>
+  <data name="SubscriptionExpiredBody" xml:space="preserve">
+    <value>لقد وصل اشتراكك في باقة '{0}' إلى تاريخ انتهائه وتم إيقافه تلقائياً. يرجى تجديد الاشتراك للاستمرار في الاستفادة من جميع ميزات المنصة.</value>
+  </data>
+  <data name="SubscriptionExpiredFooter" xml:space="preserve">
+    <value>© منصة NFC. جميع الحقوق محفوظة.</value>
+  </data>
   <data name="ImportRowEmailRequired" xml:space="preserve">
     <value>البريد الإلكتروني مطلوب (صف {0})</value>
   </data>

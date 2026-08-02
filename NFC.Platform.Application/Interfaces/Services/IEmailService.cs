@@ -8,5 +8,6 @@ namespace NFC.Platform.Application.Interfaces.Services
         Task SendOrderReadyOtpEmailAsync(string to, string otp, string cardName, string culture);
         Task SendOtpVerificationEmailAsync(string to, string otpCode, string culture);
         Task SendTemplateRequestApprovedEmailAsync(string to, string templateName, string culture);
+        Task SendSubscriptionExpiredEmailAsync(string to, string planName, string culture);
     }
 }

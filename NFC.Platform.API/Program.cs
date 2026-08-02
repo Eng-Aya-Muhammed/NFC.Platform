@@ -8,6 +8,8 @@ using Hangfire;
 using NFC.Platform.Infrastructure.Extensions;
 using Serilog;
 
+using NFC.Platform.Application.Interfaces.Services;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Configure Serilog structured logging provider
@@ -50,6 +52,12 @@ app.UseHangfireDashboard("/hangfire", new DashboardOptions
 {
     Authorization = new[] { new HangfireAdminAuthorizationFilter() }
 });
+
+// Schedule daily subscription expiry Hangfire job
+RecurringJob.AddOrUpdate<ISubscriptionExpiryService>(
+    "subscription-expiry-job",
+    service => service.ProcessExpiredSubscriptionsAsync(CancellationToken.None),
+    Cron.Daily);
 
 app.MapControllers();
 
