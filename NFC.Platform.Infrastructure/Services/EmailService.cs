@@ -81,8 +81,8 @@ namespace NFC.Platform.Infrastructure.Services
 <!DOCTYPE html>
 <html lang=""{lang}"" dir=""{dir}"">
 <head><meta charset=""UTF-8""><meta name=""viewport"" content=""width=device-width, initial-scale=1.0""></head>
-<body style=""margin:0;padding:0;background:#f4f6f9;font-family:Arial,sans-serif;"">
-  <table width=""100%"" cellpadding=""0"" cellspacing=""0"" style=""background:#f4f6f9;padding:40px 0;"">
+<body style=""margin:0;padding:0;background:#f4f6f9;font-family:Arial,sans-serif;"" dir=""{dir}"">
+  <table width=""100%"" cellpadding=""0"" cellspacing=""0"" style=""background:#f4f6f9;padding:40px 0;"" dir=""{dir}"">
     <tr><td align=""center"">
       <table width=""560"" cellpadding=""0"" cellspacing=""0"" style=""background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.08);"">
         <!-- Header -->
@@ -91,7 +91,7 @@ namespace NFC.Platform.Infrastructure.Services
           <p style=""margin:8px 0 0;color:#a0aec0;font-size:13px;"">{subtitle}</p>
         </td></tr>
         <!-- Body -->
-        <tr><td style=""padding:40px;"">
+        <tr><td style=""padding:40px; text-align: { (!isEn ? "right" : "left") };"" dir=""{dir}"">
           <p style=""margin:0 0 16px;color:#2d3748;font-size:16px;"">{greeting}</p>
           <p style=""margin:0 0 24px;color:#4a5568;font-size:15px;line-height:1.6;"">
             {bodyText}
@@ -136,8 +136,8 @@ namespace NFC.Platform.Infrastructure.Services
             var body = $@"<!DOCTYPE html>
 <html lang=""{lang}"" dir=""{dir}"">
 <head><meta charset=""UTF-8""><meta name=""viewport"" content=""width=device-width, initial-scale=1.0""></head>
-<body style=""margin:0;padding:0;background:#f4f6f9;font-family:Arial,sans-serif;"">
-  <table width=""100%"" cellpadding=""0"" cellspacing=""0"" style=""background:#f4f6f9;padding:40px 0;"">
+<body style=""margin:0;padding:0;background:#f4f6f9;font-family:Arial,sans-serif;"" dir=""{dir}"">
+  <table width=""100%"" cellpadding=""0"" cellspacing=""0"" style=""background:#f4f6f9;padding:40px 0;"" dir=""{dir}"">
     <tr><td align=""center"">
       <table width=""560"" cellpadding=""0"" cellspacing=""0"" style=""background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.08);"">
         <!-- Header -->
@@ -146,7 +146,7 @@ namespace NFC.Platform.Infrastructure.Services
           <p style=""margin:8px 0 0;color:#a0aec0;font-size:13px;"">{subtitle}</p>
         </td></tr>
         <!-- Body -->
-        <tr><td style=""padding:40px;"">
+        <tr><td style=""padding:40px; text-align: { (isArabic ? "right" : "left") };"" dir=""{dir}"">
           <p style=""margin:0 0 16px;color:#2d3748;font-size:16px;"">{greeting}</p>
           <p style=""margin:0 0 24px;color:#4a5568;font-size:15px;line-height:1.6;"">
             {bodyText}
@@ -187,8 +187,8 @@ namespace NFC.Platform.Infrastructure.Services
             var body = $@"<!DOCTYPE html>
 <html lang=""{lang}"" dir=""{dir}"">
 <head><meta charset=""UTF-8""><meta name=""viewport"" content=""width=device-width, initial-scale=1.0""></head>
-<body style=""margin:0;padding:0;background:#f4f6f9;font-family:Arial,sans-serif;"">
-  <table width=""100%"" cellpadding=""0"" cellspacing=""0"" style=""background:#f4f6f9;padding:40px 0;"">
+<body style=""margin:0;padding:0;background:#f4f6f9;font-family:Arial,sans-serif;"" dir=""{dir}"">
+  <table width=""100%"" cellpadding=""0"" cellspacing=""0"" style=""background:#f4f6f9;padding:40px 0;"" dir=""{dir}"">
     <tr><td align=""center"">
       <table width=""560"" cellpadding=""0"" cellspacing=""0"" style=""background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.08);"">
         <!-- Header -->
@@ -197,7 +197,7 @@ namespace NFC.Platform.Infrastructure.Services
           <p style=""margin:8px 0 0;color:#feb2b2;font-size:13px;"">{subtitle}</p>
         </td></tr>
         <!-- Body -->
-        <tr><td style=""padding:40px;"">
+        <tr><td style=""padding:40px; text-align: { (isArabic ? "right" : "left") };"" dir=""{dir}"">
           <p style=""margin:0 0 16px;color:#2d3748;font-size:16px;"">{greeting}</p>
           <p style=""margin:0 0 24px;color:#4a5568;font-size:15px;line-height:1.6;"">
             {bodyText}
@@ -238,8 +238,8 @@ namespace NFC.Platform.Infrastructure.Services
 <!DOCTYPE html>
 <html lang=""{lang}"" dir=""{dir}"">
 <head><meta charset=""UTF-8""><meta name=""viewport"" content=""width=device-width, initial-scale=1.0""></head>
-<body style=""margin:0;padding:0;background:#f4f6f9;font-family:Arial,sans-serif;"">
-  <table width=""100%"" cellpadding=""0"" cellspacing=""0"" style=""background:#f4f6f9;padding:40px 0;"">
+<body style=""margin:0;padding:0;background:#f4f6f9;font-family:Arial,sans-serif;"" dir=""{dir}"">
+  <table width=""100%"" cellpadding=""0"" cellspacing=""0"" style=""background:#f4f6f9;padding:40px 0;"" dir=""{dir}"">
     <tr><td align=""center"">
       <table width=""560"" cellpadding=""0"" cellspacing=""0"" style=""background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.08);"">
         <!-- Header -->
@@ -248,7 +248,7 @@ namespace NFC.Platform.Infrastructure.Services
           <p style=""margin:8px 0 0;color:#a0aec0;font-size:13px;"">{subtitle}</p>
         </td></tr>
         <!-- Body -->
-        <tr><td style=""padding:40px;"">
+        <tr><td style=""padding:40px; text-align: { (isArabic ? "right" : "left") };"" dir=""{dir}"">
           <p style=""margin:0 0 16px;color:#2d3748;font-size:16px;"">{greeting}</p>
           <p style=""margin:0 0 24px;color:#4a5568;font-size:15px;line-height:1.6;"">
             {bodyText}
