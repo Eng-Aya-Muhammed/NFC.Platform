@@ -96,5 +96,45 @@ namespace NFC.Platform.Tests.Controllers
             var attr = method.GetCustomAttributes(typeof(EnableRateLimitingAttribute), true);
             Assert.Empty(attr);
         }
+
+        [Fact]
+        public async Task ResolvePublicProfileBySubdomain_CallsService_AndReturnsOk_OnSuccess()
+        {
+            var subdomain = "ahmed-ali";
+            var dto = new EmployeeDetailsDto { FullName = "Ahmed Ali" };
+            _profileMetricService.ResolvePublicProfileBySubdomainAsync(subdomain).Returns(ServiceResult<EmployeeDetailsDto>.Success(dto));
+
+            var result = await _sut.ResolvePublicProfileBySubdomain(subdomain) as OkObjectResult;
+
+            Assert.NotNull(result);
+            Assert.Equal(200, result.StatusCode);
+            await _profileMetricService.Received(1).ResolvePublicProfileBySubdomainAsync(subdomain);
+        }
+
+        [Fact]
+        public async Task ResolvePublicProfileBySubdomain_ReturnsError_OnFailure()
+        {
+            var subdomain = "non-existent";
+            _profileMetricService.ResolvePublicProfileBySubdomainAsync(subdomain).Returns(ServiceResult<EmployeeDetailsDto>.Fail("Error", 404));
+
+            var result = await _sut.ResolvePublicProfileBySubdomain(subdomain) as ObjectResult;
+
+            Assert.NotNull(result);
+            Assert.Equal(404, result.StatusCode);
+        }
+
+        [Fact]
+        public void ResolvePublicProfileBySubdomain_ShouldHaveRateLimitingPolicy()
+        {
+            var method = typeof(PublicProfileController).GetMethod(nameof(PublicProfileController.ResolvePublicProfileBySubdomain));
+            Assert.NotNull(method);
+
+            var attr = method.GetCustomAttributes(typeof(EnableRateLimitingAttribute), true)
+                .Cast<EnableRateLimitingAttribute>()
+                .FirstOrDefault();
+
+            Assert.NotNull(attr);
+            Assert.Equal("ResolvePublicProfilePolicy", attr.PolicyName);
+        }
     }
 }

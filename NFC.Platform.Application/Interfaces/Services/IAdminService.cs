@@ -42,4 +42,8 @@ public interface IAdminService
 
     Task<ServiceResult<byte[]>> ExportAdminOrdersAsync(ExportFormat format, OrderStatus? statusFilter, Guid? companyId, CancellationToken cancellationToken = default);
     Task<ServiceResult<byte[]>> ExportTenantsAsync(ExportFormat format, CancellationToken cancellationToken = default);
+
+    // Subdomain Management (Super Admin)
+    Task<ServiceResult<PagedResult<ProfileSubdomainSummaryDto>>> GetSubdomainsPagedAsync(PaginationRequest request, CancellationToken cancellationToken = default);
+    Task<ServiceResult> ReassignSubdomainAsync(Guid profileId, ReassignSubdomainDto dto);
 }

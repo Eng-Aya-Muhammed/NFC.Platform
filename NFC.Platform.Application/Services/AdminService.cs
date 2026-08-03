@@ -947,4 +947,63 @@ public class AdminService : IAdminService
             _backgroundJobClient.Enqueue<IWhatsAppService>(x =>
                 x.SendWhatsAppMessageAsync(whatsAppNumber, _messageService.Get(templateKey, otp)));
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Subdomain Management
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Returns a paged list of all user profile subdomains for Super Admin oversight.
+    /// </summary>
+    public async Task<ServiceResult<PagedResult<ProfileSubdomainSummaryDto>>> GetSubdomainsPagedAsync(
+        PaginationRequest request, CancellationToken cancellationToken = default)
+    {
+        var query = _unitOfWork.Repository<UserProfile>()
+            .GetQueryable()
+            .AsNoTracking()
+            .Include(p => p.Employee)
+                .ThenInclude(e => e!.Company)
+            .OrderBy(p => p.FullName);
+
+        var paged = await query.ToPagedResultAsync(request, p => _mapper.Map<ProfileSubdomainSummaryDto>(p));
+        return ServiceResult<PagedResult<ProfileSubdomainSummaryDto>>.Success(paged);
+    }
+
+    /// <summary>
+    /// Reassigns a subdomain slug to the specified profile.
+    /// Validates uniqueness and slug format before persisting.
+    /// </summary>
+    public async Task<ServiceResult> ReassignSubdomainAsync(Guid profileId, ReassignSubdomainDto dto)
+    {
+        if (string.IsNullOrWhiteSpace(dto.Subdomain))
+            return ServiceResult.Fail(_messageService.Get("InvalidInput"), 400);
+
+        // Validate slug format: lowercase letters, digits and hyphens only
+        var slugRegex = new System.Text.RegularExpressions.Regex(@"^[a-z0-9][a-z0-9\-]{0,98}[a-z0-9]$");
+        if (!slugRegex.IsMatch(dto.Subdomain))
+            return ServiceResult.Fail(_messageService.Get("InvalidInput"), 400);
+
+        // Reserved words that must not be used as subdomains
+        var reserved = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            { "admin", "api", "auth", "u", "www", "mail", "support" };
+        if (reserved.Contains(dto.Subdomain))
+            return ServiceResult.Fail(_messageService.Get("InvalidInput"), 400);
+
+        var profile = await _unitOfWork.Repository<UserProfile>().GetByIdAsync(profileId);
+        if (profile == null)
+            return ServiceResult.NotFound(_messageService.Get("RecordNotFound"));
+
+        // Uniqueness check (excluding the profile being updated)
+        var taken = await _unitOfWork.Repository<UserProfile>()
+            .GetQueryable()
+            .AnyAsync(p => p.Subdomain == dto.Subdomain && p.Id != profileId);
+
+        if (taken)
+            return ServiceResult.Fail(_messageService.Get("UserAlreadyExists"), 409);
+
+        profile.Subdomain = dto.Subdomain;
+        await _unitOfWork.SaveChangesAsync();
+
+        return ServiceResult.Success(_messageService.Get("RecordUpdated"));
+    }
 }

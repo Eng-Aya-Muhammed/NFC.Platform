@@ -43,6 +43,14 @@ namespace NFC.Platform.Domain.Entities
 
         public ICollection<ProfileLink> CustomLinks { get; set; } = [];
 
+        /// <summary>
+        /// URL-safe unique slug used to identify this profile publicly.
+        /// Format: lowercase letters, digits, and hyphens only. Max 100 chars.
+        /// Example: "ahmed-ali" → accessible at /u/ahmed-ali
+        /// Generated automatically at profile creation. Can be reassigned by Admin.
+        /// </summary>
+        public string? Subdomain { get; set; }
+
 
     }
 }

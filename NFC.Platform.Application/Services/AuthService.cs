@@ -1,5 +1,6 @@
 using Google.Apis.Auth;
 using NFC.Platform.Application.DTOs.Auth;
+using NFC.Platform.Application.Extensions;
 
 namespace NFC.Platform.Application.Services;
 
@@ -138,6 +139,9 @@ namespace NFC.Platform.Application.Services;
             }
 
             // 4. UserProfile
+            var baseSlug  = SubdomainHelper.Slugify(effectiveUsername);
+            var subdomain = await GenerateUniqueSubdomainAsync(baseSlug);
+
             var profile = new UserProfile
             {
                 UserId = user.Id,
@@ -147,7 +151,8 @@ namespace NFC.Platform.Application.Services;
                 WhatsApp = phoneNum,
                 Phone = phoneNum,
                 Address = request.Address,
-                CompanyName = request.CompanyName ?? string.Empty
+                CompanyName = request.CompanyName ?? string.Empty,
+                Subdomain = subdomain
             };
 
             // 5. Persist entire graph in one round-trip
@@ -279,6 +284,9 @@ namespace NFC.Platform.Application.Services;
                 user.CompanyId = company.Id;
             }
 
+            var googleBaseSlug  = SubdomainHelper.Slugify(username);
+            var googleSubdomain = await GenerateUniqueSubdomainAsync(googleBaseSlug);
+
             var profile = new UserProfile
             {
                 UserId = user.Id,
@@ -288,7 +296,8 @@ namespace NFC.Platform.Application.Services;
                 ProfilePictureUrl = payload.Picture,
                 WhatsApp = request.WhatsApp,
                 Phone = request.WhatsApp,
-                CompanyName = request.CompanyName ?? string.Empty
+                CompanyName = request.CompanyName ?? string.Empty,
+                Subdomain = googleSubdomain
             };
 
             var targetRole = request.AccountType == AccountType.CompanyAdmin
@@ -628,5 +637,30 @@ namespace NFC.Platform.Application.Services;
             var bytes = RandomNumberGenerator.GetBytes(4);
             var value = BitConverter.ToUInt32(bytes, 0) % 1_000_000;
             return value.ToString("D6");
+        }
+
+        /// <summary>
+        /// Generates a unique subdomain slug by starting with <paramref name="baseSlug"/>
+        /// and appending a random 4-digit suffix if the candidate is already taken.
+        /// </summary>
+        private async Task<string> GenerateUniqueSubdomainAsync(string baseSlug)
+        {
+            var candidate = baseSlug;
+            var profileRepo = _unitOfWork.Repository<UserProfile>();
+
+            while (true)
+            {
+                var query = profileRepo.GetQueryable();
+                bool taken;
+
+                if (query != null && query.Provider is Microsoft.EntityFrameworkCore.Query.IAsyncQueryProvider)
+                    taken = await query.IgnoreQueryFilters().AnyAsync(p => p.Subdomain == candidate);
+                else
+                    taken = (await profileRepo.FindAsync(p => p.Subdomain == candidate)).Count > 0;
+
+                if (!taken) return candidate;
+
+                candidate = $"{baseSlug}-{Random.Shared.Next(1000, 9999)}";
+            }
         }
     }

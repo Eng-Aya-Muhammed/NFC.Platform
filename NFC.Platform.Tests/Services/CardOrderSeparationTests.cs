@@ -145,7 +145,8 @@ namespace NFC.Platform.Tests.Services
             };
             templateRequestRepo.GetQueryable().Returns(new List<TemplateRequest> { completedRequest }.AsQueryable().BuildMock());
 
-            var service = new ProfileMetricService(unitOfWork, messageService, mapper);
+            var options = Microsoft.Extensions.Options.Options.Create(new NFC.Platform.Application.DTOs.Settings.ClientSettings { ProfileBaseUrl = "http://localhost:3000/u" });
+            var service = new ProfileMetricService(unitOfWork, messageService, mapper, options);
 
             // Act
             var result = await service.ResolvePublicProfileAsync(userProfile.Id);

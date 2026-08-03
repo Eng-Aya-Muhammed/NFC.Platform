@@ -159,6 +159,12 @@ namespace NFC.Platform.Domain.Constants
             {
                 public const string Create = "Platform.Users.Create";
             }
+
+            public static class Subdomains
+            {
+                public const string View   = "Platform.Subdomains.View";
+                public const string Update = "Platform.Subdomains.Update";
+            }
         }
 
         public static IEnumerable<string> GetTenantPermissions()

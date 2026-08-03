@@ -22,6 +22,11 @@ namespace NFC.Platform.Infrastructure.Configurations
             builder.Property(p => p.WhatsApp).HasMaxLength(50);
             builder.Property(p => p.Address).HasMaxLength(500);
 
+            builder.Property(p => p.Subdomain).HasMaxLength(100);
+            builder.HasIndex(p => p.Subdomain)
+                .IsUnique()
+                .HasFilter("[Subdomain] IS NOT NULL");
+
             builder.Property(p => p.TenantId).IsRequired();
             builder.HasIndex(p => p.TenantId);
 

@@ -32,6 +32,23 @@ namespace NFC.Platform.API.Controllers
         }
 
         /// <summary>
+        /// Resolves a digital profile by its human-readable subdomain slug.
+        /// Example: GET /api/public/profile/u/ahmed-ali
+        /// </summary>
+        [HttpGet("profile/u/{subdomain}")]
+        [EnableRateLimiting("ResolvePublicProfilePolicy")]
+        public async Task<IActionResult> ResolvePublicProfileBySubdomain([FromRoute] string subdomain)
+        {
+            var result = await _profileMetricService.ResolvePublicProfileBySubdomainAsync(subdomain);
+            if (!result.IsSuccess)
+            {
+                return StatusCode(result.StatusCode, result);
+            }
+
+            return Ok(result);
+        }
+
+        /// <summary>
         /// Records an interaction metric (view, save contact, link click) for a user profile anonymously.
         /// </summary>
         [HttpPost("profiles/{profileId:guid}/metrics")]

@@ -63,6 +63,9 @@ namespace NFC.Platform.Infrastructure.Extensions
             // OTP Configuration
             services.Configure<OtpSettings>(configuration.GetSection("OtpSettings"));
 
+            // Client (Frontend) URL Configuration
+            services.Configure<ClientSettings>(configuration.GetSection("ClientSettings"));
+
             // Google OAuth Configuration
             services.Configure<GoogleSettings>(configuration.GetSection("GoogleSettings"));
 

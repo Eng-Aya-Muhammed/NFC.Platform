@@ -39,4 +39,12 @@ public class EmployeeDetailsDto
     /// Full StyleConfigJson from the resolved CardTemplate, passed through for the frontend.
     /// </summary>
     public string? StyleConfigJson { get; set; }
+
+    /// <summary>
+    /// The full public URL of this profile.
+    /// Built server-side: {ClientSettings.ProfileBaseUrl}/{Subdomain}
+    /// Example: "https://nfc-platform.com/u/ahmed-ali"
+    /// Null if no subdomain has been assigned yet.
+    /// </summary>
+    public string? ProfileUrl { get; set; }
 }

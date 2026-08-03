@@ -19,5 +19,10 @@ namespace NFC.Platform.Application.Interfaces.Services
         /// Resolves and returns a public profile using the profile's unique Id.
         /// </summary>
         Task<ServiceResult<EmployeeDetailsDto>> ResolvePublicProfileAsync(Guid profileId);
+
+        /// <summary>
+        /// Resolves and returns a public profile using its human-readable subdomain slug.
+        /// </summary>
+        Task<ServiceResult<EmployeeDetailsDto>> ResolvePublicProfileBySubdomainAsync(string subdomain);
     }
 }

@@ -31,7 +31,8 @@ namespace NFC.Platform.Tests.Services
                 };
             });
 
-            _sut = new ProfileMetricService(_unitOfWork, _messageService, _mapper);
+            var options = Microsoft.Extensions.Options.Options.Create(new NFC.Platform.Application.DTOs.Settings.ClientSettings { ProfileBaseUrl = "http://localhost:3000/u" });
+            _sut = new ProfileMetricService(_unitOfWork, _messageService, _mapper, options);
         }
 
         [Fact]

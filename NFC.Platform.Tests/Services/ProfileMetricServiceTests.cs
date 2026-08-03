@@ -36,7 +36,8 @@ namespace NFC.Platform.Tests.Services
             _unitOfWork.Repository<UserProfile>().Returns(_profileRepo);
             _unitOfWork.Repository<ProfileMetric>().Returns(_metricRepo);
 
-            _sut = new ProfileMetricService(_unitOfWork, _messageService, _mapper);
+            var options = Microsoft.Extensions.Options.Options.Create(new NFC.Platform.Application.DTOs.Settings.ClientSettings { ProfileBaseUrl = "http://localhost:3000/u" });
+            _sut = new ProfileMetricService(_unitOfWork, _messageService, _mapper, options);
         }
 
         //  ResolvePublicProfileAsync 
@@ -164,6 +165,43 @@ namespace NFC.Platform.Tests.Services
             await _metricRepo.Received(1).AddAsync(Arg.Is<ProfileMetric>(m => m.ProfileLinkId == null));
         }
 
+        [Fact]
+        public async Task ResolvePublicProfileBySubdomainAsync_ReturnsProfile_WhenSubdomainExists()
+        {
+            // Arrange
+            var profileId = Guid.NewGuid();
+            var profile = new UserProfile
+            {
+                Id = profileId,
+                FullName = "Ahmed Ali",
+                Subdomain = "ahmed-ali"
+            };
+            var queryable = new List<UserProfile> { profile }.AsQueryable().BuildMock();
+            _profileRepo.GetQueryable().Returns(queryable);
+            _mapper.Map<EmployeeDetailsDto>(Arg.Any<UserProfile>()).Returns(new EmployeeDetailsDto { Id = profileId, FullName = "Ahmed Ali" });
 
+            // Act
+            var result = await _sut.ResolvePublicProfileBySubdomainAsync("ahmed-ali");
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal("http://localhost:3000/u/ahmed-ali", result.Data!.ProfileUrl);
+        }
+
+        [Fact]
+        public async Task ResolvePublicProfileBySubdomainAsync_ReturnsNotFound_WhenSubdomainDoesNotExist()
+        {
+            // Arrange
+            var queryable = new List<UserProfile>().AsQueryable().BuildMock();
+            _profileRepo.GetQueryable().Returns(queryable);
+            _messageService.Get("ProfileNotFound").Returns("Profile not found.");
+
+            // Act
+            var result = await _sut.ResolvePublicProfileBySubdomainAsync("non-existent");
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(404, result.StatusCode);
+        }
     }
 }

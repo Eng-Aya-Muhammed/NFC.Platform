@@ -370,6 +370,19 @@ namespace NFC.Platform.Application.Services;
                 userProfile.UpdateCustomLinks(row.CustomLinks);
             }
 
+            // Generate unique slug — checked against DB AND the current batch (localCache)
+            // to prevent intra-batch collisions before the transaction commits.
+            var baseSlug = SubdomainHelper.Slugify(row.Name);
+            var candidate = baseSlug;
+            var profileRepo = _unitOfWork.Repository<UserProfile>();
+            while (localCache.Contains(candidate) ||
+                   (await profileRepo.GetQueryable().IgnoreQueryFilters().AnyAsync(p => p.Subdomain == candidate)))
+            {
+                candidate = $"{baseSlug}-{Random.Shared.Next(1000, 9999)}";
+            }
+            userProfile.Subdomain = candidate;
+            localCache.Add(candidate);
+
             newEmployee.UserProfile = userProfile;
             userProfile.Employee = newEmployee;
 
@@ -414,12 +427,40 @@ namespace NFC.Platform.Application.Services;
             profile.CompanyName = companyName;
             profile.TenantId = tenantId;
 
+            // Generate unique public slug for this employee profile
+            var baseSlug = SubdomainHelper.Slugify(request.FullName);
+            profile.Subdomain = await GenerateUniqueSubdomainAsync(baseSlug);
+
             if (request.Links?.Count > 0)
             {
                 profile.UpdateCustomLinks(request.Links);
             }
 
             return (employee, profile);
+        }
+
+        /// <summary>
+        /// Generates a unique subdomain slug. Checks the DB for existing slugs and
+        /// appends a 4-digit random suffix on collision.
+        /// </summary>
+        private async Task<string> GenerateUniqueSubdomainAsync(string baseSlug)
+        {
+            var candidate = baseSlug;
+            var profileRepo = _unitOfWork.Repository<UserProfile>();
+
+            while (true)
+            {
+                var query = profileRepo.GetQueryable();
+                bool taken;
+
+                if (query != null && query.Provider is Microsoft.EntityFrameworkCore.Query.IAsyncQueryProvider)
+                    taken = await query.IgnoreQueryFilters().AnyAsync(p => p.Subdomain == candidate);
+                else
+                    taken = (await profileRepo.FindAsync(p => p.Subdomain == candidate)).Count > 0;
+
+                if (!taken) return candidate;
+                candidate = $"{baseSlug}-{Random.Shared.Next(1000, 9999)}";
+            }
         }
     }
 
