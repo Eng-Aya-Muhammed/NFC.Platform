@@ -961,6 +961,8 @@ public class AdminService : IAdminService
         var query = _unitOfWork.Repository<UserProfile>()
             .GetQueryable()
             .AsNoTracking()
+            .IgnoreQueryFilters()
+            .Where(p => !p.IsDeleted)
             .Include(p => p.Employee)
                 .ThenInclude(e => e!.Company)
             .OrderBy(p => p.FullName);
@@ -989,14 +991,19 @@ public class AdminService : IAdminService
         if (reserved.Contains(dto.Subdomain))
             return ServiceResult.Fail(_messageService.Get("InvalidInput"), 400);
 
-        var profile = await _unitOfWork.Repository<UserProfile>().GetByIdAsync(profileId);
+        var profile = await _unitOfWork.Repository<UserProfile>()
+            .GetQueryable()
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(p => p.Id == profileId && !p.IsDeleted);
+
         if (profile == null)
             return ServiceResult.NotFound(_messageService.Get("RecordNotFound"));
 
-        // Uniqueness check (excluding the profile being updated)
+        // Uniqueness check across all active profiles in the system
         var taken = await _unitOfWork.Repository<UserProfile>()
             .GetQueryable()
-            .AnyAsync(p => p.Subdomain == dto.Subdomain && p.Id != profileId);
+            .IgnoreQueryFilters()
+            .AnyAsync(p => p.Subdomain == dto.Subdomain && p.Id != profileId && !p.IsDeleted);
 
         if (taken)
             return ServiceResult.Fail(_messageService.Get("UserAlreadyExists"), 409);

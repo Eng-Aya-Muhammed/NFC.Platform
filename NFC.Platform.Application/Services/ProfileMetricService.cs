@@ -65,6 +65,7 @@ public class ProfileMetricService(
         return await _unitOfWork.Repository<UserProfile>()
             .GetQueryable()
             .AsNoTracking()
+            .IgnoreQueryFilters()
             .Include(p => p.CustomLinks)
             .Include(p => p.Employee)
                 .ThenInclude(e => e!.Company)

@@ -19,6 +19,7 @@ public class SubscriptionService(
             .GetQueryable()
             .IgnoreQueryFilters()
             .AsNoTracking()
+            .Where(p => !p.IsDeleted)
             .Include(p => p.PlanTemplates)
                 .ThenInclude(pt => pt.CardTemplate)
             .OrderBy(p => p.DurationInDays)

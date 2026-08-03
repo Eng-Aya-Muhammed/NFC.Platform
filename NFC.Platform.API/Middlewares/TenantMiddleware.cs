@@ -26,7 +26,7 @@ namespace NFC.Platform.API.Middlewares
                     var tenant = await dbContext.Set<Tenant>()
                         .IgnoreQueryFilters()
                         .AsNoTracking()
-                        .FirstOrDefaultAsync(t => t.Id == tenantId.Value);
+                        .FirstOrDefaultAsync(t => t.Id == tenantId.Value && !t.IsDeleted);
 
                     if (tenant == null)
                     {

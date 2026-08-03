@@ -73,6 +73,10 @@ namespace NFC.Platform.Infrastructure.Extensions
             services.Configure<UploadSettings>(configuration.GetSection("UploadSettings"));
 
             // QR Code Generator — Singleton: QRCoder is stateless; one instance per app lifetime is sufficient.
+            services.AddSingleton<IQrCodeService, QrCodeService>();
+
+            // vCard Generator — Singleton: Stateless contact card formatter
+            services.AddSingleton<IVCardService, VCardService>();
 
             // Hangfire Setup
             services.AddHangfire(config => config
