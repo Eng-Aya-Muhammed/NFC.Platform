@@ -211,11 +211,11 @@ namespace NFC.Platform.Application.Services;
             }
             catch (HttpRequestException)
             {
-                return ServiceResult<List<ExcelEmployeeImportDto>>.Fail(_messageService.Get("FailedToDownloadExcel", excelUrl), 422);
+                return ServiceResult<List<ExcelEmployeeImportDto>>.Fail(_messageService.Get("FailedToDownloadExcel"), 422);
             }
             catch (Exception ex)
             {
-                return ServiceResult<List<ExcelEmployeeImportDto>>.Fail($"{_messageService.Get("FailedToParseExcel", excelUrl)} - {ex.Message}", 422);
+                return ServiceResult<List<ExcelEmployeeImportDto>>.Fail($"{_messageService.Get("FailedToParseExcel")} - {ex.Message}", 422);
             }
         }
 

@@ -182,10 +182,10 @@
     <value>الكمية المطلوبة ({1}) لا تطابق عدد الموظفين المحددين ({0}).</value>
   </data>
   <data name="EmployeesNotFound" xml:space="preserve">
-    <value>الموظفون غير موجودين: {0}</value>
+    <value>عذراً، الموظفون المحددون غير موجودين أو لا يتبعون لنظام شركتك.</value>
   </data>
   <data name="EmployeesMissingProfile" xml:space="preserve">
-    <value>الموظفون الذين لا يملكون ملفاً شخصياً: {0}</value>
+    <value>عذراً، الموظفون المحددون لا يملكون ملفاً شخصياً مفعلاً: {0}</value>
   </data>
   <data name="EmailOrderReadySubject" xml:space="preserve">
     <value>طلبك جاهز للاستلام</value>

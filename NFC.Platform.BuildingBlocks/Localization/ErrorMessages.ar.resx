@@ -245,10 +245,10 @@
     <value>نوع البطاقة غير صالح: '{0}'. الأنواع المدعومة هي Plastic، Wood، و Metal.</value>
   </data>
   <data name="EmployeesNotFound" xml:space="preserve">
-    <value>الموظفون غير موجودين: {0}.</value>
+    <value>عذراً، الموظفون المحددون غير موجودين أو لا يتبعون لنظام شركتك.</value>
   </data>
   <data name="EmployeesMissingProfile" xml:space="preserve">
-    <value>الموظفون يفتقرون إلى الملف التعريفي: {0}.</value>
+    <value>عذراً، الموظفون المحددون لا يملكون ملفاً شخصياً مفعلاً: {0}.</value>
   </data>
   <data name="ShippingAddressRequired" xml:space="preserve">
     <value>عنوان الشحن مطلوب</value>

@@ -723,7 +723,7 @@ public class CardOrderService(
             var missingIds = employeeIds!.Except(employees.Select(e => e.Id)).ToList();
             if (missingIds.Count > 0)
                 return ServiceResult<List<CardOrderItem>>.Fail(
-                    _messageService.Get("EmployeesNotFound", string.Join(", ", missingIds)), 422);
+                    _messageService.Get("EmployeesNotFound"), 422);
 
             var employeesWithoutProfile = employees.Where(e => e.UserProfile == null).Select(e => e.FullName).ToList();
             if (employeesWithoutProfile.Count > 0)

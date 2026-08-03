@@ -135,7 +135,7 @@ namespace NFC.Platform.Application.Services;
                 company.Name = request.CompanyName ?? "Company";
                 company.TenantId = tenant.Id;
                 company.AdminUserId = user.Id;
-                user.CompanyId = company.Id;
+                // user.CompanyId is set after initial SaveChanges to prevent EF Core circular dependency cycle
             }
 
             // 4. UserProfile
@@ -155,7 +155,7 @@ namespace NFC.Platform.Application.Services;
                 Subdomain = subdomain
             };
 
-            // 5. Persist entire graph in one round-trip
+            // 5. Persist entire graph
             await tenantRepo.AddAsync(tenant);
             await userRepo.AddAsync(user);
             if (company != null) await companyRepo.AddAsync(company);
@@ -170,7 +170,14 @@ namespace NFC.Platform.Application.Services;
                 });
             }
 
-            await _unitOfWork.SaveChangesAsync();   // single DB round-trip
+            await _unitOfWork.SaveChangesAsync();
+
+            if (company != null)
+            {
+                user.CompanyId = company.Id;
+                await _unitOfWork.SaveChangesAsync();
+            }
+
             await _unitOfWork.CommitTransactionAsync();
 
             // Enqueue email AFTER commit so the OTP is guaranteed persisted
@@ -281,7 +288,7 @@ namespace NFC.Platform.Application.Services;
                     TenantId = tenant.Id,
                     AdminUserId = user.Id
                 };
-                user.CompanyId = company.Id;
+                // user.CompanyId is set after initial SaveChanges to prevent EF Core circular dependency cycle
             }
 
             var googleBaseSlug  = SubdomainHelper.Slugify(username);
@@ -307,7 +314,7 @@ namespace NFC.Platform.Application.Services;
             var roles = await roleRepo.FindAsync(r => r.Name == targetRole.ToString());
             var matchingRole = roles.Count > 0 ? roles[0] : null;
 
-            // 3. Persist entire graph in one round-trip
+            // 3. Persist entire graph
             await tenantRepo.AddAsync(tenant);
             await userRepo.AddAsync(user);
             if (company != null) await companyRepo.AddAsync(company);
@@ -318,7 +325,14 @@ namespace NFC.Platform.Application.Services;
                 await userRoleRepo.AddAsync(new UserRole { UserId = user.Id, RoleId = matchingRole.Id });
             }
 
-            await _unitOfWork.SaveChangesAsync();   // single DB round-trip
+            await _unitOfWork.SaveChangesAsync();
+
+            if (company != null)
+            {
+                user.CompanyId = company.Id;
+                await _unitOfWork.SaveChangesAsync();
+            }
+
             await _unitOfWork.CommitTransactionAsync();
 
             // Enqueue email AFTER commit

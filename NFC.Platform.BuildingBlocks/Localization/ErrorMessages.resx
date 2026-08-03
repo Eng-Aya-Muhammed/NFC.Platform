@@ -245,10 +245,10 @@
     <value>Invalid card type: '{0}'. Supported types are Plastic, Wood, and Metal.</value>
   </data>
   <data name="EmployeesNotFound" xml:space="preserve">
-    <value>Employees not found: {0}.</value>
+    <value>One or more selected employees were not found in your organization.</value>
   </data>
   <data name="EmployeesMissingProfile" xml:space="preserve">
-    <value>Employees missing profile: {0}.</value>
+    <value>The following selected employees do not have an active profile: {0}.</value>
   </data>
   <data name="ShippingAddressRequired" xml:space="preserve">
     <value>Shipping address is required</value>
