@@ -37,9 +37,24 @@ namespace NFC.Platform.Application.Mapping
                 .ForMember(dest => dest.DesignType, opt => opt.MapFrom(src => src.CardDesign != null ? src.CardDesign.CardDesignType : default))
                 .ForMember(dest => dest.CardType, opt => opt.MapFrom(src => src.CardDesign != null ? src.CardDesign.CardType : null))
                 .ForMember(dest => dest.CardPackage, opt => opt.MapFrom(src => src.CardDesign != null ? src.CardDesign.CardPackage : null))
+                .ForMember(dest => dest.CustomerProfile, opt => opt.MapFrom(src => src.User != null ? src.User.UserProfile : null))
                 .ForMember(dest => dest.Items, opt => opt.MapFrom(src => src.Items));
 
+            CreateMap<UserProfile, AdminOrderCustomerProfileDto>()
+                .ForMember(dest => dest.ContactLinks, opt => opt.MapFrom(src => src.CustomLinks));
+
             CreateMap<Tenant, TenantSummaryDto>();
+            CreateMap<Tenant, TenantBasicInfoDto>()
+                .ForMember(dest => dest.CompanyName, opt => opt.MapFrom(src => src.Company != null ? src.Company.Name : string.Empty))
+                .ForMember(dest => dest.Address, opt => opt.MapFrom(src => src.Company != null ? src.Company.Address : string.Empty))
+                .ForMember(dest => dest.TypeOfCompanyActivity, opt => opt.MapFrom(src => src.Company != null ? src.Company.Activity : string.Empty))
+                .ForMember(dest => dest.CompanySize, opt => opt.MapFrom(src => src.Company != null ? src.Company.Size : string.Empty))
+                .ForMember(dest => dest.CommercialNumber, opt => opt.MapFrom(src => src.Company != null ? src.Company.CommercialRegistry : string.Empty))
+                .ForMember(dest => dest.PhoneNumber, opt => opt.MapFrom(src => src.Company != null && src.Company.AdminUser != null ? src.Company.AdminUser.PhoneNumber : string.Empty))
+                .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.Company != null && src.Company.AdminUser != null ? src.Company.AdminUser.Email : string.Empty))
+                .ForMember(dest => dest.SelectedTemplateId, opt => opt.MapFrom(src => src.Company != null ? src.Company.ProfileTemplateId : null))
+                .ForMember(dest => dest.SelectedTemplateName, opt => opt.MapFrom(src => src.Company != null && src.Company.ProfileTemplate != null ? src.Company.ProfileTemplate.NameEn : null));
+
             CreateMap<User, UserDto>()
                 .ForMember(dest => dest.Role, opt => opt.Ignore());
 

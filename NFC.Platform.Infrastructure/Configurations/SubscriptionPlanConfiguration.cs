@@ -13,7 +13,6 @@ namespace NFC.Platform.Infrastructure.Configurations
 
             builder.Property(p => p.NameAr).IsRequired().HasMaxLength(150);
             builder.Property(p => p.NameEn).IsRequired().HasMaxLength(150);
-            builder.Property(p => p.Description).HasMaxLength(1000);
             builder.Property(p => p.Price).HasColumnType("decimal(18,2)").IsRequired();
             builder.Property(p => p.DurationInDays).IsRequired();
 

@@ -12,6 +12,7 @@ public class EmployeeLeaderboardEntryDto
     public string FullName { get; set; } = string.Empty;
     public string? JobTitle { get; set; }
     public string? Department { get; set; }
+    public string? ProfilePictureUrl { get; set; }
     public int TotalViews { get; set; }
     public int TotalContactSaves { get; set; }
     public int TotalLinkClicks { get; set; }

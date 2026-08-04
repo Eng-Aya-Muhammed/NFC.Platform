@@ -5,7 +5,7 @@ namespace NFC.Platform.Application.DTOs.Subscription
     {
         public string? NameAr { get; set; }
         public string? NameEn { get; set; }
-        public string? Description { get; set; }
+        public List<string>? Features { get; set; }
         public decimal? Price { get; set; }
         public int? DurationInDays { get; set; }
 

@@ -60,6 +60,32 @@ public class AdminTenantsController(IAdminService adminService, ISubscriptionSer
         return Ok(result);
     }
 
+    [HttpGet("{tenantId:guid}/basic-info")]
+    [HasPermission(AppPermissions.Platform.Tenants.View)]
+    public async Task<IActionResult> GetTenantBasicInfo([FromRoute] Guid tenantId)
+    {
+        var result = await _adminService.GetTenantBasicInfoAsync(tenantId);
+        if (!result.IsSuccess) return StatusCode(result.StatusCode, result);
+        return Ok(result);
+    }
+
+    [HttpGet("{tenantId:guid}/employees")]
+    [HasPermission(AppPermissions.Platform.Tenants.View)]
+    public async Task<IActionResult> GetTenantEmployees([FromRoute] Guid tenantId, [FromQuery] PaginationRequest request)
+    {
+        var result = await _adminService.GetTenantEmployeesPagedAsync(tenantId, request);
+        return Ok(result);
+    }
+
+    [HttpGet("{tenantId:guid}/employees/{employeeId:guid}")]
+    [HasPermission(AppPermissions.Platform.Tenants.View)]
+    public async Task<IActionResult> GetTenantEmployeeDetails([FromRoute] Guid tenantId, [FromRoute] Guid employeeId)
+    {
+        var result = await _adminService.GetTenantEmployeeDetailsAsync(tenantId, employeeId);
+        if (!result.IsSuccess) return StatusCode(result.StatusCode, result);
+        return Ok(result);
+    }
+
     [HttpPost("{tenantId:guid}/extend-subscription")]
     [HasPermission(AppPermissions.Platform.Tenants.ExtendSubscription)]
     public async Task<IActionResult> ExtendSubscription([FromRoute] Guid tenantId, [FromBody] ExtendSubscriptionRequest request)

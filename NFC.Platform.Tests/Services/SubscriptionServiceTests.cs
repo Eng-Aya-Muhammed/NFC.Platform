@@ -1,3 +1,5 @@
+using NSubstitute.ExceptionExtensions;
+
 namespace NFC.Platform.Tests.Services
 {
     public class SubscriptionServiceTests
@@ -37,8 +39,8 @@ namespace NFC.Platform.Tests.Services
             // Arrange
             var plans = new List<SubscriptionPlan>
             {
-                new SubscriptionPlan { Id = Guid.NewGuid(), NameAr = "PremiumAnnualAr", NameEn = "PremiumAnnualEn", Description = "PremiumDesc", DurationInDays = 365, Price = 699 },
-                new SubscriptionPlan { Id = Guid.NewGuid(), NameAr = "Premium3YearsAr", NameEn = "Premium3YearsEn", Description = "PremiumDesc", DurationInDays = 1095, Price = 699 }
+                new SubscriptionPlan { Id = Guid.NewGuid(), NameAr = "PremiumAnnualAr", NameEn = "PremiumAnnualEn", Features = ["PremiumDesc"], DurationInDays = 365, Price = 699 },
+                new SubscriptionPlan { Id = Guid.NewGuid(), NameAr = "Premium3YearsAr", NameEn = "Premium3YearsEn", Features = ["PremiumDesc"], DurationInDays = 1095, Price = 699 }
             };
 
             var queryable = plans.AsQueryable().BuildMock();
@@ -46,8 +48,8 @@ namespace NFC.Platform.Tests.Services
 
             var dtos = new List<SubscriptionPlanDto>
             {
-                new SubscriptionPlanDto { Name = "Premium - Annual", Description = "PremiumDesc", DurationInDays = 365, Price = 699 },
-                new SubscriptionPlanDto { Name = "Premium - 3 Years", Description = "PremiumDesc", DurationInDays = 1095, Price = 699 }
+                new SubscriptionPlanDto { Name = "Premium - Annual", Features = ["PremiumDesc"], DurationInDays = 365, Price = 699 },
+                new SubscriptionPlanDto { Name = "Premium - 3 Years", Features = ["PremiumDesc"], DurationInDays = 1095, Price = 699 }
             };
 
             _mapper.Map<IReadOnlyList<SubscriptionPlanDto>>(Arg.Any<List<SubscriptionPlan>>()).Returns(dtos);
@@ -63,7 +65,7 @@ namespace NFC.Platform.Tests.Services
             Assert.True(result.IsSuccess);
             Assert.Equal(2, result.Data!.Count);
             Assert.Equal("Premium - Annual", result.Data![0].Name);
-            Assert.Equal("PremiumDesc", result.Data![0].Description);
+            Assert.Contains("PremiumDesc", result.Data![0].Features);
         }
 
         [Fact]
@@ -262,6 +264,43 @@ namespace NFC.Platform.Tests.Services
             _subscriptionRepo.GetQueryable().Returns(new List<UserSubscription> { activeSub }.AsQueryable().BuildMock());
 
             var request = new SubscribeRequest { SubscriptionPlanId = planId };
+            _messageService.Get("HasActiveSubscription").Returns("You already have an active subscription.");
+
+            // Act
+            var result = await _sut.SubscribeAsync(request);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(400, result.StatusCode);
+            Assert.Equal("You already have an active subscription.", result.Message);
+        }
+
+        [Fact]
+        public async Task SubscribeAsync_ReturnsBadRequest_WhenUniqueIndexConstraintViolated_SimulatingRaceCondition()
+        {
+            // Arrange
+            var tenantId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
+            var planId = Guid.NewGuid();
+
+            _currentTenant.TenantId.Returns(tenantId);
+            _currentTenant.UserId.Returns(userId);
+
+            var plan = new SubscriptionPlan { Id = planId, NameAr = "Test Plan", DurationInDays = 30 };
+            _planRepo.GetQueryable().Returns(new List<SubscriptionPlan> { plan }.AsQueryable().BuildMock());
+
+            // Simulate that another thread hasn't committed yet, so our read query returns null (no active subscription found)
+            _subscriptionRepo.GetQueryable().Returns(new List<UserSubscription>().AsQueryable().BuildMock());
+
+            // Simulate the race condition: both threads insert, one succeeds, our thread fails at SaveChanges with a unique constraint violation
+            var innerException = new Exception("Violation of UNIQUE KEY constraint 'IX_UserSubscriptions_TenantId'");
+            var dbUpdateException = new Microsoft.EntityFrameworkCore.DbUpdateException("An error occurred while updating the entries.", innerException);
+            
+            _unitOfWork.SaveChangesAsync().Throws(dbUpdateException);
+            
+            var request = new SubscribeRequest { SubscriptionPlanId = planId };
+            _mapper.Map<UserSubscription>(request).Returns(new UserSubscription());
+            
             _messageService.Get("HasActiveSubscription").Returns("You already have an active subscription.");
 
             // Act

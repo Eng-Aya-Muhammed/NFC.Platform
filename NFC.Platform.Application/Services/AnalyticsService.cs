@@ -29,20 +29,17 @@ namespace NFC.Platform.Application.Services;
             int remainingDays = 0;
             int totalSubDays = 365;
             var tenantId = _currentTenant.TenantId;
-            if (tenantId.HasValue)
-            {
-                var activeSubscription = await _unitOfWork.Repository<UserSubscription>()
-                    .GetQueryable()
-                    .AsNoTracking()
-                    .Where(s => s.TenantId == tenantId.Value && s.IsActive && !s.IsDeleted)
-                    .OrderByDescending(s => s.EndDate)
-                    .FirstOrDefaultAsync(cancellationToken);
+            var activeSubscription = await _unitOfWork.Repository<UserSubscription>()
+                .GetQueryable()
+                .AsNoTracking()
+                .Where(s => (s.UserId == userId.Value || (tenantId.HasValue && s.TenantId == tenantId.Value)) && s.IsActive && !s.IsDeleted)
+                .OrderByDescending(s => s.EndDate)
+                .FirstOrDefaultAsync(cancellationToken);
 
-                if (activeSubscription != null)
-                {
-                    remainingDays = Math.Max(0, (activeSubscription.EndDate.Date - DateTime.UtcNow.Date).Days);
-                    totalSubDays = Math.Max(1, (activeSubscription.EndDate.Date - activeSubscription.StartDate.Date).Days);
-                }
+            if (activeSubscription != null)
+            {
+                remainingDays = Math.Max(0, (activeSubscription.EndDate.Date - DateTime.UtcNow.Date).Days);
+                totalSubDays = Math.Max(1, (activeSubscription.EndDate.Date - activeSubscription.StartDate.Date).Days);
             }
 
             // 2. Metrics Aggregation
@@ -378,6 +375,105 @@ namespace NFC.Platform.Application.Services;
             };
 
             return ServiceResult<EmployeeDashboardAnalyticsDto>.Success(result);
+        }
+        public async Task<ServiceResult<CompanyDashboardAnalyticsDto>> GetCompanyDashboardAnalyticsAsync(CancellationToken cancellationToken = default)
+        {
+            var tenantId = _currentTenant.TenantId;
+            if (!tenantId.HasValue)
+                return ServiceResult<CompanyDashboardAnalyticsDto>.Unauthorized(_messageService.Get("TenantRequired"));
+
+            // 1. Total Employees
+            var totalEmployees = await _unitOfWork.Repository<Employee>()
+                .GetQueryable()
+                .AsNoTracking()
+                .Where(e => e.TenantId == tenantId.Value && !e.IsDeleted)
+                .CountAsync(cancellationToken);
+
+            // Fetch all profiles for this company's employees
+            var companyProfiles = await _unitOfWork.Repository<UserProfile>()
+                .GetQueryable()
+                .AsNoTracking()
+                .Include(p => p.Employee)
+                .Where(p => p.Employee != null && p.Employee.TenantId == tenantId.Value && !p.Employee.IsDeleted)
+                .ToListAsync(cancellationToken);
+
+            var profileIds = companyProfiles.Select(p => p.Id).ToList();
+
+            // Fetch metrics for all company profiles
+            var metricsRepo = _unitOfWork.Repository<ProfileMetric>();
+            var oneYearAgo = DateTime.UtcNow.AddMonths(-11);
+            var startDate = new DateTime(oneYearAgo.Year, oneYearAgo.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+
+            var metricsList = await metricsRepo.GetQueryable()
+                .AsNoTracking()
+                .Where(m => profileIds.Contains(m.UserProfileId) && m.CreatedAt >= startDate)
+                .Select(m => new { m.InteractionType, m.CreatedAt, m.UserProfileId })
+                .ToListAsync(cancellationToken);
+
+            // 2. Total Contact Saves
+            var totalContactSaves = await metricsRepo.GetQueryable()
+                .AsNoTracking()
+                .Where(m => profileIds.Contains(m.UserProfileId) && m.InteractionType == InteractionType.ContactSaved)
+                .CountAsync(cancellationToken);
+
+            // 3. Most Visited Employee
+            EmployeeLeaderboardEntryDto? mostVisited = null;
+            if (metricsList.Count != 0)
+            {
+                var topProfileId = metricsList
+                    .Where(m => m.InteractionType == InteractionType.ProfileView)
+                    .GroupBy(m => m.UserProfileId)
+                    .OrderByDescending(g => g.Count())
+                    .Select(g => g.Key)
+                    .FirstOrDefault();
+
+                var topProfile = companyProfiles.FirstOrDefault(p => p.Id == topProfileId);
+                if (topProfile != null && topProfile.Employee != null)
+                {
+                    mostVisited = new EmployeeLeaderboardEntryDto
+                    {
+                        EmployeeId = topProfile.Employee.Id,
+                        FullName = topProfile.FullName,
+                        JobTitle = topProfile.JobTitle,
+                        Department = topProfile.Department,
+                        ProfilePictureUrl = topProfile.ProfilePictureUrl,
+                        TotalViews = metricsList.Count(m => m.InteractionType == InteractionType.ProfileView && m.UserProfileId == topProfile.Id)
+                    };
+                }
+            }
+
+            // 4. Time Series Data (last 12 months)
+            var yearlyViewsTrend = new List<MonthlyViewsTrendDto>();
+            var now = DateTime.UtcNow;
+
+            for (int i = 11; i >= 0; i--)
+            {
+                var monthDate = now.AddMonths(-i);
+                var viewsInMonth = metricsList.Count(m =>
+                    m.InteractionType == InteractionType.ProfileView &&
+                    m.CreatedAt.Year == monthDate.Year &&
+                    m.CreatedAt.Month == monthDate.Month);
+
+                var monthName = monthDate.ToString("MMMM", System.Globalization.CultureInfo.CurrentUICulture);
+
+                yearlyViewsTrend.Add(new MonthlyViewsTrendDto
+                {
+                    Year = monthDate.Year,
+                    Month = monthDate.Month,
+                    MonthName = monthName,
+                    ViewsCount = viewsInMonth
+                });
+            }
+
+            var result = new CompanyDashboardAnalyticsDto
+            {
+                TotalEmployees = totalEmployees,
+                TotalContactSaves = totalContactSaves,
+                MostVisitedEmployee = mostVisited,
+                TimeSeriesData = yearlyViewsTrend
+            };
+
+            return ServiceResult<CompanyDashboardAnalyticsDto>.Success(result);
         }
 
         //  Helpers 

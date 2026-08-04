@@ -19,10 +19,13 @@ namespace NFC.Platform.Application.DTOs.Admin
         [ExportColumn("Export_Col_ActivePlanName", Order = 4)]
         public string? ActivePlanName { get; set; }
 
-        [ExportColumn("Export_Col_SubscriptionExpiry", Order = 5)]
+        [ExportColumn("Export_Col_SubscriptionStartDate", Order = 5)]
+        public DateTime? SubscriptionStartDate { get; set; }
+
+        [ExportColumn("Export_Col_SubscriptionExpiry", Order = 6)]
         public DateTime? SubscriptionExpiry { get; set; }
 
-        [ExportColumn("Export_Col_DaysRemaining", Order = 6)]
+        [ExportColumn("Export_Col_DaysRemaining", Order = 7)]
         public int DaysRemaining { get; set; }
     }
 }

@@ -27,9 +27,10 @@ public class AdminOrdersController(IAdminService adminService) : ControllerBase
         [FromQuery] PaginationRequest request,
         [FromQuery] OrderStatus? status,
         [FromQuery(Name = "company_id")] Guid? companyId,
+        [FromQuery(Name = "tenant_id")] Guid? tenantId,
         CancellationToken cancellationToken)
     {
-        var result = await _adminService.GetOrdersPagedAsync(request, status, companyId, cancellationToken);
+        var result = await _adminService.GetOrdersPagedAsync(request, status, companyId, tenantId, cancellationToken);
         return Ok(result);
     }
 

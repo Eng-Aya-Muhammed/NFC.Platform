@@ -6,6 +6,7 @@ using NFC.Platform.Application.DTOs;
 using NFC.Platform.Application.DTOs.Admin;
 using NFC.Platform.Application.DTOs.CardTemplate;
 using NFC.Platform.Application.DTOs.Subscription;
+using NFC.Platform.Application.DTOs.Employee;
 using NFC.Platform.Application.DTOs.Template;
 using NFC.Platform.BuildingBlocks.Common.Models;
 using NFC.Platform.BuildingBlocks.Results;
@@ -15,7 +16,7 @@ namespace NFC.Platform.Application.Interfaces.Services;
 
 public interface IAdminService
 {
-    Task<ServiceResult<PagedResult<AdminOrderSummaryDto>>> GetOrdersPagedAsync(PaginationRequest request, OrderStatus? statusFilter, Guid? companyId = null, CancellationToken cancellationToken = default);
+    Task<ServiceResult<PagedResult<AdminOrderSummaryDto>>> GetOrdersPagedAsync(PaginationRequest request, OrderStatus? statusFilter, Guid? companyId = null, Guid? tenantId = null, CancellationToken cancellationToken = default);
     Task<ServiceResult<AdminOrderDetailDto>> GetOrderByIdAsync(Guid id);
     Task<ServiceResult> UpdateOrderStatusAsync(Guid id, UpdateOrderStatusDto dto);
     Task<ServiceResult> VerifyDeliveryOtpAsync(Guid orderId, string otp);
@@ -27,6 +28,11 @@ public interface IAdminService
     Task<ServiceResult> DeleteTemplateAsync(Guid id);
     Task<ServiceResult<PagedResult<TenantSummaryDto>>> GetTenantsPagedAsync(PaginationRequest request, CancellationToken cancellationToken = default);
     Task<ServiceResult> UpdateTenantStatusAsync(Guid id, UpdateTenantStatusDto dto);
+    
+    // Admin Tenant/Company Details
+    Task<ServiceResult<TenantBasicInfoDto>> GetTenantBasicInfoAsync(Guid tenantId);
+    Task<ServiceResult<PagedResult<EmployeeDto>>> GetTenantEmployeesPagedAsync(Guid tenantId, PaginationRequest request);
+    Task<ServiceResult<EmployeeDetailsDto>> GetTenantEmployeeDetailsAsync(Guid tenantId, Guid employeeId);
 
     // Subscription Plan Management (Super Admin)
     Task<ServiceResult<PagedResult<SubscriptionPlanAdminDto>>> GetAllAdminPlansAsync(PaginationRequest request, CancellationToken cancellationToken = default);

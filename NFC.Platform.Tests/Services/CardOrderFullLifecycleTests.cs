@@ -379,6 +379,7 @@ namespace NFC.Platform.Tests.Services
 
             var designRepo = Substitute.For<IGenericRepository<CardDesign>>();
             designRepo.GetQueryable().Returns(new List<CardDesign> { design }.AsQueryable().BuildMock());
+            designRepo.GetByIdAsync(designId).Returns(design);
             _unitOfWork.Repository<CardDesign>().Returns(designRepo);
 
             var request = new UpdateCardOrderRequest

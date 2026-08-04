@@ -51,6 +51,30 @@ namespace NFC.Platform.Application.Services;
                 .OrderByDescending(e => e.CreatedAt)
                 .ToPagedResultAsync(request, e => _mapper.Map<EmployeeDto>(e));
 
+            int? daysRemaining = null;
+            if (_currentTenant.TenantId.HasValue)
+            {
+                var subscription = await _unitOfWork.Repository<NFC.Platform.Domain.Entities.UserSubscription>()
+                    .GetQueryable()
+                    .Where(s => s.TenantId == _currentTenant.TenantId.Value && s.IsActive)
+                    .OrderByDescending(s => s.EndDate)
+                    .FirstOrDefaultAsync();
+                
+                if (subscription != null)
+                {
+                    daysRemaining = (subscription.EndDate.Date - DateTime.UtcNow.Date).Days;
+                    if (daysRemaining < 0) daysRemaining = 0;
+                }
+            }
+
+            if (daysRemaining.HasValue)
+            {
+                foreach (var item in pagedResult.Items)
+                {
+                    item.SubscriptionDaysRemaining = daysRemaining.Value;
+                }
+            }
+
             return ServiceResult<PagedResult<EmployeeDto>>.Success(pagedResult);
         }
 

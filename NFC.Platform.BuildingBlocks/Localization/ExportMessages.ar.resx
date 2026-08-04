@@ -180,6 +180,9 @@
   <data name="Export_Col_ActivePlanName" xml:space="preserve">
     <value>الباقة النشطة</value>
   </data>
+  <data name="Export_Col_SubscriptionStartDate" xml:space="preserve">
+    <value>تاريخ بداية الاشتراك</value>
+  </data>
   <data name="Export_Col_SubscriptionExpiry" xml:space="preserve">
     <value>تاريخ انتهاء الاشتراك</value>
   </data>

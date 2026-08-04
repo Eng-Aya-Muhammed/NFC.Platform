@@ -55,13 +55,13 @@ public class AdminOrdersControllerTests
         var expectedResult = ServiceResult<PagedResult<AdminOrderSummaryDto>>.Success(
             PagedResult<AdminOrderSummaryDto>.Create(new List<AdminOrderSummaryDto>(), 0, 1, 10));
 
-        _adminService.GetOrdersPagedAsync(request, status, companyId).Returns(expectedResult);
+        _adminService.GetOrdersPagedAsync(request, status, companyId, null).Returns(expectedResult);
 
-        var result = await _sut.GetOrdersPaged(request, status, companyId, CancellationToken.None) as OkObjectResult;
+        var result = await _sut.GetOrdersPaged(request, status, companyId, null, CancellationToken.None) as OkObjectResult;
 
         Assert.NotNull(result);
         Assert.Equal(200, result.StatusCode);
-        await _adminService.Received(1).GetOrdersPagedAsync(request, status, companyId);
+        await _adminService.Received(1).GetOrdersPagedAsync(request, status, companyId, null);
     }
 
     [Fact]

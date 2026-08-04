@@ -11,7 +11,8 @@ public class EmployeeMappingProfile : Profile
     public EmployeeMappingProfile()
     {
         CreateMap<Employee, EmployeeDto>()
-            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()));
+            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
+            .ForMember(dest => dest.Subdomain, opt => opt.MapFrom(src => src.UserProfile != null ? src.UserProfile.Subdomain : null));
 
         CreateMap<Employee, EmployeeExportDto>()
             .ForMember(dest => dest.PhoneNumber, opt => opt.MapFrom(src => src.UserProfile != null ? src.UserProfile.Phone : string.Empty))

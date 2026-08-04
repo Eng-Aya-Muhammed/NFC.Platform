@@ -73,6 +73,20 @@ namespace NFC.Platform.API.Controllers
 
             return Ok(result);
         }
+        /// <summary>
+        /// Returns aggregated analytics dashboard metrics for the company.
+        /// </summary>
+        [HttpGet("company/dashboard")]
+        [Authorize(Policy = AppPolicies.CompanyAdminOnly)]
+        [HasPermission(AppPermissions.Analytics.View)]
+        public async Task<IActionResult> GetCompanyDashboardAnalytics(CancellationToken cancellationToken = default)
+        {
+            var result = await _analyticsService.GetCompanyDashboardAnalyticsAsync(cancellationToken);
+            if (!result.IsSuccess)
+                return StatusCode(result.StatusCode, result);
+
+            return Ok(result);
+        }
     }
 }
 

@@ -40,7 +40,7 @@ public class AdminService : IAdminService
         _pdfExportService     = pdfExportService;
     }
 
-    public async Task<ServiceResult<PagedResult<AdminOrderSummaryDto>>> GetOrdersPagedAsync(PaginationRequest request, OrderStatus? statusFilter, Guid? companyId = null, CancellationToken cancellationToken = default)
+    public async Task<ServiceResult<PagedResult<AdminOrderSummaryDto>>> GetOrdersPagedAsync(PaginationRequest request, OrderStatus? statusFilter, Guid? companyId = null, Guid? tenantId = null, CancellationToken cancellationToken = default)
     {
         var query = _unitOfWork.Repository<CardOrder>()
             .GetQueryable()
@@ -62,6 +62,11 @@ public class AdminService : IAdminService
         if (companyId.HasValue)
         {
             query = query.Where(o => o.Tenant.Company != null && o.Tenant.Company.Id == companyId.Value);
+        }
+
+        if (tenantId.HasValue)
+        {
+            query = query.Where(o => o.TenantId == tenantId.Value);
         }
 
         var pagedResult = await query.ToPagedResultAsync(request, o => _mapper.Map<AdminOrderSummaryDto>(o), cancellationToken);
@@ -162,7 +167,8 @@ public class AdminService : IAdminService
             .AsNoTracking()
             .Include(o => o.Tenant)
             .Include(o => o.User)
-                .ThenInclude(u => u.UserProfile)
+                .ThenInclude(u => u!.UserProfile)
+                    .ThenInclude(p => p!.CustomLinks)
             .Include(o => o.CardDesign)
                 .ThenInclude(d => d!.CardType)
             .Include(o => o.CardDesign)
@@ -688,6 +694,7 @@ public class AdminService : IAdminService
                 dto.ActivePlanName = activeSub.SubscriptionPlan != null
                     ? (CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar" ? activeSub.SubscriptionPlan.NameAr : activeSub.SubscriptionPlan.NameEn)
                     : null;
+                dto.SubscriptionStartDate = activeSub.StartDate;
                 dto.SubscriptionExpiry = activeSub.EndDate;
                 dto.DaysRemaining = Math.Max(0, (int)(activeSub.EndDate - DateTime.UtcNow).TotalDays);
             }
@@ -722,6 +729,65 @@ public class AdminService : IAdminService
         await _unitOfWork.SaveChangesAsync();
 
         return ServiceResult.Success(_messageService.Get("RecordUpdated"));
+    }
+
+    public async Task<ServiceResult<TenantBasicInfoDto>> GetTenantBasicInfoAsync(Guid tenantId)
+    {
+        var tenant = await _unitOfWork.Repository<Tenant>()
+            .GetQueryable()
+            .AsNoTracking()
+            .Include(t => t.Company)
+                .ThenInclude(c => c!.AdminUser)
+            .Include(t => t.Company)
+                .ThenInclude(c => c!.ProfileTemplate)
+            .FirstOrDefaultAsync(t => t.Id == tenantId);
+
+        if (tenant == null)
+            return ServiceResult<TenantBasicInfoDto>.NotFound(_messageService.Get("RecordNotFound"));
+
+        var dto = _mapper.Map<TenantBasicInfoDto>(tenant);
+        return ServiceResult<TenantBasicInfoDto>.Success(dto);
+    }
+
+    public async Task<ServiceResult<PagedResult<EmployeeDto>>> GetTenantEmployeesPagedAsync(Guid tenantId, PaginationRequest request)
+    {
+        var query = _unitOfWork.Repository<Employee>()
+            .GetQueryable()
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(e => e.TenantId == tenantId && !e.IsDeleted)
+            .Include(e => e.UserProfile)
+            .OrderByDescending(e => e.CreatedAt)
+            .AsQueryable();
+
+        var pagedResult = await query.ToPagedResultAsync(request, e => _mapper.Map<EmployeeDto>(e));
+        return ServiceResult<PagedResult<EmployeeDto>>.Success(pagedResult);
+    }
+
+    public async Task<ServiceResult<EmployeeDetailsDto>> GetTenantEmployeeDetailsAsync(Guid tenantId, Guid employeeId)
+    {
+        var employee = await _unitOfWork.Repository<Employee>()
+            .GetQueryable()
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(e => e.TenantId == tenantId && e.Id == employeeId && !e.IsDeleted)
+            .Include(e => e.UserProfile)
+                .ThenInclude(p => p!.CustomLinks)
+            .Include(e => e.Company)
+            .FirstOrDefaultAsync();
+
+        if (employee == null)
+            return ServiceResult<EmployeeDetailsDto>.NotFound(_messageService.Get("RecordNotFound"));
+
+        var dto = _mapper.Map<EmployeeDetailsDto>(employee);
+        
+        // Populate CompanyName if available
+        if (employee.Company != null)
+        {
+            dto.CompanyName = employee.Company.Name;
+        }
+        
+        return ServiceResult<EmployeeDetailsDto>.Success(dto);
     }
 
     public async Task<ServiceResult<PagedResult<SubscriptionPlanAdminDto>>> GetAllAdminPlansAsync(

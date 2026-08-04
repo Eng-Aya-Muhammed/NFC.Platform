@@ -47,6 +47,9 @@ public class AdminTenantsControllerTests
     [InlineData(nameof(AdminTenantsController.GetTenantsPaged), AppPermissions.Platform.Tenants.View)]
     [InlineData(nameof(AdminTenantsController.UpdateTenantStatus), AppPermissions.Platform.Tenants.UpdateStatus)]
     [InlineData(nameof(AdminTenantsController.ExtendSubscription), AppPermissions.Platform.Tenants.ExtendSubscription)]
+    [InlineData(nameof(AdminTenantsController.GetTenantBasicInfo), AppPermissions.Platform.Tenants.View)]
+    [InlineData(nameof(AdminTenantsController.GetTenantEmployees), AppPermissions.Platform.Tenants.View)]
+    [InlineData(nameof(AdminTenantsController.GetTenantEmployeeDetails), AppPermissions.Platform.Tenants.View)]
     public void Endpoints_ShouldHaveCorrectPermissionAttributes(string methodName, string expectedPermission)
     {
         var method = typeof(AdminTenantsController).GetMethod(methodName);
@@ -91,6 +94,45 @@ public class AdminTenantsControllerTests
         _subscriptionService.AdminExtendSubscriptionAsync(tenantId, req).Returns(ServiceResult<UserSubscriptionDto>.Success(new UserSubscriptionDto()));
 
         var result = await _sut.ExtendSubscription(tenantId, req) as OkObjectResult;
+
+        Assert.NotNull(result);
+        Assert.Equal(200, result.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetTenantBasicInfo_ReturnsOk_WhenSuccess()
+    {
+        var tenantId = Guid.NewGuid();
+        _adminService.GetTenantBasicInfoAsync(tenantId).Returns(ServiceResult<TenantBasicInfoDto>.Success(new TenantBasicInfoDto()));
+
+        var result = await _sut.GetTenantBasicInfo(tenantId) as OkObjectResult;
+
+        Assert.NotNull(result);
+        Assert.Equal(200, result.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetTenantEmployees_ReturnsOk_WhenSuccess()
+    {
+        var tenantId = Guid.NewGuid();
+        var request = new PaginationRequest();
+        var pagedResult = PagedResult<EmployeeDto>.Create(new List<EmployeeDto>(), 0, 1, 10);
+        _adminService.GetTenantEmployeesPagedAsync(tenantId, request).Returns(ServiceResult<PagedResult<EmployeeDto>>.Success(pagedResult));
+
+        var result = await _sut.GetTenantEmployees(tenantId, request) as OkObjectResult;
+
+        Assert.NotNull(result);
+        Assert.Equal(200, result.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetTenantEmployeeDetails_ReturnsOk_WhenSuccess()
+    {
+        var tenantId = Guid.NewGuid();
+        var employeeId = Guid.NewGuid();
+        _adminService.GetTenantEmployeeDetailsAsync(tenantId, employeeId).Returns(ServiceResult<EmployeeDetailsDto>.Success(new EmployeeDetailsDto()));
+
+        var result = await _sut.GetTenantEmployeeDetails(tenantId, employeeId) as OkObjectResult;
 
         Assert.NotNull(result);
         Assert.Equal(200, result.StatusCode);

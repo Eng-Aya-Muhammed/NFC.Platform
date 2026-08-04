@@ -47,4 +47,9 @@ public class EmployeeDetailsDto
     /// Null if no subdomain has been assigned yet.
     /// </summary>
     public string? ProfileUrl { get; set; }
+    
+    /// <summary>
+    /// The subdomain for the user's public profile.
+    /// </summary>
+    public string? Subdomain { get; set; }
 }

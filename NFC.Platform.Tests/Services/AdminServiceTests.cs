@@ -12,6 +12,7 @@ namespace NFC.Platform.Tests.Services
         private readonly IGenericRepository<TemplateRequest> _templateRequestRepo;
         private readonly IGenericRepository<CardTemplate> _cardTemplateRepo;
         private readonly IGenericRepository<Tenant> _tenantRepo;
+        private readonly IGenericRepository<Employee> _employeeRepo;
         private readonly IGenericRepository<UserSubscription> _subscriptionRepo;
         private readonly IGenericRepository<Company> _companyRepo;
         private readonly IGenericRepository<UserProfile> _userProfileRepo;
@@ -35,6 +36,7 @@ namespace NFC.Platform.Tests.Services
             _templateRequestRepo          = Substitute.For<IGenericRepository<TemplateRequest>>();
             _cardTemplateRepo             = Substitute.For<IGenericRepository<CardTemplate>>();
             _tenantRepo                   = Substitute.For<IGenericRepository<Tenant>>();
+            _employeeRepo                 = Substitute.For<IGenericRepository<Employee>>();
             _subscriptionRepo             = Substitute.For<IGenericRepository<UserSubscription>>();
             _companyRepo                  = Substitute.For<IGenericRepository<Company>>();
             _userProfileRepo              = Substitute.For<IGenericRepository<UserProfile>>();
@@ -47,6 +49,7 @@ namespace NFC.Platform.Tests.Services
             _unitOfWork.Repository<TemplateRequest>().Returns(_templateRequestRepo);
             _unitOfWork.Repository<CardTemplate>().Returns(_cardTemplateRepo);
             _unitOfWork.Repository<Tenant>().Returns(_tenantRepo);
+            _unitOfWork.Repository<Employee>().Returns(_employeeRepo);
             _unitOfWork.Repository<UserSubscription>().Returns(_subscriptionRepo);
             _unitOfWork.Repository<Company>().Returns(_companyRepo);
             _unitOfWork.Repository<UserProfile>().Returns(_userProfileRepo);
@@ -842,7 +845,7 @@ namespace NFC.Platform.Tests.Services
             {
                 NameAr = "BusinessAr",
                 NameEn = "BusinessEn",
-                Description = "Business plan",
+                Features = ["Business plan"],
                 Price = 199m,
                 DurationInDays = 365,
                 MaxTemplateChanges = 5,
@@ -1012,6 +1015,122 @@ namespace NFC.Platform.Tests.Services
             // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(404, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task GetTenantBasicInfoAsync_ReturnsSuccess_WhenTenantExists()
+        {
+            // Arrange
+            var tenantId = Guid.NewGuid();
+            var tenant = new Tenant { Id = tenantId, Name = "Test Tenant" };
+            var query = new List<Tenant> { tenant }.AsQueryable().BuildMock();
+
+            _tenantRepo.GetQueryable().Returns(query);
+
+            var dto = new TenantBasicInfoDto { Id = tenantId, CompanyName = "Test Tenant" };
+            _mapper.Map<TenantBasicInfoDto>(Arg.Any<Tenant>()).Returns(dto);
+
+            // Act
+            var result = await _sut.GetTenantBasicInfoAsync(tenantId);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal("Test Tenant", result.Data!.CompanyName);
+        }
+
+        [Fact]
+        public async Task GetTenantEmployeesPagedAsync_ReturnsPagedEmployees()
+        {
+            // Arrange
+            var tenantId = Guid.NewGuid();
+            var employee = new Employee { Id = Guid.NewGuid(), TenantId = tenantId, FullName = "John", IsDeleted = false };
+            var query = new List<Employee> { employee }.AsQueryable().BuildMock();
+
+            _employeeRepo.GetQueryable().Returns(query);
+
+            var dto = new EmployeeDto { Id = employee.Id, FullName = "John" };
+            _mapper.Map<EmployeeDto>(Arg.Any<Employee>()).Returns(dto);
+
+            var request = new PaginationRequest { PageNumber = 1, PageSize = 10 };
+
+            // Act
+            var result = await _sut.GetTenantEmployeesPagedAsync(tenantId, request);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Single(result.Data!.Items);
+            Assert.Equal("John", result.Data!.Items.First().FullName);
+        }
+
+        [Fact]
+        public async Task GetTenantEmployeeDetailsAsync_ReturnsSuccess_WhenEmployeeExists()
+        {
+            // Arrange
+            var tenantId = Guid.NewGuid();
+            var employeeId = Guid.NewGuid();
+            var employee = new Employee { Id = employeeId, TenantId = tenantId, FullName = "John", IsDeleted = false };
+            var query = new List<Employee> { employee }.AsQueryable().BuildMock();
+
+            _employeeRepo.GetQueryable().Returns(query);
+
+            var dto = new EmployeeDetailsDto { Id = employee.Id, FullName = "John" };
+            _mapper.Map<EmployeeDetailsDto>(Arg.Any<Employee>()).Returns(dto);
+
+            // Act
+            var result = await _sut.GetTenantEmployeeDetailsAsync(tenantId, employeeId);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal("John", result.Data!.FullName);
+        }
+        [Fact]
+        public async Task GetOrderByIdAsync_ReturnsSuccess_WithCustomerProfile_WhenOrderExists()
+        {
+            // Arrange
+            var orderId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
+
+            var userProfile = new UserProfile 
+            { 
+                Id = Guid.NewGuid(),
+                FullName = "John Admin", 
+                ContactEmail = "john@admin.com"
+            };
+
+            var user = new User { Id = userId, UserProfile = userProfile };
+            
+            var order = new CardOrder
+            {
+                Id = orderId,
+                UserId = userId,
+                User = user,
+                Tenant = new Tenant { Name = "Tenant" }
+            };
+
+            var query = new List<CardOrder> { order }.AsQueryable().BuildMock();
+            _orderRepo.GetQueryable().Returns(query);
+
+            var dto = new AdminOrderDetailDto
+            {
+                Id = orderId,
+                CustomerProfile = new AdminOrderCustomerProfileDto
+                {
+                    FullName = "John Admin",
+                    ContactEmail = "john@admin.com"
+                }
+            };
+
+            _mapper.Map<AdminOrderDetailDto>(Arg.Any<CardOrder>()).Returns(dto);
+
+            // Act
+            var result = await _sut.GetOrderByIdAsync(orderId);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.NotNull(result.Data);
+            Assert.NotNull(result.Data!.CustomerProfile);
+            Assert.Equal("John Admin", result.Data.CustomerProfile!.FullName);
+            Assert.Equal("john@admin.com", result.Data.CustomerProfile.ContactEmail);
         }
     }
 }

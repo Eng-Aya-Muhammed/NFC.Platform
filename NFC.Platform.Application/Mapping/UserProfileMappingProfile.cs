@@ -23,7 +23,8 @@ public class UserProfileMappingProfile : Profile
             // Branding fields are resolved manually in ProfileMetricService.ApplyBranding — not mapped from entity
             .ForMember(dest => dest.LogoUrl, opt => opt.Ignore())
             .ForMember(dest => dest.Layout, opt => opt.Ignore())
-            .ForMember(dest => dest.StyleConfigJson, opt => opt.Ignore());
+            .ForMember(dest => dest.StyleConfigJson, opt => opt.Ignore())
+            .ForMember(dest => dest.Subdomain, opt => opt.MapFrom(src => src.Subdomain));
 
         CreateMap<User, EmployeeDetailsDto>()
             .ConvertUsing((src, dest, ctx) =>

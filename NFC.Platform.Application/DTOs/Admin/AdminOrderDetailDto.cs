@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using NFC.Platform.Application.DTOs.CardOrder;
 using NFC.Platform.Application.DTOs.CardPackage;
+using NFC.Platform.Application.DTOs.Card;
 using NFC.Platform.Application.DTOs.CardTemplate;
 using NFC.Platform.Application.DTOs.CardType;
 using NFC.Platform.Application.DTOs.Template;
@@ -39,5 +40,18 @@ namespace NFC.Platform.Application.DTOs.Admin
         public string? ShippingAddress { get; set; }
         public DateTime CreatedAt { get; set; }
         public List<CardOrderItemDto> Items { get; set; } = [];
+        public AdminOrderCustomerProfileDto? CustomerProfile { get; set; }
+    }
+
+    public class AdminOrderCustomerProfileDto
+    {
+        public string FullName { get; set; } = string.Empty;
+        public string JobTitle { get; set; } = string.Empty;
+        public string? Address { get; set; }
+        public string? ProfilePictureUrl { get; set; }
+        public string? ContactEmail { get; set; }
+        public string? Phone { get; set; }
+        public string? WhatsApp { get; set; }
+        public List<ProfileLinkDto> ContactLinks { get; set; } = [];
     }
 }

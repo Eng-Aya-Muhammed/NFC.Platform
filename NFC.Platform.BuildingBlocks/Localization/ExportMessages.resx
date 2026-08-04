@@ -180,6 +180,9 @@
   <data name="Export_Col_ActivePlanName" xml:space="preserve">
     <value>Active Plan</value>
   </data>
+  <data name="Export_Col_SubscriptionStartDate" xml:space="preserve">
+    <value>Subscription Start Date</value>
+  </data>
   <data name="Export_Col_SubscriptionExpiry" xml:space="preserve">
     <value>Subscription Expiry</value>
   </data>

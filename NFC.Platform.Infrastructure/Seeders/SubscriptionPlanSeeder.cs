@@ -20,7 +20,7 @@ namespace NFC.Platform.Infrastructure.Seeders
                 {
                     NameAr = "الخطة السنوية الممتازة",
                     NameEn = "Premium Annual Plan",
-                    Description = "Premium Annual Subscription",
+                    Features = ["Feature 1", "Feature 2", "Feature 3"],
                     Price = 699.00m,
                     DurationInDays = 365
                 },
@@ -28,7 +28,7 @@ namespace NFC.Platform.Infrastructure.Seeders
                 {
                     NameAr = "خطة الـ 3 سنوات الممتازة",
                     NameEn = "Premium 3-Year Plan",
-                    Description = "Premium 3-Year Subscription",
+                    Features = ["Feature 1", "Feature 2", "Feature 3"],
                     Price = 699.00m,
                     DurationInDays = 1095
                 },
@@ -36,7 +36,7 @@ namespace NFC.Platform.Infrastructure.Seeders
                 {
                     NameAr = "خطة الـ 5 سنوات الممتازة",
                     NameEn = "Premium 5-Year Plan",
-                    Description = "Premium 5-Year Subscription",
+                    Features = ["Feature 1", "Feature 2", "Feature 3"],
                     Price = 699.00m,
                     DurationInDays = 1825
                 }

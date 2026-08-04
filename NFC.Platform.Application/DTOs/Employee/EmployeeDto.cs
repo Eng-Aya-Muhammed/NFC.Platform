@@ -11,5 +11,9 @@ namespace NFC.Platform.Application.DTOs.Employee;
         public string Department { get; set; } = string.Empty;
         public string Status { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; }
+        
+        // Frontend UI properties
+        public int? SubscriptionDaysRemaining { get; set; }
+        public string? Subdomain { get; set; }
     }
 
