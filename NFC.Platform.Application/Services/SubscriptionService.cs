@@ -105,7 +105,20 @@ public class SubscriptionService(
         newSub.IsActive = true;
 
         await _unitOfWork.Repository<UserSubscription>().AddAsync(newSub);
-        await _unitOfWork.SaveChangesAsync();
+        
+        try
+        {
+            await _unitOfWork.SaveChangesAsync();
+        }
+        catch (Microsoft.EntityFrameworkCore.DbUpdateException ex)
+        {
+            // Verify if the error is due to the unique index constraint IX_UserSubscriptions_TenantId
+            if (ex.InnerException != null && ex.InnerException.Message.Contains("IX_UserSubscriptions_TenantId"))
+            {
+                return ServiceResult<UserSubscriptionDto>.Fail(_messageService.Get("HasActiveSubscription"), 400);
+            }
+            throw;
+        }
 
         newSub.SubscriptionPlan = plan;
 

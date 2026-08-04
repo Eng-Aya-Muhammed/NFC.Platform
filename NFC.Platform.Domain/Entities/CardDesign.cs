@@ -43,7 +43,13 @@ namespace NFC.Platform.Domain.Entities
         /// Deducted via Optimistic Concurrency (RowVersion) when an order is approved.
         /// </summary>
         public int UsedQuantity { get; set; } = 0;
-        // RemainingQuantity = TotalQuantity - UsedQuantity (computed in AutoMapper only)
+        
+        /// <summary>
+        /// Cards reserved by pending orders.
+        /// Deducted from when order is approved or cancelled.
+        /// </summary>
+        public int PendingQuantity { get; set; } = 0;
+        // RemainingQuantity = TotalQuantity - UsedQuantity - PendingQuantity (computed in AutoMapper only)
 
         public decimal UnitPrice { get; set; }
         public decimal TotalPrice { get; set; }

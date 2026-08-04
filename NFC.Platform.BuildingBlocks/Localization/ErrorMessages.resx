@@ -446,7 +446,7 @@
     <value>Invalid payment gateway signature.</value>
   </data>
   <data name="ConcurrentUpdateConflict" xml:space="preserve">
-    <value>A concurrent update conflict occurred. Please retry your request.</value>
+    <value>This information was just updated by someone else. Please refresh the page and try again.</value>
   </data>
   <data name="CustomQuantityRequired" xml:space="preserve">
     <value>Quantity is required for company accounts.</value>

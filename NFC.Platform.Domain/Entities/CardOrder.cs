@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using NFC.Platform.Domain.Common;
 using NFC.Platform.Domain.Enums;
 
@@ -77,5 +78,11 @@ namespace NFC.Platform.Domain.Entities
         public int DeliveryOtpFailedAttempts { get; set; } = 0;
 
         public ICollection<CardOrderItem> Items { get; set; } = [];
+
+        /// <summary>
+        /// Used for optimistic concurrency control to prevent race conditions during updates (e.g. OTP counters, status changes).
+        /// </summary>
+        [Timestamp]
+        public byte[] RowVersion { get; set; } = null!;
     }
 }

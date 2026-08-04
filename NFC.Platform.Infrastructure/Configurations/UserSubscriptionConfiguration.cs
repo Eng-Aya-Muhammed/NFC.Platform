@@ -19,7 +19,7 @@ namespace NFC.Platform.Infrastructure.Configurations
 
             builder.Property(s => s.TenantId).IsRequired();
             builder.HasIndex(s => s.TenantId);
-            builder.HasIndex(s => new { s.TenantId, s.IsActive, s.EndDate });
+            builder.HasIndex(s => s.TenantId).IsUnique().HasFilter("[IsActive] = 1");
 
             builder.HasOne(s => s.Tenant)
                 .WithMany()

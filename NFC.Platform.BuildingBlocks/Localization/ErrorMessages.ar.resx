@@ -446,7 +446,7 @@
     <value>توقيع بوابة الدفع غير صحيح.</value>
   </data>
   <data name="ConcurrentUpdateConflict" xml:space="preserve">
-    <value>حدث تعارض في التحديث المتزامن. يرجى إعادة المحاولة.</value>
+    <value>تم تعديل هذه البيانات للتو بواسطة شخص آخر. يرجى تحديث الصفحة والمحاولة مرة أخرى.</value>
   </data>
   <data name="CustomQuantityRequired" xml:space="preserve">
     <value>الكمية مطلوبة لحسابات الشركات.</value>

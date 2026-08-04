@@ -244,10 +244,11 @@ public class AdminService : IAdminService
         if (!string.IsNullOrWhiteSpace(dto.TrackingNumber))
             order.TrackingNumber = dto.TrackingNumber;
 
+        var oldStatus = order.Status;
         order.Status = dto.Status;
 
-        // ── Deduct card quantity from CardDesign when order is Approved ───────
-        if (dto.Status == OrderStatus.Approved && order.Status != OrderStatus.Approved)
+        // ── Adjust card quantities from CardDesign ───────
+        if (dto.Status == OrderStatus.Approved && oldStatus != OrderStatus.Approved)
         {
             var design = await _unitOfWork.Repository<CardDesign>()
                 .GetQueryable()
@@ -269,13 +270,30 @@ public class AdminService : IAdminService
                         422);
                 }
 
+                design.PendingQuantity = Math.Max(0, design.PendingQuantity - deducted);
                 design.UsedQuantity += deducted;
+            }
+        }
+        else if ((dto.Status == OrderStatus.Rejected || dto.Status == OrderStatus.Cancelled) && (oldStatus == OrderStatus.PendingReview || oldStatus == OrderStatus.UnderReview || oldStatus == OrderStatus.AwaitingDesign))
+        {
+            var design = await _unitOfWork.Repository<CardDesign>()
+                .GetQueryable()
+                .FirstOrDefaultAsync(d => d.Id == order.CardDesignId);
+
+            if (design != null)
+            {
+                var isCompanyOrder = order.Items != null && order.Items.Count > 0;
+                var refundedPending = isCompanyOrder
+                    ? order.Items!.Sum(i => i.NumberOfCardsRequired)
+                    : order.Quantity;
+                    
+                design.PendingQuantity = Math.Max(0, design.PendingQuantity - refundedPending);
             }
         }
 
         // ── Refund card quantity if an approved order is Cancelled ─────────
         if (dto.Status == OrderStatus.Cancelled &&
-            (order.Status is OrderStatus.Approved or OrderStatus.InPrinting or OrderStatus.Encoding or OrderStatus.ReadyForDelivery))
+            (oldStatus is OrderStatus.Approved or OrderStatus.InPrinting or OrderStatus.Encoding or OrderStatus.ReadyForDelivery))
         {
             var design = await _unitOfWork.Repository<CardDesign>()
                 .GetQueryable()
@@ -341,32 +359,39 @@ public class AdminService : IAdminService
         if (string.IsNullOrWhiteSpace(order.DeliveryOtpHash) || !order.DeliveryOtpExpiresAt.HasValue || order.DeliveryOtpExpiresAt.Value < DateTime.UtcNow)
             return ServiceResult.Fail(_messageService.Get("OtpExpired"), 422);
 
-        if (!OtpHasher.VerifyOtp(otp, order.DeliveryOtpHash))
+        try
         {
-            order.DeliveryOtpFailedAttempts++;
-            var maxFailed = _otpSettings.MaxFailedAttempts > 0 ? _otpSettings.MaxFailedAttempts : 5;
-
-            if (order.DeliveryOtpFailedAttempts >= maxFailed)
+            if (!OtpHasher.VerifyOtp(otp, order.DeliveryOtpHash))
             {
-                order.DeliveryOtpHash = null;
-                order.DeliveryOtpExpiresAt = null;
+                order.DeliveryOtpFailedAttempts++;
+                var maxFailed = _otpSettings.MaxFailedAttempts > 0 ? _otpSettings.MaxFailedAttempts : 5;
+
+                if (order.DeliveryOtpFailedAttempts >= maxFailed)
+                {
+                    order.DeliveryOtpHash = null;
+                    order.DeliveryOtpExpiresAt = null;
+                    await _unitOfWork.SaveChangesAsync();
+                    return ServiceResult.Fail(_messageService.Get("OtpExpired"), 422);
+                }
+
                 await _unitOfWork.SaveChangesAsync();
-                return ServiceResult.Fail(_messageService.Get("OtpExpired"), 422);
+                return ServiceResult.Fail(_messageService.Get("InvalidOtp"), 422);
             }
 
+            order.Status = OrderStatus.Delivered;
+            order.DeliveryOtpHash = null;
+            order.DeliveryOtpExpiresAt = null;
+            order.DeliveryOtpLastSentAt = null;
+            order.DeliveryOtpResendCount = 0;
+            order.DeliveryOtpFailedAttempts = 0;
             await _unitOfWork.SaveChangesAsync();
-            return ServiceResult.Fail(_messageService.Get("InvalidOtp"), 422);
+
+            return ServiceResult.Success(_messageService.Get("OrderDelivered"));
         }
-
-        order.Status = OrderStatus.Delivered;
-        order.DeliveryOtpHash = null;
-        order.DeliveryOtpExpiresAt = null;
-        order.DeliveryOtpLastSentAt = null;
-        order.DeliveryOtpResendCount = 0;
-        order.DeliveryOtpFailedAttempts = 0;
-        await _unitOfWork.SaveChangesAsync();
-
-        return ServiceResult.Success(_messageService.Get("OrderDelivered"));
+        catch (DbUpdateConcurrencyException)
+        {
+            return ServiceResult.Fail(_messageService.Get("ConcurrentUpdateConflict"), 409);
+        }
     }
 
     public async Task<ServiceResult> ResendDeliveryOtpAsync(Guid orderId)
@@ -402,21 +427,28 @@ public class AdminService : IAdminService
 
         var recipient = order.Tenant?.Company?.AdminUser ?? order.User;
 
-        var newOtp = GenerateOtp();
-        order.DeliveryOtpHash = OtpHasher.HashOtp(newOtp);
-        order.DeliveryOtpExpiresAt = DateTime.UtcNow.AddDays(7);
-        order.DeliveryOtpLastSentAt = DateTime.UtcNow;
-        order.DeliveryOtpResendCount++;
-        order.DeliveryOtpFailedAttempts = 0;
-
-        await _unitOfWork.SaveChangesAsync();
-
-        if (recipient != null)
+        try
         {
-            EnqueueOtpNotifications(recipient, newOtp, order.CardDesign?.CardType?.NameAr ?? "Physical Card", isResend: true);
-        }
+            var newOtp = GenerateOtp();
+            order.DeliveryOtpHash = OtpHasher.HashOtp(newOtp);
+            order.DeliveryOtpExpiresAt = DateTime.UtcNow.AddDays(7);
+            order.DeliveryOtpLastSentAt = DateTime.UtcNow;
+            order.DeliveryOtpResendCount++;
+            order.DeliveryOtpFailedAttempts = 0;
 
-        return ServiceResult.Success(_messageService.Get("OtpResent"));
+            await _unitOfWork.SaveChangesAsync();
+
+            if (recipient != null)
+            {
+                EnqueueOtpNotifications(recipient, newOtp, order.CardDesign?.CardType?.NameAr ?? "Physical Card", isResend: true);
+            }
+
+            return ServiceResult.Success(_messageService.Get("OtpResent"));
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return ServiceResult.Fail(_messageService.Get("ConcurrentUpdateConflict"), 409);
+        }
     }
 
     public async Task<ServiceResult<PagedResult<TemplateRequestDto>>> GetTemplateRequestsPagedAsync(

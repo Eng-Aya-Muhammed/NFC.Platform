@@ -191,9 +191,26 @@ public class CardOrderService(
             if (itemsToOrder.Count > 0)
                 order.Items = itemsToOrder;
 
+            // 4. Update CardDesign PendingQuantity
+            var cardDesign = await _unitOfWork.Repository<CardDesign>().GetByIdAsync(designData.Id);
+            if (cardDesign != null)
+            {
+                cardDesign.PendingQuantity += totalCards;
+                _unitOfWork.Repository<CardDesign>().Update(cardDesign);
+            }
+
             await _unitOfWork.Repository<CardOrder>().AddAsync(order);
-            await _unitOfWork.SaveChangesAsync();
-            await _unitOfWork.CommitTransactionAsync();
+            
+            try
+            {
+                await _unitOfWork.SaveChangesAsync();
+                await _unitOfWork.CommitTransactionAsync();
+            }
+            catch (Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                return ServiceResult<CardOrderDto>.Fail(_messageService.Get("ConcurrentUpdateConflict"), 409);
+            }
 
             var created = await GetOrderWithItemsAsync(order.Id);
             return ServiceResult<CardOrderDto>.Success(_mapper.Map<CardOrderDto>(created), _messageService.Get("RecordCreated"));
@@ -264,11 +281,40 @@ public class CardOrderService(
             return ServiceResult<CardOrderDto>.Fail(designResult.Message!, designResult.StatusCode);
         }
 
-        await _unitOfWork.Repository<CardOrder>().AddAsync(reorder);
-        await _unitOfWork.SaveChangesAsync();
+        await _unitOfWork.BeginTransactionAsync();
+        try
+        {
+            if (reorder.CardDesignId.HasValue)
+            {
+                var cardDesign = await _unitOfWork.Repository<CardDesign>().GetByIdAsync(reorder.CardDesignId.Value);
+                if (cardDesign != null)
+                {
+                    cardDesign.PendingQuantity += cardsToValidate;
+                    _unitOfWork.Repository<CardDesign>().Update(cardDesign);
+                }
+            }
 
-        var created = await GetOrderWithItemsAsync(reorder.Id);
-        return ServiceResult<CardOrderDto>.Success(_mapper.Map<CardOrderDto>(created), _messageService.Get("RecordCreated"));
+            await _unitOfWork.Repository<CardOrder>().AddAsync(reorder);
+            
+            try
+            {
+                await _unitOfWork.SaveChangesAsync();
+                await _unitOfWork.CommitTransactionAsync();
+            }
+            catch (Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                return ServiceResult<CardOrderDto>.Fail(_messageService.Get("ConcurrentUpdateConflict"), 409);
+            }
+
+            var created = await GetOrderWithItemsAsync(reorder.Id);
+            return ServiceResult<CardOrderDto>.Success(_mapper.Map<CardOrderDto>(created), _messageService.Get("RecordCreated"));
+        }
+        catch
+        {
+            await _unitOfWork.RollbackTransactionAsync();
+            throw;
+        }
     }
 
     public async Task<ServiceResult<CardOrderDto>> UpdateOrderAsync(Guid id, UpdateCardOrderRequest request)
@@ -310,10 +356,7 @@ public class CardOrderService(
             if ((request.AssignmentScope.HasValue || (request.EmployeeIds != null && request.EmployeeIds.Count > 0) || request.QuantityPerEmployee.HasValue || request.Quantity.HasValue) && order.CardDesignId.HasValue)
             {
                 var designData = await _unitOfWork.Repository<CardDesign>()
-                    .GetQueryable().AsNoTracking()
-                    .Where(d => d.Id == order.CardDesignId.Value)
-                    .Select(d => new { d.TotalQuantity, d.UsedQuantity })
-                    .FirstOrDefaultAsync();
+                    .GetByIdAsync(order.CardDesignId.Value);
 
                 if (designData != null)
                 {
@@ -328,14 +371,19 @@ public class CardOrderService(
                     var qtyPerEmp = request.QuantityPerEmployee ?? order.QuantityPerEmployee;
                     var totalRequiredCards = newItems.Count > 0 ? newItems.Count * qtyPerEmp : (request.Quantity ?? order.Quantity);
 
-                    var otherPendingQuantity = await CalculatePendingOrdersQuantityAsync(order.CardDesignId.Value, excludeOrderId: order.Id);
-
-                    var availableQty = designData.TotalQuantity - designData.UsedQuantity - otherPendingQuantity;
+                    var availableQty = designData.TotalQuantity - designData.UsedQuantity - designData.PendingQuantity + order.Quantity;
                     if (totalRequiredCards > availableQty)
                     {
                         await _unitOfWork.RollbackTransactionAsync();
                         return ServiceResult<CardOrderDto>.Fail(
                             _messageService.Get("DesignRemainingQuantityExceeded", totalRequiredCards.ToString(), availableQty < 0 ? "0" : availableQty.ToString()), 400);
+                    }
+
+                    var diff = totalRequiredCards - order.Quantity;
+                    if (diff != 0)
+                    {
+                        designData.PendingQuantity += diff;
+                        _unitOfWork.Repository<CardDesign>().Update(designData);
                     }
 
                     var oldItems = order.Items.ToList();
@@ -360,8 +408,16 @@ public class CardOrderService(
 
             _mapper.Map(request, order);
 
-            await _unitOfWork.SaveChangesAsync();
-            await _unitOfWork.CommitTransactionAsync();
+            try
+            {
+                await _unitOfWork.SaveChangesAsync();
+                await _unitOfWork.CommitTransactionAsync();
+            }
+            catch (Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                return ServiceResult<CardOrderDto>.Fail(_messageService.Get("ConcurrentUpdateConflict"), 409);
+            }
 
             var updated = await GetOrderWithItemsAsync(order.Id);
             return ServiceResult<CardOrderDto>.Success(_mapper.Map<CardOrderDto>(updated), _messageService.Get("RecordUpdated"));
@@ -385,7 +441,25 @@ public class CardOrderService(
             return ServiceResult.Fail(_messageService.Get("OrderCannotBeCancelled"), 400);
 
         order.Status = OrderStatus.Cancelled;
-        await _unitOfWork.SaveChangesAsync();
+
+        if (order.CardDesignId.HasValue)
+        {
+            var cardDesign = await _unitOfWork.Repository<CardDesign>().GetByIdAsync(order.CardDesignId.Value);
+            if (cardDesign != null)
+            {
+                cardDesign.PendingQuantity = Math.Max(0, cardDesign.PendingQuantity - order.Quantity);
+                _unitOfWork.Repository<CardDesign>().Update(cardDesign);
+            }
+        }
+
+        try
+        {
+            await _unitOfWork.SaveChangesAsync();
+        }
+        catch (Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException)
+        {
+            return ServiceResult.Fail(_messageService.Get("ConcurrentUpdateConflict"), 409);
+        }
 
         return ServiceResult.Success(_messageService.Get("RecordUpdated"));
     }
@@ -411,24 +485,31 @@ public class CardOrderService(
         if (order.DeliveryOtpResendCount >= _otpSettings.MaxResendAttempts)
             return ServiceResult.Fail(_messageService.Get("OtpResendLimitReached"), 422);
 
-        var newOtp = GenerateOtp();
-        order.DeliveryOtpHash = OtpHasher.HashOtp(newOtp);
-        order.DeliveryOtpExpiresAt = DateTime.UtcNow.AddDays(7);
-        order.DeliveryOtpLastSentAt = DateTime.UtcNow;
-        order.DeliveryOtpResendCount++;
-        order.DeliveryOtpFailedAttempts = 0;
-        await _unitOfWork.SaveChangesAsync();
-
-        var recipient = order.Tenant?.Company?.AdminUser ?? order.User;
-        if (recipient != null)
+        try
         {
-            var cardName = order.CardDesign?.CardType?.NameAr 
-                ?? order.CardDesign?.CardType?.NameEn 
-                ?? _messageService.Get("DefaultPhysicalCardName");
-            EnqueueOtpNotifications(recipient, newOtp, cardName);
-        }
+            var newOtp = GenerateOtp();
+            order.DeliveryOtpHash = OtpHasher.HashOtp(newOtp);
+            order.DeliveryOtpExpiresAt = DateTime.UtcNow.AddDays(7);
+            order.DeliveryOtpLastSentAt = DateTime.UtcNow;
+            order.DeliveryOtpResendCount++;
+            order.DeliveryOtpFailedAttempts = 0;
+            await _unitOfWork.SaveChangesAsync();
 
-        return ServiceResult.Success(_messageService.Get("OtpResent"));
+            var recipient = order.Tenant?.Company?.AdminUser ?? order.User;
+            if (recipient != null)
+            {
+                var cardName = order.CardDesign?.CardType?.NameAr 
+                    ?? order.CardDesign?.CardType?.NameEn 
+                    ?? _messageService.Get("DefaultPhysicalCardName");
+                EnqueueOtpNotifications(recipient, newOtp, cardName);
+            }
+
+            return ServiceResult.Success(_messageService.Get("OtpResent"));
+        }
+        catch (Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException)
+        {
+            return ServiceResult.Fail("ConcurrentUpdateConflict", 409);
+        }
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -441,6 +522,7 @@ public class CardOrderService(
         bool IsPaid,
         int TotalQuantity,
         int UsedQuantity,
+        int PendingQuantity,
         Guid CardPackageId,
         decimal UnitPrice,
         decimal TotalPrice,
@@ -549,6 +631,7 @@ public class CardOrderService(
                 d.IsPaid,
                 d.TotalQuantity,
                 d.UsedQuantity,
+                d.PendingQuantity,
                 d.CardPackageId,
                 d.UnitPrice,
                 d.TotalPrice,
@@ -576,21 +659,6 @@ public class CardOrderService(
         ResolvedCardDesignInfo? selectedDesign = null;
         int selectedAvailableQty = 0;
 
-        // H-05 fix: load all pending quantities in a single GROUP BY query
-        // instead of issuing one query per candidate inside the loop.
-        var candidateIds = candidateDesigns.Select(c => c.Id).ToList();
-        var pendingQtyByDesign = await _unitOfWork.Repository<CardOrder>()
-            .GetQueryable()
-            .AsNoTracking()
-            .Where(o => o.CardDesignId.HasValue
-                     && candidateIds.Contains(o.CardDesignId!.Value)
-                     && (o.Status == OrderStatus.PendingReview
-                      || o.Status == OrderStatus.UnderReview
-                      || o.Status == OrderStatus.AwaitingDesign))
-            .GroupBy(o => o.CardDesignId!.Value)
-            .Select(g => new { DesignId = g.Key, PendingQty = g.Sum(o => o.Quantity) })
-            .ToDictionaryAsync(x => x.DesignId, x => x.PendingQty);
-
         foreach (var candidate in candidateDesigns)
         {
             if (!candidate.IsPaid)
@@ -598,7 +666,7 @@ public class CardOrderService(
                 return ServiceResult<ResolvedCardDesignInfo>.Fail(_messageService.Get("DesignPaymentRequired"), 402);
             }
 
-            var pendingQty = pendingQtyByDesign.GetValueOrDefault(candidate.Id, 0);
+            var pendingQty = candidate.PendingQuantity;
 
             var avail = candidate.TotalQuantity - candidate.UsedQuantity - pendingQty;
             if (totalCards <= avail)
@@ -625,28 +693,7 @@ public class CardOrderService(
         return ServiceResult<ResolvedCardDesignInfo>.Success(selectedDesign);
     }
 
-    private async Task<int> CalculatePendingOrdersQuantityAsync(Guid cardDesignId, Guid? excludeOrderId = null)
-    {
-        var query = _unitOfWork.Repository<CardOrder>()
-            .GetQueryable()
-            .AsNoTracking()
-            .Where(o => o.CardDesignId == cardDesignId
-                     && (o.Status == OrderStatus.PendingReview || o.Status == OrderStatus.UnderReview || o.Status == OrderStatus.AwaitingDesign));
 
-        if (excludeOrderId.HasValue && excludeOrderId.Value != Guid.Empty)
-        {
-            query = query.Where(o => o.Id != excludeOrderId.Value);
-        }
-
-        try
-        {
-            return await query.SumAsync(o => (int?)o.Quantity) ?? 0;
-        }
-        catch (InvalidOperationException)
-        {
-            return query.Sum(o => (int?)o.Quantity) ?? 0;
-        }
-    }
 
     private static CardOrder BuildReorder(CardOrder parent, ReorderRequest request, Guid userId,
         CardPackage package, List<CardOrderItem> items)
