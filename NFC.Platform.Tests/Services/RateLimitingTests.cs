@@ -52,10 +52,6 @@ namespace NFC.Platform.Tests.Services
             Assert.False(root.GetProperty("isSuccess").GetBoolean());
             Assert.Equal(429, root.GetProperty("statusCode").GetInt32());
             Assert.Equal(expectedMessage, root.GetProperty("message").GetString());
-
-            var errors = root.GetProperty("errors");
-            Assert.Equal(1, errors.GetArrayLength());
-            Assert.Equal(expectedMessage, errors[0].GetString());
         }
 
         [Theory]
@@ -137,7 +133,7 @@ namespace NFC.Platform.Tests.Services
             Assert.True(root.TryGetProperty("isSuccess", out _));
             Assert.True(root.TryGetProperty("statusCode", out _));
             Assert.True(root.TryGetProperty("message", out _));
-            Assert.True(root.TryGetProperty("errors", out _));
+            Assert.False(root.TryGetProperty("errors", out _));
 
             Assert.False(root.GetProperty("isSuccess").GetBoolean());
             Assert.Equal(429, root.GetProperty("statusCode").GetInt32());

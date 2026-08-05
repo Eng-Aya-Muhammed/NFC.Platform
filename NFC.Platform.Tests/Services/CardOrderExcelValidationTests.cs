@@ -281,7 +281,7 @@ namespace NFC.Platform.Tests.Services
                 // 4. Act: Call CreateDesignAsync for CompanyAdmin
                 var result = await cardDesignService.CreateDesignAsync(request);
 
-                Console.WriteLine($"[CompanyAdmin Result] IsSuccess: {result.IsSuccess}, StatusCode: {result.StatusCode}, Errors: {string.Join(" | ", result.Errors ?? new List<string>())}");
+                Console.WriteLine($"[CompanyAdmin Result] IsSuccess: {result.IsSuccess}, StatusCode: {result.StatusCode}, Message: {result.Message}");
 
                 // Validation MUST fail (IsSuccess = false, 422 status code)
                 Assert.False(result.IsSuccess, "Design creation should fail validation for invalid Excel data.");

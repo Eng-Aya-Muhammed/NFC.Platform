@@ -172,7 +172,7 @@ public class CardDesignService(
                     {
                         await _unitOfWork.RollbackTransactionAsync();
                         return ServiceResult<CardDesignDto>.Fail(
-                            excelResult.Message ?? string.Join(", ", excelResult.Errors),
+                            excelResult.Message,
                             excelResult.StatusCode);
                     }
                 }

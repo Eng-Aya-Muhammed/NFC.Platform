@@ -219,7 +219,7 @@ namespace NFC.Platform.Application.Services;
         {
             var parseResult = await DownloadAndParseExcelAsync(excelUrl);
             if (!parseResult.IsSuccess)
-                return ServiceResult<List<Guid>>.Fail(parseResult.Message ?? string.Join(", ", parseResult.Errors), parseResult.StatusCode);
+                return ServiceResult<List<Guid>>.Fail(parseResult.Message, parseResult.StatusCode);
 
             var rows = parseResult.Data!;
 

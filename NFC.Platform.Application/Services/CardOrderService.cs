@@ -271,7 +271,7 @@ public class CardOrderService(
 
         var itemsResult = await BuildOrderItemsAsync(request.AssignmentScope, request.EmployeeIds);
         if (!itemsResult.IsSuccess)
-            return ServiceResult<CardOrderDto>.Fail(itemsResult.Message ?? string.Join(", ", itemsResult.Errors), itemsResult.StatusCode);
+            return ServiceResult<CardOrderDto>.Fail(itemsResult.Message, itemsResult.StatusCode);
 
         var itemsToOrder = itemsResult.Data ?? [];
         var totalRequiredCards = itemsToOrder.Where(i => i.RequiresCard).Sum(i => i.NumberOfCardsRequired);
@@ -388,7 +388,7 @@ public class CardOrderService(
                     if (!itemsResult.IsSuccess)
                     {
                         await _unitOfWork.RollbackTransactionAsync();
-                        return ServiceResult<CardOrderDto>.Fail(itemsResult.Message ?? string.Join(", ", itemsResult.Errors), itemsResult.StatusCode);
+                        return ServiceResult<CardOrderDto>.Fail(itemsResult.Message, itemsResult.StatusCode);
                     }
 
                     var newItems = itemsResult.Data ?? new List<CardOrderItem>();
@@ -606,7 +606,7 @@ public class CardOrderService(
             if (!itemsResult.IsSuccess)
             {
                 return ServiceResult<(int, List<CardOrderItem>)>.Fail(
-                    itemsResult.Message ?? string.Join(", ", itemsResult.Errors), itemsResult.StatusCode);
+                    itemsResult.Message, itemsResult.StatusCode);
             }
 
             itemsToOrder = itemsResult.Data ?? [];

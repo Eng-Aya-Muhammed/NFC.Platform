@@ -365,7 +365,7 @@ namespace NFC.Platform.Tests.Services
             // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(400, result.StatusCode);
-            Assert.Contains("updated", result.Errors.FirstOrDefault());
+            Assert.Contains("updated", result.Message);
         }
 
         [Fact]
@@ -958,7 +958,7 @@ namespace NFC.Platform.Tests.Services
             // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(400, result.StatusCode);
-            Assert.Contains(result.Errors, e => e.Contains("FailedToParseExcel"));
+            Assert.Contains("FailedToParseExcel", result.Message);
             
             // Ensure no design was saved
             await _unitOfWork.DidNotReceive().SaveChangesAsync();
