@@ -23,8 +23,8 @@ public interface ICardDesignService
     /// <summary>Returns a single CardDesign belonging to the current tenant.</summary>
     Task<ServiceResult<CardDesignDto>> GetDesignByIdAsync(Guid id);
 
-    /// <summary>Returns a paged list of CardDesigns for the current tenant.</summary>
-    Task<ServiceResult<PagedResult<CardDesignDto>>> GetPagedDesignsAsync(PaginationRequest request);
+    /// <summary>Returns a paged list of CardDesigns for the current tenant, optionally filtered by search query.</summary>
+    Task<ServiceResult<PagedResult<CardDesignDto>>> GetPagedDesignsAsync(PaginationRequest request, string? search = null);
 
     /// <summary>
     /// Generates and returns the payment gateway URL for the given design.

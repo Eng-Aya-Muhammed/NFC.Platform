@@ -25,23 +25,25 @@ public class AdminOrdersController(IAdminService adminService) : ControllerBase
     [HasPermission(AppPermissions.Platform.Orders.View)]
     public async Task<IActionResult> GetOrdersPaged(
         [FromQuery] PaginationRequest request,
-        [FromQuery] OrderStatus? status,
-        [FromQuery(Name = "company_id")] Guid? companyId,
-        [FromQuery(Name = "tenant_id")] Guid? tenantId,
-        CancellationToken cancellationToken)
+        [FromQuery] OrderStatus? status = null,
+        [FromQuery(Name = "company_id")] Guid? companyId = null,
+        [FromQuery(Name = "tenant_id")] Guid? tenantId = null,
+        [FromQuery] string? search = null,
+        CancellationToken cancellationToken = default)
     {
-        var result = await _adminService.GetOrdersPagedAsync(request, status, companyId, tenantId, cancellationToken);
+        var result = await _adminService.GetOrdersPagedAsync(request, status, companyId, tenantId, search, cancellationToken);
         return Ok(result);
     }
 
     [HttpGet("export/excel")]
     [HasPermission(AppPermissions.Platform.Orders.View)]
     public async Task<IActionResult> ExportExcel(
-        [FromQuery] OrderStatus? status,
-        [FromQuery(Name = "company_id")] Guid? companyId,
-        CancellationToken cancellationToken)
+        [FromQuery] OrderStatus? status = null,
+        [FromQuery(Name = "company_id")] Guid? companyId = null,
+        [FromQuery] string? search = null,
+        CancellationToken cancellationToken = default)
     {
-        var result = await _adminService.ExportAdminOrdersAsync(NFC.Platform.BuildingBlocks.Common.Models.ExportFormat.Excel, status, companyId, cancellationToken);
+        var result = await _adminService.ExportAdminOrdersAsync(NFC.Platform.BuildingBlocks.Common.Models.ExportFormat.Excel, status, companyId, search, cancellationToken);
         if (!result.IsSuccess) return StatusCode(result.StatusCode, result);
 
         var fileName = $"AdminOrders_{DateTime.Now:yyyy-MM-dd_HH-mm}.xlsx";
@@ -51,11 +53,12 @@ public class AdminOrdersController(IAdminService adminService) : ControllerBase
     [HttpGet("export/pdf")]
     [HasPermission(AppPermissions.Platform.Orders.View)]
     public async Task<IActionResult> ExportPdf(
-        [FromQuery] OrderStatus? status,
-        [FromQuery(Name = "company_id")] Guid? companyId,
-        CancellationToken cancellationToken)
+        [FromQuery] OrderStatus? status = null,
+        [FromQuery(Name = "company_id")] Guid? companyId = null,
+        [FromQuery] string? search = null,
+        CancellationToken cancellationToken = default)
     {
-        var result = await _adminService.ExportAdminOrdersAsync(NFC.Platform.BuildingBlocks.Common.Models.ExportFormat.Pdf, status, companyId, cancellationToken);
+        var result = await _adminService.ExportAdminOrdersAsync(NFC.Platform.BuildingBlocks.Common.Models.ExportFormat.Pdf, status, companyId, search, cancellationToken);
         if (!result.IsSuccess) return StatusCode(result.StatusCode, result);
 
         var fileName = $"AdminOrders_{DateTime.Now:yyyy-MM-dd_HH-mm}.pdf";

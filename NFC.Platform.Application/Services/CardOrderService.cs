@@ -50,7 +50,7 @@ public class CardOrderService(
     // Queries
     // ─────────────────────────────────────────────────────────────────────────
 
-    public async Task<ServiceResult<PagedResult<CardOrderDto>>> GetPagedOrdersAsync(PaginationRequest request, string? statusFilter)
+    public async Task<ServiceResult<PagedResult<CardOrderDto>>> GetPagedOrdersAsync(PaginationRequest request, string? statusFilter, string? search = null)
     {
         var query = _unitOfWork.Repository<CardOrder>()
             .GetQueryable()
@@ -68,6 +68,18 @@ public class CardOrderService(
             query = query.Where(o => o.Status == parsedStatus);
         }
 
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            search = search.Trim();
+            query = query.Where(o => o.Id.ToString().Contains(search) ||
+                                     (o.TrackingNumber != null && o.TrackingNumber.Contains(search)) ||
+                                     (o.Notes != null && o.Notes.Contains(search)) ||
+                                     (o.CardDesign != null && ((o.CardDesign.Notes != null && o.CardDesign.Notes.Contains(search)) || (o.CardDesign.CardType != null && (o.CardDesign.CardType.NameAr.Contains(search) || o.CardDesign.CardType.NameEn.Contains(search))))) ||
+                                     o.Items.Any(i => i.EmployeeName.Contains(search) ||
+                                                      (i.Email != null && i.Email.Contains(search)) ||
+                                                      (i.Phone != null && i.Phone.Contains(search))));
+        }
+
         var pagedResult = await query
             .OrderByDescending(o => o.CreatedAt)
             .ToPagedResultAsync(request, o => _mapper.Map<CardOrderDto>(o));
@@ -75,7 +87,7 @@ public class CardOrderService(
         return ServiceResult<PagedResult<CardOrderDto>>.Success(pagedResult);
     }
 
-    public async Task<ServiceResult<byte[]>> ExportOrdersAsync(ExportFormat format, string? statusFilter)
+    public async Task<ServiceResult<byte[]>> ExportOrdersAsync(ExportFormat format, string? statusFilter, string? search = null)
     {
         if (_exportBuilder == null || _excelExportService == null || _pdfExportService == null)
         {
@@ -96,6 +108,18 @@ public class CardOrderService(
             && Enum.TryParse<OrderStatus>(statusFilter, ignoreCase: true, out var parsedStatus))
         {
             query = query.Where(o => o.Status == parsedStatus);
+        }
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            search = search.Trim();
+            query = query.Where(o => o.Id.ToString().Contains(search) ||
+                                     (o.TrackingNumber != null && o.TrackingNumber.Contains(search)) ||
+                                     (o.Notes != null && o.Notes.Contains(search)) ||
+                                     (o.CardDesign != null && ((o.CardDesign.Notes != null && o.CardDesign.Notes.Contains(search)) || (o.CardDesign.CardType != null && (o.CardDesign.CardType.NameAr.Contains(search) || o.CardDesign.CardType.NameEn.Contains(search))))) ||
+                                     o.Items.Any(i => i.EmployeeName.Contains(search) ||
+                                                      (i.Email != null && i.Email.Contains(search)) ||
+                                                      (i.Phone != null && i.Phone.Contains(search))));
         }
 
         var orders = await query

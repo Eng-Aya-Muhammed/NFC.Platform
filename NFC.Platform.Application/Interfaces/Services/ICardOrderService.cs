@@ -18,9 +18,9 @@ namespace NFC.Platform.Application.Interfaces.Services;
 public interface ICardOrderService
 {
     /// <summary>
-    /// Retrieves a paged list of CardOrders for the current tenant, optionally filtered by status.
+    /// Retrieves a paged list of CardOrders for the current tenant, optionally filtered by status and search query.
     /// </summary>
-    Task<ServiceResult<PagedResult<CardOrderDto>>> GetPagedOrdersAsync(PaginationRequest request, string? statusFilter);
+    Task<ServiceResult<PagedResult<CardOrderDto>>> GetPagedOrdersAsync(PaginationRequest request, string? statusFilter, string? search = null);
 
     /// <summary>
     /// Retrieves a single CardOrder by its identifier, including its items.
@@ -53,5 +53,5 @@ public interface ICardOrderService
     /// </summary>
     Task<ServiceResult> ResendOrderOtpAsync(Guid orderId);
 
-    Task<ServiceResult<byte[]>> ExportOrdersAsync(ExportFormat format, string? statusFilter);
+    Task<ServiceResult<byte[]>> ExportOrdersAsync(ExportFormat format, string? statusFilter, string? search = null);
 }

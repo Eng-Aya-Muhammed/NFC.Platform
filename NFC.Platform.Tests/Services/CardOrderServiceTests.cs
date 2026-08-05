@@ -963,5 +963,87 @@ namespace NFC.Platform.Tests.Services
             // Ensure no design was saved
             await _unitOfWork.DidNotReceive().SaveChangesAsync();
         }
+
+        [Fact]
+        public async Task GetPagedOrdersAsync_FiltersBySearch_MatchesItemEmployeeName()
+        {
+            // Arrange
+            var order1 = new CardOrder
+            {
+                Id = Guid.NewGuid(),
+                TrackingNumber = "TRK12345",
+                Items = new List<CardOrderItem> { new() { EmployeeName = "Ziad Khaled", Email = "ziad@test.com" } }
+            };
+            var order2 = new CardOrder
+            {
+                Id = Guid.NewGuid(),
+                TrackingNumber = "TRK99999",
+                Items = new List<CardOrderItem> { new() { EmployeeName = "Omar Hassan", Email = "omar@test.com" } }
+            };
+
+            var queryable = new List<CardOrder> { order1, order2 }.AsQueryable().BuildMock();
+            _orderRepo.GetQueryable().Returns(queryable);
+
+            var request = new PaginationRequest { PageNumber = 1, PageSize = 10 };
+
+            // Act
+            var result = await _sut.GetPagedOrdersAsync(request, null, "Ziad");
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.NotNull(result.Data);
+            Assert.Equal(1, result.Data.TotalCount);
+            Assert.Equal(order1.Id, result.Data.Items.First().Id);
+        }
+
+        [Fact]
+        public async Task GetPagedOrdersAsync_HandlesNullNavigationProperties_WithoutCrashing()
+        {
+            // Arrange — Order with null TrackingNumber, null Notes, null CardDesign, null Item Email/Phone
+            var orderWithNulls = new CardOrder
+            {
+                Id = Guid.NewGuid(),
+                TrackingNumber = null,
+                Notes = null,
+                CardDesign = null,
+                Items = new List<CardOrderItem> { new() { EmployeeName = "Test Emp", Email = null, Phone = null } }
+            };
+
+            var queryable = new List<CardOrder> { orderWithNulls }.AsQueryable().BuildMock();
+            _orderRepo.GetQueryable().Returns(queryable);
+
+            var request = new PaginationRequest { PageNumber = 1, PageSize = 10 };
+
+            // Act — Search for term that doesn't match
+            var result = await _sut.GetPagedOrdersAsync(request, null, "NonExistentSearchTerm");
+
+            // Assert — Must return 0 count without throwing NullReferenceException
+            Assert.True(result.IsSuccess);
+            Assert.NotNull(result.Data);
+            Assert.Equal(0, result.Data.TotalCount);
+        }
+
+        [Fact]
+        public async Task GetPagedOrdersAsync_WhenSearchNullOrEmpty_ReturnsAllRecords()
+        {
+            // Arrange
+            var o1 = new CardOrder { Id = Guid.NewGuid() };
+            var o2 = new CardOrder { Id = Guid.NewGuid() };
+
+            var queryable = new List<CardOrder> { o1, o2 }.AsQueryable().BuildMock();
+            _orderRepo.GetQueryable().Returns(queryable);
+
+            var request = new PaginationRequest { PageNumber = 1, PageSize = 10 };
+
+            // Act
+            var resultWithNull = await _sut.GetPagedOrdersAsync(request, null, null);
+            var resultWithWhitespace = await _sut.GetPagedOrdersAsync(request, null, "   ");
+
+            // Assert — Search ignored, returns all records
+            Assert.True(resultWithNull.IsSuccess);
+            Assert.Equal(2, resultWithNull.Data!.TotalCount);
+            Assert.True(resultWithWhitespace.IsSuccess);
+            Assert.Equal(2, resultWithWhitespace.Data!.TotalCount);
+        }
     }
 }

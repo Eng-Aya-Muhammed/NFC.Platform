@@ -22,17 +22,17 @@ public class AdminCardTemplatesController(ICardTemplateService cardTemplateServi
 
     [HttpGet]
     [HasPermission(AppPermissions.Platform.CardTemplates.View)]
-    public async Task<IActionResult> GetAllAdminCardTemplates([FromQuery] PaginationRequest request)
+    public async Task<IActionResult> GetAllAdminCardTemplates([FromQuery] PaginationRequest request, [FromQuery] string? search = null)
     {
-        var result = await _cardTemplateService.GetAllAdminTemplatesAsync(request);
+        var result = await _cardTemplateService.GetAllAdminTemplatesAsync(request, search);
         return Ok(result);
     }
 
     [HttpGet("export/excel")]
     [HasPermission(AppPermissions.Platform.CardTemplates.View)]
-    public async Task<IActionResult> ExportExcel()
+    public async Task<IActionResult> ExportExcel([FromQuery] string? search = null)
     {
-        var result = await _cardTemplateService.ExportCardTemplatesAsync(ExportFormat.Excel);
+        var result = await _cardTemplateService.ExportCardTemplatesAsync(ExportFormat.Excel, search);
         if (!result.IsSuccess) return StatusCode(result.StatusCode, result);
 
         var fileName = $"CardTemplates_{DateTime.Now:yyyy-MM-dd_HH-mm}.xlsx";
@@ -41,9 +41,9 @@ public class AdminCardTemplatesController(ICardTemplateService cardTemplateServi
 
     [HttpGet("export/pdf")]
     [HasPermission(AppPermissions.Platform.CardTemplates.View)]
-    public async Task<IActionResult> ExportPdf()
+    public async Task<IActionResult> ExportPdf([FromQuery] string? search = null)
     {
-        var result = await _cardTemplateService.ExportCardTemplatesAsync(ExportFormat.Pdf);
+        var result = await _cardTemplateService.ExportCardTemplatesAsync(ExportFormat.Pdf, search);
         if (!result.IsSuccess) return StatusCode(result.StatusCode, result);
 
         var fileName = $"CardTemplates_{DateTime.Now:yyyy-MM-dd_HH-mm}.pdf";

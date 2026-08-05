@@ -11,8 +11,8 @@ namespace NFC.Platform.Application.Interfaces.Services;
 
 public interface IDiscountCodeService
 {
-    Task<ServiceResult<PagedResult<DiscountCodeDto>>> GetPagedAdminAsync(PaginationRequest request, CancellationToken cancellationToken = default);
-    Task<ServiceResult<byte[]>> ExportDiscountCodesAsync(ExportFormat format, CancellationToken cancellationToken = default);
+    Task<ServiceResult<PagedResult<DiscountCodeDto>>> GetPagedAdminAsync(PaginationRequest request, string? search = null, CancellationToken cancellationToken = default);
+    Task<ServiceResult<byte[]>> ExportDiscountCodesAsync(ExportFormat format, string? search = null, CancellationToken cancellationToken = default);
     Task<ServiceResult<DiscountCodeDto>> GetByIdAsync(Guid id);
     Task<ServiceResult<DiscountCodeDto>> CreateAsync(CreateDiscountCodeRequest request);
     Task<ServiceResult<DiscountCodeDto>> UpdateAsync(Guid id, UpdateDiscountCodeRequest request);

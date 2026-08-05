@@ -11,8 +11,8 @@ namespace NFC.Platform.Application.Interfaces.Services;
 public interface ITemplateCategoryService
 {
     Task<ServiceResult<IReadOnlyList<TemplateCategoryDto>>> GetActiveCategoriesAsync();
-    Task<ServiceResult<PagedResult<TemplateCategoryAdminDto>>> GetAllAdminCategoriesAsync(PaginationRequest request);
-    Task<ServiceResult<byte[]>> ExportTemplateCategoriesAsync(ExportFormat format);
+    Task<ServiceResult<PagedResult<TemplateCategoryAdminDto>>> GetAllAdminCategoriesAsync(PaginationRequest request, string? search = null);
+    Task<ServiceResult<byte[]>> ExportTemplateCategoriesAsync(ExportFormat format, string? search = null);
     Task<ServiceResult<TemplateCategoryAdminDto>> GetByIdAsync(Guid id);
     Task<ServiceResult<TemplateCategoryAdminDto>> CreateAsync(CreateTemplateCategoryRequest request);
     Task<ServiceResult<TemplateCategoryAdminDto>> UpdateAsync(Guid id, UpdateTemplateCategoryRequest request);

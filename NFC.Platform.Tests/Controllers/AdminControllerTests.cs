@@ -55,13 +55,13 @@ public class AdminOrdersControllerTests
         var expectedResult = ServiceResult<PagedResult<AdminOrderSummaryDto>>.Success(
             PagedResult<AdminOrderSummaryDto>.Create(new List<AdminOrderSummaryDto>(), 0, 1, 10));
 
-        _adminService.GetOrdersPagedAsync(request, status, companyId, null).Returns(expectedResult);
+        _adminService.GetOrdersPagedAsync(request, status, companyId, null, null, Arg.Any<CancellationToken>()).Returns(expectedResult);
 
-        var result = await _sut.GetOrdersPaged(request, status, companyId, null, CancellationToken.None) as OkObjectResult;
+        var result = await _sut.GetOrdersPaged(request, status, companyId, null, null, CancellationToken.None) as OkObjectResult;
 
         Assert.NotNull(result);
         Assert.Equal(200, result.StatusCode);
-        await _adminService.Received(1).GetOrdersPagedAsync(request, status, companyId, null);
+        await _adminService.Received(1).GetOrdersPagedAsync(request, status, companyId, null, null, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -129,10 +129,10 @@ public class AdminTemplateRequestsControllerTests
     public async Task GetTemplateRequestsPaged_ReturnsOk()
     {
         var request = new PaginationRequest();
-        _adminService.GetTemplateRequestsPagedAsync(request, null).Returns(ServiceResult<PagedResult<TemplateRequestDto>>.Success(
+        _adminService.GetTemplateRequestsPagedAsync(request, null, null, Arg.Any<CancellationToken>()).Returns(ServiceResult<PagedResult<TemplateRequestDto>>.Success(
             PagedResult<TemplateRequestDto>.Create(new List<TemplateRequestDto>(), 0, 1, 10)));
 
-        var result = await _sut.GetTemplateRequestsPaged(request, null, CancellationToken.None) as OkObjectResult;
+        var result = await _sut.GetTemplateRequestsPaged(request, null, null, CancellationToken.None) as OkObjectResult;
 
         Assert.NotNull(result);
         Assert.Equal(200, result.StatusCode);
@@ -190,10 +190,10 @@ public class AdminDiscountCodesControllerTests
     public async Task GetDiscountCodesPaged_ReturnsOk()
     {
         var req = new PaginationRequest();
-        _discountCodeService.GetPagedAdminAsync(req).Returns(ServiceResult<PagedResult<DiscountCodeDto>>.Success(
+        _discountCodeService.GetPagedAdminAsync(req, null, Arg.Any<CancellationToken>()).Returns(ServiceResult<PagedResult<DiscountCodeDto>>.Success(
             PagedResult<DiscountCodeDto>.Create(new List<DiscountCodeDto>(), 0, 1, 10)));
 
-        var result = await _sut.GetDiscountCodesPaged(req, CancellationToken.None) as OkObjectResult;
+        var result = await _sut.GetDiscountCodesPaged(req, null, CancellationToken.None) as OkObjectResult;
 
         Assert.NotNull(result);
         Assert.Equal(200, result.StatusCode);

@@ -23,17 +23,17 @@ public class AdminDiscountCodesController(IDiscountCodeService discountCodeServi
 
     [HttpGet]
     [HasPermission(AppPermissions.Platform.DiscountCodes.View)]
-    public async Task<IActionResult> GetDiscountCodesPaged([FromQuery] PaginationRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetDiscountCodesPaged([FromQuery] PaginationRequest request, [FromQuery] string? search = null, CancellationToken cancellationToken = default)
     {
-        var result = await _discountCodeService.GetPagedAdminAsync(request, cancellationToken);
+        var result = await _discountCodeService.GetPagedAdminAsync(request, search, cancellationToken);
         return Ok(result);
     }
 
     [HttpGet("export/excel")]
     [HasPermission(AppPermissions.Platform.DiscountCodes.View)]
-    public async Task<IActionResult> ExportExcel(CancellationToken cancellationToken)
+    public async Task<IActionResult> ExportExcel([FromQuery] string? search = null, CancellationToken cancellationToken = default)
     {
-        var result = await _discountCodeService.ExportDiscountCodesAsync(ExportFormat.Excel, cancellationToken);
+        var result = await _discountCodeService.ExportDiscountCodesAsync(ExportFormat.Excel, search, cancellationToken);
         if (!result.IsSuccess) return StatusCode(result.StatusCode, result);
 
         var fileName = $"DiscountCodes_{DateTime.Now:yyyy-MM-dd_HH-mm}.xlsx";
@@ -42,9 +42,9 @@ public class AdminDiscountCodesController(IDiscountCodeService discountCodeServi
 
     [HttpGet("export/pdf")]
     [HasPermission(AppPermissions.Platform.DiscountCodes.View)]
-    public async Task<IActionResult> ExportPdf(CancellationToken cancellationToken)
+    public async Task<IActionResult> ExportPdf([FromQuery] string? search = null, CancellationToken cancellationToken = default)
     {
-        var result = await _discountCodeService.ExportDiscountCodesAsync(ExportFormat.Pdf, cancellationToken);
+        var result = await _discountCodeService.ExportDiscountCodesAsync(ExportFormat.Pdf, search, cancellationToken);
         if (!result.IsSuccess) return StatusCode(result.StatusCode, result);
 
         var fileName = $"DiscountCodes_{DateTime.Now:yyyy-MM-dd_HH-mm}.pdf";

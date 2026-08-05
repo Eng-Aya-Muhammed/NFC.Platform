@@ -449,5 +449,91 @@ namespace NFC.Platform.Tests.Services
         }
 
 
+        [Fact]
+        public async Task GetPagedEmployeesAsync_FiltersByPhoneAndSubdomain()
+        {
+            // Arrange
+            var emp1 = new Employee 
+            { 
+                Id = Guid.NewGuid(), 
+                FullName = "Ahmed Soliman", 
+                Email = "ahmed@test.com", 
+                UserProfile = new UserProfile { Phone = "+96590001111", Subdomain = "ahmed-soliman" } 
+            };
+            var emp2 = new Employee 
+            { 
+                Id = Guid.NewGuid(), 
+                FullName = "Mona Ali", 
+                Email = "mona@test.com", 
+                UserProfile = new UserProfile { Phone = "+96590002222", Subdomain = "mona-ali" } 
+            };
+
+            var queryable = new List<Employee> { emp1, emp2 }.AsQueryable().BuildMock();
+            _employeeRepo.GetQueryable().Returns(queryable);
+            _mapper.Map<EmployeeDto>(Arg.Any<Employee>()).Returns(x => new EmployeeDto { FullName = ((Employee)x[0]).FullName });
+
+            var request = new PaginationRequest { PageNumber = 1, PageSize = 10 };
+
+            // Act
+            var result = await _sut.GetPagedEmployeesAsync(request, "90001111");
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.NotNull(result.Data);
+            Assert.Equal(1, result.Data.TotalCount);
+            Assert.Equal("Ahmed Soliman", result.Data.Items.First().FullName);
+        }
+
+        [Fact]
+        public async Task GetPagedEmployeesAsync_HandlesNullUserProfileAndJobTitle_WithoutCrashing()
+        {
+            // Arrange — Employee with null UserProfile, JobTitle, Department
+            var empWithNulls = new Employee
+            {
+                Id = Guid.NewGuid(),
+                FullName = "Null Emp",
+                Email = "nullemp@test.com",
+                JobTitle = null!,
+                Department = null!,
+                UserProfile = null!
+            };
+
+            var queryable = new List<Employee> { empWithNulls }.AsQueryable().BuildMock();
+            _employeeRepo.GetQueryable().Returns(queryable);
+            _mapper.Map<EmployeeDto>(Arg.Any<Employee>()).Returns(new EmployeeDto());
+
+            var request = new PaginationRequest { PageNumber = 1, PageSize = 10 };
+
+            // Act — Search for non-matching term
+            var result = await _sut.GetPagedEmployeesAsync(request, "NonExistentSearchTerm");
+
+            // Assert — Search handled cleanly with 0 matches
+            Assert.True(result.IsSuccess);
+            Assert.Equal(0, result.Data!.TotalCount);
+        }
+
+        [Fact]
+        public async Task GetPagedEmployeesAsync_WhenSearchNullOrEmpty_ReturnsAllEmployees()
+        {
+            // Arrange
+            var emp1 = new Employee { Id = Guid.NewGuid(), FullName = "Emp 1", Email = "emp1@test.com" };
+            var emp2 = new Employee { Id = Guid.NewGuid(), FullName = "Emp 2", Email = "emp2@test.com" };
+
+            var queryable = new List<Employee> { emp1, emp2 }.AsQueryable().BuildMock();
+            _employeeRepo.GetQueryable().Returns(queryable);
+            _mapper.Map<EmployeeDto>(Arg.Any<Employee>()).Returns(new EmployeeDto());
+
+            var request = new PaginationRequest { PageNumber = 1, PageSize = 10 };
+
+            // Act
+            var resultWithNull = await _sut.GetPagedEmployeesAsync(request, null);
+            var resultWithSpaces = await _sut.GetPagedEmployeesAsync(request, "   ");
+
+            // Assert
+            Assert.True(resultWithNull.IsSuccess);
+            Assert.Equal(2, resultWithNull.Data!.TotalCount);
+            Assert.True(resultWithSpaces.IsSuccess);
+            Assert.Equal(2, resultWithSpaces.Data!.TotalCount);
+        }
     }
 }

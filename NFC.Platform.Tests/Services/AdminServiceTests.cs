@@ -1132,5 +1132,120 @@ namespace NFC.Platform.Tests.Services
             Assert.Equal("John Admin", result.Data.CustomerProfile!.FullName);
             Assert.Equal("john@admin.com", result.Data.CustomerProfile.ContactEmail);
         }
+
+        [Fact]
+        public async Task GetOrdersPagedAsync_FiltersBySearch_MatchesTrackingNumber()
+        {
+            // Arrange
+            var order1 = new CardOrder { Id = Guid.NewGuid(), TrackingNumber = "TRK_ALPHA" };
+            var order2 = new CardOrder { Id = Guid.NewGuid(), TrackingNumber = "TRK_BETA" };
+
+            var query = new List<CardOrder> { order1, order2 }.AsQueryable().BuildMock();
+            _orderRepo.GetQueryable().Returns(query);
+            _mapper.Map<AdminOrderSummaryDto>(Arg.Any<CardOrder>()).Returns(x => new AdminOrderSummaryDto { Id = ((CardOrder)x[0]).Id });
+
+            var request = new PaginationRequest { PageNumber = 1, PageSize = 10 };
+
+            // Act
+            var result = await _sut.GetOrdersPagedAsync(request, null, null, null, "ALPHA");
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(1, result.Data!.TotalCount);
+            Assert.Equal(order1.Id, result.Data.Items.First().Id);
+        }
+
+        [Fact]
+        public async Task GetTenantsPagedAsync_FiltersBySearch_MatchesCompanyName()
+        {
+            // Arrange
+            var t1 = new Tenant { Id = Guid.NewGuid(), Name = "T1", Company = new Company { Name = "Alpha Tech" } };
+            var t2 = new Tenant { Id = Guid.NewGuid(), Name = "T2", Company = new Company { Name = "Beta Solutions" } };
+
+            var query = new List<Tenant> { t1, t2 }.AsQueryable().BuildMock();
+            _tenantRepo.GetQueryable().Returns(query);
+            _mapper.Map<TenantSummaryDto>(Arg.Any<Tenant>()).Returns(x => new TenantSummaryDto { Id = ((Tenant)x[0]).Id, Name = ((Tenant)x[0]).Company?.Name ?? ((Tenant)x[0]).Name });
+
+            _unitOfWork.Repository<UserSubscription>().GetQueryable().Returns(new List<UserSubscription>().AsQueryable().BuildMock());
+
+            var request = new PaginationRequest { PageNumber = 1, PageSize = 10 };
+
+            // Act
+            var result = await _sut.GetTenantsPagedAsync(request, "Alpha");
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(1, result.Data!.TotalCount);
+            Assert.Equal("Alpha Tech", result.Data.Items.First().Name);
+        }
+
+        [Fact]
+        public async Task GetTenantEmployeesPagedAsync_FiltersBySearch_MatchesJobTitle()
+        {
+            // Arrange
+            var tenantId = Guid.NewGuid();
+            var emp1 = new Employee { Id = Guid.NewGuid(), TenantId = tenantId, FullName = "Dev One", JobTitle = "Senior Engineer", IsDeleted = false };
+            var emp2 = new Employee { Id = Guid.NewGuid(), TenantId = tenantId, FullName = "Sales One", JobTitle = "Account Manager", IsDeleted = false };
+
+            var query = new List<Employee> { emp1, emp2 }.AsQueryable().BuildMock();
+            _employeeRepo.GetQueryable().Returns(query);
+            _mapper.Map<EmployeeDto>(Arg.Any<Employee>()).Returns(x => new EmployeeDto { Id = ((Employee)x[0]).Id, FullName = ((Employee)x[0]).FullName });
+
+            var request = new PaginationRequest { PageNumber = 1, PageSize = 10 };
+
+            // Act
+            var result = await _sut.GetTenantEmployeesPagedAsync(tenantId, request, "Engineer");
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(1, result.Data!.TotalCount);
+            Assert.Equal("Dev One", result.Data.Items.First().FullName);
+        }
+
+        [Fact]
+        public async Task GetTenantsPagedAsync_HandlesNullCompany_WithoutCrashing()
+        {
+            // Arrange — Tenant with null Company
+            var tenantWithoutCompany = new Tenant { Id = Guid.NewGuid(), Name = "Individual Tenant", Company = null };
+
+            var query = new List<Tenant> { tenantWithoutCompany }.AsQueryable().BuildMock();
+            _tenantRepo.GetQueryable().Returns(query);
+            _mapper.Map<TenantSummaryDto>(Arg.Any<Tenant>()).Returns(new TenantSummaryDto());
+
+            _unitOfWork.Repository<UserSubscription>().GetQueryable().Returns(new List<UserSubscription>().AsQueryable().BuildMock());
+
+            var request = new PaginationRequest { PageNumber = 1, PageSize = 10 };
+
+            // Act — Search for non-matching term
+            var result = await _sut.GetTenantsPagedAsync(request, "NonExistentSearchTerm");
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(0, result.Data!.TotalCount);
+        }
+
+        [Fact]
+        public async Task GetOrdersPagedAsync_WhenSearchNullOrEmpty_ReturnsAllOrders()
+        {
+            // Arrange
+            var o1 = new CardOrder { Id = Guid.NewGuid() };
+            var o2 = new CardOrder { Id = Guid.NewGuid() };
+
+            var query = new List<CardOrder> { o1, o2 }.AsQueryable().BuildMock();
+            _orderRepo.GetQueryable().Returns(query);
+            _mapper.Map<AdminOrderSummaryDto>(Arg.Any<CardOrder>()).Returns(new AdminOrderSummaryDto());
+
+            var request = new PaginationRequest { PageNumber = 1, PageSize = 10 };
+
+            // Act
+            var resultWithNull = await _sut.GetOrdersPagedAsync(request, null, null, null, null);
+            var resultWithSpaces = await _sut.GetOrdersPagedAsync(request, null, null, null, "   ");
+
+            // Assert
+            Assert.True(resultWithNull.IsSuccess);
+            Assert.Equal(2, resultWithNull.Data!.TotalCount);
+            Assert.True(resultWithSpaces.IsSuccess);
+            Assert.Equal(2, resultWithSpaces.Data!.TotalCount);
+        }
     }
 }

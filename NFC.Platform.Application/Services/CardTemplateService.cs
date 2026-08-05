@@ -48,31 +48,50 @@ public class CardTemplateService(
         return ServiceResult<IReadOnlyList<CardTemplateDto>>.Success(dtos);
     }
 
-    public async Task<ServiceResult<PagedResult<CardTemplateAdminDto>>> GetAllAdminTemplatesAsync(PaginationRequest request)
+    public async Task<ServiceResult<PagedResult<CardTemplateAdminDto>>> GetAllAdminTemplatesAsync(PaginationRequest request, string? search = null)
     {
         var query = _unitOfWork.Repository<CardTemplate>()
             .GetQueryable()
             .AsNoTracking()
             .Include(t => t.Category)
-            .OrderBy(t => t.DisplayOrder);
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            search = search.Trim();
+            query = query.Where(t => t.NameAr.Contains(search) ||
+                                     t.NameEn.Contains(search) ||
+                                     (t.Category != null && (t.Category.NameAr.Contains(search) || t.Category.NameEn.Contains(search))));
+        }
+
+        query = query.OrderBy(t => t.DisplayOrder);
 
         var pagedResult = await query.ToPagedResultAsync(request, t => _mapper.Map<CardTemplateAdminDto>(t));
         return ServiceResult<PagedResult<CardTemplateAdminDto>>.Success(pagedResult);
     }
 
-    public async Task<ServiceResult<byte[]>> ExportCardTemplatesAsync(ExportFormat format)
+    public async Task<ServiceResult<byte[]>> ExportCardTemplatesAsync(ExportFormat format, string? search = null)
     {
         if (_exportBuilder == null || _excelExportService == null || _pdfExportService == null)
         {
             return ServiceResult<byte[]>.Fail(_messageService.Get("RecordNotFound"), 500);
         }
 
-        var templates = await _unitOfWork.Repository<CardTemplate>()
+        var query = _unitOfWork.Repository<CardTemplate>()
             .GetQueryable()
             .AsNoTracking()
             .Include(t => t.Category)
-            .OrderBy(t => t.DisplayOrder)
-            .ToListAsync();
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            search = search.Trim();
+            query = query.Where(t => t.NameAr.Contains(search) ||
+                                     t.NameEn.Contains(search) ||
+                                     (t.Category != null && (t.Category.NameAr.Contains(search) || t.Category.NameEn.Contains(search))));
+        }
+
+        var templates = await query.OrderBy(t => t.DisplayOrder).ToListAsync();
 
         var exportDtos = _mapper.Map<List<CardTemplateExportDto>>(templates);
         var dataContainer = _exportBuilder.BuildContainer(exportDtos, "Export_Title_CardTemplates");

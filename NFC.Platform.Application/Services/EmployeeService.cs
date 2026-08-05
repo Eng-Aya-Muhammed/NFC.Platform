@@ -39,12 +39,17 @@ namespace NFC.Platform.Application.Services;
                 .Include(e => e.UserProfile)
                 .AsQueryable();
 
-            if (!string.IsNullOrEmpty(search))
+            if (!string.IsNullOrWhiteSpace(search))
             {
-                query = query.Where(e => e.FullName.Contains(search) || 
-                                         e.Email.Contains(search) || 
-                                         e.JobTitle.Contains(search) || 
-                                         e.Department.Contains(search));
+                search = search.Trim();
+                query = query.Where(e => (e.FullName != null && e.FullName.Contains(search)) || 
+                                         (e.Email != null && e.Email.Contains(search)) || 
+                                         (e.JobTitle != null && e.JobTitle.Contains(search)) || 
+                                         (e.Department != null && e.Department.Contains(search)) ||
+                                         (e.UserProfile != null && (
+                                             (e.UserProfile.Phone != null && e.UserProfile.Phone.Contains(search)) ||
+                                             (e.UserProfile.Subdomain != null && e.UserProfile.Subdomain.Contains(search))
+                                         )));
             }
 
             var pagedResult = await query
@@ -91,12 +96,17 @@ namespace NFC.Platform.Application.Services;
                 .Include(e => e.UserProfile)
                 .AsQueryable();
 
-            if (!string.IsNullOrEmpty(search))
+            if (!string.IsNullOrWhiteSpace(search))
             {
-                query = query.Where(e => e.FullName.Contains(search) || 
-                                         e.Email.Contains(search) || 
-                                         e.JobTitle.Contains(search) || 
-                                         e.Department.Contains(search));
+                search = search.Trim();
+                query = query.Where(e => (e.FullName != null && e.FullName.Contains(search)) || 
+                                         (e.Email != null && e.Email.Contains(search)) || 
+                                         (e.JobTitle != null && e.JobTitle.Contains(search)) || 
+                                         (e.Department != null && e.Department.Contains(search)) ||
+                                         (e.UserProfile != null && (
+                                             (e.UserProfile.Phone != null && e.UserProfile.Phone.Contains(search)) ||
+                                             (e.UserProfile.Subdomain != null && e.UserProfile.Subdomain.Contains(search))
+                                         )));
             }
 
             var employees = await query

@@ -25,9 +25,9 @@ public class AdminVipCustomersController(
 
     [HttpGet("vip-customers")]
     [HasPermission(AppPermissions.Platform.VipCustomers.View)]
-    public async Task<IActionResult> GetVipCustomers([FromQuery] PaginationRequest request)
+    public async Task<IActionResult> GetVipCustomers([FromQuery] PaginationRequest request, [FromQuery] string? search = null)
     {
-        var result = await _vipCustomerService.GetAdminVipCustomersAsync(request);
+        var result = await _vipCustomerService.GetAdminVipCustomersAsync(request, search);
         if (!result.IsSuccess)
             return StatusCode(result.StatusCode, result);
         return Ok(result);

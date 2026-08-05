@@ -23,17 +23,17 @@ public class AdminTenantsController(IAdminService adminService, ISubscriptionSer
 
     [HttpGet]
     [HasPermission(AppPermissions.Platform.Tenants.View)]
-    public async Task<IActionResult> GetTenantsPaged([FromQuery] PaginationRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetTenantsPaged([FromQuery] PaginationRequest request, [FromQuery] string? search = null, CancellationToken cancellationToken = default)
     {
-        var result = await _adminService.GetTenantsPagedAsync(request, cancellationToken);
+        var result = await _adminService.GetTenantsPagedAsync(request, search, cancellationToken);
         return Ok(result);
     }
 
     [HttpGet("export/excel")]
     [HasPermission(AppPermissions.Platform.Tenants.View)]
-    public async Task<IActionResult> ExportExcel(CancellationToken cancellationToken)
+    public async Task<IActionResult> ExportExcel([FromQuery] string? search = null, CancellationToken cancellationToken = default)
     {
-        var result = await _adminService.ExportTenantsAsync(NFC.Platform.BuildingBlocks.Common.Models.ExportFormat.Excel, cancellationToken);
+        var result = await _adminService.ExportTenantsAsync(NFC.Platform.BuildingBlocks.Common.Models.ExportFormat.Excel, search, cancellationToken);
         if (!result.IsSuccess) return StatusCode(result.StatusCode, result);
 
         var fileName = $"Tenants_{DateTime.Now:yyyy-MM-dd_HH-mm}.xlsx";
@@ -42,9 +42,9 @@ public class AdminTenantsController(IAdminService adminService, ISubscriptionSer
 
     [HttpGet("export/pdf")]
     [HasPermission(AppPermissions.Platform.Tenants.View)]
-    public async Task<IActionResult> ExportPdf(CancellationToken cancellationToken)
+    public async Task<IActionResult> ExportPdf([FromQuery] string? search = null, CancellationToken cancellationToken = default)
     {
-        var result = await _adminService.ExportTenantsAsync(NFC.Platform.BuildingBlocks.Common.Models.ExportFormat.Pdf, cancellationToken);
+        var result = await _adminService.ExportTenantsAsync(NFC.Platform.BuildingBlocks.Common.Models.ExportFormat.Pdf, search, cancellationToken);
         if (!result.IsSuccess) return StatusCode(result.StatusCode, result);
 
         var fileName = $"Tenants_{DateTime.Now:yyyy-MM-dd_HH-mm}.pdf";
@@ -71,9 +71,9 @@ public class AdminTenantsController(IAdminService adminService, ISubscriptionSer
 
     [HttpGet("{tenantId:guid}/employees")]
     [HasPermission(AppPermissions.Platform.Tenants.View)]
-    public async Task<IActionResult> GetTenantEmployees([FromRoute] Guid tenantId, [FromQuery] PaginationRequest request)
+    public async Task<IActionResult> GetTenantEmployees([FromRoute] Guid tenantId, [FromQuery] PaginationRequest request, [FromQuery] string? search = null)
     {
-        var result = await _adminService.GetTenantEmployeesPagedAsync(tenantId, request);
+        var result = await _adminService.GetTenantEmployeesPagedAsync(tenantId, request, search);
         return Ok(result);
     }
 

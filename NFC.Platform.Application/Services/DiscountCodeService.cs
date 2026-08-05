@@ -35,27 +35,44 @@ public class DiscountCodeService(
     private readonly IPdfExportService? _pdfExportService = pdfExportService;
 
     public async Task<ServiceResult<PagedResult<DiscountCodeDto>>> GetPagedAdminAsync(
-        PaginationRequest request, CancellationToken cancellationToken = default)
+        PaginationRequest request, string? search = null, CancellationToken cancellationToken = default)
     {
         var query = _unitOfWork.Repository<DiscountCode>()
             .GetQueryable()
             .AsNoTracking()
-            .OrderByDescending(c => c.CreatedAt);
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            search = search.Trim();
+            query = query.Where(c => c.Code.Contains(search));
+        }
+
+        query = query.OrderByDescending(c => c.CreatedAt);
 
         var pagedResult = await query.ToPagedResultAsync(request, c => _mapper.Map<DiscountCodeDto>(c), cancellationToken);
         return ServiceResult<PagedResult<DiscountCodeDto>>.Success(pagedResult);
     }
 
-    public async Task<ServiceResult<byte[]>> ExportDiscountCodesAsync(ExportFormat format, CancellationToken cancellationToken = default)
+    public async Task<ServiceResult<byte[]>> ExportDiscountCodesAsync(ExportFormat format, string? search = null, CancellationToken cancellationToken = default)
     {
         if (_exportBuilder == null || _excelExportService == null || _pdfExportService == null)
         {
             return ServiceResult<byte[]>.Fail(_messageService.Get("RecordNotFound"), 500);
         }
 
-        var codes = await _unitOfWork.Repository<DiscountCode>()
+        var query = _unitOfWork.Repository<DiscountCode>()
             .GetQueryable()
             .AsNoTracking()
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            search = search.Trim();
+            query = query.Where(c => c.Code.Contains(search));
+        }
+
+        var codes = await query
             .OrderByDescending(c => c.CreatedAt)
             .ToListAsync(cancellationToken);
 

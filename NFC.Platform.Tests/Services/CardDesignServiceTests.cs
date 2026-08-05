@@ -120,5 +120,24 @@ namespace NFC.Platform.Tests.Services
             Assert.Equal("20 Cards Package", result.Data.Items.First().CardPackageName);
             Assert.Equal(15, result.Data.Items.First().RemainingQuantity);
         }
+
+        [Fact]
+        public async Task GetPagedDesignsAsync_FiltersBySearch_MatchesCardTypeName()
+        {
+            // Arrange
+            var d1 = new CardDesign { Id = Guid.NewGuid(), CardType = new CardType { NameAr = "خشب", NameEn = "Wood" } };
+            var d2 = new CardDesign { Id = Guid.NewGuid(), CardType = new CardType { NameAr = "بلاستيك", NameEn = "Plastic" } };
+
+            _designRepo.GetQueryable().Returns(new List<CardDesign> { d1, d2 }.AsQueryable().BuildMock());
+
+            var pagination = new PaginationRequest { PageNumber = 1, PageSize = 10 };
+
+            // Act
+            var result = await _sut.GetPagedDesignsAsync(pagination, "Wood");
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(1, result.Data!.TotalCount);
+        }
     }
 }

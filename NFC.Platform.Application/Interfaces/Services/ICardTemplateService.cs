@@ -11,8 +11,8 @@ namespace NFC.Platform.Application.Interfaces.Services;
 public interface ICardTemplateService
 {
     Task<ServiceResult<IReadOnlyList<CardTemplateDto>>> GetActiveTemplatesAsync();
-    Task<ServiceResult<PagedResult<CardTemplateAdminDto>>> GetAllAdminTemplatesAsync(PaginationRequest request);
-    Task<ServiceResult<byte[]>> ExportCardTemplatesAsync(ExportFormat format);
+    Task<ServiceResult<PagedResult<CardTemplateAdminDto>>> GetAllAdminTemplatesAsync(PaginationRequest request, string? search = null);
+    Task<ServiceResult<byte[]>> ExportCardTemplatesAsync(ExportFormat format, string? search = null);
     Task<ServiceResult<CardTemplateAdminDto>> GetByIdAsync(Guid id);
     Task<ServiceResult<CardTemplateAdminDto>> CreateAsync(CreateCardTemplateRequest request);
     Task<ServiceResult<CardTemplateAdminDto>> UpdateAsync(Guid id, UpdateCardTemplateRequest request);

@@ -13,21 +13,21 @@ public class CardOrderController(
 
     /// <summary>
     /// Returns a paged list of card orders for the current tenant.
-    /// Optional query param: status (e.g. PendingReview, InPrinting).
+    /// Optional query params: status (e.g. PendingReview, InPrinting), search.
     /// </summary>
     [HttpGet]
     [HasPermission(AppPermissions.CardOrders.View)]
-    public async Task<IActionResult> GetPaged([FromQuery] PaginationRequest request, [FromQuery] string? status = null)
+    public async Task<IActionResult> GetPaged([FromQuery] PaginationRequest request, [FromQuery] string? status = null, [FromQuery] string? search = null)
     {
-        var result = await _cardOrderService.GetPagedOrdersAsync(request, status);
+        var result = await _cardOrderService.GetPagedOrdersAsync(request, status, search);
         return Ok(result);
     }
 
     [HttpGet("export/excel")]
     [HasPermission(AppPermissions.CardOrders.View)]
-    public async Task<IActionResult> ExportExcel([FromQuery] string? status = null)
+    public async Task<IActionResult> ExportExcel([FromQuery] string? status = null, [FromQuery] string? search = null)
     {
-        var result = await _cardOrderService.ExportOrdersAsync(ExportFormat.Excel, status);
+        var result = await _cardOrderService.ExportOrdersAsync(ExportFormat.Excel, status, search);
         if (!result.IsSuccess) return StatusCode(result.StatusCode, result);
 
         var fileName = $"CardOrders_{DateTime.Now:yyyy-MM-dd_HH-mm}.xlsx";
@@ -36,9 +36,9 @@ public class CardOrderController(
 
     [HttpGet("export/pdf")]
     [HasPermission(AppPermissions.CardOrders.View)]
-    public async Task<IActionResult> ExportPdf([FromQuery] string? status = null)
+    public async Task<IActionResult> ExportPdf([FromQuery] string? status = null, [FromQuery] string? search = null)
     {
-        var result = await _cardOrderService.ExportOrdersAsync(ExportFormat.Pdf, status);
+        var result = await _cardOrderService.ExportOrdersAsync(ExportFormat.Pdf, status, search);
         if (!result.IsSuccess) return StatusCode(result.StatusCode, result);
 
         var fileName = $"CardOrders_{DateTime.Now:yyyy-MM-dd_HH-mm}.pdf";

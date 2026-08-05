@@ -40,9 +40,9 @@ public class CardDesignController(
     /// </summary>
     [HttpGet]
     [HasPermission(AppPermissions.CardDesigns.View)]
-    public async Task<IActionResult> GetPaged([FromQuery] PaginationRequest request)
+    public async Task<IActionResult> GetPaged([FromQuery] PaginationRequest request, [FromQuery] string? search = null)
     {
-        var result = await _cardDesignService.GetPagedDesignsAsync(request);
+        var result = await _cardDesignService.GetPagedDesignsAsync(request, search);
         return Ok(result);
     }
 

@@ -22,9 +22,9 @@ public class AdminTemplateRequestsController(IAdminService adminService) : Contr
 
     [HttpGet]
     [HasPermission(AppPermissions.Platform.TemplateRequests.View)]
-    public async Task<IActionResult> GetTemplateRequestsPaged([FromQuery] PaginationRequest request, [FromQuery] TemplateRequestStatus? status, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetTemplateRequestsPaged([FromQuery] PaginationRequest request, [FromQuery] TemplateRequestStatus? status = null, [FromQuery] string? search = null, CancellationToken cancellationToken = default)
     {
-        var result = await _adminService.GetTemplateRequestsPagedAsync(request, status, cancellationToken);
+        var result = await _adminService.GetTemplateRequestsPagedAsync(request, status, search, cancellationToken);
         return Ok(result);
     }
 

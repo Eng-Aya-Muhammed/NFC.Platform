@@ -43,7 +43,7 @@ public class VipCustomerService(IUnitOfWork unitOfWork, IMapper mapper) : IVipCu
         return ServiceResult<IReadOnlyList<VipCustomerDto>>.Success(combinedList);
     }
 
-    public async Task<ServiceResult<PagedResult<VipCustomerDto>>> GetAdminVipCustomersAsync(PaginationRequest request, CancellationToken cancellationToken = default)
+    public async Task<ServiceResult<PagedResult<VipCustomerDto>>> GetAdminVipCustomersAsync(PaginationRequest request, string? search = null, CancellationToken cancellationToken = default)
     {
         request ??= new PaginationRequest();
 
@@ -63,9 +63,15 @@ public class VipCustomerService(IUnitOfWork unitOfWork, IMapper mapper) : IVipCu
             .Concat(_mapper.Map<List<VipCustomerDto>>(profiles))
             .OrderBy(x => x.VipDisplayOrder)
             .ThenBy(x => x.Name)
-            .ToList();
+            .AsEnumerable();
 
-        var pagedResult = await combinedList.ToPagedResultAsync(request, cancellationToken);
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            search = search.Trim();
+            combinedList = combinedList.Where(x => x.Name != null && x.Name.Contains(search, StringComparison.OrdinalIgnoreCase));
+        }
+
+        var pagedResult = await combinedList.ToList().ToPagedResultAsync(request, cancellationToken);
         return ServiceResult<PagedResult<VipCustomerDto>>.Success(pagedResult);
     }
 }

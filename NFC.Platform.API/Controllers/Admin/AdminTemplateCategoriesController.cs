@@ -22,17 +22,17 @@ public class AdminTemplateCategoriesController(ITemplateCategoryService template
 
     [HttpGet]
     [HasPermission(AppPermissions.Platform.TemplateCategories.View)]
-    public async Task<IActionResult> GetAllAdminTemplateCategories([FromQuery] PaginationRequest request)
+    public async Task<IActionResult> GetAllAdminTemplateCategories([FromQuery] PaginationRequest request, [FromQuery] string? search = null)
     {
-        var result = await _templateCategoryService.GetAllAdminCategoriesAsync(request);
+        var result = await _templateCategoryService.GetAllAdminCategoriesAsync(request, search);
         return Ok(result);
     }
 
     [HttpGet("export/excel")]
     [HasPermission(AppPermissions.Platform.TemplateCategories.View)]
-    public async Task<IActionResult> ExportExcel()
+    public async Task<IActionResult> ExportExcel([FromQuery] string? search = null)
     {
-        var result = await _templateCategoryService.ExportTemplateCategoriesAsync(ExportFormat.Excel);
+        var result = await _templateCategoryService.ExportTemplateCategoriesAsync(ExportFormat.Excel, search);
         if (!result.IsSuccess) return StatusCode(result.StatusCode, result);
 
         var fileName = $"TemplateCategories_{DateTime.Now:yyyy-MM-dd_HH-mm}.xlsx";
@@ -41,9 +41,9 @@ public class AdminTemplateCategoriesController(ITemplateCategoryService template
 
     [HttpGet("export/pdf")]
     [HasPermission(AppPermissions.Platform.TemplateCategories.View)]
-    public async Task<IActionResult> ExportPdf()
+    public async Task<IActionResult> ExportPdf([FromQuery] string? search = null)
     {
-        var result = await _templateCategoryService.ExportTemplateCategoriesAsync(ExportFormat.Pdf);
+        var result = await _templateCategoryService.ExportTemplateCategoriesAsync(ExportFormat.Pdf, search);
         if (!result.IsSuccess) return StatusCode(result.StatusCode, result);
 
         var fileName = $"TemplateCategories_{DateTime.Now:yyyy-MM-dd_HH-mm}.pdf";

@@ -55,14 +55,24 @@ public class CardDesignService(
         return ServiceResult<CardDesignDto>.Success(_mapper.Map<CardDesignDto>(design));
     }
 
-    public async Task<ServiceResult<PagedResult<CardDesignDto>>> GetPagedDesignsAsync(PaginationRequest request)
+    public async Task<ServiceResult<PagedResult<CardDesignDto>>> GetPagedDesignsAsync(PaginationRequest request, string? search = null)
     {
         var query = _unitOfWork.Repository<CardDesign>()
             .GetQueryable()
             .AsNoTracking()
             .Include(d => d.CardType)
             .Include(d => d.CardPackage)
-            .OrderByDescending(d => d.CreatedAt);
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            search = search.Trim();
+            query = query.Where(d => (d.Notes != null && d.Notes.Contains(search)) ||
+                                     (d.PaymentTransactionId != null && d.PaymentTransactionId.Contains(search)) ||
+                                     (d.CardType != null && (d.CardType.NameAr.Contains(search) || d.CardType.NameEn.Contains(search))));
+        }
+
+        query = query.OrderByDescending(d => d.CreatedAt);
 
         var paged = await query.ToPagedResultAsync(request, d => _mapper.Map<CardDesignDto>(d));
         return ServiceResult<PagedResult<CardDesignDto>>.Success(paged);

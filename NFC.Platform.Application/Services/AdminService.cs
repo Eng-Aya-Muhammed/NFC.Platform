@@ -40,7 +40,7 @@ public class AdminService : IAdminService
         _pdfExportService     = pdfExportService;
     }
 
-    public async Task<ServiceResult<PagedResult<AdminOrderSummaryDto>>> GetOrdersPagedAsync(PaginationRequest request, OrderStatus? statusFilter, Guid? companyId = null, Guid? tenantId = null, CancellationToken cancellationToken = default)
+    public async Task<ServiceResult<PagedResult<AdminOrderSummaryDto>>> GetOrdersPagedAsync(PaginationRequest request, OrderStatus? statusFilter, Guid? companyId = null, Guid? tenantId = null, string? search = null, CancellationToken cancellationToken = default)
     {
         var query = _unitOfWork.Repository<CardOrder>()
             .GetQueryable()
@@ -69,11 +69,22 @@ public class AdminService : IAdminService
             query = query.Where(o => o.TenantId == tenantId.Value);
         }
 
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            search = search.Trim();
+            query = query.Where(o => o.Id.ToString().Contains(search) ||
+                                     (o.TrackingNumber != null && o.TrackingNumber.Contains(search)) ||
+                                     (o.Notes != null && o.Notes.Contains(search)) ||
+                                     (o.Tenant != null && (o.Tenant.Name.Contains(search) || (o.Tenant.Company != null && o.Tenant.Company.Name.Contains(search)))) ||
+                                     (o.CardDesign != null && ((o.CardDesign.Notes != null && o.CardDesign.Notes.Contains(search)) || (o.CardDesign.CardType != null && (o.CardDesign.CardType.NameAr.Contains(search) || o.CardDesign.CardType.NameEn.Contains(search))))) ||
+                                     o.Items.Any(i => i.EmployeeName.Contains(search) || (i.Email != null && i.Email.Contains(search)) || (i.Phone != null && i.Phone.Contains(search))));
+        }
+
         var pagedResult = await query.ToPagedResultAsync(request, o => _mapper.Map<AdminOrderSummaryDto>(o), cancellationToken);
         return ServiceResult<PagedResult<AdminOrderSummaryDto>>.Success(pagedResult);
     }
 
-    public async Task<ServiceResult<byte[]>> ExportAdminOrdersAsync(ExportFormat format, OrderStatus? statusFilter, Guid? companyId, CancellationToken cancellationToken = default)
+    public async Task<ServiceResult<byte[]>> ExportAdminOrdersAsync(ExportFormat format, OrderStatus? statusFilter, Guid? companyId, string? search = null, CancellationToken cancellationToken = default)
     {
         if (_exportBuilder == null || _excelExportService == null || _pdfExportService == null)
         {
@@ -102,6 +113,17 @@ public class AdminService : IAdminService
             query = query.Where(o => o.Tenant.Company != null && o.Tenant.Company.Id == companyId.Value);
         }
 
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            search = search.Trim();
+            query = query.Where(o => o.Id.ToString().Contains(search) ||
+                                     (o.TrackingNumber != null && o.TrackingNumber.Contains(search)) ||
+                                     (o.Notes != null && o.Notes.Contains(search)) ||
+                                     (o.Tenant != null && (o.Tenant.Name.Contains(search) || (o.Tenant.Company != null && o.Tenant.Company.Name.Contains(search)))) ||
+                                     (o.CardDesign != null && ((o.CardDesign.Notes != null && o.CardDesign.Notes.Contains(search)) || (o.CardDesign.CardType != null && (o.CardDesign.CardType.NameAr.Contains(search) || o.CardDesign.CardType.NameEn.Contains(search))))) ||
+                                     o.Items.Any(i => i.EmployeeName.Contains(search) || (i.Email != null && i.Email.Contains(search)) || (i.Phone != null && i.Phone.Contains(search))));
+        }
+
         var orders = await query.ToListAsync(cancellationToken);
         var exportDtos = orders.Select(o => new AdminOrderExportDto
         {
@@ -125,7 +147,7 @@ public class AdminService : IAdminService
         return ServiceResult<byte[]>.Success(fileBytes);
     }
 
-    public async Task<ServiceResult<byte[]>> ExportTenantsAsync(ExportFormat format, CancellationToken cancellationToken = default)
+    public async Task<ServiceResult<byte[]>> ExportTenantsAsync(ExportFormat format, string? search = null, CancellationToken cancellationToken = default)
     {
         if (_exportBuilder == null || _excelExportService == null || _pdfExportService == null)
         {
@@ -138,6 +160,13 @@ public class AdminService : IAdminService
             .Include(t => t.Company)
             .OrderByDescending(t => t.CreatedAt)
             .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            search = search.Trim();
+            query = query.Where(t => t.Name.Contains(search) ||
+                                     (t.Company != null && (t.Company.Name.Contains(search) || (t.Company.Activity != null && t.Company.Activity.Contains(search)) || (t.Company.CommercialRegistry != null && t.Company.CommercialRegistry.Contains(search)))));
+        }
 
         var tenants = await query.ToListAsync(cancellationToken);
         var exportDtos = tenants.Select(t => new TenantSummaryDto
@@ -458,7 +487,7 @@ public class AdminService : IAdminService
     }
 
     public async Task<ServiceResult<PagedResult<TemplateRequestDto>>> GetTemplateRequestsPagedAsync(
-        PaginationRequest request, TemplateRequestStatus? status = null, CancellationToken cancellationToken = default)
+        PaginationRequest request, TemplateRequestStatus? status = null, string? search = null, CancellationToken cancellationToken = default)
     {
         var query = _unitOfWork.Repository<TemplateRequest>()
             .GetQueryable()
@@ -471,6 +500,15 @@ public class AdminService : IAdminService
         if (status.HasValue)
         {
             query = query.Where(r => r.Status == status.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            search = search.Trim();
+            query = query.Where(r => r.TemplateName.Contains(search) ||
+                                     (r.Notes != null && r.Notes.Contains(search)) ||
+                                     (r.Tenant != null && r.Tenant.Name.Contains(search)) ||
+                                     (r.RequestedByUser != null && (r.RequestedByUser.Email.Contains(search) || r.RequestedByUser.Username.Contains(search))));
         }
 
         query = query.OrderByDescending(r => r.CreatedAt);
@@ -655,7 +693,7 @@ public class AdminService : IAdminService
         return ServiceResult.Success(_messageService.Get("TemplateDeletedAndProfilesCleared"));
     }
 
-    public async Task<ServiceResult<PagedResult<TenantSummaryDto>>> GetTenantsPagedAsync(PaginationRequest request, CancellationToken cancellationToken = default)
+    public async Task<ServiceResult<PagedResult<TenantSummaryDto>>> GetTenantsPagedAsync(PaginationRequest request, string? search = null, CancellationToken cancellationToken = default)
     {
         var query = _unitOfWork.Repository<Tenant>()
             .GetQueryable()
@@ -663,6 +701,13 @@ public class AdminService : IAdminService
             .Include(t => t.Company)
             .OrderByDescending(t => t.CreatedAt)
             .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            search = search.Trim();
+            query = query.Where(t => t.Name.Contains(search) ||
+                                     (t.Company != null && (t.Company.Name.Contains(search) || (t.Company.Activity != null && t.Company.Activity.Contains(search)) || (t.Company.CommercialRegistry != null && t.Company.CommercialRegistry.Contains(search)))));
+        }
 
         var pagedTenants = await query.ToPagedResultAsync(request, t => t, cancellationToken);
         var tenantIds = pagedTenants.Items.Select(t => t.Id).ToList();
@@ -749,7 +794,7 @@ public class AdminService : IAdminService
         return ServiceResult<TenantBasicInfoDto>.Success(dto);
     }
 
-    public async Task<ServiceResult<PagedResult<EmployeeDto>>> GetTenantEmployeesPagedAsync(Guid tenantId, PaginationRequest request)
+    public async Task<ServiceResult<PagedResult<EmployeeDto>>> GetTenantEmployeesPagedAsync(Guid tenantId, PaginationRequest request, string? search = null)
     {
         var query = _unitOfWork.Repository<Employee>()
             .GetQueryable()
@@ -759,6 +804,19 @@ public class AdminService : IAdminService
             .Include(e => e.UserProfile)
             .OrderByDescending(e => e.CreatedAt)
             .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            search = search.Trim();
+            query = query.Where(e => e.FullName.Contains(search) || 
+                                     e.Email.Contains(search) || 
+                                     e.JobTitle.Contains(search) || 
+                                     e.Department.Contains(search) ||
+                                     (e.UserProfile != null && (
+                                         (e.UserProfile.Phone != null && e.UserProfile.Phone.Contains(search)) ||
+                                         (e.UserProfile.Subdomain != null && e.UserProfile.Subdomain.Contains(search))
+                                     )));
+        }
 
         var pagedResult = await query.ToPagedResultAsync(request, e => _mapper.Map<EmployeeDto>(e));
         return ServiceResult<PagedResult<EmployeeDto>>.Success(pagedResult);

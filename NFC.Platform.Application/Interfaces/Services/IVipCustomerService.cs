@@ -10,5 +10,5 @@ namespace NFC.Platform.Application.Interfaces.Services;
 public interface IVipCustomerService
 {
     Task<ServiceResult<IReadOnlyList<VipCustomerDto>>> GetPublicVipCustomersAsync(CancellationToken cancellationToken = default);
-    Task<ServiceResult<PagedResult<VipCustomerDto>>> GetAdminVipCustomersAsync(PaginationRequest request, CancellationToken cancellationToken = default);
+    Task<ServiceResult<PagedResult<VipCustomerDto>>> GetAdminVipCustomersAsync(PaginationRequest request, string? search = null, CancellationToken cancellationToken = default);
 }

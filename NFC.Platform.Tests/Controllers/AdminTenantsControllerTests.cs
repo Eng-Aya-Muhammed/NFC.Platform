@@ -65,9 +65,9 @@ public class AdminTenantsControllerTests
     {
         var request = new PaginationRequest();
         var pagedResult = PagedResult<TenantSummaryDto>.Create(new List<TenantSummaryDto>(), 0, 1, 10);
-        _adminService.GetTenantsPagedAsync(request, Arg.Any<CancellationToken>()).Returns(ServiceResult<PagedResult<TenantSummaryDto>>.Success(pagedResult));
+        _adminService.GetTenantsPagedAsync(request, Arg.Any<string?>(), Arg.Any<CancellationToken>()).Returns(ServiceResult<PagedResult<TenantSummaryDto>>.Success(pagedResult));
 
-        var result = await _sut.GetTenantsPaged(request, CancellationToken.None) as OkObjectResult;
+        var result = await _sut.GetTenantsPaged(request, null, CancellationToken.None) as OkObjectResult;
 
         Assert.NotNull(result);
         Assert.Equal(200, result.StatusCode);

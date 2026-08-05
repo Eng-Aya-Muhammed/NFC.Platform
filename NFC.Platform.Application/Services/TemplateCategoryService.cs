@@ -45,27 +45,44 @@ public class TemplateCategoryService(
         return ServiceResult<IReadOnlyList<TemplateCategoryDto>>.Success(dtos);
     }
 
-    public async Task<ServiceResult<PagedResult<TemplateCategoryAdminDto>>> GetAllAdminCategoriesAsync(PaginationRequest request)
+    public async Task<ServiceResult<PagedResult<TemplateCategoryAdminDto>>> GetAllAdminCategoriesAsync(PaginationRequest request, string? search = null)
     {
         var query = _unitOfWork.Repository<TemplateCategory>()
             .GetQueryable()
             .AsNoTracking()
-            .OrderBy(c => c.DisplayOrder);
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            search = search.Trim();
+            query = query.Where(c => c.NameAr.Contains(search) || c.NameEn.Contains(search));
+        }
+
+        query = query.OrderBy(c => c.DisplayOrder);
 
         var pagedResult = await query.ToPagedResultAsync(request, c => _mapper.Map<TemplateCategoryAdminDto>(c));
         return ServiceResult<PagedResult<TemplateCategoryAdminDto>>.Success(pagedResult);
     }
 
-    public async Task<ServiceResult<byte[]>> ExportTemplateCategoriesAsync(ExportFormat format)
+    public async Task<ServiceResult<byte[]>> ExportTemplateCategoriesAsync(ExportFormat format, string? search = null)
     {
         if (_exportBuilder == null || _excelExportService == null || _pdfExportService == null)
         {
             return ServiceResult<byte[]>.Fail(_messageService.Get("RecordNotFound"), 500);
         }
 
-        var categories = await _unitOfWork.Repository<TemplateCategory>()
+        var query = _unitOfWork.Repository<TemplateCategory>()
             .GetQueryable()
             .AsNoTracking()
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            search = search.Trim();
+            query = query.Where(c => c.NameAr.Contains(search) || c.NameEn.Contains(search));
+        }
+
+        var categories = await query
             .OrderBy(c => c.DisplayOrder)
             .ToListAsync();
 
