@@ -3,9 +3,6 @@ using System.Collections.Generic;
 
 namespace NFC.Platform.Application.DTOs.Analytics;
 
-/// <summary>
-/// A single data point in a time-series chart for analytics.
-/// </summary>
 public class TimeSeriesDataPointDto
 {
     public string Label { get; set; } = string.Empty;
@@ -14,10 +11,6 @@ public class TimeSeriesDataPointDto
     public int LinkClicks { get; set; }
 }
 
-/// <summary>
-/// Time-series analytics data returned by GET /api/analytics/time-series.
-/// Supports both daily and monthly granularity.
-/// </summary>
 public class UserAnalyticsTimeSeriesDto
 {
     public string Granularity { get; set; } = "monthly";

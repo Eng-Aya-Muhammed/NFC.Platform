@@ -100,7 +100,6 @@ public class SubscriptionService(
         if (plan == null)
             return ServiceResult<UserSubscriptionDto>.NotFound(_messageService.Get("RecordNotFound"));
 
-        // Check if there is an active subscription
         var activeSub = await _unitOfWork.Repository<UserSubscription>()
             .GetQueryable()
             .AsNoTracking()
@@ -118,14 +117,13 @@ public class SubscriptionService(
         newSub.IsActive = true;
 
         await _unitOfWork.Repository<UserSubscription>().AddAsync(newSub);
-        
+
         try
         {
             await _unitOfWork.SaveChangesAsync();
         }
         catch (Microsoft.EntityFrameworkCore.DbUpdateException ex)
         {
-            // Verify if the error is due to the unique index constraint IX_UserSubscriptions_TenantId
             if (ex.InnerException != null && ex.InnerException.Message.Contains("IX_UserSubscriptions_TenantId"))
             {
                 return ServiceResult<UserSubscriptionDto>.Fail(_messageService.Get("HasActiveSubscription"), 400);
@@ -156,7 +154,6 @@ public class SubscriptionService(
         if (plan == null)
             return ServiceResult<UserSubscriptionDto>.NotFound(_messageService.Get("RecordNotFound"));
 
-        // Find current active subscription
         var activeSub = await _unitOfWork.Repository<UserSubscription>()
             .GetQueryable()
             .FirstOrDefaultAsync(s => s.TenantId == tenantId.Value && s.IsActive && s.EndDate >= DateTime.UtcNow);
@@ -175,7 +172,6 @@ public class SubscriptionService(
         await _unitOfWork.Repository<UserSubscription>().AddAsync(newSub);
         await _unitOfWork.SaveChangesAsync();
 
-        // Load plan navigation properties for returned DTO
         newSub.SubscriptionPlan = plan;
 
         var dto = _mapper.Map<UserSubscriptionDto>(newSub);
@@ -196,7 +192,6 @@ public class SubscriptionService(
         if (tenant == null)
             return ServiceResult<UserSubscriptionDto>.NotFound(_messageService.Get("RecordNotFound"));
 
-        // Target the single tenant subscription directly, bypassing tenant context query filters for Admin operations
         var sub = await _unitOfWork.Repository<UserSubscription>()
             .GetQueryable()
             .IgnoreQueryFilters()
@@ -214,12 +209,10 @@ public class SubscriptionService(
         }
         else
         {
-            // Active subscription: Keep original StartDate, extend EndDate from current EndDate
             sub.EndDate = sub.EndDate.AddDays(request.ExtensionDays);
         }
 
         sub.IsActive = true;
-        // Usage quotas (TemplateChangesUsed, CustomDesignRequestsUsed) are preserved intact
 
         await _unitOfWork.SaveChangesAsync();
 

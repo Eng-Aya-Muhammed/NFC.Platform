@@ -26,7 +26,6 @@ namespace NFC.Platform.BuildingBlocks.Localization
             var safeArgs = args ?? Array.Empty<object>();
             bool hasArgs = safeArgs.Length > 0;
 
-            // 1. Search in Export Messages (if registered)
             if (_exportLocalizer != null)
             {
                 var exportResult = hasArgs ? _exportLocalizer[key, safeArgs] : _exportLocalizer[key];
@@ -36,28 +35,24 @@ namespace NFC.Platform.BuildingBlocks.Localization
                 }
             }
 
-            // 2. Search in Success Messages
             var successResult = hasArgs ? _successLocalizer[key, safeArgs] : _successLocalizer[key];
             if (successResult != null && !successResult.ResourceNotFound)
             {
                 return successResult.Value;
             }
 
-            // 3. Search in Error Messages
             var errorResult = hasArgs ? _errorLocalizer[key, safeArgs] : _errorLocalizer[key];
             if (errorResult != null && !errorResult.ResourceNotFound)
             {
                 return errorResult.Value;
             }
 
-            // 4. Search in Validation Messages
             var validationResult = hasArgs ? _validationLocalizer[key, safeArgs] : _validationLocalizer[key];
             if (validationResult != null && !validationResult.ResourceNotFound)
             {
                 return validationResult.Value;
             }
 
-            // 5. Search in Business Messages
             var businessResult = hasArgs ? _businessLocalizer[key, safeArgs] : _businessLocalizer[key];
             if (businessResult != null && !businessResult.ResourceNotFound)
             {

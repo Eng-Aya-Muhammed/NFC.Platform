@@ -24,7 +24,6 @@ namespace NFC.Platform.Tests.Mapping
         [Fact]
         public void CardDesign_To_CardDesignDto_LocalizesCardTypeName_ArabicCulture()
         {
-            // Arrange
             var cardType = new CardType { NameAr = "خشب فاخر", NameEn = "Luxury Wood" };
             var cardPackage = new CardPackage { NumberOfCards = 10 };
             var design = new CardDesign
@@ -35,11 +34,9 @@ namespace NFC.Platform.Tests.Mapping
                 CardPackage = cardPackage
             };
 
-            // Act
             CultureInfo.CurrentUICulture = new CultureInfo("ar");
             var dto = _mapper.Map<CardDesignDto>(design);
 
-            // Assert
             Assert.Equal("خشب فاخر", dto.CardTypeName);
             Assert.Equal("10 Cards Package", dto.CardPackageName);
             Assert.Equal(7, dto.RemainingQuantity);
@@ -48,7 +45,6 @@ namespace NFC.Platform.Tests.Mapping
         [Fact]
         public void CardDesign_To_CardDesignDto_LocalizesCardTypeName_EnglishCulture()
         {
-            // Arrange
             var cardType = new CardType { NameAr = "خشب فاخر", NameEn = "Luxury Wood" };
             var cardPackage = new CardPackage { NumberOfCards = 50 };
             var design = new CardDesign
@@ -59,11 +55,9 @@ namespace NFC.Platform.Tests.Mapping
                 CardPackage = cardPackage
             };
 
-            // Act
             CultureInfo.CurrentUICulture = new CultureInfo("en");
             var dto = _mapper.Map<CardDesignDto>(design);
 
-            // Assert
             Assert.Equal("Luxury Wood", dto.CardTypeName);
             Assert.Equal("50 Cards Package", dto.CardPackageName);
             Assert.Equal(30, dto.RemainingQuantity);

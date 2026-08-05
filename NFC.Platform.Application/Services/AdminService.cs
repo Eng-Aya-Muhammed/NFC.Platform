@@ -29,15 +29,15 @@ public class AdminService : IAdminService
         IExcelExportService? excelExportService = null,
         IPdfExportService? pdfExportService = null)
     {
-        _unitOfWork           = unitOfWork           ?? throw new ArgumentNullException(nameof(unitOfWork));
-        _mapper               = mapper               ?? throw new ArgumentNullException(nameof(mapper));
-        _messageService       = messageService       ?? throw new ArgumentNullException(nameof(messageService));
-        _storageService       = storageService       ?? throw new ArgumentNullException(nameof(storageService));
-        _backgroundJobClient  = backgroundJobClient  ?? throw new ArgumentNullException(nameof(backgroundJobClient));
-        _otpSettings          = otpSettings?.Value   ?? new OtpSettings();
-        _exportBuilder        = exportBuilder;
-        _excelExportService   = excelExportService;
-        _pdfExportService     = pdfExportService;
+        _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+        _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
+        _messageService = messageService ?? throw new ArgumentNullException(nameof(messageService));
+        _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
+        _backgroundJobClient = backgroundJobClient ?? throw new ArgumentNullException(nameof(backgroundJobClient));
+        _otpSettings = otpSettings?.Value ?? new OtpSettings();
+        _exportBuilder = exportBuilder;
+        _excelExportService = excelExportService;
+        _pdfExportService = pdfExportService;
     }
 
     public async Task<ServiceResult<PagedResult<AdminOrderSummaryDto>>> GetOrdersPagedAsync(PaginationRequest request, OrderStatus? statusFilter, Guid? companyId = null, Guid? tenantId = null, string? search = null, CancellationToken cancellationToken = default)
@@ -210,7 +210,6 @@ public class AdminService : IAdminService
 
         var dto = _mapper.Map<AdminOrderDetailDto>(order);
 
-        // Populate SelectedTemplate if user profile has a template
         if (order.User?.UserProfile?.ProfileTemplateId != null)
         {
             var template = await _unitOfWork.Repository<CardTemplate>()
@@ -221,7 +220,6 @@ public class AdminService : IAdminService
             }
         }
 
-        // If no SelectedTemplate exists, fetch the user's latest TemplateRequest
         if (dto.SelectedTemplate == null)
         {
             var latestRequest = await _unitOfWork.Repository<TemplateRequest>()
@@ -282,7 +280,6 @@ public class AdminService : IAdminService
         var oldStatus = order.Status;
         order.Status = dto.Status;
 
-        // ── Adjust card quantities from CardDesign ───────
         if (dto.Status == OrderStatus.Approved && oldStatus != OrderStatus.Approved)
         {
             var design = await _unitOfWork.Repository<CardDesign>()
@@ -291,7 +288,6 @@ public class AdminService : IAdminService
 
             if (design != null)
             {
-                // Determine how many cards to deduct based on account type
                 var isCompanyOrder = order.Items != null && order.Items.Count > 0;
                 var deducted = isCompanyOrder
                     ? order.Items!.Sum(i => i.NumberOfCardsRequired)
@@ -321,12 +317,11 @@ public class AdminService : IAdminService
                 var refundedPending = isCompanyOrder
                     ? order.Items!.Sum(i => i.NumberOfCardsRequired)
                     : order.Quantity;
-                    
+
                 design.PendingQuantity = Math.Max(0, design.PendingQuantity - refundedPending);
             }
         }
 
-        // ── Refund card quantity if an approved order is Cancelled ─────────
         if (dto.Status == OrderStatus.Cancelled &&
             (oldStatus is OrderStatus.Approved or OrderStatus.InPrinting or OrderStatus.Encoding or OrderStatus.ReadyForDelivery))
         {
@@ -357,8 +352,8 @@ public class AdminService : IAdminService
                 order.DeliveryOtpResendCount = 0;
                 order.DeliveryOtpFailedAttempts = 0;
 
-                var cardName = order.CardDesign?.CardType?.NameAr 
-                    ?? order.CardDesign?.CardType?.NameEn 
+                var cardName = order.CardDesign?.CardType?.NameAr
+                    ?? order.CardDesign?.CardType?.NameEn
                     ?? _messageService.Get("DefaultPhysicalCardName");
 
                 EnqueueOtpNotifications(recipient, otp, cardName, isResend: false);
@@ -371,8 +366,6 @@ public class AdminService : IAdminService
         }
         catch (DbUpdateConcurrencyException)
         {
-            // Another admin approved a concurrent order at the same time.
-            // Surface a 409 so the caller can retry.
             return ServiceResult.Fail(_messageService.Get("ConcurrentUpdateConflict"), 409);
         }
 
@@ -722,7 +715,7 @@ public class AdminService : IAdminService
         var activeSubByTenant = activeSubscriptions
             .GroupBy(us => us.TenantId)
             .ToDictionary(
-                g => g.Key, 
+                g => g.Key,
                 g => g.OrderByDescending(us => us.EndDate).FirstOrDefault()
             );
 
@@ -730,8 +723,8 @@ public class AdminService : IAdminService
         foreach (var tenant in pagedTenants.Items)
         {
             var dto = _mapper.Map<TenantSummaryDto>(tenant);
-            dto.AccountType = tenant.Company != null 
-                ? _messageService.Get("AccountTypeCompany") 
+            dto.AccountType = tenant.Company != null
+                ? _messageService.Get("AccountTypeCompany")
                 : _messageService.Get("AccountTypeIndividual");
 
             if (activeSubByTenant.TryGetValue(tenant.Id, out var activeSub) && activeSub != null)
@@ -808,9 +801,9 @@ public class AdminService : IAdminService
         if (!string.IsNullOrWhiteSpace(search))
         {
             search = search.Trim();
-            query = query.Where(e => e.FullName.Contains(search) || 
-                                     e.Email.Contains(search) || 
-                                     e.JobTitle.Contains(search) || 
+            query = query.Where(e => e.FullName.Contains(search) ||
+                                     e.Email.Contains(search) ||
+                                     e.JobTitle.Contains(search) ||
                                      e.Department.Contains(search) ||
                                      (e.UserProfile != null && (
                                          (e.UserProfile.Phone != null && e.UserProfile.Phone.Contains(search)) ||
@@ -838,13 +831,12 @@ public class AdminService : IAdminService
             return ServiceResult<EmployeeDetailsDto>.NotFound(_messageService.Get("RecordNotFound"));
 
         var dto = _mapper.Map<EmployeeDetailsDto>(employee);
-        
-        // Populate CompanyName if available
+
         if (employee.Company != null)
         {
             dto.CompanyName = employee.Company.Name;
         }
-        
+
         return ServiceResult<EmployeeDetailsDto>.Success(dto);
     }
 
@@ -1068,29 +1060,27 @@ public class AdminService : IAdminService
         return ServiceResult.Success(_messageService.Get("TemplateUnassigned"));
     }
 
-    // Helpers
     private static bool IsValidStatusTransition(OrderStatus current, OrderStatus next)
     {
         if (current == next) return true;
 
         return current switch
         {
-            OrderStatus.PendingReview     => next is OrderStatus.UnderReview or OrderStatus.Approved or OrderStatus.Rejected or OrderStatus.Cancelled,
-            OrderStatus.UnderReview       => next is OrderStatus.Approved or OrderStatus.Rejected or OrderStatus.Cancelled,
-            OrderStatus.Approved          => next is OrderStatus.InPrinting or OrderStatus.ReadyForDelivery or OrderStatus.Cancelled,
-            OrderStatus.InPrinting        => next is OrderStatus.Encoding or OrderStatus.ReadyForDelivery or OrderStatus.Cancelled,
-            OrderStatus.Encoding          => next is OrderStatus.ReadyForDelivery or OrderStatus.Cancelled,
-            OrderStatus.ReadyForDelivery  => next is OrderStatus.Delivered or OrderStatus.Cancelled,
-            OrderStatus.Delivered         => false,
-            OrderStatus.Rejected          => false,
-            OrderStatus.Cancelled         => false,
-            _                             => false,
+            OrderStatus.PendingReview => next is OrderStatus.UnderReview or OrderStatus.Approved or OrderStatus.Rejected or OrderStatus.Cancelled,
+            OrderStatus.UnderReview => next is OrderStatus.Approved or OrderStatus.Rejected or OrderStatus.Cancelled,
+            OrderStatus.Approved => next is OrderStatus.InPrinting or OrderStatus.ReadyForDelivery or OrderStatus.Cancelled,
+            OrderStatus.InPrinting => next is OrderStatus.Encoding or OrderStatus.ReadyForDelivery or OrderStatus.Cancelled,
+            OrderStatus.Encoding => next is OrderStatus.ReadyForDelivery or OrderStatus.Cancelled,
+            OrderStatus.ReadyForDelivery => next is OrderStatus.Delivered or OrderStatus.Cancelled,
+            OrderStatus.Delivered => false,
+            OrderStatus.Rejected => false,
+            OrderStatus.Cancelled => false,
+            _ => false,
         };
     }
 
     private static string GenerateOtp()
     {
-        // Cryptographically secure 6-digit OTP spanning 000000–999999
         var bytes = RandomNumberGenerator.GetBytes(4);
         var value = BitConverter.ToUInt32(bytes, 0) % 1_000_000;
         return value.ToString("D6");
@@ -1113,13 +1103,7 @@ public class AdminService : IAdminService
                 x.SendWhatsAppMessageAsync(whatsAppNumber, _messageService.Get(templateKey, otp)));
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Subdomain Management
-    // ─────────────────────────────────────────────────────────────────────────
 
-    /// <summary>
-    /// Returns a paged list of all user profile subdomains for Super Admin oversight.
-    /// </summary>
     public async Task<ServiceResult<PagedResult<ProfileSubdomainSummaryDto>>> GetSubdomainsPagedAsync(
         PaginationRequest request, string? search = null, CancellationToken cancellationToken = default)
     {
@@ -1147,21 +1131,15 @@ public class AdminService : IAdminService
         return ServiceResult<PagedResult<ProfileSubdomainSummaryDto>>.Success(paged);
     }
 
-    /// <summary>
-    /// Reassigns a subdomain slug to the specified profile.
-    /// Validates uniqueness and slug format before persisting.
-    /// </summary>
     public async Task<ServiceResult> ReassignSubdomainAsync(Guid profileId, ReassignSubdomainDto dto)
     {
         if (string.IsNullOrWhiteSpace(dto.Subdomain))
             return ServiceResult.Fail(_messageService.Get("InvalidInput"), 400);
 
-        // Validate slug format: lowercase letters, digits and hyphens only
         var slugRegex = new System.Text.RegularExpressions.Regex(@"^[a-z0-9][a-z0-9\-]{0,98}[a-z0-9]$");
         if (!slugRegex.IsMatch(dto.Subdomain))
             return ServiceResult.Fail(_messageService.Get("InvalidInput"), 400);
 
-        // Reserved words that must not be used as subdomains
         var reserved = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             { "admin", "api", "auth", "u", "www", "mail", "support" };
         if (reserved.Contains(dto.Subdomain))
@@ -1175,7 +1153,6 @@ public class AdminService : IAdminService
         if (profile == null)
             return ServiceResult.NotFound(_messageService.Get("RecordNotFound"));
 
-        // Uniqueness check across all active profiles in the system
         var taken = await _unitOfWork.Repository<UserProfile>()
             .GetQueryable()
             .IgnoreQueryFilters()

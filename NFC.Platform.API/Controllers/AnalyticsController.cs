@@ -15,9 +15,6 @@ namespace NFC.Platform.API.Controllers
     {
         private readonly IAnalyticsService _analyticsService = analyticsService ?? throw new System.ArgumentNullException(nameof(analyticsService));
 
-        /// <summary>
-        /// Returns aggregated profile interaction totals for the authenticated user.
-        /// </summary>
         [HttpGet("summary")]
         public async Task<IActionResult> GetUserAnalyticsSummary(CancellationToken cancellationToken)
         {
@@ -28,10 +25,6 @@ namespace NFC.Platform.API.Controllers
             return Ok(result);
         }
 
-        /// <summary>
-        /// Returns time-series interaction data for the authenticated user's profile.
-        /// Query param: granularity = "daily" (last 30 days) or "monthly" (last 6 months, default).
-        /// </summary>
         [HttpGet("time-series")]
         public async Task<IActionResult> GetUserAnalyticsTimeSeries([FromQuery] string granularity = "monthly", CancellationToken cancellationToken = default)
         {
@@ -42,10 +35,6 @@ namespace NFC.Platform.API.Controllers
             return Ok(result);
         }
 
-        /// <summary>
-        /// Returns the company employee analytics leaderboard, ranked by total interactions.
-        /// Accessible to company admins only.
-        /// </summary>
         [HttpGet("leaderboard")]
         [Authorize(Policy = AppPolicies.CompanyAdminOnly)]
         [HasPermission(AppPermissions.Analytics.View)]
@@ -58,10 +47,6 @@ namespace NFC.Platform.API.Controllers
             return Ok(result);
         }
 
-        /// <summary>
-        /// Returns full Figma-designed analytics dashboard metrics for a specific employee viewed by Company Admin.
-        /// GET /api/analytics/employee/{employeeId}
-        /// </summary>
         [HttpGet("employee/{employeeId:guid}")]
         [Authorize(Policy = AppPolicies.CompanyAdminOnly)]
         [HasPermission(AppPermissions.Analytics.View)]
@@ -73,9 +58,6 @@ namespace NFC.Platform.API.Controllers
 
             return Ok(result);
         }
-        /// <summary>
-        /// Returns aggregated analytics dashboard metrics for the company.
-        /// </summary>
         [HttpGet("company/dashboard")]
         [Authorize(Policy = AppPolicies.CompanyAdminOnly)]
         [HasPermission(AppPermissions.Analytics.View)]

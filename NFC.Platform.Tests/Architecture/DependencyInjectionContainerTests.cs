@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Xunit;
 using NFC.Platform.API.Controllers;
 using NFC.Platform.API.Extensions;
 using NFC.Platform.API.Services;
@@ -14,6 +13,7 @@ using NFC.Platform.BuildingBlocks.Common.Helpers;
 using NFC.Platform.BuildingBlocks.Extensions;
 using NFC.Platform.Infrastructure.Contexts;
 using NFC.Platform.Infrastructure.Extensions;
+using Xunit;
 
 namespace NFC.Platform.Tests.Architecture
 {
@@ -22,7 +22,6 @@ namespace NFC.Platform.Tests.Architecture
         [Fact]
         public void ServiceProvider_ShouldResolve_AllControllersAndDependencies_WithoutErrors()
         {
-            // 1. Build test configuration with all required appsettings sections
             var configurationValues = new Dictionary<string, string?>
             {
                 { "ConnectionStrings:DefaultConnection", "Server=localhost;Database=NfcPlatformDb;Trusted_Connection=True;TrustServerCertificate=True;" },
@@ -40,7 +39,6 @@ namespace NFC.Platform.Tests.Architecture
                 .AddInMemoryCollection(configurationValues)
                 .Build();
 
-            // 2. Setup ServiceCollection mimicking Program.cs
             var services = new ServiceCollection();
 
             services.AddSingleton<IConfiguration>(configuration);
@@ -49,7 +47,6 @@ namespace NFC.Platform.Tests.Architecture
             services.AddScoped<ICurrentUserService, CurrentUserService>();
             services.AddSingleton<IDateTimeProvider, SystemDateTimeProvider>();
 
-            // Register DbContext using UseSqlServer
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
 
@@ -62,7 +59,6 @@ namespace NFC.Platform.Tests.Architecture
             services.AddInfrastructureServices(configuration);
             services.AddApplicationServices();
 
-            // Register all controllers from the API assembly
             var apiAssembly = typeof(AuthController).Assembly;
             var controllerTypes = apiAssembly.GetTypes()
                 .Where(t => typeof(ControllerBase).IsAssignableFrom(t) && !t.IsAbstract)
@@ -73,10 +69,8 @@ namespace NFC.Platform.Tests.Architecture
                 services.AddTransient(type);
             }
 
-            // 3. Build ServiceProvider (with scope validation enabled to catch lifetime mismatches)
             var serviceProvider = services.BuildServiceProvider(validateScopes: true);
 
-            // 4. Assert that EVERY controller in the API assembly can be successfully instantiated via DI
             var resolutionFailures = new List<string>();
 
             using (var scope = serviceProvider.CreateScope())
@@ -100,7 +94,6 @@ namespace NFC.Platform.Tests.Architecture
                 }
             }
 
-            // 5. Assert zero resolution failures across all controllers
             Assert.Empty(resolutionFailures);
         }
     }

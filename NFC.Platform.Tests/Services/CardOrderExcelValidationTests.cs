@@ -152,11 +152,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task Test_CloudinaryUpload_And_CardOrderValidation_WithInvalidExcelData()
         {
-            // 1. Create Invalid Excel File Bytes
-            // Row 1: Header (Name, Email, Phone, JobTitle, Department)
-            // Row 2: Invalid Email ("invalid-email-format")
-            // Row 3: Duplicate Email ("dup@test.com")
-            // Row 4: Duplicate Email ("dup@test.com")
             var invalidRows = new List<(string Name, string Email, string Phone, string JobTitle, string Department)>
             {
                 ("User One", "invalid-email-format", "123456", "Dev", "IT"),
@@ -167,7 +162,6 @@ namespace NFC.Platform.Tests.Services
             var excelBytes = CreateExcelBytes(invalidRows);
             Assert.NotEmpty(excelBytes);
 
-            // 2. Upload Excel to Cloudinary using real credentials from appsettings
             var cloudinaryOptions = Options.Create(new CloudinarySettings
             {
                 CloudName = "zn8nwlr1",
@@ -278,18 +272,15 @@ namespace NFC.Platform.Tests.Services
                     Substitute.For<IConfiguration>()
                 );
 
-                // 4. Act: Call CreateDesignAsync for CompanyAdmin
                 var result = await cardDesignService.CreateDesignAsync(request);
 
                 Console.WriteLine($"[CompanyAdmin Result] IsSuccess: {result.IsSuccess}, StatusCode: {result.StatusCode}, Message: {result.Message}");
 
-                // Validation MUST fail (IsSuccess = false, 422 status code)
                 Assert.False(result.IsSuccess, "Design creation should fail validation for invalid Excel data.");
                 Assert.Equal(422, result.StatusCode);
             }
             finally
             {
-                // Clean up Cloudinary asset
                 await storageService.DeleteFileAsync(cloudinaryExcelUrl);
             }
         }
@@ -297,7 +288,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task Test_IndividualAccount_BypassesExcelValidation_EvenWithInvalidExcelUrl()
         {
-            // Setup Mocks for Individual User
             var unitOfWork = Substitute.For<IUnitOfWork>();
             var mapperConfig = new AutoMapper.MapperConfiguration(cfg => cfg.AddProfile(new CardDesignMappingProfile()));
             var mapper = mapperConfig.CreateMapper();
@@ -311,7 +301,6 @@ namespace NFC.Platform.Tests.Services
             currentTenant.UserId.Returns(userId);
             currentTenant.TenantId.Returns(tenantId);
 
-            // ACCOUNT TYPE IS INDIVIDUAL
             var individualUser = new User
             {
                 Id = userId,
@@ -382,12 +371,10 @@ namespace NFC.Platform.Tests.Services
                 Substitute.For<IConfiguration>()
             );
 
-            // Act: Call CreateDesignAsync for Individual Account with ExcelDataUrl
             var result = await cardDesignService.CreateDesignAsync(request);
 
             Console.WriteLine($"[Individual User Result] IsSuccess: {result.IsSuccess}, StatusCode: {result.StatusCode}");
 
-            // ExcelDataUrl is ignored for Individual accounts
             Assert.True(result.IsSuccess);
             Assert.Equal(200, result.StatusCode);
         }

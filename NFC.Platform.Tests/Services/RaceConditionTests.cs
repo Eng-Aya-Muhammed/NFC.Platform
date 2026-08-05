@@ -1,26 +1,26 @@
-using Xunit;
-using Microsoft.EntityFrameworkCore;
-using NSubstitute;
-using NSubstitute.ExceptionExtensions;
-using NFC.Platform.Application.DTOs.CardOrder;
-using NFC.Platform.Application.DTOs.Admin;
-using NFC.Platform.Application.Interfaces.Repositories;
-using NFC.Platform.Application.Services;
-using NFC.Platform.BuildingBlocks.Localization;
-using NFC.Platform.Domain.Entities;
-using NFC.Platform.Domain.Enums;
-using NFC.Platform.BuildingBlocks.Common.Interfaces;
-using AutoMapper;
-using Microsoft.Extensions.Options;
-using NFC.Platform.Application.DTOs.Settings;
-using FluentValidation;
-using Hangfire;
-using NFC.Platform.Application.Interfaces.Services;
-using MockQueryable.NSubstitute;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AutoMapper;
+using FluentValidation;
+using Hangfire;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using MockQueryable.NSubstitute;
+using NFC.Platform.Application.DTOs.Admin;
+using NFC.Platform.Application.DTOs.CardOrder;
+using NFC.Platform.Application.DTOs.Settings;
+using NFC.Platform.Application.Interfaces.Repositories;
+using NFC.Platform.Application.Interfaces.Services;
+using NFC.Platform.Application.Services;
+using NFC.Platform.BuildingBlocks.Common.Interfaces;
+using NFC.Platform.BuildingBlocks.Localization;
+using NFC.Platform.Domain.Entities;
+using NFC.Platform.Domain.Enums;
+using NSubstitute;
+using NSubstitute.ExceptionExtensions;
+using Xunit;
 
 namespace NFC.Platform.Tests.Services
 {
@@ -44,22 +44,21 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task CardOrderService_CreateOrderAsync_WhenDbUpdateConcurrencyExceptionThrown_Returns409Conflict()
         {
-            // Arrange
             var designId = Guid.NewGuid();
             var tenantId = _currentTenant.TenantId.Value;
             var userId = _currentTenant.UserId.Value;
 
             var designRepo = Substitute.For<IGenericRepository<CardDesign>>();
-            var cardDesign = new CardDesign 
-            { 
-                Id = designId, 
-                TenantId = tenantId, 
-                IsPaid = true, 
-                TotalQuantity = 100, 
-                UsedQuantity = 0, 
-                PendingQuantity = 50 
+            var cardDesign = new CardDesign
+            {
+                Id = designId,
+                TenantId = tenantId,
+                IsPaid = true,
+                TotalQuantity = 100,
+                UsedQuantity = 0,
+                PendingQuantity = 50
             };
-            
+
             designRepo.GetQueryable().Returns(new List<CardDesign> { cardDesign }.AsQueryable().BuildMock());
             designRepo.GetByIdAsync(designId).Returns(cardDesign);
             _unitOfWork.Repository<CardDesign>().Returns(designRepo);
@@ -72,7 +71,6 @@ namespace NFC.Platform.Tests.Services
             orderRepo.GetQueryable().Returns(new List<CardOrder>().AsQueryable().BuildMock());
             _unitOfWork.Repository<CardOrder>().Returns(orderRepo);
 
-            // Simulate the exception during SaveChangesAsync inside CreateOrderAsync
             _unitOfWork.SaveChangesAsync().Throws(new DbUpdateConcurrencyException());
 
             var validator = Substitute.For<IValidator<CreateCardOrderRequest>>();
@@ -96,25 +94,21 @@ namespace NFC.Platform.Tests.Services
             var request = new CreateCardOrderRequest
             {
                 CardDesignId = designId,
-                Quantity = 10 // 100 - 0 - 50 = 50 available, so this is valid.
+                Quantity = 10
             };
 
-            // Act
             var result = await sut.CreateOrderAsync(request);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(409, result.StatusCode);
             Assert.Equal("ConcurrentUpdateConflict", result.Message);
-            
-            // Verify Rollback was called
+
             await _unitOfWork.Received(1).RollbackTransactionAsync();
         }
 
         [Fact]
         public async Task AdminService_UpdateOrderStatusAsync_WhenApprovingAndConcurrencyExceptionThrown_Returns409Conflict()
         {
-            // Arrange
             var orderId = Guid.NewGuid();
             var designId = Guid.NewGuid();
             var tenantId = _currentTenant.TenantId.Value;
@@ -143,7 +137,6 @@ namespace NFC.Platform.Tests.Services
             designRepo.GetQueryable().Returns(new List<CardDesign> { cardDesign }.AsQueryable().BuildMock());
             _unitOfWork.Repository<CardDesign>().Returns(designRepo);
 
-            // Simulate the exception during SaveChangesAsync inside UpdateOrderStatusAsync
             _unitOfWork.SaveChangesAsync().Throws(new DbUpdateConcurrencyException());
 
             var otpOptions = Substitute.For<IOptions<OtpSettings>>();
@@ -160,10 +153,8 @@ namespace NFC.Platform.Tests.Services
 
             var request = new UpdateOrderStatusDto { Status = OrderStatus.Approved };
 
-            // Act
             var result = await sut.UpdateOrderStatusAsync(orderId, request);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(409, result.StatusCode);
             Assert.Equal("ConcurrentUpdateConflict", result.Message);
@@ -172,7 +163,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task CardOrderService_UpdateOrderAsync_WhenExceedingPendingQuantity_Returns400()
         {
-            // Arrange
             var orderId = Guid.NewGuid();
             var designId = Guid.NewGuid();
             var tenantId = _currentTenant.TenantId.Value;
@@ -198,8 +188,6 @@ namespace NFC.Platform.Tests.Services
                 UsedQuantity = 70,
                 PendingQuantity = 20
             };
-            // available = Total - Used - Pending + Order.Quantity
-            // available = 100 - 70 - 20 + 10 = 20
             designRepo.GetQueryable().Returns(new List<CardDesign> { cardDesign }.AsQueryable().BuildMock());
             designRepo.GetByIdAsync(designId).Returns(cardDesign);
             _unitOfWork.Repository<CardDesign>().Returns(designRepo);
@@ -226,11 +214,9 @@ namespace NFC.Platform.Tests.Services
                 otpOptions
             );
 
-            // Act - trying to update quantity to 30, which exceeds available 20
             var request = new UpdateCardOrderRequest { Quantity = 30 };
             var result = await sut.UpdateOrderAsync(orderId, request);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(400, result.StatusCode);
             Assert.Equal("DesignRemainingQuantityExceeded", result.Message);
@@ -240,7 +226,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task CardOrderService_ResendOrderOtpAsync_WhenConcurrencyException_Returns409Conflict()
         {
-            // Arrange
             var orderId = Guid.NewGuid();
             var tenantId = _currentTenant.TenantId.Value;
 
@@ -255,7 +240,6 @@ namespace NFC.Platform.Tests.Services
             orderRepo.GetQueryable().Returns(new List<CardOrder> { order }.AsQueryable().BuildMock());
             _unitOfWork.Repository<CardOrder>().Returns(orderRepo);
 
-            // Simulate the concurrency exception when updating OTP counters
             _unitOfWork.SaveChangesAsync().Throws(new DbUpdateConcurrencyException());
 
             var otpOptions = Substitute.For<IOptions<OtpSettings>>();
@@ -273,10 +257,8 @@ namespace NFC.Platform.Tests.Services
                 otpOptions
             );
 
-            // Act
             var result = await sut.ResendOrderOtpAsync(orderId);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(409, result.StatusCode);
             Assert.Equal("ConcurrentUpdateConflict", result.Message);

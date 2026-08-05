@@ -50,7 +50,7 @@ namespace NFC.Platform.Tests.Services
         {
             var tenantId = Guid.NewGuid();
             _currentTenant.TenantId.Returns(tenantId);
-            
+
             var roleRepo = Substitute.For<IGenericRepository<Role>>();
             roleRepo.FindAsync(Arg.Any<Expression<Func<Role, bool>>>()).Returns(new List<Role>());
             _unitOfWork.Repository<Role>().Returns(roleRepo);
@@ -81,7 +81,7 @@ namespace NFC.Platform.Tests.Services
         {
             var tenantId = Guid.NewGuid();
             _currentTenant.TenantId.Returns(tenantId);
-            
+
             var roleRepo = Substitute.For<IGenericRepository<Role>>();
             roleRepo.FindAsync(Arg.Any<Expression<Func<Role, bool>>>()).Returns(new List<Role> { new Role() });
             _unitOfWork.Repository<Role>().Returns(roleRepo);
@@ -102,7 +102,7 @@ namespace NFC.Platform.Tests.Services
         {
             var tenantId = Guid.NewGuid();
             _currentTenant.TenantId.Returns(tenantId);
-            
+
             var roleRepo = Substitute.For<IGenericRepository<Role>>();
             roleRepo.FindAsync(Arg.Any<Expression<Func<Role, bool>>>()).Returns(new List<Role> { new Role() });
             _unitOfWork.Repository<Role>().Returns(roleRepo);
@@ -123,7 +123,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task GetRolesAsync_FiltersBySearch()
         {
-            // Arrange
             var tenantId = Guid.NewGuid();
             _currentTenant.TenantId.Returns(tenantId);
 
@@ -141,10 +140,8 @@ namespace NFC.Platform.Tests.Services
             permRepo.FindAsync(Arg.Any<Expression<Func<RolePermission, bool>>>()).Returns(new List<RolePermission>());
             _unitOfWork.Repository<RolePermission>().Returns(permRepo);
 
-            // Act
             var result = await _sut.GetRolesAsync("Manager");
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Single(result.Data!);
             Assert.Equal("Manager", result.Data![0].Name);

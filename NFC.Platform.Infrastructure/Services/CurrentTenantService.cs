@@ -13,14 +13,6 @@ using NFC.Platform.Infrastructure.Interceptors;
 
 namespace NFC.Platform.Infrastructure.Services
 {
-    /// <summary>
-    /// Implementation of <see cref="ICurrentTenant"/> that resolves the active TenantId
-    /// from JWT claims and validates its existence and active status in the database.
-    /// </summary>
-    /// <summary>
-    /// Implementation of <see cref="ICurrentTenant"/> that resolves active TenantId and roles
-    /// from JWT claims in memory. Async DB validation is handled by TenantMiddleware.
-    /// </summary>
     public class CurrentTenantService(IHttpContextAccessor httpContextAccessor) : ICurrentTenant
     {
         private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor ?? throw new ArgumentNullException(nameof(httpContextAccessor));
@@ -32,7 +24,6 @@ namespace NFC.Platform.Infrastructure.Services
         private Guid? _tenantIdOverride;
         private Guid? _userIdOverride;
 
-        /// <inheritdoc />
         public void SetCurrentTenant(Guid tenantId, Guid userId)
         {
             _tenantIdOverride = tenantId;
@@ -41,7 +32,6 @@ namespace NFC.Platform.Infrastructure.Services
             _isTenantValidated = true;
         }
 
-        /// <inheritdoc />
         public Guid? TenantId
         {
             get
@@ -52,7 +42,6 @@ namespace NFC.Platform.Infrastructure.Services
             }
         }
 
-        /// <inheritdoc />
         public Guid? UserId
         {
             get
@@ -64,13 +53,11 @@ namespace NFC.Platform.Infrastructure.Services
             }
         }
 
-        /// <inheritdoc />
         public string? Email =>
             _userIdOverride.HasValue ? "system_job@nfcplatform.com" :
             (_httpContextAccessor.HttpContext?.User?.FindFirstValue(AppClaims.Email)
             ?? _httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.Email));
 
-        /// <inheritdoc />
         public AccountType? AccountType
         {
             get
@@ -85,11 +72,9 @@ namespace NFC.Platform.Infrastructure.Services
             }
         }
 
-        /// <inheritdoc />
         public bool IsAuthenticated =>
             _userIdOverride.HasValue || (_httpContextAccessor.HttpContext?.User?.Identity?.IsAuthenticated ?? false);
 
-        /// <inheritdoc />
         public bool IsAdmin
         {
             get
@@ -110,14 +95,12 @@ namespace NFC.Platform.Infrastructure.Services
                 return;
             }
 
-            // 1. Resolve Admin status from claims
             var userRoles = httpContext.User.FindAll(ClaimTypes.Role)
                 .Concat(httpContext.User.FindAll(AppClaims.Role))
                 .Select(c => c.Value);
 
             _isAdmin = userRoles.Any(r => r.Equals(AppRole.Admin.ToString(), StringComparison.OrdinalIgnoreCase));
 
-            // System Admin bypasses tenant validation completely
             if (_isAdmin)
             {
                 var adminTenantIdStr = httpContext.User.FindFirstValue(AppClaims.TenantId)
@@ -132,7 +115,6 @@ namespace NFC.Platform.Infrastructure.Services
                 return;
             }
 
-            // 2. Resolve TenantId from claim for Tenant users
             var tenantIdStr = httpContext.User.FindFirstValue(AppClaims.TenantId)
                 ?? httpContext.User.FindFirstValue("http://schemas.microsoft.com/identity/claims/tenantid");
 

@@ -53,7 +53,6 @@ namespace NFC.Platform.BuildingBlocks.Extensions
                         });
                 });
 
-                // 3 requests per 2 minutes — stricter to prevent email spam
                 options.AddPolicy("ForgotPasswordPolicy", httpContext =>
                 {
                     var ip = GetClientIp(httpContext);
@@ -82,7 +81,6 @@ namespace NFC.Platform.BuildingBlocks.Extensions
                         });
                 });
 
-                // Dedicated Refresh Token policy: 10 requests / 1 minute
                 options.AddPolicy("RefreshTokenPolicy", httpContext =>
                 {
                     var ip = GetClientIp(httpContext);
@@ -97,7 +95,6 @@ namespace NFC.Platform.BuildingBlocks.Extensions
                         });
                 });
 
-                // Dedicated Resend OTP policy: 3 requests / 2 minutes (prevents OTP notification flooding)
                 options.AddPolicy("ResendOtpPolicy", httpContext =>
                 {
                     var ip = GetClientIp(httpContext);
@@ -112,7 +109,6 @@ namespace NFC.Platform.BuildingBlocks.Extensions
                         });
                 });
 
-                // Dedicated Verify OTP policy: 5 requests / 1 minute
                 options.AddPolicy("VerifyOtpPolicy", httpContext =>
                 {
                     var ip = GetClientIp(httpContext);
@@ -127,7 +123,6 @@ namespace NFC.Platform.BuildingBlocks.Extensions
                         });
                 });
 
-                // 3 requests per 10 minutes + distributed lockout after 3 violations
                 options.AddPolicy("ChangePasswordPolicy", httpContext =>
                 {
                     var ip = GetClientIp(httpContext);
@@ -191,28 +186,27 @@ namespace NFC.Platform.BuildingBlocks.Extensions
 
 
                         case "ChangePasswordPolicy" when cache != null:
-                        {
-                            var (isLocked, minutesLeft, _) = await GetOrUpdateLockoutStateAsync(
-                                cache, "ChangePassword", ip, LockoutViolationThreshold,
-                                TimeSpan.FromMinutes(10), TimeSpan.FromMinutes(LockoutDurationMinutes));
+                            {
+                                var (isLocked, minutesLeft, _) = await GetOrUpdateLockoutStateAsync(
+                                    cache, "ChangePassword", ip, LockoutViolationThreshold,
+                                    TimeSpan.FromMinutes(10), TimeSpan.FromMinutes(LockoutDurationMinutes));
 
-                            if (isLocked)
-                            {
-                                messageKey = "ChangePasswordLockedOut";
-                                messageParam = minutesLeft;
-                                retryAfterSeconds = minutesLeft * 60;
+                                if (isLocked)
+                                {
+                                    messageKey = "ChangePasswordLockedOut";
+                                    messageParam = minutesLeft;
+                                    retryAfterSeconds = minutesLeft * 60;
+                                }
+                                else
+                                {
+                                    messageKey = "TooManyChangePasswordAttempts";
+                                    messageParam = 600;
+                                    retryAfterSeconds = 600;
+                                }
+                                break;
                             }
-                            else
-                            {
-                                messageKey = "TooManyChangePasswordAttempts";
-                                messageParam = 600;
-                                retryAfterSeconds = 600;
-                            }
-                            break;
-                        }
                     }
 
-                    // RFC 7231 — always in seconds
                     context.HttpContext.Response.Headers["Retry-After"] = retryAfterSeconds.ToString();
 
                     var localizedMessage = messageService.Get(messageKey, messageParam);

@@ -5,8 +5,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using NSubstitute;
-using Xunit;
 using NFC.Platform.API.Controllers.Admin;
 using NFC.Platform.Application.DTOs;
 using NFC.Platform.Application.DTOs.Admin;
@@ -22,6 +20,8 @@ using NFC.Platform.Application.Interfaces.Services;
 using NFC.Platform.BuildingBlocks.Common.Constants;
 using NFC.Platform.BuildingBlocks.Results;
 using NFC.Platform.Domain.Enums;
+using NSubstitute;
+using Xunit;
 
 namespace NFC.Platform.Tests.Controllers;
 

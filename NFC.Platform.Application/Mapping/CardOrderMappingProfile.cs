@@ -1,12 +1,12 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
 using AutoMapper;
 using NFC.Platform.Application.DTOs.Admin;
 using NFC.Platform.Application.DTOs.CardOrder;
 using NFC.Platform.Application.DTOs.Employee;
 using NFC.Platform.Domain.Entities;
 using NFC.Platform.Domain.Enums;
-using System;
-using System.Collections.Generic;
-using System.Globalization;
 
 namespace NFC.Platform.Application.Mapping
 {
@@ -68,12 +68,12 @@ namespace NFC.Platform.Application.Mapping
                 .ForMember(dest => dest.User, opt => opt.Ignore())
                 .ForMember(dest => dest.CardDesign, opt => opt.Ignore())
                 .ForMember(dest => dest.Status, opt => opt.Ignore())
-                .ForMember(dest => dest.UnitPrice, opt => opt.Ignore())  // sourced from CardDesign
-                .ForMember(dest => dest.TotalPrice, opt => opt.Ignore()) // sourced from CardDesign
-                .ForMember(dest => dest.Currency, opt => opt.Ignore())   // sourced from CardDesign
+                .ForMember(dest => dest.UnitPrice, opt => opt.Ignore())
+                .ForMember(dest => dest.TotalPrice, opt => opt.Ignore())
+                .ForMember(dest => dest.Currency, opt => opt.Ignore())
                 .ForMember(dest => dest.ParentOrderId, opt => opt.Ignore())
                 .ForMember(dest => dest.ParentOrder, opt => opt.Ignore())
-                .ForMember(dest => dest.Quantity, opt => opt.Ignore())   // computed in Service
+                .ForMember(dest => dest.Quantity, opt => opt.Ignore())
                 .ForMember(dest => dest.RejectionReason, opt => opt.Ignore())
                 .ForMember(dest => dest.TrackingNumber, opt => opt.Ignore())
                 .ForMember(dest => dest.DeliveryOtpHash, opt => opt.Ignore())
@@ -94,7 +94,6 @@ namespace NFC.Platform.Application.Mapping
                 .ForMember(dest => dest.Items, opt => opt.Ignore())
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
 
-            // Excel import mappings to avoid manual mapping in CardOrderService
             CreateMap<ExcelEmployeeImportDto, Employee>()
                 .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => src.Name))
                 .ForMember(dest => dest.JobTitle, opt => opt.MapFrom(src => src.JobTitle ?? string.Empty))
@@ -127,7 +126,7 @@ namespace NFC.Platform.Application.Mapping
                 .ForMember(dest => dest.UserProfileId, opt => opt.MapFrom(src => src.UserProfile != null ? (Guid?)src.UserProfile.Id : null))
                 .ForMember(dest => dest.Phone, opt => opt.MapFrom(src => src.UserProfile != null ? src.UserProfile.Phone : null))
                 .ForMember(dest => dest.CardOrderId, opt => opt.Ignore())
-                .ForMember(dest => dest.UserProfile, opt => opt.Ignore()) // Ignore nav property
+                .ForMember(dest => dest.UserProfile, opt => opt.Ignore())
                 .ForMember(dest => dest.TenantId, opt => opt.MapFrom(src => src.TenantId));
 
             CreateMap<UserProfile, CardOrderItem>()
@@ -137,7 +136,7 @@ namespace NFC.Platform.Application.Mapping
                 .ForMember(dest => dest.Phone, opt => opt.MapFrom(src => src.Phone))
                 .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.Employee != null ? src.Employee.Email : src.ContactEmail))
                 .ForMember(dest => dest.CardOrderId, opt => opt.Ignore())
-                .ForMember(dest => dest.UserProfile, opt => opt.Ignore()) // Ignore nav property
+                .ForMember(dest => dest.UserProfile, opt => opt.Ignore())
                 .ForMember(dest => dest.TenantId, opt => opt.MapFrom(src => src.TenantId));
 
             CreateMap<CardOrder, EmployeesImportStatusDto>()

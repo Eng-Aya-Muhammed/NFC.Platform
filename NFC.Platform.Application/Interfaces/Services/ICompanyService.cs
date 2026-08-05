@@ -12,10 +12,6 @@ namespace NFC.Platform.Application.Interfaces.Services
         Task<ServiceResult> ChangeCompanyAdminPasswordAsync(CompanyChangePasswordRequest request);
         Task<ServiceResult<CompanyDashboardDto>> GetCompanyDashboardAsync();
 
-        /// <summary>
-        /// Sets the company's digital profile template.
-        /// Available via PATCH /api/company/template.
-        /// </summary>
         Task<ServiceResult<CompanyProfileDto>> UpdateCompanyTemplateAsync(Guid? templateId);
 
         Task<ServiceResult<DTOs.VipCustomer.VipCustomerDto>> UpdateVipStatusAsync(Guid companyId, DTOs.VipCustomer.UpdateVipStatusRequest request);

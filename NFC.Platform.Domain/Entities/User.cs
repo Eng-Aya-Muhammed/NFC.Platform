@@ -16,12 +16,11 @@ namespace NFC.Platform.Domain.Entities
         public AccountType AccountType { get; set; } = AccountType.Individual;
         public UserStatus Status { get; set; } = UserStatus.Active;
 
-        //  Google Auth & Email OTP Verification
         public string? GoogleId { get; set; }
         public bool IsEmailVerified { get; set; } = false;
         public string? OtpHash { get; set; }
         public DateTime? OtpExpiresAt { get; set; }
-        
+
         public Guid TenantId { get; set; }
         public Tenant Tenant { get; set; } = null!;
 

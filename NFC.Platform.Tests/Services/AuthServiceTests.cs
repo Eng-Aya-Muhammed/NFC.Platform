@@ -41,16 +41,13 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task LoginAsync_ReturnsUnauthorized_WhenUserDoesNotExist()
         {
-            // Arrange
             var request = new LoginRequest { Email = "notfound@test.com", Password = "Password123!" };
             _userRepo.FindAsync(Arg.Any<Expression<Func<User, bool>>>())
-                .Returns(new List<User>()); // Empty list
+                .Returns(new List<User>());
             _messageService.Get("InvalidCredentials").Returns("Invalid email or password.");
 
-            // Act
             var result = await _sut.LoginAsync(request);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(401, result.StatusCode);
             Assert.Equal("Invalid email or password.", result.Message);
@@ -59,7 +56,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task LoginAsync_ReturnsSuccess_WhenCredentialsAreValid()
         {
-            // Arrange
             var password = "Password123!";
             var hashedPassword = PasswordHasher.HashPassword(password);
             var user = new User { Email = "user@test.com", PasswordHash = hashedPassword, Username = "testuser", IsEmailVerified = true };
@@ -78,10 +74,8 @@ namespace NFC.Platform.Tests.Services
                 .Returns("mock-access-token");
             _messageService.Get("LoginSuccess").Returns("Logged in successfully.");
 
-            // Act
             var result = await _sut.LoginAsync(request);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.NotNull(result.Data);
             Assert.Equal("mock-access-token", result.Data.Token);
@@ -94,7 +88,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task RegisterAsync_ReturnsBadRequest_WhenUserAlreadyExists()
         {
-            // Arrange
             var request = new RegisterRequest { Email = "exists@test.com", Username = "user", Password = "123" };
             var existingUser = new User { Email = "exists@test.com" };
 
@@ -102,10 +95,8 @@ namespace NFC.Platform.Tests.Services
                 .Returns(new List<User> { existingUser });
             _messageService.Get("UserAlreadyExists").Returns("User already exists.");
 
-            // Act
             var result = await _sut.RegisterAsync(request);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(400, result.StatusCode);
             Assert.Equal("User already exists.", result.Message);
@@ -114,7 +105,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task RefreshTokenAsync_ReturnsUnauthorized_WhenTokenIsExpired()
         {
-            // Arrange
             var expiredToken = new RefreshToken
             {
                 Token = "expired-token",
@@ -127,10 +117,8 @@ namespace NFC.Platform.Tests.Services
                 .Returns(new List<RefreshToken> { expiredToken });
             _messageService.Get("InvalidRefreshToken").Returns("Invalid or expired refresh token.");
 
-            // Act
             var result = await _sut.RefreshTokenAsync(request);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(401, result.StatusCode);
         }
@@ -138,7 +126,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task ForgotPasswordAsync_UpdatesResetToken_WhenUserExists()
         {
-            // Arrange
             var email = "user@test.com";
             var user = new User { Email = email };
             var request = new ForgotPasswordRequest { Email = email };
@@ -148,10 +135,8 @@ namespace NFC.Platform.Tests.Services
             _userRepo.FindAsync(Arg.Any<Expression<Func<User, bool>>>())
                 .Returns(new List<User> { user });
 
-            // Act
             var result = await _sut.ForgotPasswordAsync(request);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.NotNull(user.PasswordResetToken);
             Assert.NotNull(user.PasswordResetTokenExpires);
@@ -167,7 +152,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task ResetPasswordAsync_ChangesPassword_WhenTokenIsValid()
         {
-            // Arrange
             var token = "valid-reset-token";
             var user = new User
             {
@@ -184,10 +168,8 @@ namespace NFC.Platform.Tests.Services
             _userRepo.FindAsync(Arg.Any<Expression<Func<User, bool>>>())
                 .Returns(new List<User> { user });
 
-            // Act
             var result = await _sut.ResetPasswordAsync(request);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Null(user.PasswordResetToken);
             Assert.Null(user.PasswordResetTokenExpires);
@@ -198,7 +180,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task RegisterAsync_ReturnsSuccess_WhenRequestIsValid()
         {
-            // Arrange
             var request = new RegisterRequest
             {
                 Email = "newuser@test.com",
@@ -207,7 +188,7 @@ namespace NFC.Platform.Tests.Services
             };
 
             _userRepo.FindAsync(Arg.Any<Expression<Func<User, bool>>>())
-                .Returns(new List<User>()); // User does not exist
+                .Returns(new List<User>());
 
             _roleRepo.FindAsync(Arg.Any<Expression<Func<Role, bool>>>())
                 .Returns(new List<Role> { new() { Id = Guid.NewGuid(), Name = AppRole.Customer.ToString() } });
@@ -218,10 +199,8 @@ namespace NFC.Platform.Tests.Services
             _tokenService.GenerateToken(Arg.Any<Guid>(), request.Email, Arg.Any<IEnumerable<string>>(), Arg.Any<Guid>(), Arg.Any<Guid?>(), Arg.Any<string>())
                 .Returns("mock-access-token");
 
-            // Act
             var result = await _sut.RegisterAsync(request);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.True(result.Data);
             await _userRepo.Received(1).AddAsync(Arg.Any<User>());
@@ -231,7 +210,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task RegisterAsync_CreatesCompanyAndAssignsRole_WhenAccountTypeIsCompanyAdmin()
         {
-            // Arrange
             var request = new RegisterRequest
             {
                 Email = "companyadmin@test.com",
@@ -256,10 +234,8 @@ namespace NFC.Platform.Tests.Services
             _tokenService.GenerateToken(Arg.Any<Guid>(), request.Email, Arg.Any<IEnumerable<string>>(), Arg.Any<Guid>(), Arg.Any<Guid?>(), Arg.Any<string>())
                 .Returns("mock-access-token");
 
-            // Act
             var result = await _sut.RegisterAsync(request);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.True(result.Data);
             await _userRepo.Received(1).AddAsync(Arg.Any<User>());
@@ -270,7 +246,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task RefreshTokenAsync_ReturnsSuccess_WhenTokenIsValid()
         {
-            // Arrange
             var userId = Guid.NewGuid();
             var validRefreshToken = new RefreshToken
             {
@@ -296,33 +271,28 @@ namespace NFC.Platform.Tests.Services
                 .Returns("new-access-token");
             _messageService.Get("TokenRefreshed").Returns("Token refreshed successfully.");
 
-            // Act
             var result = await _sut.RefreshTokenAsync(request);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.NotNull(result.Data);
             Assert.Equal("new-access-token", result.Data.Token);
             Assert.Equal("Token refreshed successfully.", result.Message);
-            Assert.True(validRefreshToken.IsRevoked); // Old token should be marked revoked
-            await _tokenRepo.Received(1).AddAsync(Arg.Any<RefreshToken>()); // New refresh token added
+            Assert.True(validRefreshToken.IsRevoked);
+            await _tokenRepo.Received(1).AddAsync(Arg.Any<RefreshToken>());
             await _unitOfWork.Received().SaveChangesAsync();
         }
 
         [Fact]
         public async Task RevokeTokenAsync_RevokesToken_WhenTokenExists()
         {
-            // Arrange
             var token = new RefreshToken { Token = "token-to-revoke", IsRevoked = false };
             var request = new RefreshTokenRequest { RefreshToken = "token-to-revoke" };
 
             _tokenRepo.FindAsync(Arg.Any<Expression<Func<RefreshToken, bool>>>())
                 .Returns(new List<RefreshToken> { token });
 
-            // Act
             var result = await _sut.RevokeTokenAsync(request);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.True(token.IsRevoked);
             await _unitOfWork.Received(1).SaveChangesAsync();
@@ -331,13 +301,12 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task ResetPasswordAsync_ReturnsBadRequest_WhenTokenIsExpired()
         {
-            // Arrange
             var token = "expired-reset-token";
             var user = new User
             {
                 Email = "user@test.com",
                 PasswordResetToken = token,
-                PasswordResetTokenExpires = DateTime.UtcNow.AddMinutes(-5) // Expired 5 minutes ago
+                PasswordResetTokenExpires = DateTime.UtcNow.AddMinutes(-5)
             };
             var request = new ResetPasswordRequest
             {
@@ -350,10 +319,8 @@ namespace NFC.Platform.Tests.Services
 
             _messageService.Get("ResetTokenExpired").Returns("Reset token has expired.");
 
-            // Act
             var result = await _sut.ResetPasswordAsync(request);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(400, result.StatusCode);
             Assert.Equal("Reset token has expired.", result.Message);
@@ -362,7 +329,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task ResetPasswordAsync_ReturnsBadRequest_WhenTokenDoesNotExist()
         {
-            // Arrange
             var request = new ResetPasswordRequest
             {
                 Token = "non-existent-token",
@@ -370,13 +336,11 @@ namespace NFC.Platform.Tests.Services
             };
 
             _userRepo.FindAsync(Arg.Any<Expression<Func<User, bool>>>())
-                .Returns(new List<User>()); // Empty list
+                .Returns(new List<User>());
             _messageService.Get("InvalidResetToken").Returns("Invalid reset token.");
 
-            // Act
             var result = await _sut.ResetPasswordAsync(request);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(400, result.StatusCode);
             Assert.Equal("Invalid reset token.", result.Message);
@@ -385,7 +349,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task CreateUserByAdminAsync_ReturnsSuccess_WhenAdminCreatesValidUser()
         {
-            // Arrange
             var request = new AdminCreateUserRequest
             {
                 Email = "newadmin@test.com",
@@ -395,7 +358,7 @@ namespace NFC.Platform.Tests.Services
             };
 
             _userRepo.FindAsync(Arg.Any<Expression<Func<User, bool>>>())
-                .Returns(new List<User>()); // User does not exist
+                .Returns(new List<User>());
 
             _roleRepo.FindAsync(Arg.Any<Expression<Func<Role, bool>>>())
                 .Returns(new List<Role> { new() { Id = Guid.NewGuid(), Name = AppRole.Admin.ToString() } });
@@ -408,10 +371,8 @@ namespace NFC.Platform.Tests.Services
             var expectedUserDto = new UserDto { Username = "newadmin", Email = "newadmin@test.com" };
             _mapper.Map<UserDto>(Arg.Any<User>()).Returns(expectedUserDto);
 
-            // Act
             var result = await _sut.CreateUserByAdminAsync(request);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.NotNull(result.Data);
             Assert.Equal("newadmin", result.Data.Username);
@@ -432,7 +393,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task CreateUserByAdminAsync_ReturnsBadRequest_WhenUserAlreadyExists()
         {
-            // Arrange
             var request = new AdminCreateUserRequest
             {
                 Email = "exists@test.com",
@@ -447,10 +407,8 @@ namespace NFC.Platform.Tests.Services
 
             _messageService.Get("UserAlreadyExists").Returns("User already exists.");
 
-            // Act
             var result = await _sut.CreateUserByAdminAsync(request);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(400, result.StatusCode);
             Assert.Equal("User already exists.", result.Message);
@@ -459,14 +417,11 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task ForgotPasswordAsync_SetsTokenAndExpires_WhenUserExists()
         {
-            // Arrange
             var user = new User { Email = "user@test.com" };
             _userRepo.GetQueryable().Returns(new List<User> { user }.AsQueryable().BuildMock());
 
-            // Act
             var result = await _sut.ForgotPasswordAsync(new ForgotPasswordRequest { Email = "user@test.com" });
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.NotNull(user.PasswordResetToken);
             Assert.NotNull(user.PasswordResetTokenExpires);
@@ -476,13 +431,10 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task ForgotPasswordAsync_AlwaysReturnsSuccess_EvenWhenUserDoesNotExist()
         {
-            // Arrange
             _userRepo.GetQueryable().Returns(new List<User>().AsQueryable().BuildMock());
 
-            // Act
             var result = await _sut.ForgotPasswordAsync(new ForgotPasswordRequest { Email = "nonexistent@test.com" });
 
-            // Assert
             Assert.True(result.IsSuccess);
             await _unitOfWork.DidNotReceive().SaveChangesAsync();
         }
@@ -490,13 +442,10 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task ResetPasswordAsync_Returns400_WhenTokenIsInvalid()
         {
-            // Arrange
             _userRepo.GetQueryable().Returns(new List<User>().AsQueryable().BuildMock());
 
-            // Act
             var result = await _sut.ResetPasswordAsync(new ResetPasswordRequest { Token = "invalid", NewPassword = "NewPassword123!" });
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(400, result.StatusCode);
         }
@@ -504,7 +453,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task ResetPasswordAsync_Returns400_WhenTokenIsExpired()
         {
-            // Arrange
             var expiredUser = new User
             {
                 PasswordResetToken = "expired",
@@ -512,10 +460,8 @@ namespace NFC.Platform.Tests.Services
             };
             _userRepo.GetQueryable().Returns(new List<User> { expiredUser }.AsQueryable().BuildMock());
 
-            // Act
             var result = await _sut.ResetPasswordAsync(new ResetPasswordRequest { Token = "expired", NewPassword = "NewPassword123!" });
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(400, result.StatusCode);
         }
@@ -523,7 +469,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task ResetPasswordAsync_ResetsPasswordSuccessfully()
         {
-            // Arrange
             var user = new User
             {
                 PasswordResetToken = "valid",
@@ -531,10 +476,8 @@ namespace NFC.Platform.Tests.Services
             };
             _userRepo.GetQueryable().Returns(new List<User> { user }.AsQueryable().BuildMock());
 
-            // Act
             var result = await _sut.ResetPasswordAsync(new ResetPasswordRequest { Token = "valid", NewPassword = "NewPassword123!" });
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Null(user.PasswordResetToken);
             Assert.Null(user.PasswordResetTokenExpires);
@@ -545,7 +488,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task CreateUserByAdminAsync_Returns400_WhenRoleDoesNotExist()
         {
-            // Arrange
             var request = new AdminCreateUserRequest
             {
                 Username = "newuser",
@@ -554,12 +496,10 @@ namespace NFC.Platform.Tests.Services
                 Role = AppRole.Customer
             };
             _userRepo.GetQueryable().Returns(new List<User>().AsQueryable().BuildMock());
-            _roleRepo.FindAsync(Arg.Any<Expression<Func<Role, bool>>>()).Returns(new List<Role>()); // No roles matching
+            _roleRepo.FindAsync(Arg.Any<Expression<Func<Role, bool>>>()).Returns(new List<Role>());
 
-            // Act
             var result = await _sut.CreateUserByAdminAsync(request);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(400, result.StatusCode);
         }
@@ -567,7 +507,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task CreateUserByAdminAsync_CreatesUserAndRoleSuccessfully()
         {
-            // Arrange
             var request = new AdminCreateUserRequest
             {
                 Username = "newuser",
@@ -583,10 +522,8 @@ namespace NFC.Platform.Tests.Services
             var expectedUserDto = new UserDto { Username = "newuser", Email = "new@test.com" };
             _mapper.Map<UserDto>(Arg.Any<User>()).Returns(expectedUserDto);
 
-            // Act
             var result = await _sut.CreateUserByAdminAsync(request);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal("newuser", result.Data!.Username);
             Assert.Equal("new@test.com", result.Data.Email);
@@ -605,14 +542,11 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task VerifyOtpAsync_ReturnsFail_WhenEmailOrOtpIsEmpty()
         {
-            // Arrange
             _messageService.Get("OtpInvalid").Returns("Invalid OTP.");
 
-            // Act
             var resultNoEmail = await _sut.VerifyOtpAsync(new VerifyOtpRequest { Email = "", OtpCode = "123456" });
             var resultNoOtp = await _sut.VerifyOtpAsync(new VerifyOtpRequest { Email = "user@test.com", OtpCode = "" });
 
-            // Assert
             Assert.False(resultNoEmail.IsSuccess);
             Assert.Equal(400, resultNoEmail.StatusCode);
             Assert.False(resultNoOtp.IsSuccess);
@@ -622,14 +556,11 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task VerifyOtpAsync_ReturnsFail_WhenUserNotFound()
         {
-            // Arrange
             _userRepo.GetQueryable().Returns(new List<User>().AsQueryable().BuildMock());
             _messageService.Get("OtpInvalid").Returns("Invalid OTP.");
 
-            // Act
             var result = await _sut.VerifyOtpAsync(new VerifyOtpRequest { Email = "notfound@test.com", OtpCode = "123456" });
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(400, result.StatusCode);
         }
@@ -637,15 +568,12 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task VerifyOtpAsync_ReturnsFail_WhenOtpIsInvalid()
         {
-            // Arrange
             var user = new User { Email = "user@test.com", OtpHash = NFC.Platform.BuildingBlocks.Common.Helpers.OtpHasher.HashOtp("654321"), OtpExpiresAt = DateTime.UtcNow.AddMinutes(5) };
             _userRepo.GetQueryable().Returns(new List<User> { user }.AsQueryable().BuildMock());
             _messageService.Get("OtpInvalid").Returns("Invalid OTP.");
 
-            // Act
             var result = await _sut.VerifyOtpAsync(new VerifyOtpRequest { Email = "user@test.com", OtpCode = "123456" });
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(400, result.StatusCode);
         }
@@ -653,15 +581,12 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task VerifyOtpAsync_ReturnsFail_WhenUserIsAlreadyVerified_AndOtpIsInvalid()
         {
-            // Arrange
             var user = new User { Email = "user@test.com", IsEmailVerified = true, OtpHash = NFC.Platform.BuildingBlocks.Common.Helpers.OtpHasher.HashOtp("654321"), OtpExpiresAt = DateTime.UtcNow.AddMinutes(5) };
             _userRepo.GetQueryable().Returns(new List<User> { user }.AsQueryable().BuildMock());
             _messageService.Get("OtpInvalid").Returns("Invalid OTP.");
 
-            // Act - Sending dummy OTP to verified user should fail
             var result = await _sut.VerifyOtpAsync(new VerifyOtpRequest { Email = "user@test.com", OtpCode = "000000" });
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(400, result.StatusCode);
         }
@@ -669,15 +594,12 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task VerifyOtpAsync_ReturnsFail_WhenOtpIsExpired()
         {
-            // Arrange
             var user = new User { Email = "user@test.com", OtpHash = NFC.Platform.BuildingBlocks.Common.Helpers.OtpHasher.HashOtp("123456"), OtpExpiresAt = DateTime.UtcNow.AddMinutes(-5) };
             _userRepo.GetQueryable().Returns(new List<User> { user }.AsQueryable().BuildMock());
             _messageService.Get("OtpExpired").Returns("OTP has expired.");
 
-            // Act
             var result = await _sut.VerifyOtpAsync(new VerifyOtpRequest { Email = "user@test.com", OtpCode = "123456" });
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(400, result.StatusCode);
             Assert.Equal("OTP has expired.", result.Message);
@@ -686,7 +608,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task VerifyOtpAsync_ReturnsSuccess_WhenOtpIsValid()
         {
-            // Arrange
             var user = new User
             {
                 Id = Guid.NewGuid(),
@@ -701,10 +622,8 @@ namespace NFC.Platform.Tests.Services
             _tokenService.GenerateToken(user.Id, user.Email, Arg.Any<IEnumerable<string>>(), Arg.Any<Guid>(), Arg.Any<Guid?>(), Arg.Any<string>()).Returns("valid-jwt-token");
             _messageService.Get("OtpVerifiedSuccess").Returns("OTP verified successfully.");
 
-            // Act
             var result = await _sut.VerifyOtpAsync(new VerifyOtpRequest { Email = "user@test.com", OtpCode = "123456" });
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.NotNull(result.Data);
             Assert.Equal("valid-jwt-token", result.Data.Token);

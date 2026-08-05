@@ -36,7 +36,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task GetPlansAsync_ReturnsAllPlans_WithTranslations()
         {
-            // Arrange
             var plans = new List<SubscriptionPlan>
             {
                 new SubscriptionPlan { Id = Guid.NewGuid(), NameAr = "PremiumAnnualAr", NameEn = "PremiumAnnualEn", Features = ["PremiumDesc"], DurationInDays = 365, Price = 699 },
@@ -58,10 +57,8 @@ namespace NFC.Platform.Tests.Services
             _messageService.Get("Premium3Years").Returns("Premium - 3 Years");
             _messageService.Get("PremiumDesc").Returns("Premium Description");
 
-            // Act
             var result = await _sut.GetPlansAsync();
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(2, result.Data!.Count);
             Assert.Equal("Premium - Annual", result.Data![0].Name);
@@ -71,13 +68,10 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task GetCurrentSubscriptionAsync_ReturnsUnauthorized_WhenTenantIdIsNull()
         {
-            // Arrange
             _currentTenant.TenantId.Returns((Guid?)null);
 
-            // Act
             var result = await _sut.GetCurrentSubscriptionAsync();
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(401, result.StatusCode);
         }
@@ -85,7 +79,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task GetCurrentSubscriptionAsync_ReturnsNotFound_WhenNoActiveSubscriptionExists()
         {
-            // Arrange
             var tenantId = Guid.NewGuid();
             _currentTenant.TenantId.Returns(tenantId);
 
@@ -94,10 +87,8 @@ namespace NFC.Platform.Tests.Services
 
             _messageService.Get("SubscriptionExpiredOrMissing").Returns("No active subscription found.");
 
-            // Act
             var result = await _sut.GetCurrentSubscriptionAsync();
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(404, result.StatusCode);
             Assert.Equal("No active subscription found.", result.Message);
@@ -106,7 +97,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task GetCurrentSubscriptionAsync_ReturnsActiveSubscription_WithTranslations()
         {
-            // Arrange
             var tenantId = Guid.NewGuid();
             _currentTenant.TenantId.Returns(tenantId);
 
@@ -127,10 +117,8 @@ namespace NFC.Platform.Tests.Services
 
             _messageService.Get("PremiumAnnual").Returns("البريميوم - سنوي");
 
-            // Act
             var result = await _sut.GetCurrentSubscriptionAsync();
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal("البريميوم - سنوي", result.Data!.PlanName);
         }
@@ -138,7 +126,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task GetSubscriptionHistoryAsync_ReturnsHistory_WithTranslations()
         {
-            // Arrange
             var tenantId = Guid.NewGuid();
             _currentTenant.TenantId.Returns(tenantId);
 
@@ -159,10 +146,8 @@ namespace NFC.Platform.Tests.Services
 
             _messageService.Get("PremiumAnnual").Returns("Premium - Annual");
 
-            // Act
             var result = await _sut.GetSubscriptionHistoryAsync();
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Single(result.Data!);
             Assert.Equal("Premium - Annual", result.Data![0].PlanName);
@@ -171,16 +156,13 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task RenewSubscriptionAsync_ReturnsUnauthorized_WhenTenantOrUserIdIsNull()
         {
-            // Arrange
             _currentTenant.TenantId.Returns((Guid?)null);
             _currentTenant.UserId.Returns((Guid?)null);
 
             var request = new RenewSubscriptionRequest { SubscriptionPlanId = Guid.NewGuid() };
 
-            // Act
             var result = await _sut.RenewSubscriptionAsync(request);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(401, result.StatusCode);
         }
@@ -188,7 +170,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task RenewSubscriptionAsync_ReturnsNotFound_WhenPlanDoesNotExist()
         {
-            // Arrange
             _currentTenant.TenantId.Returns(Guid.NewGuid());
             _currentTenant.UserId.Returns(Guid.NewGuid());
 
@@ -197,10 +178,8 @@ namespace NFC.Platform.Tests.Services
 
             var request = new RenewSubscriptionRequest { SubscriptionPlanId = Guid.NewGuid() };
 
-            // Act
             var result = await _sut.RenewSubscriptionAsync(request);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(404, result.StatusCode);
         }
@@ -208,7 +187,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task SubscribeAsync_CreatesNewSubscription_WhenNoActiveSubscriptionExists()
         {
-            // Arrange
             var tenantId = Guid.NewGuid();
             var userId = Guid.NewGuid();
             var planId = Guid.NewGuid();
@@ -230,12 +208,10 @@ namespace NFC.Platform.Tests.Services
             _messageService.Get("PremiumAnnual").Returns("Premium - Annual");
             _messageService.Get("RecordCreated").Returns("Subscribed successfully.");
 
-            // Act
             var result = await _sut.SubscribeAsync(request);
 
-            // Assert
             Assert.True(result.IsSuccess);
-            await _subscriptionRepo.Received(1).AddAsync(Arg.Is<UserSubscription>(s => 
+            await _subscriptionRepo.Received(1).AddAsync(Arg.Is<UserSubscription>(s =>
                 s.TenantId == Guid.Empty &&
                 s.UserId == userId &&
                 s.SubscriptionPlanId == planId &&
@@ -249,7 +225,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task SubscribeAsync_ReturnsBadRequest_WhenActiveSubscriptionExists()
         {
-            // Arrange
             var tenantId = Guid.NewGuid();
             var userId = Guid.NewGuid();
             var planId = Guid.NewGuid();
@@ -266,10 +241,8 @@ namespace NFC.Platform.Tests.Services
             var request = new SubscribeRequest { SubscriptionPlanId = planId };
             _messageService.Get("HasActiveSubscription").Returns("You already have an active subscription.");
 
-            // Act
             var result = await _sut.SubscribeAsync(request);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(400, result.StatusCode);
             Assert.Equal("You already have an active subscription.", result.Message);
@@ -278,7 +251,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task SubscribeAsync_ReturnsBadRequest_WhenUniqueIndexConstraintViolated_SimulatingRaceCondition()
         {
-            // Arrange
             var tenantId = Guid.NewGuid();
             var userId = Guid.NewGuid();
             var planId = Guid.NewGuid();
@@ -289,24 +261,20 @@ namespace NFC.Platform.Tests.Services
             var plan = new SubscriptionPlan { Id = planId, NameAr = "Test Plan", DurationInDays = 30 };
             _planRepo.GetQueryable().Returns(new List<SubscriptionPlan> { plan }.AsQueryable().BuildMock());
 
-            // Simulate that another thread hasn't committed yet, so our read query returns null (no active subscription found)
             _subscriptionRepo.GetQueryable().Returns(new List<UserSubscription>().AsQueryable().BuildMock());
 
-            // Simulate the race condition: both threads insert, one succeeds, our thread fails at SaveChanges with a unique constraint violation
             var innerException = new Exception("Violation of UNIQUE KEY constraint 'IX_UserSubscriptions_TenantId'");
             var dbUpdateException = new Microsoft.EntityFrameworkCore.DbUpdateException("An error occurred while updating the entries.", innerException);
-            
+
             _unitOfWork.SaveChangesAsync().Throws(dbUpdateException);
-            
+
             var request = new SubscribeRequest { SubscriptionPlanId = planId };
             _mapper.Map<UserSubscription>(request).Returns(new UserSubscription());
-            
+
             _messageService.Get("HasActiveSubscription").Returns("You already have an active subscription.");
 
-            // Act
             var result = await _sut.SubscribeAsync(request);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(400, result.StatusCode);
             Assert.Equal("You already have an active subscription.", result.Message);
@@ -315,7 +283,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task RenewSubscriptionAsync_ExtendsExistingSubscription_WhenActiveSubscriptionExists()
         {
-            // Arrange
             var tenantId = Guid.NewGuid();
             var userId = Guid.NewGuid();
             var planId = Guid.NewGuid();
@@ -343,12 +310,10 @@ namespace NFC.Platform.Tests.Services
 
             _messageService.Get("PremiumAnnual").Returns("Premium - Annual");
 
-            // Act
             var result = await _sut.RenewSubscriptionAsync(request);
 
-            // Assert
             Assert.True(result.IsSuccess);
-            await _subscriptionRepo.Received(1).AddAsync(Arg.Is<UserSubscription>(s => 
+            await _subscriptionRepo.Received(1).AddAsync(Arg.Is<UserSubscription>(s =>
                 s.TenantId == Guid.Empty &&
                 s.UserId == userId &&
                 s.SubscriptionPlanId == planId &&
@@ -362,7 +327,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task RenewSubscriptionAsync_ReturnsBadRequest_WhenNoActiveSubscriptionExists()
         {
-            // Arrange
             var tenantId = Guid.NewGuid();
             var userId = Guid.NewGuid();
             var planId = Guid.NewGuid();
@@ -378,10 +342,8 @@ namespace NFC.Platform.Tests.Services
             var request = new RenewSubscriptionRequest { SubscriptionPlanId = planId };
             _messageService.Get("NoActiveSubscriptionToRenew").Returns("No active subscription found to renew.");
 
-            // Act
             var result = await _sut.RenewSubscriptionAsync(request);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(400, result.StatusCode);
             Assert.Equal("No active subscription found to renew.", result.Message);
@@ -390,7 +352,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task RenewSubscriptionAsync_StartsFromCurrentEndDate()
         {
-            // Arrange
             var tenantId = Guid.NewGuid();
             var userId = Guid.NewGuid();
             var planId = Guid.NewGuid();
@@ -409,13 +370,11 @@ namespace NFC.Platform.Tests.Services
             _mapper.Map<UserSubscription>(request).Returns(new UserSubscription());
             _mapper.Map<UserSubscriptionDto>(Arg.Any<UserSubscription>()).Returns(new UserSubscriptionDto { PlanName = "PremiumAnnual" });
 
-            // Act
             var result = await _sut.RenewSubscriptionAsync(request);
 
-            // Assert
             Assert.True(result.IsSuccess);
-            await _subscriptionRepo.Received(1).AddAsync(Arg.Is<UserSubscription>(s => 
-                s.StartDate == currentEndDate && 
+            await _subscriptionRepo.Received(1).AddAsync(Arg.Is<UserSubscription>(s =>
+                s.StartDate == currentEndDate &&
                 s.EndDate == currentEndDate.AddDays(365) &&
                 s.IsActive == true));
             await _unitOfWork.Received(1).SaveChangesAsync();
@@ -424,15 +383,12 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task GetSubscriptionHistoryAsync_ReturnsEmpty_WhenNoHistory()
         {
-            // Arrange
             _currentTenant.TenantId.Returns(Guid.NewGuid());
             _subscriptionRepo.GetQueryable().Returns(new List<UserSubscription>().AsQueryable().BuildMock());
             _mapper.Map<IReadOnlyList<UserSubscriptionDto>>(Arg.Any<List<UserSubscription>>()).Returns(new List<UserSubscriptionDto>());
 
-            // Act
             var result = await _sut.GetSubscriptionHistoryAsync();
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Empty(result.Data!);
         }
@@ -440,13 +396,10 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task GetSubscriptionHistoryAsync_ReturnsUnauthorized_WhenTenantIdIsNull()
         {
-            // Arrange
             _currentTenant.TenantId.Returns((Guid?)null);
 
-            // Act
             var result = await _sut.GetSubscriptionHistoryAsync();
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(401, result.StatusCode);
         }
@@ -454,17 +407,14 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task AdminExtendSubscriptionAsync_ReturnsNotFound_WhenTenantDoesNotExist()
         {
-            // Arrange
             var tenantId = Guid.NewGuid();
             _tenantRepo.GetQueryable().Returns(new List<Tenant>().AsQueryable().BuildMock());
             _messageService.Get("RecordNotFound").Returns("Record not found.");
 
             var request = new NFC.Platform.Application.DTOs.Subscription.ExtendSubscriptionRequest { ExtensionDays = 30 };
 
-            // Act
             var result = await _sut.AdminExtendSubscriptionAsync(tenantId, request);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(404, result.StatusCode);
         }
@@ -472,7 +422,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task AdminExtendSubscriptionAsync_ExtendsEndDate_PreservingStartDateAndQuotas_WhenActiveSubscriptionExists()
         {
-            // Arrange
             var tenantId = Guid.NewGuid();
             var tenant = new Tenant { Id = tenantId, Name = "Acme Corp" };
             _tenantRepo.GetQueryable().Returns(new List<Tenant> { tenant }.AsQueryable().BuildMock());
@@ -494,23 +443,20 @@ namespace NFC.Platform.Tests.Services
 
             var request = new NFC.Platform.Application.DTOs.Subscription.ExtendSubscriptionRequest { ExtensionDays = 30 };
 
-            // Act
             var result = await _sut.AdminExtendSubscriptionAsync(tenantId, request);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(200, result.StatusCode);
-            Assert.Equal(originalStartDate, sub.StartDate); // StartDate preserved for active subscription
-            Assert.Equal(originalEndDate.AddDays(30), sub.EndDate); // EndDate extended from current EndDate
-            Assert.Equal(3, sub.TemplateChangesUsed); // Quota preserved
-            Assert.Equal(1, sub.CustomDesignRequestsUsed); // Quota preserved
+            Assert.Equal(originalStartDate, sub.StartDate);
+            Assert.Equal(originalEndDate.AddDays(30), sub.EndDate);
+            Assert.Equal(3, sub.TemplateChangesUsed);
+            Assert.Equal(1, sub.CustomDesignRequestsUsed);
             await _unitOfWork.Received(1).SaveChangesAsync();
         }
 
         [Fact]
         public async Task AdminExtendSubscriptionAsync_ReactivatesAndUpdatesStartDateToUtcNow_WhenSubscriptionExpired()
         {
-            // Arrange
             var tenantId = Guid.NewGuid();
             var tenant = new Tenant { Id = tenantId, Name = "Acme Corp" };
             _tenantRepo.GetQueryable().Returns(new List<Tenant> { tenant }.AsQueryable().BuildMock());
@@ -529,20 +475,17 @@ namespace NFC.Platform.Tests.Services
 
             var request = new NFC.Platform.Application.DTOs.Subscription.ExtendSubscriptionRequest { ExtensionDays = 60 };
 
-            // Act
             var result = await _sut.AdminExtendSubscriptionAsync(tenantId, request);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.True(sub.IsActive);
-            Assert.True(sub.StartDate > expiredEndDate); // StartDate updated to UtcNow
+            Assert.True(sub.StartDate > expiredEndDate);
             await _unitOfWork.Received(1).SaveChangesAsync();
         }
 
         [Fact]
         public async Task AdminExtendSubscriptionAsync_ReturnsBadRequest_WhenNoSubscriptionExistsToExtend()
         {
-            // Arrange
             var tenantId = Guid.NewGuid();
             var tenant = new Tenant { Id = tenantId, Name = "Tenant Without Sub" };
             _tenantRepo.GetQueryable().Returns(new List<Tenant> { tenant }.AsQueryable().BuildMock());
@@ -551,10 +494,8 @@ namespace NFC.Platform.Tests.Services
 
             var request = new NFC.Platform.Application.DTOs.Subscription.ExtendSubscriptionRequest { ExtensionDays = 30 };
 
-            // Act
             var result = await _sut.AdminExtendSubscriptionAsync(tenantId, request);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(400, result.StatusCode);
             Assert.Equal("Cannot extend subscription for a customer with no prior subscription.", result.Message);
@@ -563,16 +504,13 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task AdminExtendSubscriptionAsync_ReturnsBadRequest_WhenDaysIsZeroOrNegative()
         {
-            // Arrange
             var tenantId = Guid.NewGuid();
             _messageService.Get("InvalidExtensionDays").Returns("Invalid extension days.");
 
             var request = new NFC.Platform.Application.DTOs.Subscription.ExtendSubscriptionRequest { ExtensionDays = 0 };
 
-            // Act
             var result = await _sut.AdminExtendSubscriptionAsync(tenantId, request);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(400, result.StatusCode);
         }
@@ -580,7 +518,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task GetPlansAsync_FiltersBySearch()
         {
-            // Arrange
             var plans = new List<SubscriptionPlan>
             {
                 new() { Id = Guid.NewGuid(), NameAr = "سنوي", NameEn = "Annual" },
@@ -591,10 +528,8 @@ namespace NFC.Platform.Tests.Services
             _mapper.Map<IReadOnlyList<SubscriptionPlanDto>>(Arg.Any<List<SubscriptionPlan>>())
                 .Returns(x => ((List<SubscriptionPlan>)x[0]).Select(p => new SubscriptionPlanDto { Name = p.NameEn }).ToList());
 
-            // Act
             var result = await _sut.GetPlansAsync("Monthly");
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Single(result.Data!);
             Assert.Equal("Monthly", result.Data![0].Name);
@@ -603,7 +538,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task GetSubscriptionHistoryAsync_FiltersBySearch()
         {
-            // Arrange
             var tenantId = Guid.NewGuid();
             _currentTenant.TenantId.Returns(tenantId);
 
@@ -620,10 +554,8 @@ namespace NFC.Platform.Tests.Services
             _mapper.Map<IReadOnlyList<UserSubscriptionDto>>(Arg.Any<List<UserSubscription>>())
                 .Returns(x => ((List<UserSubscription>)x[0]).Select(s => new UserSubscriptionDto { PlanName = s.SubscriptionPlan.NameEn }).ToList());
 
-            // Act
             var result = await _sut.GetSubscriptionHistoryAsync("Annual");
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Single(result.Data!);
             Assert.Equal("Annual", result.Data![0].PlanName);

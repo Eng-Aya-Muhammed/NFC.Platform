@@ -62,9 +62,6 @@ namespace NFC.Platform.API.Controllers
             return Ok(result);
         }
 
-        /// <summary>
-        /// Applies a specific digital card template to the company's public profile (overrides employee defaults).
-        /// </summary>
         [HttpPost("apply-template/{templateId:guid}")]
         [HasPermission(AppPermissions.Company.Update)]
         public async Task<IActionResult> ApplyCompanyPublicProfileTemplate([FromRoute] Guid templateId)
@@ -74,9 +71,6 @@ namespace NFC.Platform.API.Controllers
             return Ok(result);
         }
 
-        /// <summary>
-        /// Removes the applied digital card template from the company's public profile.
-        /// </summary>
         [HttpDelete("remove-template")]
         [HasPermission(AppPermissions.Company.Update)]
         public async Task<IActionResult> RemoveCompanyPublicProfileTemplate()

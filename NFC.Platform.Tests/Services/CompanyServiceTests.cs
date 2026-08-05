@@ -49,13 +49,10 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task GetMyCompanyProfileAsync_ReturnsUnauthorized_WhenTenantNotAuthenticated()
         {
-            // Arrange
             _currentTenant.TenantId.Returns((Guid?)null);
 
-            // Act
             var result = await _sut.GetMyCompanyProfileAsync();
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(401, result.StatusCode);
         }
@@ -63,7 +60,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task GetMyCompanyProfileAsync_ReturnsNotFound_WhenCompanyDoesNotExist()
         {
-            // Arrange
             var tenantId = Guid.NewGuid();
             _currentTenant.TenantId.Returns(tenantId);
 
@@ -71,10 +67,8 @@ namespace NFC.Platform.Tests.Services
             _companyRepo.GetQueryable().Returns(queryable);
             _messageService.Get("RecordNotFound").Returns("Record not found.");
 
-            // Act
             var result = await _sut.GetMyCompanyProfileAsync();
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(404, result.StatusCode);
         }
@@ -82,7 +76,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task GetMyCompanyProfileAsync_ReturnsSuccess_WithRemainingDaysComputed()
         {
-            // Arrange
             var tenantId = Guid.NewGuid();
             _currentTenant.TenantId.Returns(tenantId);
 
@@ -102,10 +95,8 @@ namespace NFC.Platform.Tests.Services
             var dto = new CompanyProfileDto { Name = "OnPoint" };
             _mapper.Map<CompanyProfileDto>(company).Returns(dto);
 
-            // Act
             var result = await _sut.GetMyCompanyProfileAsync();
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(200, result.StatusCode);
             Assert.Equal(15, result.Data!.SubscriptionRemainingDays);
@@ -114,7 +105,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task UpdateCompanyProfileAsync_UpdatesProfileAndReturnsSuccess()
         {
-            // Arrange
             var tenantId = Guid.NewGuid();
             _currentTenant.TenantId.Returns(tenantId);
 
@@ -129,17 +119,16 @@ namespace NFC.Platform.Tests.Services
             var request = new UpdateCompanyProfileRequest { Name = "New OnPoint", Phone = "9999" };
             var dto = new CompanyProfileDto { Name = "New OnPoint", Phone = "9999" };
 
-            _mapper.Map(request, company).Returns(c => {
+            _mapper.Map(request, company).Returns(c =>
+            {
                 company.Name = request.Name;
                 return company;
             });
             _mapper.Map<CompanyProfileDto>(company).Returns(dto);
             _messageService.Get("RecordUpdated").Returns("Record updated successfully.");
 
-            // Act
             var result = await _sut.UpdateCompanyProfileAsync(request);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(200, result.StatusCode);
             Assert.Equal("New OnPoint", result.Data!.Name);
@@ -150,7 +139,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task ChangeCompanyAdminPasswordAsync_ReturnsFail_WhenOldPasswordIncorrect()
         {
-            // Arrange
             var userId = Guid.NewGuid();
             _currentTenant.UserId.Returns(userId);
 
@@ -169,10 +157,8 @@ namespace NFC.Platform.Tests.Services
                 NewPassword = "NewPassword123!"
             };
 
-            // Act
             var result = await _sut.ChangeCompanyAdminPasswordAsync(request);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(400, result.StatusCode);
         }
@@ -180,13 +166,10 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task GetCompanyDashboardAsync_ReturnsUnauthorized_WhenTenantNotAuthenticated()
         {
-            // Arrange
             _currentTenant.TenantId.Returns((Guid?)null);
 
-            // Act
             var result = await _sut.GetCompanyDashboardAsync();
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(401, result.StatusCode);
         }
@@ -194,7 +177,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task GetCompanyDashboardAsync_Success_ReturnsAggregatedMetricsAndChart()
         {
-            // Arrange
             var tenantId = Guid.NewGuid();
             _currentTenant.TenantId.Returns(tenantId);
 
@@ -203,7 +185,6 @@ namespace NFC.Platform.Tests.Services
             _employeeRepo.GetQueryable().Returns(empList.BuildMock());
             _orderRepo.GetQueryable().Returns(orderList.BuildMock());
 
-            // Mock Top Employee query
             var profileId1 = Guid.NewGuid();
             var profileId2 = Guid.NewGuid();
             var metrics = new List<ProfileMetric>();
@@ -215,10 +196,8 @@ namespace NFC.Platform.Tests.Services
 
             _metricRepo.GetQueryable().Returns(metrics.BuildMock());
 
-            // Act
             var result = await _sut.GetCompanyDashboardAsync();
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(200, result.StatusCode);
             Assert.Equal(10, result.Data!.TotalEmployeesCount);
@@ -231,23 +210,19 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task GetMyCompanyProfileAsync_ReturnsZeroRemainingDays_WhenNoActiveSubscription()
         {
-            // Arrange
             var tenantId = Guid.NewGuid();
             _currentTenant.TenantId.Returns(tenantId);
 
             var company = new Company { Name = "OnPoint", TenantId = tenantId };
             _companyRepo.GetQueryable().Returns(new List<Company> { company }.BuildMock());
 
-            // No active subscription
             _subscriptionRepo.GetQueryable().Returns(new List<UserSubscription>().BuildMock());
 
             var dto = new CompanyProfileDto { Name = "OnPoint" };
             _mapper.Map<CompanyProfileDto>(company).Returns(dto);
 
-            // Act
             var result = await _sut.GetMyCompanyProfileAsync();
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(0, result.Data!.SubscriptionRemainingDays);
         }
@@ -255,13 +230,10 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task UpdateCompanyProfileAsync_ReturnsUnauthorized_WhenTenantNotAuthenticated()
         {
-            // Arrange
             _currentTenant.TenantId.Returns((Guid?)null);
 
-            // Act
             var result = await _sut.UpdateCompanyProfileAsync(new UpdateCompanyProfileRequest());
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(401, result.StatusCode);
         }
@@ -269,15 +241,12 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task UpdateCompanyProfileAsync_ReturnsNotFound_WhenCompanyDoesNotExist()
         {
-            // Arrange
             _currentTenant.TenantId.Returns(Guid.NewGuid());
             _companyRepo.GetQueryable().Returns(new List<Company>().BuildMock());
             _messageService.Get("RecordNotFound").Returns("Record not found.");
 
-            // Act
             var result = await _sut.UpdateCompanyProfileAsync(new UpdateCompanyProfileRequest { Name = "X" });
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(404, result.StatusCode);
         }
@@ -285,7 +254,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task UpdateCompanyProfileAsync_DoesNotUpdatePhone_WhenAdminUserIsNull()
         {
-            // Arrange
             var tenantId = Guid.NewGuid();
             _currentTenant.TenantId.Returns(tenantId);
 
@@ -300,10 +268,8 @@ namespace NFC.Platform.Tests.Services
             _mapper.Map<CompanyProfileDto>(company).Returns(dto);
             _messageService.Get("RecordUpdated").Returns("Updated.");
 
-            // Act
             var result = await _sut.UpdateCompanyProfileAsync(request);
 
-            // Assert
             Assert.True(result.IsSuccess);
             _userRepo.DidNotReceive().Update(Arg.Any<User>());
         }
@@ -311,13 +277,10 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task ChangeCompanyAdminPasswordAsync_ReturnsUnauthorized_WhenUserIdMissing()
         {
-            // Arrange
             _currentTenant.UserId.Returns((Guid?)null);
 
-            // Act
             var result = await _sut.ChangeCompanyAdminPasswordAsync(new CompanyChangePasswordRequest());
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(401, result.StatusCode);
         }
@@ -325,20 +288,17 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task ChangeCompanyAdminPasswordAsync_ReturnsNotFound_WhenUserDoesNotExist()
         {
-            // Arrange
             var userId = Guid.NewGuid();
             _currentTenant.UserId.Returns(userId);
             _userRepo.GetByIdAsync(userId).Returns((User?)null);
             _messageService.Get("RecordNotFound").Returns("Not found.");
 
-            // Act
             var result = await _sut.ChangeCompanyAdminPasswordAsync(new CompanyChangePasswordRequest
             {
                 OldPassword = "any",
                 NewPassword = "any2"
             });
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(404, result.StatusCode);
         }
@@ -346,7 +306,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task ChangeCompanyAdminPasswordAsync_ReturnsSuccess_WhenPasswordIsCorrect()
         {
-            // Arrange
             var userId = Guid.NewGuid();
             _currentTenant.UserId.Returns(userId);
 
@@ -358,14 +317,12 @@ namespace NFC.Platform.Tests.Services
             _userRepo.GetByIdAsync(userId).Returns(user);
             _messageService.Get("PasswordResetSuccess").Returns("Password changed.");
 
-            // Act
             var result = await _sut.ChangeCompanyAdminPasswordAsync(new CompanyChangePasswordRequest
             {
                 OldPassword = "OldPass123!",
                 NewPassword = "NewPass456!"
             });
 
-            // Assert
             Assert.True(result.IsSuccess);
             await _unitOfWork.Received(1).SaveChangesAsync();
         }
@@ -373,20 +330,16 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task GetCompanyDashboardAsync_ReturnsDashboard_WithFallbackTopEmployee_WhenNoMetrics()
         {
-            // Arrange
             var tenantId = Guid.NewGuid();
             _currentTenant.TenantId.Returns(tenantId);
 
             _employeeRepo.GetQueryable().Returns(new List<Employee>().BuildMock());
             _orderRepo.GetQueryable().Returns(new List<CardOrder>().BuildMock());
 
-            // No metrics → top employee = "-"
             _metricRepo.GetQueryable().Returns(new List<ProfileMetric>().BuildMock());
 
-            // Act
             var result = await _sut.GetCompanyDashboardAsync();
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal("-", result.Data!.TopEmployeeName);
             Assert.Equal(12, result.Data!.MonthlyMetrics.Count);
@@ -395,13 +348,10 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task GetCompanyDashboardAsync_ReturnsUnauthorized_WhenTenantIdIsNull()
         {
-            // Arrange
             _currentTenant.TenantId.Returns((Guid?)null);
 
-            // Act
             var result = await _sut.GetCompanyDashboardAsync();
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(401, result.StatusCode);
         }
@@ -409,7 +359,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task GetCompanyDashboardAsync_ReturnsCorrectDashboardCounts_WhenMetricsExist()
         {
-            // Arrange
             var tenantId = Guid.NewGuid();
             _currentTenant.TenantId.Returns(tenantId);
 
@@ -425,10 +374,8 @@ namespace NFC.Platform.Tests.Services
             }
             _metricRepo.GetQueryable().Returns(profileMetrics.BuildMock());
 
-            // Act
             var result = await _sut.GetCompanyDashboardAsync();
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(5, result.Data!.TotalEmployeesCount);
             Assert.Equal(3, result.Data!.CardRequestsCount);
@@ -439,7 +386,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task ChangeCompanyAdminPasswordAsync_ReturnsFail_WhenOldPasswordIsIncorrect()
         {
-            // Arrange
             var userId = Guid.NewGuid();
             _currentTenant.UserId.Returns(userId);
 
@@ -450,14 +396,12 @@ namespace NFC.Platform.Tests.Services
             };
             _userRepo.GetByIdAsync(userId).Returns(user);
 
-            // Act
             var result = await _sut.ChangeCompanyAdminPasswordAsync(new CompanyChangePasswordRequest
             {
                 OldPassword = "IncorrectOldPass!",
                 NewPassword = "NewPassword123!"
             });
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(400, result.StatusCode);
         }
@@ -465,14 +409,11 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task UpdateCompanyTemplateAsync_ReturnsUnauthorized_WhenTenantIdIsNull()
         {
-            // Arrange
             _currentTenant.TenantId.Returns((Guid?)null);
             var request = Guid.NewGuid();
 
-            // Act
             var result = await _sut.UpdateCompanyTemplateAsync(request);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(401, result.StatusCode);
         }
@@ -480,17 +421,14 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task UpdateCompanyTemplateAsync_ReturnsNotFound_WhenCompanyDoesNotExist()
         {
-            // Arrange
             var tenantId = Guid.NewGuid();
             _currentTenant.TenantId.Returns(tenantId);
             _companyRepo.GetQueryable().Returns(new List<Company>().BuildMock());
             _messageService.Get("RecordNotFound").Returns("Record not found.");
             var request = Guid.NewGuid();
 
-            // Act
             var result = await _sut.UpdateCompanyTemplateAsync(request);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(404, result.StatusCode);
         }
@@ -498,7 +436,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task UpdateCompanyTemplateAsync_ReturnsSuccess_AndSavesChanges()
         {
-            // Arrange
             var tenantId = Guid.NewGuid();
             _currentTenant.TenantId.Returns(tenantId);
 
@@ -509,11 +446,9 @@ namespace NFC.Platform.Tests.Services
             var templateId = Guid.NewGuid();
             var request = templateId;
 
-            // Mock CardTemplate repository
             var template = new CardTemplate { Id = templateId, IsActive = true, IsDeleted = false };
             _cardTemplateRepo.GetQueryable().Returns(new List<CardTemplate> { template }.AsQueryable().BuildMock());
 
-            // Mock subscription repository to prevent EF async query provider error in GetSubscriptionRemainingDaysAsync
             var sub = new UserSubscription
             {
                 TenantId = tenantId,
@@ -534,31 +469,26 @@ namespace NFC.Platform.Tests.Services
             _mapper.Map<CompanyProfileDto>(company).Returns(dto);
             _messageService.Get(Arg.Any<string>()).Returns(x => x.Arg<string>());
 
-            // Act
             var result = await _sut.UpdateCompanyTemplateAsync(request);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(200, result.StatusCode);
             Assert.Equal(templateId, company.ProfileTemplateId);
-            Assert.Equal(2, sub.TemplateChangesUsed); // Incremented
+            Assert.Equal(2, sub.TemplateChangesUsed);
             await _unitOfWork.Received(1).SaveChangesAsync();
         }
 
         [Fact]
         public async Task UpdateVipStatusAsync_ReturnsNotFound_WhenCompanyDoesNotExist()
         {
-            // Arrange
             var companyId = Guid.NewGuid();
             _companyRepo.GetByIdAsync(companyId).Returns((Company?)null);
             _messageService.Get("RecordNotFound").Returns("Record not found.");
 
             var request = new Application.DTOs.VipCustomer.UpdateVipStatusRequest { IsVip = true, VipDisplayOrder = 5 };
 
-            // Act
             var result = await _sut.UpdateVipStatusAsync(companyId, request);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(404, result.StatusCode);
         }
@@ -566,7 +496,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task UpdateVipStatusAsync_ReturnsSuccess_WhenCompanyExists()
         {
-            // Arrange
             var companyId = Guid.NewGuid();
             var company = new Company { Id = companyId, Name = "Google", IsVip = false, VipDisplayOrder = 0 };
             _companyRepo.GetByIdAsync(companyId).Returns(company);
@@ -577,10 +506,8 @@ namespace NFC.Platform.Tests.Services
 
             var request = new Application.DTOs.VipCustomer.UpdateVipStatusRequest { IsVip = true, VipDisplayOrder = 5 };
 
-            // Act
             var result = await _sut.UpdateVipStatusAsync(companyId, request);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(200, result.StatusCode);
             Assert.True(company.IsVip);

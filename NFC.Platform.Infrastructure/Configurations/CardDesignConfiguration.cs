@@ -11,34 +11,28 @@ namespace NFC.Platform.Infrastructure.Configurations
             builder.ToTable("CardDesigns");
             builder.HasKey(d => d.Id);
 
-            // ── Quantity & Pricing ────────────────────────────────────────────
             builder.Property(d => d.TotalQuantity).IsRequired();
             builder.Property(d => d.UsedQuantity).IsRequired().HasDefaultValue(0);
             builder.Property(d => d.UnitPrice).HasColumnType("decimal(18,3)").IsRequired();
             builder.Property(d => d.TotalPrice).HasColumnType("decimal(18,2)").IsRequired();
             builder.Property(d => d.Currency).HasMaxLength(3).IsRequired();
 
-            // ── Design URLs ───────────────────────────────────────────────────
             builder.Property(d => d.ExcelDataUrl).HasMaxLength(1000);
             builder.Property(d => d.FrontDesignUrl).HasMaxLength(1000);
             builder.Property(d => d.BackDesignUrl).HasMaxLength(1000);
             builder.Property(d => d.CardDesignType).IsRequired();
 
-            // ── Payment ───────────────────────────────────────────────────────
             builder.Property(d => d.IsPaid).IsRequired().HasDefaultValue(false);
             builder.Property(d => d.PaymentStatus).IsRequired();
             builder.Property(d => d.PaidAt);
             builder.Property(d => d.PaymentTransactionId).HasMaxLength(500);
 
-            // ── Notes ─────────────────────────────────────────────────────────
             builder.Property(d => d.Notes).HasMaxLength(2000);
 
-            // ── Optimistic concurrency token ──────────────────────────────────
             builder.Property(d => d.RowVersion)
                 .IsRowVersion()
                 .IsConcurrencyToken();
 
-            // ── Tenant / User FKs ─────────────────────────────────────────────
             builder.Property(d => d.TenantId).IsRequired();
             builder.HasIndex(d => d.TenantId);
 
@@ -52,21 +46,18 @@ namespace NFC.Platform.Infrastructure.Configurations
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // ── CardType FK ───────────────────────────────────────────────────
             builder.Property(d => d.CardTypeId).IsRequired();
             builder.HasOne(d => d.CardType)
                 .WithMany()
                 .HasForeignKey(d => d.CardTypeId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // ── CardPackage FK ────────────────────────────────────────────────
             builder.Property(d => d.CardPackageId).IsRequired();
             builder.HasOne(d => d.CardPackage)
                 .WithMany()
                 .HasForeignKey(d => d.CardPackageId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // ── CardOrder relationship (one design → many orders) ─────────────
             builder.HasMany(d => d.Orders)
                 .WithOne(o => o.CardDesign)
                 .HasForeignKey(o => o.CardDesignId)

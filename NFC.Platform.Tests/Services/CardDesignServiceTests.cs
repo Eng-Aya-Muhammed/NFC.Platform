@@ -4,7 +4,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
 using Microsoft.Extensions.Configuration;
-using NSubstitute;
 using MockQueryable.NSubstitute;
 using NFC.Platform.Application.DTOs.CardDesign;
 using NFC.Platform.Application.Interfaces.Repositories;
@@ -15,6 +14,7 @@ using NFC.Platform.BuildingBlocks.Common.Interfaces;
 using NFC.Platform.BuildingBlocks.Common.Models;
 using NFC.Platform.BuildingBlocks.Localization;
 using NFC.Platform.Domain.Entities;
+using NSubstitute;
 using Xunit;
 
 namespace NFC.Platform.Tests.Services
@@ -53,15 +53,12 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task GetDesignByIdAsync_ReturnsNotFound_WhenDesignDoesNotExist()
         {
-            // Arrange
             var id = Guid.NewGuid();
             _designRepo.GetQueryable().Returns(new List<CardDesign>().AsQueryable().BuildMock());
             _messageService.Get("DesignNotFound").Returns("Design not found.");
 
-            // Act
             var result = await _sut.GetDesignByIdAsync(id);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(404, result.StatusCode);
         }
@@ -69,7 +66,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task GetDesignByIdAsync_ReturnsSuccess_WhenDesignExists()
         {
-            // Arrange
             var id = Guid.NewGuid();
             var design = new CardDesign
             {
@@ -81,10 +77,8 @@ namespace NFC.Platform.Tests.Services
             };
             _designRepo.GetQueryable().Returns(new List<CardDesign> { design }.AsQueryable().BuildMock());
 
-            // Act
             var result = await _sut.GetDesignByIdAsync(id);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(id, result.Data!.Id);
             Assert.Equal(75, result.Data.RemainingQuantity);
@@ -94,7 +88,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task GetPagedDesignsAsync_ReturnsPagedDesigns_WithCardPackageIncluded()
         {
-            // Arrange
             var designs = new List<CardDesign>
             {
                 new()
@@ -111,10 +104,8 @@ namespace NFC.Platform.Tests.Services
 
             var pagination = new PaginationRequest { PageNumber = 1, PageSize = 10 };
 
-            // Act
             var result = await _sut.GetPagedDesignsAsync(pagination);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Single(result.Data!.Items);
             Assert.Equal("20 Cards Package", result.Data.Items.First().CardPackageName);
@@ -124,7 +115,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task GetPagedDesignsAsync_FiltersBySearch_MatchesCardTypeName()
         {
-            // Arrange
             var d1 = new CardDesign { Id = Guid.NewGuid(), CardType = new CardType { NameAr = "خشب", NameEn = "Wood" } };
             var d2 = new CardDesign { Id = Guid.NewGuid(), CardType = new CardType { NameAr = "بلاستيك", NameEn = "Plastic" } };
 
@@ -132,10 +122,8 @@ namespace NFC.Platform.Tests.Services
 
             var pagination = new PaginationRequest { PageNumber = 1, PageSize = 10 };
 
-            // Act
             var result = await _sut.GetPagedDesignsAsync(pagination, "Wood");
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(1, result.Data!.TotalCount);
         }

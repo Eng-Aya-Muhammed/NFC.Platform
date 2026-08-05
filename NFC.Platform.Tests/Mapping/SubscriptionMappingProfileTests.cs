@@ -26,7 +26,6 @@ namespace NFC.Platform.Tests.Mapping
         [Fact]
         public void SubscriptionPlan_To_SubscriptionPlanDto_LocalizesNameAndMapsAllowedTemplates()
         {
-            // Arrange
             var template1 = new CardTemplate { Id = Guid.NewGuid(), NameAr = "قالب 1", NameEn = "Template 1" };
             var plan = new SubscriptionPlan
             {
@@ -43,15 +42,12 @@ namespace NFC.Platform.Tests.Mapping
                 }
             };
 
-            // Act - Arabic Culture
             CultureInfo.CurrentUICulture = new CultureInfo("ar");
             var dtoAr = _mapper.Map<SubscriptionPlanDto>(plan);
 
-            // Act - English Culture
             CultureInfo.CurrentUICulture = new CultureInfo("en");
             var dtoEn = _mapper.Map<SubscriptionPlanDto>(plan);
 
-            // Assert
             Assert.Equal("خطة احترافية", dtoAr.Name);
             Assert.Single(dtoAr.AllowedTemplates);
 
@@ -62,7 +58,6 @@ namespace NFC.Platform.Tests.Mapping
         [Fact]
         public void SubscriptionPlan_To_SubscriptionPlanAdminDto_MapsNameArNameEnAndTemplates()
         {
-            // Arrange
             var template = new CardTemplate { Id = Guid.NewGuid(), NameAr = "قالب أدمن", NameEn = "Admin Template" };
             var plan = new SubscriptionPlan
             {
@@ -79,10 +74,8 @@ namespace NFC.Platform.Tests.Mapping
                 }
             };
 
-            // Act
             var dto = _mapper.Map<SubscriptionPlanAdminDto>(plan);
 
-            // Assert
             Assert.NotNull(dto);
             Assert.Equal("خطة المؤسسات", dto.NameAr);
             Assert.Equal("Enterprise Plan", dto.NameEn);
@@ -94,7 +87,6 @@ namespace NFC.Platform.Tests.Mapping
         [Fact]
         public void UserSubscription_To_UserSubscriptionDto_LocalizesPlanNameAndRemainingDays()
         {
-            // Arrange
             var plan = new SubscriptionPlan
             {
                 NameAr = "الخطة البلاتينية",
@@ -114,11 +106,9 @@ namespace NFC.Platform.Tests.Mapping
                 IsActive = true
             };
 
-            // Act - Arabic Culture
             CultureInfo.CurrentUICulture = new CultureInfo("ar");
             var dto = _mapper.Map<UserSubscriptionDto>(userSub);
 
-            // Assert
             Assert.NotNull(dto);
             Assert.Equal("الخطة البلاتينية", dto.PlanName);
             Assert.Equal(300m, dto.Price);

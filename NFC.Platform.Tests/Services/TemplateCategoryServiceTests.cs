@@ -29,7 +29,6 @@ public class TemplateCategoryServiceTests
     [Fact]
     public async Task GetActiveCategoriesAsync_ReturnsActiveCategoriesOrderedByDisplayOrder()
     {
-        // Arrange
         var categories = new List<TemplateCategory>
         {
             new() { Id = Guid.NewGuid(), NameAr = "فئة 1", NameEn = "Cat 1", DisplayOrder = 2, IsActive = true },
@@ -39,10 +38,8 @@ public class TemplateCategoryServiceTests
 
         _categoryRepo.GetQueryable().Returns(categories.AsQueryable().BuildMock());
 
-        // Act
         var result = await _service.GetActiveCategoriesAsync();
 
-        // Assert
         Assert.True(result.IsSuccess);
         Assert.Equal(2, result.Data!.Count);
         Assert.Equal("Cat 2", result.Data[0].Name);
@@ -52,7 +49,6 @@ public class TemplateCategoryServiceTests
     [Fact]
     public async Task GetAllAdminCategoriesAsync_ReturnsPagedAdminDtos()
     {
-        // Arrange
         var categories = new List<TemplateCategory>
         {
             new() { Id = Guid.NewGuid(), NameAr = "فئة 1", NameEn = "Cat 1", DisplayOrder = 1, IsActive = true }
@@ -62,10 +58,8 @@ public class TemplateCategoryServiceTests
 
         var paginationRequest = new PaginationRequest { PageNumber = 1, PageSize = 10 };
 
-        // Act
         var result = await _service.GetAllAdminCategoriesAsync(paginationRequest);
 
-        // Assert
         Assert.True(result.IsSuccess);
         Assert.Equal(1, result.Data!.TotalCount);
         Assert.Single(result.Data.Items);
@@ -76,15 +70,12 @@ public class TemplateCategoryServiceTests
     [Fact]
     public async Task GetByIdAsync_ReturnsSuccess_WhenCategoryExists()
     {
-        // Arrange
         var id = Guid.NewGuid();
         var category = new TemplateCategory { Id = id, NameAr = "فئة", NameEn = "Category", DisplayOrder = 1 };
         _categoryRepo.GetByIdAsync(id).Returns(category);
 
-        // Act
         var result = await _service.GetByIdAsync(id);
 
-        // Assert
         Assert.True(result.IsSuccess);
         Assert.NotNull(result.Data);
         Assert.Equal("فئة", result.Data.NameAr);
@@ -94,14 +85,11 @@ public class TemplateCategoryServiceTests
     [Fact]
     public async Task GetByIdAsync_ReturnsNotFound_WhenCategoryDoesNotExist()
     {
-        // Arrange
         var id = Guid.NewGuid();
         _categoryRepo.GetByIdAsync(id).Returns((TemplateCategory?)null);
 
-        // Act
         var result = await _service.GetByIdAsync(id);
 
-        // Assert
         Assert.False(result.IsSuccess);
         Assert.Equal(404, result.StatusCode);
     }
@@ -109,14 +97,11 @@ public class TemplateCategoryServiceTests
     [Fact]
     public async Task CreateAsync_ReturnsSuccess_WhenRequestIsValid()
     {
-        // Arrange
         _categoryRepo.GetQueryable().Returns(new List<TemplateCategory>().AsQueryable().BuildMock());
         var request = new CreateTemplateCategoryRequest { NameAr = "جديد", NameEn = "New", DisplayOrder = 1 };
 
-        // Act
         var result = await _service.CreateAsync(request);
 
-        // Assert
         Assert.True(result.IsSuccess);
         await _categoryRepo.Received(1).AddAsync(Arg.Any<TemplateCategory>());
         await _unitOfWork.Received(1).SaveChangesAsync();
@@ -125,16 +110,13 @@ public class TemplateCategoryServiceTests
     [Fact]
     public async Task CreateAsync_Fails_WhenNameArAlreadyExists()
     {
-        // Arrange
         var existing = new List<TemplateCategory> { new() { Id = Guid.NewGuid(), NameAr = "موجود", NameEn = "Existing" } };
         _categoryRepo.GetQueryable().Returns(existing.AsQueryable().BuildMock());
 
         var request = new CreateTemplateCategoryRequest { NameAr = "موجود", NameEn = "New" };
 
-        // Act
         var result = await _service.CreateAsync(request);
 
-        // Assert
         Assert.False(result.IsSuccess);
         Assert.Equal(400, result.StatusCode);
         Assert.Equal("DuplicateNameAr", result.Message);
@@ -144,16 +126,13 @@ public class TemplateCategoryServiceTests
     [Fact]
     public async Task CreateAsync_Fails_WhenNameEnAlreadyExists()
     {
-        // Arrange
         var existing = new List<TemplateCategory> { new() { Id = Guid.NewGuid(), NameAr = "موجود", NameEn = "Existing" } };
         _categoryRepo.GetQueryable().Returns(existing.AsQueryable().BuildMock());
 
         var request = new CreateTemplateCategoryRequest { NameAr = "جديد", NameEn = "Existing" };
 
-        // Act
         var result = await _service.CreateAsync(request);
 
-        // Assert
         Assert.False(result.IsSuccess);
         Assert.Equal(400, result.StatusCode);
         Assert.Equal("DuplicateNameEn", result.Message);
@@ -162,7 +141,6 @@ public class TemplateCategoryServiceTests
     [Fact]
     public async Task UpdateAsync_ReturnsSuccess_WhenUpdateIsValid()
     {
-        // Arrange
         var id = Guid.NewGuid();
         var existing = new TemplateCategory { Id = id, NameAr = "قديم", NameEn = "Old" };
         _categoryRepo.GetByIdAsync(id).Returns(existing);
@@ -170,10 +148,8 @@ public class TemplateCategoryServiceTests
 
         var request = new UpdateTemplateCategoryRequest { NameAr = "محدث", NameEn = "Updated" };
 
-        // Act
         var result = await _service.UpdateAsync(id, request);
 
-        // Assert
         Assert.True(result.IsSuccess);
         _categoryRepo.Received(1).Update(existing);
         await _unitOfWork.Received(1).SaveChangesAsync();
@@ -182,16 +158,13 @@ public class TemplateCategoryServiceTests
     [Fact]
     public async Task UpdateAsync_Fails_WhenCategoryNotFound()
     {
-        // Arrange
         var id = Guid.NewGuid();
         _categoryRepo.GetByIdAsync(id).Returns((TemplateCategory?)null);
 
         var request = new UpdateTemplateCategoryRequest { NameAr = "محدث" };
 
-        // Act
         var result = await _service.UpdateAsync(id, request);
 
-        // Assert
         Assert.False(result.IsSuccess);
         Assert.Equal(404, result.StatusCode);
     }
@@ -199,7 +172,6 @@ public class TemplateCategoryServiceTests
     [Fact]
     public async Task UpdateAsync_Fails_WhenDuplicateNameArProvided()
     {
-        // Arrange
         var id = Guid.NewGuid();
         var existingCategory = new TemplateCategory { Id = id, NameAr = "فئة 1", NameEn = "Cat 1" };
         var otherCategory = new TemplateCategory { Id = Guid.NewGuid(), NameAr = "فئة 2", NameEn = "Cat 2" };
@@ -209,10 +181,8 @@ public class TemplateCategoryServiceTests
 
         var request = new UpdateTemplateCategoryRequest { NameAr = "فئة 2" };
 
-        // Act
         var result = await _service.UpdateAsync(id, request);
 
-        // Assert
         Assert.False(result.IsSuccess);
         Assert.Equal(400, result.StatusCode);
         Assert.Equal("DuplicateNameAr", result.Message);
@@ -221,15 +191,12 @@ public class TemplateCategoryServiceTests
     [Fact]
     public async Task DeleteAsync_ReturnsSuccess_WhenCategoryExists()
     {
-        // Arrange
         var id = Guid.NewGuid();
         var existing = new TemplateCategory { Id = id, NameAr = "فئة", NameEn = "Cat" };
         _categoryRepo.GetByIdAsync(id).Returns(existing);
 
-        // Act
         var result = await _service.DeleteAsync(id);
 
-        // Assert
         Assert.True(result.IsSuccess);
         _categoryRepo.Received(1).Remove(existing);
         await _unitOfWork.Received(1).SaveChangesAsync();
@@ -238,14 +205,11 @@ public class TemplateCategoryServiceTests
     [Fact]
     public async Task DeleteAsync_Fails_WhenCategoryNotFound()
     {
-        // Arrange
         var id = Guid.NewGuid();
         _categoryRepo.GetByIdAsync(id).Returns((TemplateCategory?)null);
 
-        // Act
         var result = await _service.DeleteAsync(id);
 
-        // Assert
         Assert.False(result.IsSuccess);
         Assert.Equal(404, result.StatusCode);
     }

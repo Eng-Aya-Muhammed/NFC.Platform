@@ -25,7 +25,6 @@ namespace NFC.Platform.Tests.Mapping
         [Fact]
         public void Company_To_CompanyProfileDto_MapsAdminUserEmailPhoneAndCustomLinks()
         {
-            // Arrange
             var adminUser = new User
             {
                 Id = Guid.NewGuid(),
@@ -50,10 +49,8 @@ namespace NFC.Platform.Tests.Mapping
                 AdminUser = adminUser
             };
 
-            // Act
             var dto = _mapper.Map<CompanyProfileDto>(company);
 
-            // Assert
             Assert.NotNull(dto);
             Assert.Equal("Tech Corp", dto.Name);
             Assert.Equal("admin@techcorp.com", dto.AdminUserEmail);

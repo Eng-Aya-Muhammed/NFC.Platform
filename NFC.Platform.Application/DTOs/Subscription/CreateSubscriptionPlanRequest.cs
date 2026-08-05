@@ -12,13 +12,10 @@ namespace NFC.Platform.Application.DTOs.Subscription
         public int DurationInDays { get; set; }
 
 
-        /// <summary>SubscriptionConstants.UnlimitedQuota means unlimited.</summary>
         public int MaxTemplateChanges { get; set; } = SubscriptionConstants.UnlimitedQuota;
 
-        /// <summary>SubscriptionConstants.UnlimitedQuota means unlimited.</summary>
         public int MaxCustomDesignRequests { get; set; } = SubscriptionConstants.UnlimitedQuota;
 
-        /// <summary>Optional initial set of template IDs to assign to this plan.</summary>
         public List<Guid>? TemplateIds { get; set; }
     }
 }

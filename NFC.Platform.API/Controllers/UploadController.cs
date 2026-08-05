@@ -1,3 +1,6 @@
+using System;
+using System.IO;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -7,16 +10,9 @@ using NFC.Platform.Application.DTOs.Upload;
 using NFC.Platform.Application.Interfaces.Services;
 using NFC.Platform.BuildingBlocks.Common.Helpers;
 using NFC.Platform.BuildingBlocks.Localization;
-using System;
-using System.IO;
-using System.Threading.Tasks;
 
 namespace NFC.Platform.API.Controllers
 {
-    /// <summary>
-    /// API Controller for handling secure file and image uploads to Cloudinary.
-    /// Returns both SecureUrl and PublicId for each uploaded file.
-    /// </summary>
     [ApiController]
     [Route("api/uploads")]
     [Authorize]
@@ -35,14 +31,10 @@ namespace NFC.Platform.API.Controllers
         {
             _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
             _messageService = messageService ?? throw new ArgumentNullException(nameof(messageService));
-            _currentTenant  = currentTenant  ?? throw new ArgumentNullException(nameof(currentTenant));
+            _currentTenant = currentTenant ?? throw new ArgumentNullException(nameof(currentTenant));
             _uploadSettings = uploadSettings?.Value ?? new UploadSettings();
         }
 
-        /// <summary>
-        /// Uploads an image file to Cloudinary.
-        /// Returns both the SecureUrl and PublicId so the client can store both.
-        /// </summary>
         [HttpPost("image")]
         public async Task<IActionResult> UploadImage(IFormFile file, [FromQuery] string folder = "general")
         {
@@ -78,10 +70,6 @@ namespace NFC.Platform.API.Controllers
             }
         }
 
-        /// <summary>
-        /// Uploads an Excel file to Cloudinary.
-        /// Returns both the SecureUrl and PublicId.
-        /// </summary>
         [HttpPost("excel")]
         public async Task<IActionResult> UploadExcel(IFormFile file)
         {
@@ -117,10 +105,6 @@ namespace NFC.Platform.API.Controllers
             }
         }
 
-        /// <summary>
-        /// Uploads a PDF file to Cloudinary.
-        /// Returns both the SecureUrl and PublicId.
-        /// </summary>
         [HttpPost("pdf")]
         public async Task<IActionResult> UploadPdf(IFormFile file, [FromQuery] string folder = "documents")
         {

@@ -2,9 +2,6 @@ using System;
 
 namespace NFC.Platform.Application.DTOs.CardOrder;
 
-/// <summary>
-/// Data transfer object representing a single CardOrderItem.
-/// </summary>
 public class CardOrderItemDto
 {
     public Guid Id { get; set; }

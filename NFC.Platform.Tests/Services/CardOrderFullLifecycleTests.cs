@@ -7,17 +7,17 @@ using FluentValidation;
 using FluentValidation.Results;
 using Microsoft.Extensions.Options;
 using MockQueryable.NSubstitute;
-using NSubstitute;
 using NFC.Platform.Application.DTOs.CardOrder;
 using NFC.Platform.Application.DTOs.Settings;
+using NFC.Platform.Application.Interfaces.Repositories;
 using NFC.Platform.Application.Interfaces.Services;
 using NFC.Platform.Application.Mapping;
 using NFC.Platform.Application.Services;
 using NFC.Platform.Application.Validators.CardOrder;
-using NFC.Platform.Application.Interfaces.Repositories;
 using NFC.Platform.BuildingBlocks.Localization;
 using NFC.Platform.Domain.Entities;
 using NFC.Platform.Domain.Enums;
+using NSubstitute;
 using Xunit;
 
 namespace NFC.Platform.Tests.Services
@@ -73,7 +73,6 @@ namespace NFC.Platform.Tests.Services
                 return key;
             });
 
-            // Mock Repositories
             SetupMockRepositories();
 
             _sut = new CardOrderService(
@@ -122,14 +121,10 @@ namespace NFC.Platform.Tests.Services
             _unitOfWork.Repository<User>().Returns(userRepo);
         }
 
-        // ==========================================
-        // 1. CREATE ORDER TESTS
-        // ==========================================
 
         [Fact]
         public async Task CreateOrderAsync_Fails_WhenDesignNotFound()
         {
-            // Arrange
             var designId = Guid.NewGuid();
             var designRepo = Substitute.For<IGenericRepository<CardDesign>>();
             designRepo.GetQueryable().Returns(new List<CardDesign>().AsQueryable().BuildMock());
@@ -141,10 +136,8 @@ namespace NFC.Platform.Tests.Services
                 Quantity = 1
             };
 
-            // Act
             var result = await _sut.CreateOrderAsync(request);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(404, result.StatusCode);
             Assert.Equal("DesignNotFound", result.Message);
@@ -153,7 +146,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task CreateOrderAsync_Fails_WhenQuantityExceedsDesignCapacity()
         {
-            // Arrange
             var designId = Guid.NewGuid();
             var design = new CardDesign { Id = designId, IsPaid = true, TotalQuantity = 5, UsedQuantity = 0, CardPackageId = Guid.NewGuid(), UnitPrice = 10, TotalPrice = 50, Currency = "KWD" };
             var designRepo = Substitute.For<IGenericRepository<CardDesign>>();
@@ -178,10 +170,8 @@ namespace NFC.Platform.Tests.Services
                 QuantityPerEmployee = 1
             };
 
-            // Act
             var result = await _sut.CreateOrderAsync(request);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(400, result.StatusCode);
             Assert.Contains("DesignRemainingQuantityExceeded", result.Message);
@@ -190,7 +180,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task CreateOrderAsync_Succeeds_WithPackageCapacityAndEmployees()
         {
-            // Arrange
             var designId = Guid.NewGuid();
             var typeId = Guid.NewGuid();
             var design = new CardDesign { Id = designId, CardTypeId = typeId, IsPaid = true, TotalQuantity = 10, UsedQuantity = 0, CardPackageId = Guid.NewGuid(), UnitPrice = 100, TotalPrice = 1000, Currency = "KWD" };
@@ -222,10 +211,8 @@ namespace NFC.Platform.Tests.Services
                 QuantityPerEmployee = 1
             };
 
-            // Act
             var result = await _sut.CreateOrderAsync(request);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(200, result.StatusCode);
             Assert.NotNull(result.Data);
@@ -234,14 +221,10 @@ namespace NFC.Platform.Tests.Services
             Assert.Equal(100, result.Data.UnitPrice);
         }
 
-        // ==========================================
-        // 2. REORDER TESTS
-        // ==========================================
 
         [Fact]
         public async Task CreateReorderAsync_Fails_WhenParentOrderNotFound()
         {
-            // Arrange
             var parentId = Guid.NewGuid();
             var orderRepo = Substitute.For<IGenericRepository<CardOrder>>();
             orderRepo.GetQueryable().Returns(new List<CardOrder>().AsQueryable().BuildMock());
@@ -252,10 +235,8 @@ namespace NFC.Platform.Tests.Services
                 AssignmentScope = AssignmentScope.AllEmployees
             };
 
-            // Act
             var result = await _sut.CreateReorderAsync(parentId, request);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(404, result.StatusCode);
         }
@@ -308,24 +289,18 @@ namespace NFC.Platform.Tests.Services
                 AssignmentScope = AssignmentScope.Individual
             };
 
-            // Act
             var result = await _sut.CreateReorderAsync(parentId, request);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.NotNull(result.Data);
             Assert.Equal(10, result.Data.Quantity);
             Assert.Equal(500, result.Data.TotalPrice);
         }
 
-        // ==========================================
-        // 3. UPDATE ORDER TESTS
-        // ==========================================
 
         [Fact]
         public async Task UpdateOrderAsync_Fails_WhenOrderNotInPendingReviewStatus()
         {
-            // Arrange
             var orderId = Guid.NewGuid();
             var order = new CardOrder
             {
@@ -344,10 +319,8 @@ namespace NFC.Platform.Tests.Services
                 Notes = "Updated notes"
             };
 
-            // Act
             var result = await _sut.UpdateOrderAsync(orderId, request);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(400, result.StatusCode);
             Assert.Equal("OrderCannotBeUpdated", result.Message);
@@ -356,7 +329,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task UpdateOrderAsync_Succeeds_WhenUpdatingNotesAndQuantity()
         {
-            // Arrange
             var orderId = Guid.NewGuid();
             var designId = Guid.NewGuid();
 
@@ -388,10 +360,8 @@ namespace NFC.Platform.Tests.Services
                 Notes = "Upgraded to 10 cards"
             };
 
-            // Act
             var result = await _sut.UpdateOrderAsync(orderId, request);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(200, result.StatusCode);
             Assert.Equal(10, order.Quantity);

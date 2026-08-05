@@ -12,7 +12,6 @@ namespace NFC.Platform.Infrastructure.Services
     {
         static PdfExportService()
         {
-            // QuestPDF Community License for open-source / small business
             QuestPDF.Settings.License = LicenseType.Community;
         }
 
@@ -34,7 +33,6 @@ namespace NFC.Platform.Infrastructure.Services
                         page.ContentFromRightToLeft();
                     }
 
-                    // Header
                     page.Header().Element(headerContainer =>
                     {
                         headerContainer.Row(row =>
@@ -53,7 +51,6 @@ namespace NFC.Platform.Infrastructure.Services
                         });
                     });
 
-                    // Content Body Table
                     page.Content().PaddingVertical(10).Table(table =>
                     {
                         table.ColumnsDefinition(columns =>
@@ -64,7 +61,6 @@ namespace NFC.Platform.Infrastructure.Services
                             }
                         });
 
-                        // Table Header
                         table.Header(header =>
                         {
                             foreach (var colHeader in dataContainer.Headers)
@@ -76,7 +72,6 @@ namespace NFC.Platform.Infrastructure.Services
                             }
                         });
 
-                        // Data Rows
                         int rowIndex = 0;
                         foreach (var dataRow in dataContainer.Rows)
                         {
@@ -93,7 +88,6 @@ namespace NFC.Platform.Infrastructure.Services
                         }
                     });
 
-                    // Footer
                     page.Footer().AlignCenter().Text(text =>
                     {
                         text.Span(isRtl ? "صفحة " : "Page ");

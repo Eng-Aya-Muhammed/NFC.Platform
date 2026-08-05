@@ -1,6 +1,6 @@
 using System;
-using Xunit;
 using NFC.Platform.Infrastructure.Services;
+using Xunit;
 
 namespace NFC.Platform.Tests.Services;
 
@@ -11,17 +11,13 @@ public class QrCodeServiceTests
     [Fact]
     public void GeneratePngQrCode_ReturnsValidPngByteArray_WhenContentIsValid()
     {
-        // Arrange
         var content = "https://nfc-platform.com/u/ahmed-ali";
 
-        // Act
         var result = _sut.GeneratePngQrCode(content);
 
-        // Assert
         Assert.NotNull(result);
         Assert.True(result.Length > 0);
 
-        // Verify PNG Magic Bytes header: 0x89 'P' 'N' 'G'
         Assert.Equal(0x89, result[0]);
         Assert.Equal((byte)'P', result[1]);
         Assert.Equal((byte)'N', result[2]);

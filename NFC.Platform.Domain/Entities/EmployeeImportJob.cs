@@ -18,7 +18,6 @@ namespace NFC.Platform.Domain.Entities
         public string ExcelFileUrl { get; set; } = string.Empty;
         public string? ExcelFilePublicId { get; set; }
 
-        // Card Order parameters — physical design sourced from FrontDesignUrl/BackDesignUrl on the resulting order
         public Guid CardTypeId { get; set; }
         public CardType? CardType { get; set; }
 
@@ -28,16 +27,11 @@ namespace NFC.Platform.Domain.Entities
         public CardDesignType CardDesignType { get; set; }
         public string? Notes { get; set; }
 
-        // Job metrics & outcomes
         public int TotalRows { get; set; }
         public int Imported { get; set; }
         public int Skipped { get; set; }
         public string? ErrorsJson { get; set; }
 
-        /// <summary>
-        /// Rows already parsed and validated during order creation.
-        /// When set, the Hangfire job skips the download + parse step.
-        /// </summary>
         public string? PreParsedRowsJson { get; set; }
 
         public Guid? CardOrderId { get; set; }

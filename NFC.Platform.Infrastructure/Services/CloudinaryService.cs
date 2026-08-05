@@ -4,10 +4,6 @@ using NFC.Platform.Application.DTOs.Upload;
 
 namespace NFC.Platform.Infrastructure.Services;
 
-/// <summary>
-/// Infrastructure service implementation for Cloudinary file uploads.
-/// Returns both SecureUrl and PublicId so callers can later delete or replace assets.
-/// </summary>
 public class CloudinaryService : IStorageService
 {
     private readonly Cloudinary _cloudinary;
@@ -96,7 +92,6 @@ public class CloudinaryService : IStorageService
         catch { return false; }
     }
 
-    /// <inheritdoc />
     public async Task<UploadResultDto> UploadBytesAsImageAsync(byte[] bytes, string fileName, string folderName)
     {
         using var stream = new MemoryStream(bytes);
@@ -104,7 +99,6 @@ public class CloudinaryService : IStorageService
         {
             File = new FileDescription(fileName, stream),
             Folder = $"nfc-platform/{folderName.Trim('/')}",
-            // Lossless PNG — QR codes must never be re-compressed or they become unreadable.
             Transformation = new Transformation().Quality(100).FetchFormat("png")
         };
 
@@ -116,10 +110,10 @@ public class CloudinaryService : IStorageService
         return new UploadResultDto
         {
             SecureUrl = result.SecureUrl?.ToString() ?? string.Empty,
-            PublicId  = result.PublicId  ?? string.Empty,
+            PublicId = result.PublicId ?? string.Empty,
             ResourceType = "image",
             Format = result.Format ?? string.Empty,
-            Bytes  = result.Bytes
+            Bytes = result.Bytes
         };
     }
 
@@ -138,9 +132,6 @@ public class CloudinaryService : IStorageService
         catch { return false; }
     }
 
-    /// <summary>
-    /// Parses a Cloudinary URL to extract the public ID and the resource type.
-    /// </summary>
     private static (string PublicId, ResourceType ResourceType) ParseCloudinaryUrl(string fileUrl)
     {
         var uri = new Uri(fileUrl);

@@ -13,10 +13,8 @@ namespace NFC.Platform.Application.DTOs
         public int DurationInDays { get; set; }
 
 
-        /// <summary>SubscriptionConstants.UnlimitedQuota = unlimited.</summary>
         public int MaxTemplateChanges { get; set; }
 
-        /// <summary>SubscriptionConstants.UnlimitedQuota = unlimited.</summary>
         public int MaxCustomDesignRequests { get; set; }
 
         public IReadOnlyList<CardTemplateSummaryDto> AllowedTemplates { get; set; } = [];

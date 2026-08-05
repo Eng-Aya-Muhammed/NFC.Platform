@@ -52,13 +52,10 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task GetUserAnalyticsSummaryAsync_ReturnsUnauthorized_WhenUserIdIsNull()
         {
-            // Arrange
             _currentTenant.UserId.Returns((Guid?)null);
 
-            // Act
             var result = await _sut.GetUserAnalyticsSummaryAsync();
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(401, result.StatusCode);
         }
@@ -66,15 +63,12 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task GetUserAnalyticsSummaryAsync_ReturnsNotFound_WhenProfileDoesNotExist()
         {
-            // Arrange
             var userId = Guid.NewGuid();
             _currentTenant.UserId.Returns(userId);
             _profileRepo.GetQueryable().Returns(new List<UserProfile>().BuildMock());
 
-            // Act
             var result = await _sut.GetUserAnalyticsSummaryAsync();
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(404, result.StatusCode);
         }
@@ -82,7 +76,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task GetUserAnalyticsSummaryAsync_ReturnsSummaryData_WhenProfileExists()
         {
-            // Arrange
             var userId = Guid.NewGuid();
             var profileId = Guid.NewGuid();
             _currentTenant.UserId.Returns(userId);
@@ -101,10 +94,8 @@ namespace NFC.Platform.Tests.Services
 
             _metricRepo.GetQueryable().Returns(metrics.BuildMock());
 
-            // Act
             var result = await _sut.GetUserAnalyticsSummaryAsync();
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.NotNull(result.Data);
             Assert.Equal(10, result.Data.TotalProfileViews);
@@ -116,13 +107,10 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task GetUserAnalyticsTimeSeriesAsync_ReturnsUnauthorized_WhenUserIdIsNull()
         {
-            // Arrange
             _currentTenant.UserId.Returns((Guid?)null);
 
-            // Act
             var result = await _sut.GetUserAnalyticsTimeSeriesAsync("daily");
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(401, result.StatusCode);
         }
@@ -130,15 +118,12 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task GetUserAnalyticsTimeSeriesAsync_ReturnsNotFound_WhenProfileDoesNotExist()
         {
-            // Arrange
             var userId = Guid.NewGuid();
             _currentTenant.UserId.Returns(userId);
             _profileRepo.GetQueryable().Returns(new List<UserProfile>().BuildMock());
 
-            // Act
             var result = await _sut.GetUserAnalyticsTimeSeriesAsync("daily");
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(404, result.StatusCode);
         }
@@ -146,7 +131,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task GetUserAnalyticsTimeSeriesAsync_ReturnsDailyMetrics_WhenGranularityIsDaily()
         {
-            // Arrange
             var userId = Guid.NewGuid();
             var profileId = Guid.NewGuid();
             _currentTenant.UserId.Returns(userId);
@@ -161,10 +145,8 @@ namespace NFC.Platform.Tests.Services
             };
             _metricRepo.GetQueryable().Returns(metrics.BuildMock());
 
-            // Act
             var result = await _sut.GetUserAnalyticsTimeSeriesAsync("daily");
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal("daily", result.Data!.Granularity);
             Assert.Equal(30, result.Data.DataPoints.Count);
@@ -173,7 +155,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task GetUserAnalyticsTimeSeriesAsync_ReturnsMonthlyMetrics_WhenGranularityIsMonthly()
         {
-            // Arrange
             var userId = Guid.NewGuid();
             var profileId = Guid.NewGuid();
             _currentTenant.UserId.Returns(userId);
@@ -188,10 +169,8 @@ namespace NFC.Platform.Tests.Services
             };
             _metricRepo.GetQueryable().Returns(metrics.BuildMock());
 
-            // Act
             var result = await _sut.GetUserAnalyticsTimeSeriesAsync("monthly");
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal("monthly", result.Data!.Granularity);
             Assert.Equal(6, result.Data.DataPoints.Count);
@@ -200,13 +179,10 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task GetCompanyDashboardAnalyticsAsync_ReturnsUnauthorized_WhenTenantIdIsNull()
         {
-            // Arrange
             _currentTenant.TenantId.Returns((Guid?)null);
 
-            // Act
             var result = await _sut.GetCompanyDashboardAnalyticsAsync();
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(401, result.StatusCode);
         }
@@ -214,7 +190,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task GetCompanyDashboardAnalyticsAsync_ReturnsCorrectData_WhenDataExists()
         {
-            // Arrange
             var tenantId = Guid.NewGuid();
             _currentTenant.TenantId.Returns(tenantId);
 
@@ -238,22 +213,17 @@ namespace NFC.Platform.Tests.Services
             };
             _metricRepo.GetQueryable().Returns(metrics.BuildMock());
 
-            // Act
             var result = await _sut.GetCompanyDashboardAnalyticsAsync();
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(2, result.Data!.TotalEmployees);
             Assert.Equal(1, result.Data.TotalContactSaves);
-            
-            // emp1 has 2 views, emp2 has 1 view -> emp1 is MostVisited
+
             Assert.NotNull(result.Data.MostVisitedEmployee);
             Assert.Equal("Ahmed", result.Data.MostVisitedEmployee!.FullName);
             Assert.Equal(2, result.Data.MostVisitedEmployee.TotalViews);
 
-            // Time series should have 12 months
             Assert.Equal(12, result.Data.TimeSeriesData.Count);
-            // The current month should have 3 total views (2 for emp1 + 1 for emp2)
             Assert.Equal(3, result.Data.TimeSeriesData.Last().ViewsCount);
         }
     }

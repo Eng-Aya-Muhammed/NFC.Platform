@@ -11,7 +11,6 @@ namespace NFC.Platform.Infrastructure.Configurations
             builder.ToTable("CardOrders");
             builder.HasKey(o => o.Id);
 
-            // FK to the pre-paid CardDesign (holds CardTypeId, CardPackageId, artwork URLs, etc.)
             builder.Property(o => o.CardDesignId).IsRequired(false);
             builder.HasOne(o => o.CardDesign)
                 .WithMany(d => d.Orders)

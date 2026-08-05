@@ -23,7 +23,6 @@ namespace NFC.Platform.Tests.Mapping
         [Fact]
         public void CardPackage_To_CardPackageDto_MapsNumberOfCardsAndPrice()
         {
-            // Arrange
             var package = new CardPackage
             {
                 Id = Guid.NewGuid(),
@@ -33,10 +32,8 @@ namespace NFC.Platform.Tests.Mapping
                 CreatedAt = DateTime.UtcNow
             };
 
-            // Act
             var dto = _mapper.Map<CardPackageDto>(package);
 
-            // Assert
             Assert.NotNull(dto);
             Assert.Equal(package.Id, dto.Id);
             Assert.Equal(25, dto.NumberOfCards);
@@ -47,7 +44,6 @@ namespace NFC.Platform.Tests.Mapping
         [Fact]
         public void CardPackage_To_CardPackageAdminDto_MapsAllProperties()
         {
-            // Arrange
             var package = new CardPackage
             {
                 Id = Guid.NewGuid(),
@@ -57,10 +53,8 @@ namespace NFC.Platform.Tests.Mapping
                 CreatedAt = DateTime.UtcNow
             };
 
-            // Act
             var dto = _mapper.Map<CardPackageAdminDto>(package);
 
-            // Assert
             Assert.NotNull(dto);
             Assert.Equal(100, dto.NumberOfCards);
             Assert.Equal(900m, dto.Price);

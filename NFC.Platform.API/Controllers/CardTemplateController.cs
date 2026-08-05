@@ -11,9 +11,6 @@ public class CardTemplateController(ICardTemplateService cardTemplateService) : 
 {
     private readonly ICardTemplateService _cardTemplateService = cardTemplateService ?? throw new ArgumentNullException(nameof(cardTemplateService));
 
-    /// <summary>
-    /// Returns all active, localized card templates for user selection.
-    /// </summary>
     [HttpGet]
     public async Task<IActionResult> GetActiveTemplates([FromQuery] string? search = null)
     {

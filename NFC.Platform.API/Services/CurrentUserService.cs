@@ -8,15 +8,10 @@ using NFC.Platform.BuildingBlocks.Common.Helpers;
 
 namespace NFC.Platform.API.Services
 {
-    /// <summary>
-    /// Implementation of <see cref="ICurrentUserService"/> using <see cref="IHttpContextAccessor"/> 
-    /// to extract user identity claims from the active HTTP request context.
-    /// </summary>
     public class CurrentUserService(IHttpContextAccessor httpContextAccessor) : ICurrentUserService
     {
         private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor ?? throw new ArgumentNullException(nameof(httpContextAccessor));
 
-        /// <inheritdoc />
         public Guid? UserId
         {
             get
@@ -26,8 +21,7 @@ namespace NFC.Platform.API.Services
                 {
                     return userId;
                 }
-                
-                // Fallback to standard NameIdentifier claim
+
                 var nameIdStr = _httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.NameIdentifier);
                 if (Guid.TryParse(nameIdStr, out Guid nameId))
                 {
@@ -38,16 +32,13 @@ namespace NFC.Platform.API.Services
             }
         }
 
-        /// <inheritdoc />
-        public string? Email => 
-            _httpContextAccessor.HttpContext?.User?.FindFirstValue(AppClaims.Email) 
+        public string? Email =>
+            _httpContextAccessor.HttpContext?.User?.FindFirstValue(AppClaims.Email)
             ?? _httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.Email);
 
-        /// <inheritdoc />
-        public bool IsAuthenticated => 
+        public bool IsAuthenticated =>
             _httpContextAccessor.HttpContext?.User?.Identity?.IsAuthenticated ?? false;
 
-        /// <inheritdoc />
         public IEnumerable<string> Roles
         {
             get

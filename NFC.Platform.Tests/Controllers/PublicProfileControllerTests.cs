@@ -16,7 +16,6 @@ namespace NFC.Platform.Tests.Controllers
             _vCardService = Substitute.For<IVCardService>();
             _sut = new PublicProfileController(_profileMetricService, _qrCodeService, _vCardService);
 
-            // Mock Default ControllerContext for Response headers
             _sut.ControllerContext = new ControllerContext
             {
                 HttpContext = new DefaultHttpContext()
@@ -223,7 +222,7 @@ namespace NFC.Platform.Tests.Controllers
             var result = await _sut.GetProfileQrBySubdomain(subdomain) as ObjectResult;
 
             Assert.NotNull(result);
-            Assert.Equal(200, result.StatusCode); // Returns original success result (or 404 depending on status code)
+            Assert.Equal(200, result.StatusCode);
         }
 
         [Fact]

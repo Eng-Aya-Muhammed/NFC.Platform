@@ -18,23 +18,23 @@ namespace NFC.Platform.Tests.Localization
             => new(key, key, resourceNotFound: true);
 
         private static MessageService BuildService(
-            IStringLocalizer<SuccessMessages>    success,
-            IStringLocalizer<ErrorMessages>      error,
+            IStringLocalizer<SuccessMessages> success,
+            IStringLocalizer<ErrorMessages> error,
             IStringLocalizer<ValidationMessages> validation,
-            IStringLocalizer<BusinessMessages>   business)
+            IStringLocalizer<BusinessMessages> business)
             => new(success, error, validation, business);
 
 
         [Fact]
         public void Get_DelegatesToSuccessLocalizer_WhenKeyExistsThere()
         {
-            const string key           = "OperationSuccess";
+            const string key = "OperationSuccess";
             const string expectedValue = "Operation completed successfully.";
 
-            var successLocalizer    = Substitute.For<IStringLocalizer<SuccessMessages>>();
-            var errorLocalizer      = Substitute.For<IStringLocalizer<ErrorMessages>>();
+            var successLocalizer = Substitute.For<IStringLocalizer<SuccessMessages>>();
+            var errorLocalizer = Substitute.For<IStringLocalizer<ErrorMessages>>();
             var validationLocalizer = Substitute.For<IStringLocalizer<ValidationMessages>>();
-            var businessLocalizer   = Substitute.For<IStringLocalizer<BusinessMessages>>();
+            var businessLocalizer = Substitute.For<IStringLocalizer<BusinessMessages>>();
 
             successLocalizer[key].Returns(Found(key, expectedValue));
             successLocalizer[key, Arg.Any<object[]>()].Returns(Found(key, expectedValue));
@@ -52,21 +52,21 @@ namespace NFC.Platform.Tests.Localization
 
             var result = sut.Get(key);
 
-            
+
             Assert.Equal(expectedValue, result);
         }
 
         [Fact]
         public void Get_DelegatesToValidationLocalizer_WhenKeyOnlyExistsThere()
         {
-            const string key       = "RequiredField";
+            const string key = "RequiredField";
             const string fieldName = "Email";
             const string formatted = "The field Email is required.";
 
-            var successLocalizer    = Substitute.For<IStringLocalizer<SuccessMessages>>();
-            var errorLocalizer      = Substitute.For<IStringLocalizer<ErrorMessages>>();
+            var successLocalizer = Substitute.For<IStringLocalizer<SuccessMessages>>();
+            var errorLocalizer = Substitute.For<IStringLocalizer<ErrorMessages>>();
             var validationLocalizer = Substitute.For<IStringLocalizer<ValidationMessages>>();
-            var businessLocalizer   = Substitute.For<IStringLocalizer<BusinessMessages>>();
+            var businessLocalizer = Substitute.For<IStringLocalizer<BusinessMessages>>();
 
             successLocalizer[key, Arg.Any<object[]>()].Returns(NotFound(key));
             errorLocalizer[key, Arg.Any<object[]>()].Returns(NotFound(key));
@@ -85,10 +85,10 @@ namespace NFC.Platform.Tests.Localization
         {
             const string key = "NonExistentKey";
 
-            var successLocalizer    = Substitute.For<IStringLocalizer<SuccessMessages>>();
-            var errorLocalizer      = Substitute.For<IStringLocalizer<ErrorMessages>>();
+            var successLocalizer = Substitute.For<IStringLocalizer<SuccessMessages>>();
+            var errorLocalizer = Substitute.For<IStringLocalizer<ErrorMessages>>();
             var validationLocalizer = Substitute.For<IStringLocalizer<ValidationMessages>>();
-            var businessLocalizer   = Substitute.For<IStringLocalizer<BusinessMessages>>();
+            var businessLocalizer = Substitute.For<IStringLocalizer<BusinessMessages>>();
 
             successLocalizer[key, Arg.Any<object[]>()].Returns(NotFound(key));
             errorLocalizer[key, Arg.Any<object[]>()].Returns(NotFound(key));
@@ -104,34 +104,34 @@ namespace NFC.Platform.Tests.Localization
         [Fact]
         public void Get_AndDirectLocalizer_ReturnSameValue_WhenCultureIsArabic()
         {
-            
+
             var services = new ServiceCollection();
-            services.AddLogging();          
+            services.AddLogging();
             services.AddLocalization(options => options.ResourcesPath = string.Empty);
             services.AddSingleton<IMessageService, MessageService>();
 
             var provider = services.BuildServiceProvider();
 
             var directLocalizer = provider.GetRequiredService<IStringLocalizer<SuccessMessages>>();
-            var messageService  = provider.GetRequiredService<IMessageService>();
+            var messageService = provider.GetRequiredService<IMessageService>();
 
             const string key = "OperationSuccess";
 
             CultureInfo.CurrentUICulture = new CultureInfo("ar");
 
-            var directAr  = directLocalizer[key].Value;
+            var directAr = directLocalizer[key].Value;
             var serviceAr = messageService.Get(key);
 
             Assert.Equal(directAr, serviceAr);
 
             CultureInfo.CurrentUICulture = new CultureInfo("en");
 
-            var directEn  = directLocalizer[key].Value;
+            var directEn = directLocalizer[key].Value;
             var serviceEn = messageService.Get(key);
 
             Assert.Equal(directEn, serviceEn);
 
-           
+
             Assert.NotEqual(directAr, directEn);
         }
     }

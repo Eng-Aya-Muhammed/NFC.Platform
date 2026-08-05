@@ -24,7 +24,6 @@ namespace NFC.Platform.Tests.Mapping
         [Fact]
         public void Company_To_VipCustomerDto_MapsNameLogoAndCompanyType()
         {
-            // Arrange
             var company = new Company
             {
                 Id = Guid.NewGuid(),
@@ -32,10 +31,8 @@ namespace NFC.Platform.Tests.Mapping
                 LogoUrl = "https://cdn.example.com/logo.png"
             };
 
-            // Act
             var dto = _mapper.Map<VipCustomerDto>(company);
 
-            // Assert
             Assert.NotNull(dto);
             Assert.Equal("Global Enterprises", dto.Name);
             Assert.Equal("https://cdn.example.com/logo.png", dto.ImageUrl);
@@ -45,7 +42,6 @@ namespace NFC.Platform.Tests.Mapping
         [Fact]
         public void UserProfile_To_VipCustomerDto_MapsNameProfilePictureAndIndividualType()
         {
-            // Arrange
             var profile = new UserProfile
             {
                 Id = Guid.NewGuid(),
@@ -53,10 +49,8 @@ namespace NFC.Platform.Tests.Mapping
                 ProfilePictureUrl = "https://cdn.example.com/avatar.jpg"
             };
 
-            // Act
             var dto = _mapper.Map<VipCustomerDto>(profile);
 
-            // Assert
             Assert.NotNull(dto);
             Assert.Equal("VIP Individual", dto.Name);
             Assert.Equal("https://cdn.example.com/avatar.jpg", dto.ImageUrl);

@@ -26,14 +26,13 @@ namespace NFC.Platform.Infrastructure.Authorization
             AuthorizationHandlerContext context,
             PermissionRequirement requirement)
         {
-            var userIdStr = context.User.FindFirst(AppClaims.UserId)?.Value 
+            var userIdStr = context.User.FindFirst(AppClaims.UserId)?.Value
                 ?? context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
             if (string.IsNullOrEmpty(userIdStr) || !Guid.TryParse(userIdStr, out var userId))
                 return;
 
-            // Admin overrides all permissions (God Mode)
-            if (context.User.IsInRole(AppRole.Admin.ToString()) || 
+            if (context.User.IsInRole(AppRole.Admin.ToString()) ||
                 context.User.HasClaim(c => (c.Type == AppClaims.Role || c.Type == ClaimTypes.Role) && c.Value == AppRole.Admin.ToString()))
             {
                 context.Succeed(requirement);

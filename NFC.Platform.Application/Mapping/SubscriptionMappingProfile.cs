@@ -13,7 +13,6 @@ namespace NFC.Platform.Application.Mapping
     {
         public SubscriptionMappingProfile()
         {
-            //  SubscriptionPlan -> SubscriptionPlanDto (User localized)
             CreateMap<SubscriptionPlan, SubscriptionPlanDto>()
                 .ForMember(d => d.Name,
                     opt => opt.MapFrom(src =>
@@ -24,16 +23,13 @@ namespace NFC.Platform.Application.Mapping
                     opt => opt.MapFrom(src =>
                         src.PlanTemplates.Select(pt => pt.CardTemplate)));
 
-            //  SubscriptionPlan -> SubscriptionPlanAdminDto (Admin NameAr + NameEn)
             CreateMap<SubscriptionPlan, SubscriptionPlanAdminDto>()
                 .ForMember(d => d.AllowedTemplates,
                     opt => opt.MapFrom(src =>
                         src.PlanTemplates.Select(pt => pt.CardTemplate)));
 
-            //  CardTemplate -> CardTemplateSummaryDto (embedded in plan)
             CreateMap<CardTemplate, CardTemplateSummaryDto>();
 
-            //  UserSubscription -> UserSubscriptionDto
             CreateMap<UserSubscription, UserSubscriptionDto>()
                 .ForMember(d => d.PlanName,
                     opt => opt.MapFrom(src =>
@@ -57,7 +53,6 @@ namespace NFC.Platform.Application.Mapping
                             ? (src.EndDate - DateTime.UtcNow).Days
                             : 0));
 
-            //  Request -> Entity
             CreateMap<RenewSubscriptionRequest, UserSubscription>();
             CreateMap<SubscribeRequest, UserSubscription>();
             CreateMap<CreateSubscriptionPlanRequest, SubscriptionPlan>()

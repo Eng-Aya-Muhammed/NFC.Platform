@@ -8,17 +8,14 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public void CardOrder_ShouldNotHaveCustomDesignRequestIdProperty()
         {
-            // Act
             var property = typeof(CardOrder).GetProperty("CustomDesignRequestId");
 
-            // Assert
             Assert.Null(property);
         }
 
         [Fact]
         public async Task CreateAsync_ShouldNotQueryTemplateRequestRepository()
         {
-            // Arrange
             var unitOfWork = Substitute.For<IUnitOfWork>();
             var mapper = Substitute.For<IMapper>();
             var messageService = Substitute.For<IMessageService>();
@@ -63,7 +60,7 @@ namespace NFC.Platform.Tests.Services
 
             var otpSettingsOptions = Substitute.For<IOptions<OtpSettings>>();
             otpSettingsOptions.Value.Returns(new OtpSettings { CooldownSeconds = 60, MaxResendAttempts = 5 });
-            
+
             var companyRepo = Substitute.For<IGenericRepository<Company>>();
             companyRepo.GetQueryable().Returns(new List<Company> { new Company { TenantId = Guid.NewGuid(), Id = Guid.NewGuid() } }.AsQueryable().BuildMock());
             unitOfWork.Repository<Company>().Returns(companyRepo);
@@ -101,10 +98,8 @@ namespace NFC.Platform.Tests.Services
                 Quantity = 1
             };
 
-            // Act
             var result = await service.CreateOrderAsync(request);
 
-            // Assert
             Assert.True(result.IsSuccess);
             unitOfWork.DidNotReceive().Repository<TemplateRequest>();
         }
@@ -112,7 +107,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task ResolvePublicProfileAsync_QueriesOnlyProfileTemplateRequestType()
         {
-            // Arrange
             var unitOfWork = Substitute.For<IUnitOfWork>();
             var mapper = Substitute.For<IMapper>();
             var messageService = Substitute.For<IMessageService>();
@@ -135,7 +129,6 @@ namespace NFC.Platform.Tests.Services
 
             profileRepo.GetQueryable().Returns(new List<UserProfile> { userProfile }.AsQueryable().BuildMock());
 
-            // Mock completed TemplateRequest queryable
             var completedRequest = new TemplateRequest
             {
                 TenantId = tenantId,
@@ -148,13 +141,9 @@ namespace NFC.Platform.Tests.Services
             var options = Microsoft.Extensions.Options.Options.Create(new NFC.Platform.Application.DTOs.Settings.ClientSettings { ProfileBaseUrl = "http://localhost:3000/u" });
             var service = new ProfileMetricService(unitOfWork, messageService, mapper, options);
 
-            // Act
             var result = await service.ResolvePublicProfileAsync(userProfile.Id);
 
-            // Assert
             Assert.True(result.IsSuccess);
-            // Verify that the query filtered by RequestType == TemplateRequestType.ProfileTemplate
-            // We can confirm this because MockQueryable parsed and executed the query correctly
         }
     }
 }

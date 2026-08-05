@@ -6,31 +6,21 @@ using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace NFC.Platform.BuildingBlocks.Extensions
 {
-    /// <summary>
-    /// Service registration extension methods for configuring Swagger/OpenAPI documentation with JWT Bearer support.
-    /// </summary>
     public static class SwaggerServiceExtensions
     {
-        /// <summary>
-        /// Registers Swagger generation options and configures Bearer token authorization in the Swagger UI.
-        /// </summary>
-        /// <param name="services">The service collection descriptor.</param>
-        /// <returns>The modified service collection.</returns>
         public static IServiceCollection AddSwaggerWithJwt(this IServiceCollection services)
         {
             services.AddSwaggerGen(options =>
             {
-                options.SwaggerDoc("v1", new OpenApiInfo 
-                { 
-                    Title = "NFC Platform API", 
+                options.SwaggerDoc("v1", new OpenApiInfo
+                {
+                    Title = "NFC Platform API",
                     Version = "v1",
                     Description = "NFC Card Selling Platform API backend services."
                 });
 
-                // Add Accept-Language header to all Swagger endpoints with 'ar' as default
                 options.OperationFilter<AcceptLanguageHeaderOperationFilter>();
 
-                // Configure Bearer authentication in Swagger UI
                 options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
                 {
                     Description = "JWT Authorization header using the Bearer scheme. Example: \"Bearer {token}\"",
@@ -63,9 +53,6 @@ namespace NFC.Platform.BuildingBlocks.Extensions
         }
     }
 
-    /// <summary>
-    /// Swagger Operation Filter to add Accept-Language header parameter to API documentation.
-    /// </summary>
     public class AcceptLanguageHeaderOperationFilter : IOperationFilter
     {
         public void Apply(OpenApiOperation operation, OperationFilterContext context)

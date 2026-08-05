@@ -23,33 +23,13 @@ public class EmployeeDetailsDto
 
     public Guid ProfileId { get; set; }
 
-    //  Digital profile branding 
-    /// <summary>
-    /// Company logo (for employee profiles) or null for individual profiles.
-    /// </summary>
     public string? LogoUrl { get; set; }
 
-    /// <summary>
-    /// Layout identifier resolved from the linked CardTemplate.StyleConfigJson (e.g. "classic", "modern-dark").
-    /// Frontend uses this to select which fixed layout component to render.
-    /// </summary>
     public string? Layout { get; set; }
 
-    /// <summary>
-    /// Full StyleConfigJson from the resolved CardTemplate, passed through for the frontend.
-    /// </summary>
     public string? StyleConfigJson { get; set; }
 
-    /// <summary>
-    /// The full public URL of this profile.
-    /// Built server-side: {ClientSettings.ProfileBaseUrl}/{Subdomain}
-    /// Example: "https://nfc-platform.com/u/ahmed-ali"
-    /// Null if no subdomain has been assigned yet.
-    /// </summary>
     public string? ProfileUrl { get; set; }
-    
-    /// <summary>
-    /// The subdomain for the user's public profile.
-    /// </summary>
+
     public string? Subdomain { get; set; }
 }

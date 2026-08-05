@@ -25,25 +25,25 @@ namespace NFC.Platform.Tests.Services
 
         public AdminServiceTests()
         {
-            _unitOfWork          = Substitute.For<IUnitOfWork>();
-            _mapper              = Substitute.For<IMapper>();
-            _messageService      = Substitute.For<IMessageService>();
+            _unitOfWork = Substitute.For<IUnitOfWork>();
+            _mapper = Substitute.For<IMapper>();
+            _messageService = Substitute.For<IMessageService>();
 
-            _storageService      = Substitute.For<IStorageService>();
+            _storageService = Substitute.For<IStorageService>();
             _backgroundJobClient = Substitute.For<IBackgroundJobClient>();
 
-            _orderRepo                    = Substitute.For<IGenericRepository<CardOrder>>();
-            _templateRequestRepo          = Substitute.For<IGenericRepository<TemplateRequest>>();
-            _cardTemplateRepo             = Substitute.For<IGenericRepository<CardTemplate>>();
-            _tenantRepo                   = Substitute.For<IGenericRepository<Tenant>>();
-            _employeeRepo                 = Substitute.For<IGenericRepository<Employee>>();
-            _subscriptionRepo             = Substitute.For<IGenericRepository<UserSubscription>>();
-            _companyRepo                  = Substitute.For<IGenericRepository<Company>>();
-            _userProfileRepo              = Substitute.For<IGenericRepository<UserProfile>>();
-            _userProfileRepo              = Substitute.For<IGenericRepository<UserProfile>>();
-            _templateCategoryRepo         = Substitute.For<IGenericRepository<TemplateCategory>>();
+            _orderRepo = Substitute.For<IGenericRepository<CardOrder>>();
+            _templateRequestRepo = Substitute.For<IGenericRepository<TemplateRequest>>();
+            _cardTemplateRepo = Substitute.For<IGenericRepository<CardTemplate>>();
+            _tenantRepo = Substitute.For<IGenericRepository<Tenant>>();
+            _employeeRepo = Substitute.For<IGenericRepository<Employee>>();
+            _subscriptionRepo = Substitute.For<IGenericRepository<UserSubscription>>();
+            _companyRepo = Substitute.For<IGenericRepository<Company>>();
+            _userProfileRepo = Substitute.For<IGenericRepository<UserProfile>>();
+            _userProfileRepo = Substitute.For<IGenericRepository<UserProfile>>();
+            _templateCategoryRepo = Substitute.For<IGenericRepository<TemplateCategory>>();
             _subscriptionPlanTemplateRepo = Substitute.For<IGenericRepository<SubscriptionPlanTemplate>>();
-            _subscriptionPlanRepo         = Substitute.For<IGenericRepository<SubscriptionPlan>>();
+            _subscriptionPlanRepo = Substitute.For<IGenericRepository<SubscriptionPlan>>();
 
             _unitOfWork.Repository<CardOrder>().Returns(_orderRepo);
             _unitOfWork.Repository<TemplateRequest>().Returns(_templateRequestRepo);
@@ -72,18 +72,16 @@ namespace NFC.Platform.Tests.Services
                 .Returns(Task.FromResult(new UploadResultDto
                 {
                     SecureUrl = "https://res.cloudinary.com/demo/image/upload/qr-placeholder.png",
-                    PublicId  = "nfc-platform/qrcodes/test/qr-placeholder"
+                    PublicId = "nfc-platform/qrcodes/test/qr-placeholder"
                 }));
 
             _sut = new AdminService(_unitOfWork, _mapper, _messageService, _storageService, _backgroundJobClient);
         }
 
-        //  GetOrdersPagedAsync 
 
         [Fact]
         public async Task GetOrdersPagedAsync_ReturnsAllOrders_WhenNoStatusFilterPassed()
         {
-            // Arrange
             var orders = new List<CardOrder>
             {
                 new() { Id = Guid.NewGuid(), Status = OrderStatus.PendingReview },
@@ -97,10 +95,8 @@ namespace NFC.Platform.Tests.Services
             _mapper.Map<AdminOrderSummaryDto>(Arg.Any<CardOrder>())
                 .Returns(x => new AdminOrderSummaryDto { Id = ((CardOrder)x[0]).Id });
 
-            // Act
             var result = await _sut.GetOrdersPagedAsync(pagination, null);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(2, result.Data!.Items.Count);
         }
@@ -108,7 +104,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task GetOrdersPagedAsync_FiltersOrders_WhenStatusFilterPassed()
         {
-            // Arrange
             var orders = new List<CardOrder>
             {
                 new() { Id = Guid.NewGuid(), Status = OrderStatus.PendingReview },
@@ -122,28 +117,22 @@ namespace NFC.Platform.Tests.Services
             _mapper.Map<AdminOrderSummaryDto>(Arg.Any<CardOrder>())
                 .Returns(x => new AdminOrderSummaryDto { Id = ((CardOrder)x[0]).Id, Status = ((CardOrder)x[0]).Status });
 
-            // Act
             var result = await _sut.GetOrdersPagedAsync(pagination, OrderStatus.UnderReview);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Single(result.Data!.Items);
             Assert.Equal(OrderStatus.UnderReview, result.Data.Items.First().Status);
         }
 
-        //  GetOrderByIdAsync 
 
         [Fact]
         public async Task GetOrderByIdAsync_ReturnsNotFound_WhenOrderDoesNotExist()
         {
-            // Arrange
             var mockQueryable = new List<CardOrder>().AsQueryable().BuildMock();
             _orderRepo.GetQueryable().Returns(mockQueryable);
 
-            // Act
             var result = await _sut.GetOrderByIdAsync(Guid.NewGuid());
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(404, result.StatusCode);
         }
@@ -151,7 +140,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task GetOrderByIdAsync_ReturnsOrderDetail_WhenOrderExists()
         {
-            // Arrange
             var orderId = Guid.NewGuid();
             var orders = new List<CardOrder>
             {
@@ -163,20 +151,16 @@ namespace NFC.Platform.Tests.Services
             var dto = new AdminOrderDetailDto { Id = orderId };
             _mapper.Map<AdminOrderDetailDto>(Arg.Any<CardOrder>()).Returns(dto);
 
-            // Act
             var result = await _sut.GetOrderByIdAsync(orderId);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(orderId, result.Data!.Id);
         }
 
-        //  UpdateOrderStatusAsync 
 
         [Fact]
         public async Task UpdateOrderStatusAsync_UpdatesStatusAndTracking_WhenOrderExists()
         {
-            // Arrange
             var orderId = Guid.NewGuid();
             var order = new CardOrder { Id = orderId, Status = OrderStatus.Approved };
             var mockQueryable = new List<CardOrder> { order }.AsQueryable().BuildMock();
@@ -188,10 +172,8 @@ namespace NFC.Platform.Tests.Services
                 TrackingNumber = "TRK12345"
             };
 
-            // Act
             var result = await _sut.UpdateOrderStatusAsync(orderId, updateDto);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(OrderStatus.ReadyForDelivery, order.Status);
             Assert.Equal("TRK12345", order.TrackingNumber);
@@ -201,34 +183,27 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task UpdateOrderStatusAsync_ReturnsError_WhenStatusTransitionIsInvalid()
         {
-            // Arrange
             var orderId = Guid.NewGuid();
-            // Order is already Shipped
             var order = new CardOrder { Id = orderId, Status = OrderStatus.Delivered };
             var mockQueryable = new List<CardOrder> { order }.AsQueryable().BuildMock();
             _orderRepo.GetQueryable().Returns(mockQueryable);
 
-            // Try to move backward to PendingReview
             var updateDto = new UpdateOrderStatusDto
             {
                 Status = OrderStatus.PendingReview
             };
 
-            // Act
             var result = await _sut.UpdateOrderStatusAsync(orderId, updateDto);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(422, result.StatusCode);
             _messageService.Received(1).Get("InvalidStatusTransition", Arg.Any<string>(), Arg.Any<string>());
         }
 
-        //  ResolveTemplateRequestAsync 
 
         [Fact]
         public async Task ResolveTemplateRequestAsync_CreatesCustomTemplate_WhenApproved()
         {
-            // Arrange
             var requestId = Guid.NewGuid();
             var tenantId = Guid.NewGuid();
             var request = new TemplateRequest
@@ -248,10 +223,8 @@ namespace NFC.Platform.Tests.Services
                 Notes = "Design complete"
             };
 
-            // Act
             var result = await _sut.ResolveTemplateRequestAsync(requestId, resolveDto);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(TemplateRequestStatus.Completed, request.Status);
             Assert.Contains("Admin Notes: Design complete", request.Notes);
@@ -263,12 +236,10 @@ namespace NFC.Platform.Tests.Services
             await _unitOfWork.Received(1).SaveChangesAsync();
         }
 
-        //  CreateTemplateAsync 
 
         [Fact]
         public async Task CreateTemplateAsync_SavesTemplateAndReturnsDto()
         {
-            // Arrange
             var createDto = new CreateCardTemplateRequest
             {
                 NameAr = "Modern Template",
@@ -286,29 +257,23 @@ namespace NFC.Platform.Tests.Services
             _mapper.Map<CardTemplate>(createDto).Returns(mappedTemplate);
             _mapper.Map<CardTemplateAdminDto>(mappedTemplate).Returns(new CardTemplateAdminDto { NameAr = "Modern Template", NameEn = "Modern Template" });
 
-            // Act
             var result = await _sut.CreateTemplateAsync(createDto);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal("Modern Template", result.Data!.NameAr);
             await _cardTemplateRepo.Received(1).AddAsync(mappedTemplate);
             await _unitOfWork.Received(1).SaveChangesAsync();
         }
 
-        //  UpdateTemplateAsync 
 
         [Fact]
         public async Task UpdateTemplateAsync_ReturnsNotFound_WhenTemplateDoesNotExist()
         {
-            // Arrange
             var templateId = Guid.NewGuid();
             _cardTemplateRepo.GetByIdAsync(templateId).Returns((CardTemplate?)null);
 
-            // Act
             var result = await _sut.UpdateTemplateAsync(templateId, new UpdateCardTemplateRequest());
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(404, result.StatusCode);
         }
@@ -316,7 +281,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task UpdateTemplateAsync_UpdatesValues_WhenTemplateExists()
         {
-            // Arrange
             var templateId = Guid.NewGuid();
             var template = new CardTemplate { Id = templateId, NameAr = "Old Name", NameEn = "Old Name" };
             _cardTemplateRepo.GetByIdAsync(templateId).Returns(template);
@@ -325,23 +289,18 @@ namespace NFC.Platform.Tests.Services
             _mapper.Map(updateDto, template).Returns(template);
             _mapper.Map<CardTemplateAdminDto>(template).Returns(new CardTemplateAdminDto { Id = templateId, NameAr = "New Name", NameEn = "New Name" });
 
-            // Act
             var result = await _sut.UpdateTemplateAsync(templateId, updateDto);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal("New Name", result.Data!.NameAr);
             await _unitOfWork.Received(1).SaveChangesAsync();
         }
 
-        //  DeleteTemplateAsync 
 
-        //  GetTenantsPagedAsync 
 
         [Fact]
         public async Task GetTenantsPagedAsync_ReturnsPagedTenantsWithSubscriptions()
         {
-            // Arrange
             var tenantId = Guid.NewGuid();
             var tenants = new List<Tenant>
             {
@@ -361,32 +320,26 @@ namespace NFC.Platform.Tests.Services
 
             var pagination = new PaginationRequest { PageNumber = 1, PageSize = 10 };
 
-            // Act
             var result = await _sut.GetTenantsPagedAsync(pagination);
 
-            // Assert
             Assert.True(result.IsSuccess);
             var item = result.Data!.Items.First();
             Assert.Equal("Premium Plan En", item.ActivePlanName);
             Assert.True(item.DaysRemaining > 0);
         }
 
-        //  UpdateTenantStatusAsync 
 
         [Fact]
         public async Task UpdateTenantStatusAsync_TogglesTenantActiveState()
         {
-            // Arrange
             var tenantId = Guid.NewGuid();
             var tenant = new Tenant { Id = tenantId, IsActive = true };
             _tenantRepo.GetByIdAsync(tenantId).Returns(tenant);
 
             var updateDto = new UpdateTenantStatusDto { IsActive = false };
 
-            // Act
             var result = await _sut.UpdateTenantStatusAsync(tenantId, updateDto);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.False(tenant.IsActive);
             await _unitOfWork.Received(1).SaveChangesAsync();
@@ -395,7 +348,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task CreateTemplateAsync_CreatesGlobalTemplate()
         {
-            // Arrange
             var dto = new CreateCardTemplateRequest { NameAr = "Global Temp", NameEn = "Global Temp" };
             var mappedTemplate = new CardTemplate { NameAr = "Global Temp", NameEn = "Global Temp" };
             _mapper.Map<CardTemplate>(dto).Returns(mappedTemplate);
@@ -403,10 +355,8 @@ namespace NFC.Platform.Tests.Services
             var expectedDto = new CardTemplateAdminDto { NameAr = "Global Temp", NameEn = "Global Temp" };
             _mapper.Map<CardTemplateAdminDto>(mappedTemplate).Returns(expectedDto);
 
-            // Act
             var result = await _sut.CreateTemplateAsync(dto);
 
-            // Assert
             Assert.True(result.IsSuccess);
             await _cardTemplateRepo.Received(1).AddAsync(mappedTemplate);
             await _unitOfWork.Received(1).SaveChangesAsync();
@@ -415,14 +365,11 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task DeleteTemplateAsync_ReturnsNotFound_WhenTemplateDoesNotExist()
         {
-            // Arrange
             var id = Guid.NewGuid();
             _cardTemplateRepo.GetByIdAsync(id).Returns((CardTemplate?)null);
 
-            // Act
             var result = await _sut.DeleteTemplateAsync(id);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(404, result.StatusCode);
         }
@@ -430,14 +377,11 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task ResolveTemplateRequestAsync_ReturnsNotFound_WhenRequestDoesNotExist()
         {
-            // Arrange
             var id = Guid.NewGuid();
             _templateRequestRepo.GetQueryable().Returns(new List<TemplateRequest>().AsQueryable().BuildMock());
 
-            // Act
             var result = await _sut.ResolveTemplateRequestAsync(id, new ResolveTemplateRequestDto());
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(404, result.StatusCode);
         }
@@ -445,7 +389,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task ResolveTemplateRequestAsync_EnqueuesEmailNotification_WhenStatusCompleted()
         {
-            // Arrange
             var requestId = Guid.NewGuid();
             var tenantId = Guid.NewGuid();
             var user = new User { Email = "client@example.com" };
@@ -469,10 +412,8 @@ namespace NFC.Platform.Tests.Services
                 StyleConfigJson = "{\"color\":\"#ffd700\"}"
             };
 
-            // Act
             var result = await _sut.ResolveTemplateRequestAsync(requestId, dto);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(TemplateRequestStatus.Completed, templateRequest.Status);
             Assert.NotNull(templateRequest.ProducedTemplateId);
@@ -486,7 +427,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task ResolveTemplateRequestAsync_DoesNotEnqueueEmail_WhenStatusNotCompleted()
         {
-            // Arrange
             var requestId = Guid.NewGuid();
             var tenantId = Guid.NewGuid();
             var user = new User { Email = "client@example.com" };
@@ -510,15 +450,12 @@ namespace NFC.Platform.Tests.Services
                 Notes = "Inappropriate design logo"
             };
 
-            // Act
             var result = await _sut.ResolveTemplateRequestAsync(requestId, dto);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(TemplateRequestStatus.Rejected, templateRequest.Status);
             Assert.Null(templateRequest.ProducedTemplateId);
 
-            // Verify email notification is NOT enqueued when rejected
             _backgroundJobClient.DidNotReceive().Create(
                 Arg.Is<Hangfire.Common.Job>(j =>
                     j.Method.Name == nameof(IEmailService.SendTemplateRequestApprovedEmailAsync)),
@@ -528,7 +465,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task ResolveTemplateRequestAsync_AppliesTemplateToCompanyProfile_WhenCompanyExists()
         {
-            // Arrange
             var requestId = Guid.NewGuid();
             var tenantId = Guid.NewGuid();
             var company = new Company { Id = Guid.NewGuid(), TenantId = tenantId };
@@ -554,10 +490,8 @@ namespace NFC.Platform.Tests.Services
                 StyleConfigJson = "{\"theme\":\"navy\"}"
             };
 
-            // Act
             var result = await _sut.ResolveTemplateRequestAsync(requestId, dto);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.NotNull(templateRequest.ProducedTemplateId);
             Assert.Equal(templateRequest.ProducedTemplateId, company.ProfileTemplateId);
@@ -567,7 +501,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task ResolveTemplateRequestAsync_AppliesTemplateToUserProfile_WhenCompanyDoesNotExist()
         {
-            // Arrange
             var requestId = Guid.NewGuid();
             var tenantId = Guid.NewGuid();
             var userId = Guid.NewGuid();
@@ -585,7 +518,7 @@ namespace NFC.Platform.Tests.Services
             };
 
             _templateRequestRepo.GetQueryable().Returns(new List<TemplateRequest> { templateRequest }.AsQueryable().BuildMock());
-            _companyRepo.GetQueryable().Returns(new List<Company>().AsQueryable().BuildMock()); // No company
+            _companyRepo.GetQueryable().Returns(new List<Company>().AsQueryable().BuildMock());
             _userProfileRepo.GetQueryable().Returns(new List<UserProfile> { userProfile }.AsQueryable().BuildMock());
             _messageService.Get("RecordUpdated").Returns("Record updated successfully.");
 
@@ -595,60 +528,52 @@ namespace NFC.Platform.Tests.Services
                 StyleConfigJson = "{\"theme\":\"minimalist\"}"
             };
 
-            // Act
             var result = await _sut.ResolveTemplateRequestAsync(requestId, dto);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.NotNull(templateRequest.ProducedTemplateId);
             Assert.Equal(templateRequest.ProducedTemplateId, userProfile.ProfileTemplateId);
             await _unitOfWork.Received(1).SaveChangesAsync();
         }
-        //  ReassignSubdomainAsync 
 
 
 
 
-        //  OTP Expiration & Resend Unit Tests 
 
         [Fact]
         public async Task VerifyDeliveryOtpAsync_ReturnsFail_WhenOtpHasExpired()
         {
-            // Arrange
             var orderId = Guid.NewGuid();
             var order = new CardOrder
             {
-                Id                   = orderId,
-                Status               = OrderStatus.ReadyForDelivery,
-                DeliveryOtpHash      = NFC.Platform.BuildingBlocks.Common.Helpers.OtpHasher.HashOtp("123456"),
-                DeliveryOtpExpiresAt = DateTime.UtcNow.AddMinutes(-5) // Expired 5 mins ago
+                Id = orderId,
+                Status = OrderStatus.ReadyForDelivery,
+                DeliveryOtpHash = NFC.Platform.BuildingBlocks.Common.Helpers.OtpHasher.HashOtp("123456"),
+                DeliveryOtpExpiresAt = DateTime.UtcNow.AddMinutes(-5)
             };
 
             var mockQueryable = new List<CardOrder> { order }.AsQueryable().BuildMock();
             _orderRepo.GetQueryable().Returns(mockQueryable);
             _messageService.Get("OtpExpired").Returns("OTP code has expired.");
 
-            // Act
             var result = await _sut.VerifyDeliveryOtpAsync(orderId, "123456");
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(422, result.StatusCode);
             Assert.Equal("OTP code has expired.", result.Message);
-            Assert.Equal(OrderStatus.ReadyForDelivery, order.Status); // Status unchanged
+            Assert.Equal(OrderStatus.ReadyForDelivery, order.Status);
         }
 
         [Fact]
         public async Task VerifyDeliveryOtpAsync_IncrementsFailedAttempts_WhenOtpIsIncorrect()
         {
-            // Arrange
             var orderId = Guid.NewGuid();
             var expectedHash = NFC.Platform.BuildingBlocks.Common.Helpers.OtpHasher.HashOtp("123456");
             var order = new CardOrder
             {
-                Id                   = orderId,
-                Status               = OrderStatus.ReadyForDelivery,
-                DeliveryOtpHash      = expectedHash,
+                Id = orderId,
+                Status = OrderStatus.ReadyForDelivery,
+                DeliveryOtpHash = expectedHash,
                 DeliveryOtpExpiresAt = DateTime.UtcNow.AddMinutes(5),
                 DeliveryOtpFailedAttempts = 1
             };
@@ -657,58 +582,52 @@ namespace NFC.Platform.Tests.Services
             _orderRepo.GetQueryable().Returns(mockQueryable);
             _messageService.Get("InvalidOtp").Returns("Invalid OTP.");
 
-            // Act
             var result = await _sut.VerifyDeliveryOtpAsync(orderId, "000000");
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(422, result.StatusCode);
             Assert.Equal("Invalid OTP.", result.Message);
-            Assert.Equal(2, order.DeliveryOtpFailedAttempts); // Incremented from 1 to 2
-            Assert.Equal(expectedHash, order.DeliveryOtpHash); // Still intact
+            Assert.Equal(2, order.DeliveryOtpFailedAttempts);
+            Assert.Equal(expectedHash, order.DeliveryOtpHash);
             await _unitOfWork.Received(1).SaveChangesAsync();
         }
 
         [Fact]
         public async Task VerifyDeliveryOtpAsync_InvalidatesOtp_WhenMaxFailedAttemptsReached()
         {
-            // Arrange
             var orderId = Guid.NewGuid();
             var order = new CardOrder
             {
-                Id                   = orderId,
-                Status               = OrderStatus.ReadyForDelivery,
-                DeliveryOtpHash      = NFC.Platform.BuildingBlocks.Common.Helpers.OtpHasher.HashOtp("123456"),
+                Id = orderId,
+                Status = OrderStatus.ReadyForDelivery,
+                DeliveryOtpHash = NFC.Platform.BuildingBlocks.Common.Helpers.OtpHasher.HashOtp("123456"),
                 DeliveryOtpExpiresAt = DateTime.UtcNow.AddMinutes(5),
-                DeliveryOtpFailedAttempts = 4 // Max is 5, so 4th failed attempt + 1 = 5th attempt => invalidation
+                DeliveryOtpFailedAttempts = 4
             };
 
             var mockQueryable = new List<CardOrder> { order }.AsQueryable().BuildMock();
             _orderRepo.GetQueryable().Returns(mockQueryable);
             _messageService.Get("OtpExpired").Returns("OTP code has expired.");
 
-            // Act
             var result = await _sut.VerifyDeliveryOtpAsync(orderId, "999999");
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(422, result.StatusCode);
             Assert.Equal(5, order.DeliveryOtpFailedAttempts);
-            Assert.Null(order.DeliveryOtpHash); // Invalidated
-            Assert.Null(order.DeliveryOtpExpiresAt); // Invalidated
+            Assert.Null(order.DeliveryOtpHash);
+            Assert.Null(order.DeliveryOtpExpiresAt);
             await _unitOfWork.Received(1).SaveChangesAsync();
         }
 
         [Fact]
         public async Task VerifyDeliveryOtpAsync_ResetsFailedAttempts_WhenOtpIsCorrect()
         {
-            // Arrange
             var orderId = Guid.NewGuid();
             var order = new CardOrder
             {
-                Id                   = orderId,
-                Status               = OrderStatus.ReadyForDelivery,
-                DeliveryOtpHash      = NFC.Platform.BuildingBlocks.Common.Helpers.OtpHasher.HashOtp("123456"),
+                Id = orderId,
+                Status = OrderStatus.ReadyForDelivery,
+                DeliveryOtpHash = NFC.Platform.BuildingBlocks.Common.Helpers.OtpHasher.HashOtp("123456"),
                 DeliveryOtpExpiresAt = DateTime.UtcNow.AddMinutes(5),
                 DeliveryOtpFailedAttempts = 3
             };
@@ -717,28 +636,25 @@ namespace NFC.Platform.Tests.Services
             _orderRepo.GetQueryable().Returns(mockQueryable);
             _messageService.Get("OrderDelivered").Returns("Order delivered.");
 
-            // Act
             var result = await _sut.VerifyDeliveryOtpAsync(orderId, "123456");
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(OrderStatus.Delivered, order.Status);
             Assert.Null(order.DeliveryOtpHash);
-            Assert.Equal(0, order.DeliveryOtpFailedAttempts); // Reset to 0
+            Assert.Equal(0, order.DeliveryOtpFailedAttempts);
             await _unitOfWork.Received(1).SaveChangesAsync();
         }
 
         [Fact]
         public async Task ResendDeliveryOtpAsync_ReturnsFail_WhenCooldownActive()
         {
-            // Arrange
             var orderId = Guid.NewGuid();
             var order = new CardOrder
             {
-                Id                   = orderId,
-                Status               = OrderStatus.ReadyForDelivery,
-                DeliveryOtpHash      = NFC.Platform.BuildingBlocks.Common.Helpers.OtpHasher.HashOtp("123456"),
-                DeliveryOtpLastSentAt = DateTime.UtcNow.AddSeconds(-30), // Sent 30 seconds ago (< 60s)
+                Id = orderId,
+                Status = OrderStatus.ReadyForDelivery,
+                DeliveryOtpHash = NFC.Platform.BuildingBlocks.Common.Helpers.OtpHasher.HashOtp("123456"),
+                DeliveryOtpLastSentAt = DateTime.UtcNow.AddSeconds(-30),
                 DeliveryOtpResendCount = 1
             };
 
@@ -746,10 +662,8 @@ namespace NFC.Platform.Tests.Services
             _orderRepo.GetQueryable().Returns(mockQueryable);
             _messageService.Get("OtpCooldownActive").Returns("Please wait 60 seconds.");
 
-            // Act
             var result = await _sut.ResendDeliveryOtpAsync(orderId);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(422, result.StatusCode);
             Assert.Equal("Please wait 60 seconds.", result.Message);
@@ -758,25 +672,22 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task ResendDeliveryOtpAsync_ReturnsFail_WhenResendLimitReached()
         {
-            // Arrange
             var orderId = Guid.NewGuid();
             var order = new CardOrder
             {
-                Id                   = orderId,
-                Status               = OrderStatus.ReadyForDelivery,
-                DeliveryOtpHash      = NFC.Platform.BuildingBlocks.Common.Helpers.OtpHasher.HashOtp("123456"),
+                Id = orderId,
+                Status = OrderStatus.ReadyForDelivery,
+                DeliveryOtpHash = NFC.Platform.BuildingBlocks.Common.Helpers.OtpHasher.HashOtp("123456"),
                 DeliveryOtpLastSentAt = DateTime.UtcNow.AddMinutes(-10),
-                DeliveryOtpResendCount = 5 // Max limit reached (5)
+                DeliveryOtpResendCount = 5
             };
 
             var mockQueryable = new List<CardOrder> { order }.AsQueryable().BuildMock();
             _orderRepo.GetQueryable().Returns(mockQueryable);
             _messageService.Get("OtpResendLimitReached").Returns("Limit reached.");
 
-            // Act
             var result = await _sut.ResendDeliveryOtpAsync(orderId);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(422, result.StatusCode);
             Assert.Equal("Limit reached.", result.Message);
@@ -785,7 +696,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task ResendDeliveryOtpAsync_GeneratesNewOtp_ResetsExpiry_IncrementsCount_AndEnqueuesJobs()
         {
-            // Arrange
             var orderId = Guid.NewGuid();
             var user = new User
             {
@@ -794,34 +704,31 @@ namespace NFC.Platform.Tests.Services
             };
             var order = new CardOrder
             {
-                Id                   = orderId,
-                Status               = OrderStatus.ReadyForDelivery,
-                DeliveryOtpHash      = NFC.Platform.BuildingBlocks.Common.Helpers.OtpHasher.HashOtp("111111"),
-                DeliveryOtpLastSentAt = DateTime.UtcNow.AddMinutes(-2), // > 60s ago
+                Id = orderId,
+                Status = OrderStatus.ReadyForDelivery,
+                DeliveryOtpHash = NFC.Platform.BuildingBlocks.Common.Helpers.OtpHasher.HashOtp("111111"),
+                DeliveryOtpLastSentAt = DateTime.UtcNow.AddMinutes(-2),
                 DeliveryOtpResendCount = 2,
-                Tenant               = new Tenant { Company = null },
-                User                 = user
+                Tenant = new Tenant { Company = null },
+                User = user
             };
 
             var mockQueryable = new List<CardOrder> { order }.AsQueryable().BuildMock();
             _orderRepo.GetQueryable().Returns(mockQueryable);
             _messageService.Get("OtpResent").Returns("OTP code has been resent successfully.");
 
-            // Act
             var result = await _sut.ResendDeliveryOtpAsync(orderId);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal("OTP code has been resent successfully.", result.Message);
-            Assert.NotEqual(NFC.Platform.BuildingBlocks.Common.Helpers.OtpHasher.HashOtp("111111"), order.DeliveryOtpHash); // New OTP hash generated
+            Assert.NotEqual(NFC.Platform.BuildingBlocks.Common.Helpers.OtpHasher.HashOtp("111111"), order.DeliveryOtpHash);
             Assert.NotNull(order.DeliveryOtpHash);
-            Assert.Equal(3, order.DeliveryOtpResendCount); // Incremented from 2 to 3
+            Assert.Equal(3, order.DeliveryOtpResendCount);
             Assert.NotNull(order.DeliveryOtpExpiresAt);
             Assert.True(order.DeliveryOtpExpiresAt > DateTime.UtcNow);
 
             await _unitOfWork.Received(1).SaveChangesAsync();
 
-            // Background jobs enqueued
             _backgroundJobClient.Received(1).Create(
                 Arg.Is<Hangfire.Common.Job>(j =>
                     j.Method.Name == nameof(IEmailService.SendOrderReadyOtpEmailAsync) &&
@@ -835,12 +742,10 @@ namespace NFC.Platform.Tests.Services
                 Arg.Any<Hangfire.States.IState>());
         }
 
-        //  Plan Management 
 
         [Fact]
         public async Task CreatePlanAsync_ValidRequest_ReturnsSuccess()
         {
-            // Arrange
             var request = new CreateSubscriptionPlanRequest
             {
                 NameAr = "BusinessAr",
@@ -865,10 +770,8 @@ namespace NFC.Platform.Tests.Services
             _mapper.Map<SubscriptionPlanAdminDto>(Arg.Any<SubscriptionPlan>()).Returns(new SubscriptionPlanAdminDto { NameAr = plan.NameAr, NameEn = plan.NameEn });
             _messageService.Get(Arg.Any<string>()).Returns(x => x.Arg<string>());
 
-            // Act
             var result = await _sut.CreatePlanAsync(request);
 
-            // Assert
             Assert.True(result.IsSuccess);
             await planRepo.Received(1).AddAsync(Arg.Any<SubscriptionPlan>());
         }
@@ -876,7 +779,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task DeletePlanAsync_WithActiveSubscriptions_Returns409()
         {
-            // Arrange
             var planId = Guid.NewGuid();
             var plan = new SubscriptionPlan { Id = planId };
             _subscriptionPlanRepo.GetByIdAsync(planId).Returns(plan);
@@ -892,10 +794,8 @@ namespace NFC.Platform.Tests.Services
                 .Returns(new List<UserSubscription> { activeSub }.AsQueryable().BuildMock());
             _messageService.Get("PlanHasActiveSubscriptions").Returns("Cannot delete a plan that has active subscriptions.");
 
-            // Act
             var result = await _sut.DeletePlanAsync(planId);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(409, result.StatusCode);
         }
@@ -903,7 +803,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task DeletePlanAsync_NoActiveSubscriptions_Succeeds()
         {
-            // Arrange
             var planId = Guid.NewGuid();
             var plan = new SubscriptionPlan { Id = planId };
 
@@ -912,10 +811,8 @@ namespace NFC.Platform.Tests.Services
             _subscriptionPlanRepo.GetByIdAsync(planId).Returns(plan);
             _messageService.Get(Arg.Any<string>()).Returns(x => x.Arg<string>());
 
-            // Act
             var result = await _sut.DeletePlanAsync(planId);
 
-            // Assert
             Assert.True(result.IsSuccess);
             _subscriptionPlanRepo.Received(1).Remove(plan);
         }
@@ -923,7 +820,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task AssignTemplateAsync_Duplicate_Returns409()
         {
-            // Arrange
             var planId = Guid.NewGuid();
             var templateId = Guid.NewGuid();
 
@@ -935,10 +831,8 @@ namespace NFC.Platform.Tests.Services
 
             _messageService.Get("TemplateAlreadyAssigned").Returns("Already assigned.");
 
-            // Act
             var result = await _sut.AssignTemplateAsync(planId, templateId);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(409, result.StatusCode);
         }
@@ -946,7 +840,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task AssignTemplateAsync_New_Succeeds()
         {
-            // Arrange
             var planId = Guid.NewGuid();
             var templateId = Guid.NewGuid();
 
@@ -956,10 +849,8 @@ namespace NFC.Platform.Tests.Services
             _subscriptionPlanTemplateRepo.GetQueryable().Returns(new List<SubscriptionPlanTemplate>().AsQueryable().BuildMock());
             _messageService.Get(Arg.Any<string>()).Returns(x => x.Arg<string>());
 
-            // Act
             var result = await _sut.AssignTemplateAsync(planId, templateId);
 
-            // Assert
             Assert.True(result.IsSuccess);
             await _subscriptionPlanTemplateRepo.Received(1).AddAsync(Arg.Is<SubscriptionPlanTemplate>(
                 pt => pt.SubscriptionPlanId == planId && pt.CardTemplateId == templateId));
@@ -968,7 +859,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task DeleteTemplateAsync_NullsOutUserAndCompanyProfiles()
         {
-            // Arrange
             var templateId = Guid.NewGuid();
             var template = new CardTemplate { Id = templateId, IsActive = true, IsDeleted = false };
 
@@ -985,10 +875,8 @@ namespace NFC.Platform.Tests.Services
             planTemplateRepo.GetQueryable().Returns(new List<SubscriptionPlanTemplate>().AsQueryable().BuildMock());
             _messageService.Get("TemplateDeletedAndProfilesCleared").Returns("Deleted.");
 
-            // Act
             var result = await _sut.DeleteTemplateAsync(templateId);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.True(template.IsDeleted);
             Assert.False(template.IsActive);
@@ -1000,7 +888,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task UnassignTemplateAsync_NotFound_Returns404()
         {
-            // Arrange
             var planId = Guid.NewGuid();
             var templateId = Guid.NewGuid();
 
@@ -1009,10 +896,8 @@ namespace NFC.Platform.Tests.Services
             planTemplateRepo.GetQueryable().Returns(new List<SubscriptionPlanTemplate>().AsQueryable().BuildMock());
             _messageService.Get("RecordNotFound").Returns("Not found.");
 
-            // Act
             var result = await _sut.UnassignTemplateAsync(planId, templateId);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(404, result.StatusCode);
         }
@@ -1020,7 +905,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task GetTenantBasicInfoAsync_ReturnsSuccess_WhenTenantExists()
         {
-            // Arrange
             var tenantId = Guid.NewGuid();
             var tenant = new Tenant { Id = tenantId, Name = "Test Tenant" };
             var query = new List<Tenant> { tenant }.AsQueryable().BuildMock();
@@ -1030,10 +914,8 @@ namespace NFC.Platform.Tests.Services
             var dto = new TenantBasicInfoDto { Id = tenantId, CompanyName = "Test Tenant" };
             _mapper.Map<TenantBasicInfoDto>(Arg.Any<Tenant>()).Returns(dto);
 
-            // Act
             var result = await _sut.GetTenantBasicInfoAsync(tenantId);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal("Test Tenant", result.Data!.CompanyName);
         }
@@ -1041,7 +923,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task GetTenantEmployeesPagedAsync_ReturnsPagedEmployees()
         {
-            // Arrange
             var tenantId = Guid.NewGuid();
             var employee = new Employee { Id = Guid.NewGuid(), TenantId = tenantId, FullName = "John", IsDeleted = false };
             var query = new List<Employee> { employee }.AsQueryable().BuildMock();
@@ -1053,10 +934,8 @@ namespace NFC.Platform.Tests.Services
 
             var request = new PaginationRequest { PageNumber = 1, PageSize = 10 };
 
-            // Act
             var result = await _sut.GetTenantEmployeesPagedAsync(tenantId, request);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Single(result.Data!.Items);
             Assert.Equal("John", result.Data!.Items.First().FullName);
@@ -1065,7 +944,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task GetTenantEmployeeDetailsAsync_ReturnsSuccess_WhenEmployeeExists()
         {
-            // Arrange
             var tenantId = Guid.NewGuid();
             var employeeId = Guid.NewGuid();
             var employee = new Employee { Id = employeeId, TenantId = tenantId, FullName = "John", IsDeleted = false };
@@ -1076,29 +954,26 @@ namespace NFC.Platform.Tests.Services
             var dto = new EmployeeDetailsDto { Id = employee.Id, FullName = "John" };
             _mapper.Map<EmployeeDetailsDto>(Arg.Any<Employee>()).Returns(dto);
 
-            // Act
             var result = await _sut.GetTenantEmployeeDetailsAsync(tenantId, employeeId);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal("John", result.Data!.FullName);
         }
         [Fact]
         public async Task GetOrderByIdAsync_ReturnsSuccess_WithCustomerProfile_WhenOrderExists()
         {
-            // Arrange
             var orderId = Guid.NewGuid();
             var userId = Guid.NewGuid();
 
-            var userProfile = new UserProfile 
-            { 
+            var userProfile = new UserProfile
+            {
                 Id = Guid.NewGuid(),
-                FullName = "John Admin", 
+                FullName = "John Admin",
                 ContactEmail = "john@admin.com"
             };
 
             var user = new User { Id = userId, UserProfile = userProfile };
-            
+
             var order = new CardOrder
             {
                 Id = orderId,
@@ -1122,10 +997,8 @@ namespace NFC.Platform.Tests.Services
 
             _mapper.Map<AdminOrderDetailDto>(Arg.Any<CardOrder>()).Returns(dto);
 
-            // Act
             var result = await _sut.GetOrderByIdAsync(orderId);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.NotNull(result.Data);
             Assert.NotNull(result.Data!.CustomerProfile);
@@ -1136,7 +1009,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task GetOrdersPagedAsync_FiltersBySearch_MatchesTrackingNumber()
         {
-            // Arrange
             var order1 = new CardOrder { Id = Guid.NewGuid(), TrackingNumber = "TRK_ALPHA" };
             var order2 = new CardOrder { Id = Guid.NewGuid(), TrackingNumber = "TRK_BETA" };
 
@@ -1146,10 +1018,8 @@ namespace NFC.Platform.Tests.Services
 
             var request = new PaginationRequest { PageNumber = 1, PageSize = 10 };
 
-            // Act
             var result = await _sut.GetOrdersPagedAsync(request, null, null, null, "ALPHA");
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(1, result.Data!.TotalCount);
             Assert.Equal(order1.Id, result.Data.Items.First().Id);
@@ -1158,7 +1028,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task GetTenantsPagedAsync_FiltersBySearch_MatchesCompanyName()
         {
-            // Arrange
             var t1 = new Tenant { Id = Guid.NewGuid(), Name = "T1", Company = new Company { Name = "Alpha Tech" } };
             var t2 = new Tenant { Id = Guid.NewGuid(), Name = "T2", Company = new Company { Name = "Beta Solutions" } };
 
@@ -1170,10 +1039,8 @@ namespace NFC.Platform.Tests.Services
 
             var request = new PaginationRequest { PageNumber = 1, PageSize = 10 };
 
-            // Act
             var result = await _sut.GetTenantsPagedAsync(request, "Alpha");
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(1, result.Data!.TotalCount);
             Assert.Equal("Alpha Tech", result.Data.Items.First().Name);
@@ -1182,7 +1049,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task GetTenantEmployeesPagedAsync_FiltersBySearch_MatchesJobTitle()
         {
-            // Arrange
             var tenantId = Guid.NewGuid();
             var emp1 = new Employee { Id = Guid.NewGuid(), TenantId = tenantId, FullName = "Dev One", JobTitle = "Senior Engineer", IsDeleted = false };
             var emp2 = new Employee { Id = Guid.NewGuid(), TenantId = tenantId, FullName = "Sales One", JobTitle = "Account Manager", IsDeleted = false };
@@ -1193,10 +1059,8 @@ namespace NFC.Platform.Tests.Services
 
             var request = new PaginationRequest { PageNumber = 1, PageSize = 10 };
 
-            // Act
             var result = await _sut.GetTenantEmployeesPagedAsync(tenantId, request, "Engineer");
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(1, result.Data!.TotalCount);
             Assert.Equal("Dev One", result.Data.Items.First().FullName);
@@ -1205,7 +1069,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task GetTenantsPagedAsync_HandlesNullCompany_WithoutCrashing()
         {
-            // Arrange — Tenant with null Company
             var tenantWithoutCompany = new Tenant { Id = Guid.NewGuid(), Name = "Individual Tenant", Company = null };
 
             var query = new List<Tenant> { tenantWithoutCompany }.AsQueryable().BuildMock();
@@ -1216,10 +1079,8 @@ namespace NFC.Platform.Tests.Services
 
             var request = new PaginationRequest { PageNumber = 1, PageSize = 10 };
 
-            // Act — Search for non-matching term
             var result = await _sut.GetTenantsPagedAsync(request, "NonExistentSearchTerm");
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(0, result.Data!.TotalCount);
         }
@@ -1227,7 +1088,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task GetOrdersPagedAsync_WhenSearchNullOrEmpty_ReturnsAllOrders()
         {
-            // Arrange
             var o1 = new CardOrder { Id = Guid.NewGuid() };
             var o2 = new CardOrder { Id = Guid.NewGuid() };
 
@@ -1237,11 +1097,9 @@ namespace NFC.Platform.Tests.Services
 
             var request = new PaginationRequest { PageNumber = 1, PageSize = 10 };
 
-            // Act
             var resultWithNull = await _sut.GetOrdersPagedAsync(request, null, null, null, null);
             var resultWithSpaces = await _sut.GetOrdersPagedAsync(request, null, null, null, "   ");
 
-            // Assert
             Assert.True(resultWithNull.IsSuccess);
             Assert.Equal(2, resultWithNull.Data!.TotalCount);
             Assert.True(resultWithSpaces.IsSuccess);
@@ -1251,7 +1109,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task GetSubdomainsPagedAsync_FiltersBySearch()
         {
-            // Arrange
             var profile1 = new UserProfile { Id = Guid.NewGuid(), Subdomain = "alpha-slug", FullName = "Alpha User", IsDeleted = false };
             var profile2 = new UserProfile { Id = Guid.NewGuid(), Subdomain = "beta-slug", FullName = "Beta User", IsDeleted = false };
 
@@ -1261,10 +1118,8 @@ namespace NFC.Platform.Tests.Services
 
             var request = new PaginationRequest { PageNumber = 1, PageSize = 10 };
 
-            // Act
             var result = await _sut.GetSubdomainsPagedAsync(request, "alpha");
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(1, result.Data!.TotalCount);
             Assert.Equal("alpha-slug", result.Data.Items.First().Subdomain);
@@ -1273,7 +1128,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task GetAllAdminPlansAsync_FiltersBySearch()
         {
-            // Arrange
             var plan1 = new SubscriptionPlan { Id = Guid.NewGuid(), NameAr = "خطة البداية", NameEn = "Starter Plan" };
             var plan2 = new SubscriptionPlan { Id = Guid.NewGuid(), NameAr = "خطة الشركات", NameEn = "Enterprise Plan" };
 
@@ -1283,10 +1137,8 @@ namespace NFC.Platform.Tests.Services
 
             var request = new PaginationRequest { PageNumber = 1, PageSize = 10 };
 
-            // Act
             var result = await _sut.GetAllAdminPlansAsync(request, "Enterprise");
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(1, result.Data!.TotalCount);
             Assert.Equal("Enterprise Plan", result.Data.Items.First().NameEn);

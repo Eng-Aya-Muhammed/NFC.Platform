@@ -2,18 +2,17 @@ using System;
 
 namespace NFC.Platform.Application.DTOs.Employee;
 
-    public class EmployeeDto
-    {
-        public Guid Id { get; set; }
-        public string Email { get; set; } = string.Empty;
-        public string FullName { get; set; } = string.Empty;
-        public string JobTitle { get; set; } = string.Empty;
-        public string Department { get; set; } = string.Empty;
-        public string Status { get; set; } = string.Empty;
-        public DateTime CreatedAt { get; set; }
-        
-        // Frontend UI properties
-        public int? SubscriptionDaysRemaining { get; set; }
-        public string? Subdomain { get; set; }
-    }
+public class EmployeeDto
+{
+    public Guid Id { get; set; }
+    public string Email { get; set; } = string.Empty;
+    public string FullName { get; set; } = string.Empty;
+    public string JobTitle { get; set; } = string.Empty;
+    public string Department { get; set; } = string.Empty;
+    public string Status { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; }
+
+    public int? SubscriptionDaysRemaining { get; set; }
+    public string? Subdomain { get; set; }
+}
 

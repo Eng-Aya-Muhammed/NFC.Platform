@@ -25,7 +25,6 @@ namespace NFC.Platform.Tests.Mapping
         [Fact]
         public void EmployeeImportJob_To_EmployeesImportStatusDto_MapsCorrectly()
         {
-            // Arrange
             var job = new EmployeeImportJob
             {
                 Status = EmployeeImportJobStatus.Completed,
@@ -35,10 +34,8 @@ namespace NFC.Platform.Tests.Mapping
                 ErrorsJson = "[\"Row 2: Email already exists\",\"Row 5: Invalid email format\"]"
             };
 
-            // Act
             var dto = _mapper.Map<EmployeesImportStatusDto>(job);
 
-            // Assert
             Assert.Equal("Completed", dto.Status);
             Assert.Equal(10, dto.TotalRows);
             Assert.Equal(8, dto.Imported);
@@ -52,7 +49,6 @@ namespace NFC.Platform.Tests.Mapping
         [Fact]
         public void EmployeeImportJob_To_EmployeesImportStatusDto_HandlesNullOrEmptyErrors()
         {
-            // Arrange
             var job = new EmployeeImportJob
             {
                 Status = EmployeeImportJobStatus.Processing,
@@ -62,10 +58,8 @@ namespace NFC.Platform.Tests.Mapping
                 ErrorsJson = null
             };
 
-            // Act
             var dto = _mapper.Map<EmployeesImportStatusDto>(job);
 
-            // Assert
             Assert.Equal("Processing", dto.Status);
             Assert.NotNull(dto.Errors);
             Assert.Empty(dto.Errors);

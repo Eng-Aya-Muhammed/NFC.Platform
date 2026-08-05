@@ -30,17 +30,14 @@ namespace NFC.Platform.Tests.Controllers
                 BackDesignUrl = "https://cdn.example.com/back.png",
             };
 
-            // Act
             var result = _designValidator.Validate(request);
 
-            // Assert
             Assert.True(result.IsValid);
         }
 
         [Fact]
         public void DesignValidator_ShouldFail_WhenCustomArtwork_MissingFrontOrBackDesignUrl()
         {
-            // Arrange
             var request = new CreateCardDesignRequest
             {
                 CardTypeId = Guid.NewGuid(),
@@ -49,22 +46,19 @@ namespace NFC.Platform.Tests.Controllers
                 FrontDesignUrl = "https://cdn.example.com/front.png",
             };
 
-            // Act
             var result = _designValidator.Validate(request);
 
-            // Assert
             Assert.False(result.IsValid);
         }
 
         [Fact]
         public async Task CreateAsync_ShouldReturn422_WhenValidationFails()
         {
-            // Arrange
             var unitOfWork = Substitute.For<IUnitOfWork>();
             var mapper = Substitute.For<IMapper>();
             var messageService = Substitute.For<IMessageService>();
             var currentTenant = Substitute.For<ICurrentTenant>();
-            
+
             var validator = Substitute.For<IValidator<CreateCardOrderRequest>>();
             var validationFailures = new List<FluentValidation.Results.ValidationFailure>
             {
@@ -80,10 +74,8 @@ namespace NFC.Platform.Tests.Controllers
             var service = new CardOrderService(unitOfWork, mapper, messageService, currentTenant, validator, Substitute.For<IValidator<UpdateCardOrderRequest>>(), backgroundJobClient, Substitute.For<IEmployeeService>(), otpSettingsOptions);
             var request = new CreateCardOrderRequest { CardDesignId = Guid.NewGuid() };
 
-            // Act
             var result = await service.CreateOrderAsync(request);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(422, result.StatusCode);
         }

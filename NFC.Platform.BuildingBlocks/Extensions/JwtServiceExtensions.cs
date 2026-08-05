@@ -14,7 +14,7 @@ namespace NFC.Platform.BuildingBlocks.Extensions
     {
         public static IServiceCollection AddJwtAuthentication(this IServiceCollection services, IConfiguration configuration)
         {
-            var keyStr = configuration["JwtSettings:Key"] 
+            var keyStr = configuration["JwtSettings:Key"]
                 ?? throw new InvalidOperationException("JWT Secret Key 'JwtSettings:Key' is not configured.");
 
             var key = Encoding.UTF8.GetBytes(keyStr);
@@ -45,14 +45,14 @@ namespace NFC.Platform.BuildingBlocks.Extensions
 
             services.AddAuthorization(options =>
             {
-                options.AddPolicy(AppPolicies.AdminOnly, policy => 
-                    policy.RequireAssertion(ctx => 
-                        ctx.User.IsInRole(AppRole.Admin.ToString()) || 
+                options.AddPolicy(AppPolicies.AdminOnly, policy =>
+                    policy.RequireAssertion(ctx =>
+                        ctx.User.IsInRole(AppRole.Admin.ToString()) ||
                         ctx.User.HasClaim(c => (c.Type == AppClaims.Role || c.Type == ClaimTypes.Role) && c.Value == AppRole.Admin.ToString())));
 
-                options.AddPolicy(AppPolicies.CompanyAdminOnly, policy => 
-                    policy.RequireAssertion(ctx => 
-                        ctx.User.IsInRole(AppRole.CompanyAdmin.ToString()) || 
+                options.AddPolicy(AppPolicies.CompanyAdminOnly, policy =>
+                    policy.RequireAssertion(ctx =>
+                        ctx.User.IsInRole(AppRole.CompanyAdmin.ToString()) ||
                         ctx.User.HasClaim(c => (c.Type == AppClaims.Role || c.Type == ClaimTypes.Role) && c.Value == AppRole.CompanyAdmin.ToString())));
             });
 

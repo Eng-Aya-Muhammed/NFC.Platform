@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using NFC.Platform.Application.DTOs.Profile;
@@ -10,14 +10,10 @@ namespace NFC.Platform.Tests.Extensions
 {
     public class UserProfileExtensionsTests
     {
-        // -------------------------------------------------------------------------------------------------
-        // UpdateCustomLinks (IEnumerable<CustomLinkInput> links) - Used in B2B Flow (Create/Update Employee)
-        // -------------------------------------------------------------------------------------------------
 
         [Fact]
         public void UpdateCustomLinks_WithCustomLinkInput_ClearsOldLinksAndAddsNewOnesInOrder()
         {
-            // Arrange
             var profile = new UserProfile
             {
                 Id = Guid.NewGuid(),
@@ -34,12 +30,10 @@ namespace NFC.Platform.Tests.Extensions
                 new CustomLinkInput { Title = "My Website", Url = "https://mywebsite.com" }
             };
 
-            // Act
             profile.UpdateCustomLinks(newLinks);
 
-            // Assert
             Assert.Equal(2, profile.CustomLinks.Count);
-            
+
             var linkedIn = profile.CustomLinks.First(l => l.Title == "LinkedIn");
             Assert.Equal("https://linkedin.com/new", linkedIn.Url);
             Assert.Equal(1, linkedIn.DisplayOrder);
@@ -56,7 +50,6 @@ namespace NFC.Platform.Tests.Extensions
         [Fact]
         public void UpdateCustomLinks_WithCustomLinkInput_IgnoresEmptyOrWhitespaceLinks()
         {
-            // Arrange
             var profile = new UserProfile();
             var newLinks = new List<CustomLinkInput>
             {
@@ -66,10 +59,8 @@ namespace NFC.Platform.Tests.Extensions
                 new CustomLinkInput { Title = null!, Url = null! }
             };
 
-            // Act
             profile.UpdateCustomLinks(newLinks);
 
-            // Assert
             Assert.Single(profile.CustomLinks);
             Assert.Equal("Valid", profile.CustomLinks.First().Title);
         }
@@ -77,27 +68,20 @@ namespace NFC.Platform.Tests.Extensions
         [Fact]
         public void UpdateCustomLinks_WithCustomLinkInput_HandlesNullListGracefully()
         {
-            // Arrange
             var profile = new UserProfile
             {
                 CustomLinks = new List<ProfileLink> { new ProfileLink { Title = "Old", Url = "OldUrl" } }
             };
 
-            // Act
             profile.UpdateCustomLinks((IEnumerable<CustomLinkInput>)null!);
 
-            // Assert
             Assert.Empty(profile.CustomLinks);
         }
 
-        // -------------------------------------------------------------------------------------------------
-        // UpdateCustomLinks (IEnumerable<string> links) - Used in B2C Flow (Sync Links)
-        // -------------------------------------------------------------------------------------------------
 
         [Fact]
         public void UpdateCustomLinks_WithStringUrls_AddsNewLinksAndRemovesObsoleteOnes()
         {
-            // Arrange
             var profile = new UserProfile
             {
                 Id = Guid.NewGuid(),
@@ -115,15 +99,13 @@ namespace NFC.Platform.Tests.Extensions
                 "https://new.com"
             };
 
-            // Act
             profile.UpdateCustomLinks(syncUrls);
 
-            // Assert
             Assert.Equal(2, profile.CustomLinks.Count);
-            
+
             var keepLink = profile.CustomLinks.First(l => l.Url == "https://keep.com");
             Assert.Equal(1, keepLink.DisplayOrder);
-            
+
             var newLink = profile.CustomLinks.First(l => l.Url == "https://new.com");
             Assert.Equal("https://new.com", newLink.Title);
             Assert.Equal(2, newLink.DisplayOrder);
@@ -134,7 +116,6 @@ namespace NFC.Platform.Tests.Extensions
         [Fact]
         public void UpdateCustomLinks_WithStringUrls_RemovesDuplicatesAndWhitespace()
         {
-            // Arrange
             var profile = new UserProfile();
             var syncUrls = new List<string>
             {
@@ -145,10 +126,8 @@ namespace NFC.Platform.Tests.Extensions
                 ""
             };
 
-            // Act
             profile.UpdateCustomLinks(syncUrls);
 
-            // Assert
             Assert.Single(profile.CustomLinks);
             Assert.Equal("https://valid.com", profile.CustomLinks.First().Url);
         }
@@ -156,16 +135,13 @@ namespace NFC.Platform.Tests.Extensions
         [Fact]
         public void UpdateCustomLinks_WithStringUrls_HandlesNullListGracefully()
         {
-            // Arrange
             var profile = new UserProfile
             {
                 CustomLinks = new List<ProfileLink> { new ProfileLink { Url = "https://old.com" } }
             };
 
-            // Act
             profile.UpdateCustomLinks((IEnumerable<string>)null!);
 
-            // Assert
             Assert.Empty(profile.CustomLinks);
         }
     }

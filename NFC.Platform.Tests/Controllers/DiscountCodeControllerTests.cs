@@ -1,12 +1,12 @@
 using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using NSubstitute;
-using Xunit;
 using NFC.Platform.API.Controllers;
 using NFC.Platform.Application.DTOs.DiscountCode;
 using NFC.Platform.Application.Interfaces.Services;
 using NFC.Platform.BuildingBlocks.Results;
+using NSubstitute;
+using Xunit;
 
 namespace NFC.Platform.Tests.Controllers;
 

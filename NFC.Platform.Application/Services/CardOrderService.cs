@@ -46,9 +46,6 @@ public class CardOrderService(
     private readonly IExcelExportService? _excelExportService = excelExportService;
     private readonly IPdfExportService? _pdfExportService = pdfExportService;
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Queries
-    // ─────────────────────────────────────────────────────────────────────────
 
     public async Task<ServiceResult<PagedResult<CardOrderDto>>> GetPagedOrdersAsync(PaginationRequest request, string? statusFilter, string? search = null)
     {
@@ -149,9 +146,6 @@ public class CardOrderService(
         return ServiceResult<CardOrderDto>.Success(_mapper.Map<CardOrderDto>(order));
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Commands
-    // ─────────────────────────────────────────────────────────────────────────
 
     public async Task<ServiceResult<CardOrderDto>> CreateOrderAsync(CreateCardOrderRequest request)
     {
@@ -170,7 +164,6 @@ public class CardOrderService(
         await _unitOfWork.BeginTransactionAsync();
         try
         {
-            // 1. Determine AccountType & calculate quantity/build items
             var calculationResult = await CalculateOrderQuantityAndBuildItemsAsync(
                 userId.Value,
                 request.AssignmentScope,
@@ -186,7 +179,6 @@ public class CardOrderService(
 
             var (totalCards, itemsToOrder) = calculationResult.Data;
 
-            // 2. Auto-resolve & validate CardDesign
             var designResult = await ResolveAndValidateCardDesignAsync(
                 request.CardDesignId,
                 tenantId.Value,
@@ -200,22 +192,20 @@ public class CardOrderService(
 
             var designData = designResult.Data!;
 
-            // 3. Build & persist order (inherits CardDesign)
             var order = _mapper.Map<CardOrder>(request) ?? new CardOrder();
-            order.UserId               = userId.Value;
-            order.TenantId             = tenantId.Value;
-            order.CardDesignId         = designData.Id;
-            order.UnitPrice            = designData.UnitPrice;
-            order.TotalPrice           = designData.TotalPrice;
-            order.Currency             = designData.Currency;
-            order.Quantity             = totalCards;
-            order.QuantityPerEmployee  = request.QuantityPerEmployee ?? 1;
-            order.Status               = OrderStatus.PendingReview;
+            order.UserId = userId.Value;
+            order.TenantId = tenantId.Value;
+            order.CardDesignId = designData.Id;
+            order.UnitPrice = designData.UnitPrice;
+            order.TotalPrice = designData.TotalPrice;
+            order.Currency = designData.Currency;
+            order.Quantity = totalCards;
+            order.QuantityPerEmployee = request.QuantityPerEmployee ?? 1;
+            order.Status = OrderStatus.PendingReview;
 
             if (itemsToOrder.Count > 0)
                 order.Items = itemsToOrder;
 
-            // 4. Update CardDesign PendingQuantity
             var cardDesign = await _unitOfWork.Repository<CardDesign>().GetByIdAsync(designData.Id);
             if (cardDesign != null)
             {
@@ -224,7 +214,7 @@ public class CardOrderService(
             }
 
             await _unitOfWork.Repository<CardOrder>().AddAsync(order);
-            
+
             try
             {
                 await _unitOfWork.SaveChangesAsync();
@@ -281,7 +271,6 @@ public class CardOrderService(
 
         var cardsToValidate = totalRequiredCards > 0 ? totalRequiredCards : cardPackage.NumberOfCards;
 
-        // Resolve and validate CardDesign capacity for Reorder
         Guid? designIdToValidate = parentOrder.CardDesignId.HasValue && parentOrder.CardDesignId.Value != Guid.Empty ? parentOrder.CardDesignId : null;
 
         var designResult = await ResolveAndValidateCardDesignAsync(
@@ -295,13 +284,12 @@ public class CardOrderService(
         {
             var designData = designResult.Data;
             reorder.CardDesignId = designData.Id;
-            reorder.UnitPrice    = designData.UnitPrice;
-            reorder.TotalPrice   = designData.TotalPrice;
-            reorder.Currency     = designData.Currency;
+            reorder.UnitPrice = designData.UnitPrice;
+            reorder.TotalPrice = designData.TotalPrice;
+            reorder.Currency = designData.Currency;
         }
         else if (designIdToValidate.HasValue)
         {
-            // Return failure if an explicit design was set but is unpaid/exceeded capacity
             return ServiceResult<CardOrderDto>.Fail(designResult.Message!, designResult.StatusCode);
         }
 
@@ -319,7 +307,7 @@ public class CardOrderService(
             }
 
             await _unitOfWork.Repository<CardOrder>().AddAsync(reorder);
-            
+
             try
             {
                 await _unitOfWork.SaveChangesAsync();
@@ -522,8 +510,8 @@ public class CardOrderService(
             var recipient = order.Tenant?.Company?.AdminUser ?? order.User;
             if (recipient != null)
             {
-                var cardName = order.CardDesign?.CardType?.NameAr 
-                    ?? order.CardDesign?.CardType?.NameEn 
+                var cardName = order.CardDesign?.CardType?.NameAr
+                    ?? order.CardDesign?.CardType?.NameEn
                     ?? _messageService.Get("DefaultPhysicalCardName");
                 EnqueueOtpNotifications(recipient, newOtp, cardName);
             }
@@ -536,9 +524,6 @@ public class CardOrderService(
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Helper DTO for Design Resolution
-    // ─────────────────────────────────────────────────────────────────────────
 
     public record ResolvedCardDesignInfo(
         Guid Id,
@@ -552,9 +537,6 @@ public class CardOrderService(
         decimal TotalPrice,
         string Currency);
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Private Helpers & Sub-routines
-    // ─────────────────────────────────────────────────────────────────────────
 
     private async Task<ServiceResult> ValidateCardTypeAsync(Guid cardTypeId)
     {
@@ -575,8 +557,6 @@ public class CardOrderService(
         int? quantityPerEmployee,
         int? quantity)
     {
-        // M-11 fix: Read AccountType directly from current tenant claims without issuing a DB query.
-        // If claims are absent (e.g. background job context), fallback to querying DB.
         var accountType = _currentTenant.AccountType;
         if (!accountType.HasValue)
         {
@@ -610,7 +590,7 @@ public class CardOrderService(
             }
 
             itemsToOrder = itemsResult.Data ?? [];
-            totalCards   = itemsToOrder.Count * qtyPerEmp;
+            totalCards = itemsToOrder.Count * qtyPerEmp;
 
             foreach (var item in itemsToOrder)
                 item.NumberOfCardsRequired = qtyPerEmp;
@@ -722,22 +702,22 @@ public class CardOrderService(
     private static CardOrder BuildReorder(CardOrder parent, ReorderRequest request, Guid userId,
         CardPackage package, List<CardOrderItem> items)
     {
-        var quantity   = package.NumberOfCards;
-        var unitPrice  = package.NumberOfCards > 0 ? package.Price / package.NumberOfCards : package.Price;
+        var quantity = package.NumberOfCards;
+        var unitPrice = package.NumberOfCards > 0 ? package.Price / package.NumberOfCards : package.Price;
         var totalPrice = package.Price;
 
         return new CardOrder
         {
-            UserId          = userId,
-            ParentOrderId   = parent.Id,
-            CardDesignId    = parent.CardDesignId,
-            Quantity        = quantity,
-            Notes           = parent.Notes,
-            UnitPrice       = unitPrice,
-            TotalPrice      = totalPrice,
-            Currency        = "KWD",
-            Status          = OrderStatus.PendingReview,
-            Items           = items,
+            UserId = userId,
+            ParentOrderId = parent.Id,
+            CardDesignId = parent.CardDesignId,
+            Quantity = quantity,
+            Notes = parent.Notes,
+            UnitPrice = unitPrice,
+            TotalPrice = totalPrice,
+            Currency = "KWD",
+            Status = OrderStatus.PendingReview,
+            Items = items,
         };
     }
 
@@ -831,7 +811,6 @@ public class CardOrderService(
 
     private static string GenerateOtp()
     {
-        // Cryptographically secure 6-digit OTP spanning 000000–999999
         var bytes = RandomNumberGenerator.GetBytes(4);
         var value = BitConverter.ToUInt32(bytes, 0) % 1_000_000;
         return value.ToString("D6");

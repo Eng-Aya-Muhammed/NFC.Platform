@@ -21,30 +21,30 @@ namespace NFC.Platform.Infrastructure.Contexts
         public Guid CurrentTenantId => _currentTenant.TenantId ?? Guid.Empty;
         public bool IsAdmin => _currentTenant.IsAdmin;
 
-        public DbSet<Tenant> Tenants { get; set; }
+        public DbSet<Tenant>? Tenants { get; set; }
 
-        public DbSet<RefreshToken> RefreshTokens { get; set; }
-        public DbSet<User> Users { get; set; }
-        public DbSet<Employee> Employees { get; set; }
-        public DbSet<Role> Roles { get; set; }
-        public DbSet<UserRole> UserRoles { get; set; }
-        public DbSet<RolePermission> RolePermissions { get; set; }
-        public DbSet<Company> Companies { get; set; }
-        public DbSet<UserProfile> UserProfiles { get; set; }
-        public DbSet<ProfileLink> ProfileLinks { get; set; }
-        public DbSet<CardTemplate> CardTemplates { get; set; }
-        public DbSet<CardOrder> CardOrders { get; set; }
-        public DbSet<CardOrderItem> CardOrderItems { get; set; }
-        public DbSet<CardDesign> CardDesigns { get; set; }
-        public DbSet<SubscriptionPlan> SubscriptionPlans { get; set; }
-        public DbSet<UserSubscription> UserSubscriptions { get; set; }
-        public DbSet<ProfileMetric> ProfileMetrics { get; set; }
+        public DbSet<RefreshToken>? RefreshTokens { get; set; }
+        public DbSet<User>? Users { get; set; }
+        public DbSet<Employee>? Employees { get; set; }
+        public DbSet<Role>? Roles { get; set; }
+        public DbSet<UserRole>? UserRoles { get; set; }
+        public DbSet<RolePermission>? RolePermissions { get; set; }
+        public DbSet<Company>? Companies { get; set; }
+        public DbSet<UserProfile>? UserProfiles { get; set; }
+        public DbSet<ProfileLink>? ProfileLinks { get; set; }
+        public DbSet<CardTemplate>? CardTemplates { get; set; }
+        public DbSet<CardOrder>? CardOrders { get; set; }
+        public DbSet<CardOrderItem>? CardOrderItems { get; set; }
+        public DbSet<CardDesign>? CardDesigns { get; set; }
+        public DbSet<SubscriptionPlan>? SubscriptionPlans { get; set; }
+        public DbSet<UserSubscription>? UserSubscriptions { get; set; }
+        public DbSet<ProfileMetric>? ProfileMetrics { get; set; }
         public DbSet<DiscountCode> DiscountCodes { get; set; } = null!;
-        public DbSet<TemplateRequest> TemplateRequests { get; set; }
-        public DbSet<EmployeeImportJob> EmployeeImportJobs { get; set; }
-        public DbSet<CardType> CardTypes { get; set; }
-        public DbSet<CardPackage> CardPackages { get; set; }
-        public DbSet<TemplateCategory> TemplateCategories { get; set; }
+        public DbSet<TemplateRequest>? TemplateRequests { get; set; }
+        public DbSet<EmployeeImportJob>? EmployeeImportJobs { get; set; }
+        public DbSet<CardType>? CardTypes { get; set; }
+        public DbSet<CardPackage>? CardPackages { get; set; }
+        public DbSet<TemplateCategory>? TemplateCategories { get; set; }
 
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -100,7 +100,6 @@ namespace NFC.Platform.Infrastructure.Contexts
                     var parameter = Expression.Parameter(clrType, "e");
                     Expression? combinedBody = null;
 
-                    // 1. Build Soft Delete Filter (IsDeleted == false)
                     if (isSoftDelete)
                     {
                         var isDeletedProp = Expression.Property(parameter, nameof(ISoftDelete.IsDeleted));
@@ -108,7 +107,6 @@ namespace NFC.Platform.Infrastructure.Contexts
                         combinedBody = Expression.Equal(isDeletedProp, falseConst);
                     }
 
-                    // 2. Build Tenant Filter
                     if (isTenantEntity)
                     {
                         var tenantIdPropInfo = clrType.GetProperty("TenantId")
@@ -116,27 +114,23 @@ namespace NFC.Platform.Infrastructure.Contexts
 
                         var tenantIdProp = Expression.Property(parameter, tenantIdPropInfo);
                         var dbContextExpr = Expression.Constant(this);
-                        
+
                         var isAdminExpr = Expression.Property(dbContextExpr, nameof(IsAdmin));
                         var currentTenantIdExpr = Expression.Property(dbContextExpr, nameof(CurrentTenantId));
 
                         Expression tenantIdComparison;
                         if (tenantIdPropInfo.PropertyType == typeof(Guid?))
                         {
-                            // Nullable Guid comparison (e.g. CardTemplate):
-                            // _currentTenant.IsAdmin || e.TenantId == null || e.TenantId == _currentTenant.TenantId
                             var nullConst = Expression.Constant(null, typeof(Guid?));
                             var isNullExpr = Expression.Equal(tenantIdProp, nullConst);
                             var currentTenantIdNullable = Expression.Convert(currentTenantIdExpr, typeof(Guid?));
                             var isMatchExpr = Expression.Equal(tenantIdProp, currentTenantIdNullable);
-                            
+
                             var tenantMatchOrNull = Expression.OrElse(isNullExpr, isMatchExpr);
                             tenantIdComparison = Expression.OrElse(isAdminExpr, tenantMatchOrNull);
                         }
                         else
                         {
-                            // Non-nullable Guid comparison:
-                            // _currentTenant.IsAdmin || e.TenantId == _currentTenant.TenantId
                             var isMatchExpr = Expression.Equal(tenantIdProp, currentTenantIdExpr);
                             tenantIdComparison = Expression.OrElse(isAdminExpr, isMatchExpr);
                         }

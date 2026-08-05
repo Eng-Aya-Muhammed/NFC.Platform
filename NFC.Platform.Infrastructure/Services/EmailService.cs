@@ -91,7 +91,7 @@ namespace NFC.Platform.Infrastructure.Services
           <p style=""margin:8px 0 0;color:#a0aec0;font-size:13px;"">{subtitle}</p>
         </td></tr>
         <!-- Body -->
-        <tr><td style=""padding:40px; text-align: { (!isEn ? "right" : "left") };"" dir=""{dir}"">
+        <tr><td style=""padding:40px; text-align: {(!isEn ? "right" : "left")};"" dir=""{dir}"">
           <p style=""margin:0 0 16px;color:#2d3748;font-size:16px;"">{greeting}</p>
           <p style=""margin:0 0 24px;color:#4a5568;font-size:15px;line-height:1.6;"">
             {bodyText}
@@ -146,7 +146,7 @@ namespace NFC.Platform.Infrastructure.Services
           <p style=""margin:8px 0 0;color:#a0aec0;font-size:13px;"">{subtitle}</p>
         </td></tr>
         <!-- Body -->
-        <tr><td style=""padding:40px; text-align: { (isArabic ? "right" : "left") };"" dir=""{dir}"">
+        <tr><td style=""padding:40px; text-align: {(isArabic ? "right" : "left")};"" dir=""{dir}"">
           <p style=""margin:0 0 16px;color:#2d3748;font-size:16px;"">{greeting}</p>
           <p style=""margin:0 0 24px;color:#4a5568;font-size:15px;line-height:1.6;"">
             {bodyText}
@@ -197,7 +197,7 @@ namespace NFC.Platform.Infrastructure.Services
           <p style=""margin:8px 0 0;color:#feb2b2;font-size:13px;"">{subtitle}</p>
         </td></tr>
         <!-- Body -->
-        <tr><td style=""padding:40px; text-align: { (isArabic ? "right" : "left") };"" dir=""{dir}"">
+        <tr><td style=""padding:40px; text-align: {(isArabic ? "right" : "left")};"" dir=""{dir}"">
           <p style=""margin:0 0 16px;color:#2d3748;font-size:16px;"">{greeting}</p>
           <p style=""margin:0 0 24px;color:#4a5568;font-size:15px;line-height:1.6;"">
             {bodyText}
@@ -248,7 +248,7 @@ namespace NFC.Platform.Infrastructure.Services
           <p style=""margin:8px 0 0;color:#a0aec0;font-size:13px;"">{subtitle}</p>
         </td></tr>
         <!-- Body -->
-        <tr><td style=""padding:40px; text-align: { (isArabic ? "right" : "left") };"" dir=""{dir}"">
+        <tr><td style=""padding:40px; text-align: {(isArabic ? "right" : "left")};"" dir=""{dir}"">
           <p style=""margin:0 0 16px;color:#2d3748;font-size:16px;"">{greeting}</p>
           <p style=""margin:0 0 24px;color:#4a5568;font-size:15px;line-height:1.6;"">
             {bodyText}

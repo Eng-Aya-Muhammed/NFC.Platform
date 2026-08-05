@@ -32,19 +32,15 @@ namespace NFC.Platform.Tests.Services
             _sut = new ProfileService(_unitOfWork, _mapper, _messageService);
         }
 
-        //  GetProfileAsync 
 
         [Fact]
         public async Task GetProfileAsync_ReturnsNotFound_WhenUserDoesNotExist()
         {
-            // Arrange
             var mockQuery = new List<User>().AsQueryable().BuildMock();
             _userRepo.GetQueryable().Returns(mockQuery);
 
-            // Act
             var result = await _sut.GetProfileAsync(Guid.NewGuid());
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(404, result.StatusCode);
         }
@@ -52,7 +48,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task GetProfileAsync_ReturnsProfile_WhenUserExists()
         {
-            // Arrange
             var userId = Guid.NewGuid();
             var user = new User { Id = userId, UserProfile = new UserProfile { FullName = "John Doe" } };
             var mockQuery = new List<User> { user }.AsQueryable().BuildMock();
@@ -61,20 +56,16 @@ namespace NFC.Platform.Tests.Services
             var expectedDto = new EmployeeDetailsDto { FullName = "John Doe" };
             _mapper.Map<EmployeeDetailsDto>(user).Returns(expectedDto);
 
-            // Act
             var result = await _sut.GetProfileAsync(userId);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal("John Doe", result.Data!.FullName);
         }
 
-        //  UpdateProfileAsync 
 
         [Fact]
         public async Task UpdateProfileAsync_UpdatesUserProfileFields()
         {
-            // Arrange
             var userId = Guid.NewGuid();
             var user = new User { Id = userId, UserProfile = new UserProfile { FullName = "Old Name" } };
             var mockQuery = new List<User> { user }.AsQueryable().BuildMock();
@@ -84,10 +75,8 @@ namespace NFC.Platform.Tests.Services
             _mapper.Map(request, user.UserProfile).Returns(user.UserProfile);
             _mapper.Map<EmployeeDetailsDto>(user).Returns(new EmployeeDetailsDto { FullName = "New Name" });
 
-            // Act
             var result = await _sut.UpdateProfileAsync(userId, request);
 
-            // Assert
             Assert.True(result.IsSuccess);
             await _unitOfWork.Received(1).SaveChangesAsync();
         }
@@ -95,37 +84,32 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task UpdateProfileAsync_AlsoUpdatesCustomLinks_WhenLinksAreProvided()
         {
-            // Arrange
             var userId = Guid.NewGuid();
             var userProfile = new UserProfile { Id = Guid.NewGuid(), FullName = "Old Name", CustomLinks = [] };
             var user = new User { Id = userId, UserProfile = userProfile };
             var mockQuery = new List<User> { user }.AsQueryable().BuildMock();
             _userRepo.GetQueryable().Returns(mockQuery);
 
-            var request = new UpdateMyProfileRequest 
-            { 
+            var request = new UpdateMyProfileRequest
+            {
                 FullName = "New Name",
-                Links = [ new NFC.Platform.Application.DTOs.Profile.CustomLinkInput { Title = "Website", Url = "https://example.com" } ]
+                Links = [new NFC.Platform.Application.DTOs.Profile.CustomLinkInput { Title = "Website", Url = "https://example.com" }]
             };
 
             _mapper.Map(request, user.UserProfile).Returns(user.UserProfile);
             _mapper.Map<EmployeeDetailsDto>(user).Returns(new EmployeeDetailsDto { FullName = "New Name" });
 
-            // Act
             var result = await _sut.UpdateProfileAsync(userId, request);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Single(userProfile.CustomLinks);
             Assert.Equal("https://example.com", userProfile.CustomLinks.First().Url);
         }
 
-        //  SynchronizeLinksAsync 
 
         [Fact]
         public async Task SynchronizeLinksAsync_AddsAllLinksAsCustom()
         {
-            // Arrange
             var userId = Guid.NewGuid();
             var userProfile = new UserProfile
             {
@@ -141,10 +125,8 @@ namespace NFC.Platform.Tests.Services
                 Links = ["https://custom1.com", PlatformConstants.LinkedIn, "https://custom2.com"]
             };
 
-            // Act
             var result = await _sut.SynchronizeLinksAsync(userId, request);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(3, userProfile.CustomLinks.Count);
             Assert.Contains(userProfile.CustomLinks, l => l.Url == "https://custom1.com");
@@ -157,7 +139,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task UpdateProfileAsync_CreatesNewProfile_WhenUserProfileIsNull()
         {
-            // Arrange
             var userId = Guid.NewGuid();
             var user = new User { Id = userId, TenantId = Guid.NewGuid(), UserProfile = null };
             var mockQuery = new List<User> { user }.AsQueryable().BuildMock();
@@ -166,27 +147,22 @@ namespace NFC.Platform.Tests.Services
             var request = new UpdateMyProfileRequest { FullName = "New User" };
             _mapper.Map<EmployeeDetailsDto>(user).Returns(new EmployeeDetailsDto { FullName = "New User" });
 
-            // Act
             var result = await _sut.UpdateProfileAsync(userId, request);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.NotNull(user.UserProfile);
             await _userProfileRepo.Received(1).AddAsync(Arg.Any<UserProfile>());
-            await _unitOfWork.Received(2).SaveChangesAsync(); // One for add, one for map/save
+            await _unitOfWork.Received(2).SaveChangesAsync();
         }
 
         [Fact]
         public async Task UpdateProfileAsync_ReturnsNotFound_WhenUserDoesNotExist()
         {
-            // Arrange
             var userId = Guid.NewGuid();
             _userRepo.GetQueryable().Returns(new List<User>().AsQueryable().BuildMock());
 
-            // Act
             var result = await _sut.UpdateProfileAsync(userId, new UpdateMyProfileRequest());
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(404, result.StatusCode);
         }
@@ -196,14 +172,11 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task SynchronizeLinksAsync_ReturnsNotFound_WhenUserDoesNotExist()
         {
-            // Arrange
             var userId = Guid.NewGuid();
             _userRepo.GetQueryable().Returns(new List<User>().AsQueryable().BuildMock());
 
-            // Act
             var result = await _sut.SynchronizeLinksAsync(userId, new SynchronizeLinksRequest { Links = [] });
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(404, result.StatusCode);
         }
@@ -211,7 +184,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task SynchronizeLinksAsync_CreatesNewProfile_WhenUserProfileIsNull()
         {
-            // Arrange
             var userId = Guid.NewGuid();
             var user = new User { Id = userId, TenantId = Guid.NewGuid(), UserProfile = null };
             var mockQuery = new List<User> { user }.AsQueryable().BuildMock();
@@ -219,10 +191,8 @@ namespace NFC.Platform.Tests.Services
 
             var request = new SynchronizeLinksRequest { Links = new List<string> { "https://test.com" } };
 
-            // Act
             var result = await _sut.SynchronizeLinksAsync(userId, request);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.NotNull(user.UserProfile);
             await _userProfileRepo.Received(1).AddAsync(Arg.Any<UserProfile>());
@@ -232,14 +202,12 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task SynchronizeLinksAsync_ThrowsArgumentNull_WhenRequestIsNull()
         {
-            // Act & Assert
             await Assert.ThrowsAsync<ArgumentNullException>(() => _sut.SynchronizeLinksAsync(Guid.NewGuid(), null!));
         }
 
         [Fact]
         public async Task SynchronizeLinksAsync_HandlesEmptyLinksArray()
         {
-            // Arrange
             var userId = Guid.NewGuid();
             var profile = new UserProfile { CustomLinks = new List<ProfileLink> { new ProfileLink { Url = "https://old.com" } } };
             var user = new User { Id = userId, UserProfile = profile };
@@ -247,10 +215,8 @@ namespace NFC.Platform.Tests.Services
 
             var request = new SynchronizeLinksRequest { Links = [] };
 
-            // Act
             var result = await _sut.SynchronizeLinksAsync(userId, request);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Empty(profile.CustomLinks);
             await _unitOfWork.Received(1).SaveChangesAsync();
@@ -259,7 +225,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task UpdateProfileTemplateAsync_TemplateDoesNotExist_ReturnsNotFound()
         {
-            // Arrange
             var userId = Guid.NewGuid();
             var templateId = Guid.NewGuid();
             var request = templateId;
@@ -267,10 +232,8 @@ namespace NFC.Platform.Tests.Services
             _cardTemplateRepo.GetQueryable().Returns(new List<CardTemplate>().AsQueryable().BuildMock());
             _messageService.Get("RecordNotFound").Returns("Not found");
 
-            // Act
             var result = await _sut.UpdateProfileTemplateAsync(userId, request);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(404, result.StatusCode);
         }
@@ -278,7 +241,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task UpdateProfileTemplateAsync_SubscriptionExpired_ReturnsFail()
         {
-            // Arrange
             var userId = Guid.NewGuid();
             var tenantId = Guid.NewGuid();
             var templateId = Guid.NewGuid();
@@ -293,10 +255,8 @@ namespace NFC.Platform.Tests.Services
             _subscriptionRepo.GetQueryable().Returns(new List<UserSubscription>().AsQueryable().BuildMock());
             _messageService.Get("SubscriptionExpiredOrMissing").Returns("Missing sub");
 
-            // Act
             var result = await _sut.UpdateProfileTemplateAsync(userId, request);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(400, result.StatusCode);
             Assert.Equal("Missing sub", result.Message);
@@ -305,7 +265,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task UpdateProfileTemplateAsync_TemplateNotAllowed_ReturnsFail()
         {
-            // Arrange
             var userId = Guid.NewGuid();
             var tenantId = Guid.NewGuid();
             var templateId = Guid.NewGuid();
@@ -324,16 +283,14 @@ namespace NFC.Platform.Tests.Services
                 EndDate = DateTime.UtcNow.AddDays(30),
                 SubscriptionPlan = new SubscriptionPlan
                 {
-                    PlanTemplates = new List<SubscriptionPlanTemplate>() // Empty = no templates allowed
+                    PlanTemplates = new List<SubscriptionPlanTemplate>()
                 }
             };
             _subscriptionRepo.GetQueryable().Returns(new List<UserSubscription> { sub }.AsQueryable().BuildMock());
             _messageService.Get("TemplateNotAllowedInPlan").Returns("Not allowed");
 
-            // Act
             var result = await _sut.UpdateProfileTemplateAsync(userId, request);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(403, result.StatusCode);
         }
@@ -341,7 +298,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task UpdateProfileTemplateAsync_LimitReached_ReturnsFail()
         {
-            // Arrange
             var userId = Guid.NewGuid();
             var tenantId = Guid.NewGuid();
             var templateId = Guid.NewGuid();
@@ -368,10 +324,8 @@ namespace NFC.Platform.Tests.Services
             _subscriptionRepo.GetQueryable().Returns(new List<UserSubscription> { sub }.AsQueryable().BuildMock());
             _messageService.Get("TemplateChangeLimitReached").Returns("Limit reached");
 
-            // Act
             var result = await _sut.UpdateProfileTemplateAsync(userId, request);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(400, result.StatusCode);
         }
@@ -379,7 +333,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task UpdateProfileTemplateAsync_Valid_UpdatesTemplateAndIncrementsCounter()
         {
-            // Arrange
             var userId = Guid.NewGuid();
             var tenantId = Guid.NewGuid();
             var templateId = Guid.NewGuid();
@@ -408,30 +361,25 @@ namespace NFC.Platform.Tests.Services
             _mapper.Map<EmployeeDetailsDto>(user).Returns(new EmployeeDetailsDto { Id = userId });
             _messageService.Get(Arg.Any<string>()).Returns(x => x.Arg<string>());
 
-            // Act
             var result = await _sut.UpdateProfileTemplateAsync(userId, request);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(templateId, profile.ProfileTemplateId);
-            Assert.Equal(3, sub.TemplateChangesUsed); // Incremented
+            Assert.Equal(3, sub.TemplateChangesUsed);
             await _unitOfWork.Received(1).SaveChangesAsync();
         }
 
         [Fact]
         public async Task UpdateVipStatusAsync_ReturnsNotFound_WhenProfileDoesNotExist()
         {
-            // Arrange
             var profileId = Guid.NewGuid();
             _userProfileRepo.GetByIdAsync(profileId).Returns((UserProfile?)null);
             _messageService.Get("RecordNotFound").Returns("Record not found.");
 
             var request = new Application.DTOs.VipCustomer.UpdateVipStatusRequest { IsVip = true, VipDisplayOrder = 1 };
 
-            // Act
             var result = await _sut.UpdateVipStatusAsync(profileId, request);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(404, result.StatusCode);
         }
@@ -439,7 +387,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task UpdateVipStatusAsync_ReturnsBadRequest_WhenProfileBelongsToEmployee()
         {
-            // Arrange
             var profileId = Guid.NewGuid();
             var employeeProfile = new UserProfile { Id = profileId, EmployeeId = Guid.NewGuid(), FullName = "Company Employee" };
             _userProfileRepo.GetByIdAsync(profileId).Returns(employeeProfile);
@@ -447,10 +394,8 @@ namespace NFC.Platform.Tests.Services
 
             var request = new Application.DTOs.VipCustomer.UpdateVipStatusRequest { IsVip = true, VipDisplayOrder = 1 };
 
-            // Act
             var result = await _sut.UpdateVipStatusAsync(profileId, request);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(400, result.StatusCode);
             Assert.Equal("Cannot set VIP for employee profile.", result.Message);
@@ -459,7 +404,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task UpdateVipStatusAsync_ReturnsSuccess_WhenProfileIsStandaloneIndividual()
         {
-            // Arrange
             var profileId = Guid.NewGuid();
             var standaloneProfile = new UserProfile { Id = profileId, EmployeeId = null, FullName = "Individual Client", IsVip = false, VipDisplayOrder = 0 };
             _userProfileRepo.GetByIdAsync(profileId).Returns(standaloneProfile);
@@ -470,10 +414,8 @@ namespace NFC.Platform.Tests.Services
 
             var request = new Application.DTOs.VipCustomer.UpdateVipStatusRequest { IsVip = true, VipDisplayOrder = 3 };
 
-            // Act
             var result = await _sut.UpdateVipStatusAsync(profileId, request);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(200, result.StatusCode);
             Assert.True(standaloneProfile.IsVip);

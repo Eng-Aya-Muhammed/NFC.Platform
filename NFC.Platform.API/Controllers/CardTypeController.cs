@@ -7,9 +7,6 @@ public class CardTypeController(ICardTypeService cardTypeService) : ControllerBa
 {
     private readonly ICardTypeService _cardTypeService = cardTypeService ?? throw new ArgumentNullException(nameof(cardTypeService));
 
-    /// <summary>
-    /// Returns all active, localized card types for user selection.
-    /// </summary>
     [HttpGet]
     public async Task<IActionResult> GetActiveCardTypes([FromQuery] string? search = null)
     {

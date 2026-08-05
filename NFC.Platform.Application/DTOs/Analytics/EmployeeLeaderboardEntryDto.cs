@@ -2,10 +2,6 @@ using System;
 
 namespace NFC.Platform.Application.DTOs.Analytics;
 
-/// <summary>
-/// Single entry in the company employee analytics leaderboard.
-/// Ranked by total profile interactions.
-/// </summary>
 public class EmployeeLeaderboardEntryDto
 {
     public Guid EmployeeId { get; set; }

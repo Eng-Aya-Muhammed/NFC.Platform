@@ -1,8 +1,5 @@
 namespace NFC.Platform.Application.DTOs.Settings;
 
-/// <summary>
-/// Configuration settings for Cloudinary API integration.
-/// </summary>
 public class CloudinarySettings
 {
     public string CloudName { get; set; } = string.Empty;

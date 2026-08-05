@@ -9,9 +9,6 @@ public class ProfilesController(IProfileService profileService, ICurrentTenant c
     private readonly ICurrentTenant _currentTenant = currentTenant ?? throw new ArgumentNullException(nameof(currentTenant));
     private readonly IMessageService _msg = msg ?? throw new ArgumentNullException(nameof(msg));
 
-    /// <summary>
-    /// Retrieves the profile details of the currently authenticated individual user.
-    /// </summary>
     [HttpGet]
     public async Task<IActionResult> GetProfile()
     {
@@ -29,9 +26,6 @@ public class ProfilesController(IProfileService profileService, ICurrentTenant c
         return Ok(result);
     }
 
-    /// <summary>
-    /// Updates the digital profile info of the currently authenticated user.
-    /// </summary>
     [HttpPut]
     public async Task<IActionResult> UpdateProfile([FromBody] UpdateMyProfileRequest request)
     {
@@ -57,9 +51,6 @@ public class ProfilesController(IProfileService profileService, ICurrentTenant c
         return Ok(result);
     }
 
-    /// <summary>
-    /// Synchronizes the custom links collection for the currently authenticated user's digital profile.
-    /// </summary>
     [HttpPut("links")]
     public async Task<IActionResult> SynchronizeLinks([FromBody] SynchronizeLinksRequest request)
     {
@@ -78,9 +69,6 @@ public class ProfilesController(IProfileService profileService, ICurrentTenant c
         return Ok(result);
     }
 
-    /// <summary>
-    /// Applies a specific digital card template to the authenticated user's public profile.
-    /// </summary>
     [HttpPost("apply-template/{templateId:guid}")]
     public async Task<IActionResult> ApplyPublicProfileTemplate([FromRoute] Guid templateId)
     {
@@ -91,9 +79,6 @@ public class ProfilesController(IProfileService profileService, ICurrentTenant c
         return Ok(result);
     }
 
-    /// <summary>
-    /// Removes the applied digital card template from the authenticated user's public profile, reverting to default.
-    /// </summary>
     [HttpDelete("remove-template")]
     public async Task<IActionResult> RemovePublicProfileTemplate()
     {

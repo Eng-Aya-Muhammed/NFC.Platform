@@ -1,7 +1,7 @@
 namespace NFC.Platform.Application.DTOs.Auth;
 
-    public class RefreshTokenRequest
-    {
-        public string RefreshToken { get; set; } = string.Empty;
-    }
+public class RefreshTokenRequest
+{
+    public string RefreshToken { get; set; } = string.Empty;
+}
 

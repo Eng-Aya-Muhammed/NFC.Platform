@@ -29,16 +29,13 @@ public class CardDesignService(
     IEmployeeService employeeService,
     IConfiguration configuration) : ICardDesignService
 {
-    private readonly IUnitOfWork _unitOfWork       = unitOfWork      ?? throw new ArgumentNullException(nameof(unitOfWork));
-    private readonly IMapper _mapper               = mapper          ?? throw new ArgumentNullException(nameof(mapper));
+    private readonly IUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+    private readonly IMapper _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
     private readonly IMessageService _messageService = messageService ?? throw new ArgumentNullException(nameof(messageService));
-    private readonly ICurrentTenant _currentTenant = currentTenant   ?? throw new ArgumentNullException(nameof(currentTenant));
+    private readonly ICurrentTenant _currentTenant = currentTenant ?? throw new ArgumentNullException(nameof(currentTenant));
     private readonly IEmployeeService _employeeService = employeeService ?? throw new ArgumentNullException(nameof(employeeService));
-    private readonly IConfiguration _configuration = configuration   ?? throw new ArgumentNullException(nameof(configuration));
+    private readonly IConfiguration _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
 
-    // ─────────────────────────────────────────────────────────────────────
-    // Queries
-    // ─────────────────────────────────────────────────────────────────────
 
     public async Task<ServiceResult<CardDesignDto>> GetDesignByIdAsync(Guid id)
     {
@@ -78,9 +75,6 @@ public class CardDesignService(
         return ServiceResult<PagedResult<CardDesignDto>>.Success(paged);
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    // Commands
-    // ─────────────────────────────────────────────────────────────────────
 
     public async Task<ServiceResult<CardDesignDto>> CreateDesignAsync(CreateCardDesignRequest request)
     {
@@ -92,7 +86,6 @@ public class CardDesignService(
         if (!tenantId.HasValue)
             return ServiceResult<CardDesignDto>.Fail(_messageService.Get("InvalidTenantClaim"), 400);
 
-        // Load AccountType (lightweight projection)
         var accountType = await _unitOfWork.Repository<User>()
             .GetQueryable().AsNoTracking()
             .Where(u => u.Id == userId.Value)
@@ -107,7 +100,6 @@ public class CardDesignService(
         await _unitOfWork.BeginTransactionAsync();
         try
         {
-            // Validate CardType if provided
             if (request.CardTypeId != Guid.Empty)
             {
                 var cardType = await _unitOfWork.Repository<CardType>().GetByIdAsync(request.CardTypeId);
@@ -118,21 +110,19 @@ public class CardDesignService(
                 }
             }
 
-            Guid   resolvedPackageId;
-            int    totalQuantity;
+            Guid resolvedPackageId;
+            int totalQuantity;
             decimal unitPrice;
             decimal totalPrice;
 
             if (isCompany)
             {
-                // ── Company: CustomQuantity required; pricing via unit-package ──────
                 if (!request.CustomQuantity.HasValue || request.CustomQuantity <= 0)
                 {
                     await _unitOfWork.RollbackTransactionAsync();
                     return ServiceResult<CardDesignDto>.Fail(_messageService.Get("CustomQuantityRequired"), 422);
                 }
 
-                // Find unit-price package (NumberOfCards = 1)
                 var unitPackage = await _unitOfWork.Repository<CardPackage>()
                     .GetQueryable().AsNoTracking()
                     .Where(p => p.NumberOfCards == 1 && p.IsActive)
@@ -146,11 +136,10 @@ public class CardDesignService(
                 }
 
                 resolvedPackageId = unitPackage.Id;
-                totalQuantity     = request.CustomQuantity.Value;
-                unitPrice         = unitPackage.Price;
-                totalPrice        = unitPrice * totalQuantity;
+                totalQuantity = request.CustomQuantity.Value;
+                unitPrice = unitPackage.Price;
+                totalPrice = unitPrice * totalQuantity;
 
-                // Optionally upsert employees from Excel (data only — no card count here)
                 if (!string.IsNullOrWhiteSpace(request.ExcelDataUrl))
                 {
                     var company = await _unitOfWork.Repository<Company>()
@@ -179,7 +168,6 @@ public class CardDesignService(
             }
             else
             {
-                // ── Individual: CardPackageId required; pricing from package ─────────
                 if (!request.CardPackageId.HasValue || request.CardPackageId == Guid.Empty)
                 {
                     await _unitOfWork.RollbackTransactionAsync();
@@ -196,30 +184,28 @@ public class CardDesignService(
                 }
 
                 resolvedPackageId = package.Id;
-                totalQuantity     = package.NumberOfCards;
-                unitPrice         = package.NumberOfCards > 0 ? package.Price / package.NumberOfCards : package.Price;
-                totalPrice        = package.Price;
+                totalQuantity = package.NumberOfCards;
+                unitPrice = package.NumberOfCards > 0 ? package.Price / package.NumberOfCards : package.Price;
+                totalPrice = package.Price;
             }
 
-            // ── Map & set computed/server-owned fields ──────────────────────────
             var design = _mapper.Map<CardDesign>(request);
-            design.TenantId             = tenantId.Value;
-            design.UserId               = userId.Value;
-            design.CardTypeId           = request.CardTypeId;
-            design.CardPackageId        = resolvedPackageId;
-            design.TotalQuantity        = totalQuantity;
-            design.UsedQuantity         = 0;
-            design.UnitPrice            = unitPrice;
-            design.TotalPrice           = totalPrice;
-            design.Currency             = "KWD";
-            design.IsPaid               = false;
-            design.PaymentStatus        = CardDesignPaymentStatus.Pending;
+            design.TenantId = tenantId.Value;
+            design.UserId = userId.Value;
+            design.CardTypeId = request.CardTypeId;
+            design.CardPackageId = resolvedPackageId;
+            design.TotalQuantity = totalQuantity;
+            design.UsedQuantity = 0;
+            design.UnitPrice = unitPrice;
+            design.TotalPrice = totalPrice;
+            design.Currency = "KWD";
+            design.IsPaid = false;
+            design.PaymentStatus = CardDesignPaymentStatus.Pending;
 
             await _unitOfWork.Repository<CardDesign>().AddAsync(design);
             await _unitOfWork.SaveChangesAsync();
             await _unitOfWork.CommitTransactionAsync();
 
-            // Reload for response DTO
             var created = await _unitOfWork.Repository<CardDesign>()
                 .GetQueryable().AsNoTracking()
                 .FirstOrDefaultAsync(d => d.Id == design.Id);
@@ -237,7 +223,6 @@ public class CardDesignService(
 
     public async Task<ServiceResult<string>> GetPaymentUrlAsync(Guid designId)
     {
-        // Load only the fields needed (lightweight projection)
         var design = await _unitOfWork.Repository<CardDesign>()
             .GetQueryable().AsNoTracking()
             .Where(d => d.Id == designId)
@@ -250,10 +235,8 @@ public class CardDesignService(
         if (design.IsPaid)
             return ServiceResult<string>.Fail(_messageService.Get("DesignAlreadyPaid"), 400);
 
-        // TODO: Integrate with actual payment gateway (MyFatoorah / Tap / KNet / other)
-        // The URL should include the designId as a reference so the callback can be matched.
         var gatewayBaseUrl = _configuration["PaymentGateway:BaseUrl"] ?? "https://payment-gateway.example.com/pay";
-        var callbackBase   = _configuration["PaymentGateway:CallbackBase"] ?? "https://api.yourapp.com";
+        var callbackBase = _configuration["PaymentGateway:CallbackBase"] ?? "https://api.yourapp.com";
 
         var paymentUrl = $"{gatewayBaseUrl}?amount={design.TotalPrice:F3}&currency={design.Currency}" +
                          $"&reference={design.Id}&callback={callbackBase}/api/card-designs/{design.Id}/payment-callback";
@@ -263,7 +246,6 @@ public class CardDesignService(
 
     public async Task<ServiceResult> HandlePaymentCallbackAsync(Guid designId, PaymentCallbackRequest request)
     {
-        // 1. Verify HMAC-SHA256 signature from the gateway
         var secret = _configuration["PaymentGateway:WebhookSecret"];
         if (!string.IsNullOrWhiteSpace(secret))
         {
@@ -277,7 +259,6 @@ public class CardDesignService(
             }
         }
 
-        // 2. Load design for update (with tracking)
         var design = await _unitOfWork.Repository<CardDesign>()
             .GetQueryable()
             .FirstOrDefaultAsync(d => d.Id == designId);
@@ -288,13 +269,12 @@ public class CardDesignService(
         if (design.IsPaid)
             return ServiceResult.Fail(_messageService.Get("DesignAlreadyPaid"), 400);
 
-        // 3. Apply payment outcome
         if (request.IsSuccess)
         {
-            design.IsPaid                = true;
-            design.PaymentStatus         = CardDesignPaymentStatus.Paid;
-            design.PaidAt                = DateTime.UtcNow;
-            design.PaymentTransactionId  = request.TransactionId;
+            design.IsPaid = true;
+            design.PaymentStatus = CardDesignPaymentStatus.Paid;
+            design.PaidAt = DateTime.UtcNow;
+            design.PaymentTransactionId = request.TransactionId;
         }
         else
         {
@@ -305,16 +285,13 @@ public class CardDesignService(
         return ServiceResult.Success(_messageService.Get("RecordUpdated"));
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    // Private helpers
-    // ─────────────────────────────────────────────────────────────────────
 
     private static string ComputeHmacSha256(string payload, string secret)
     {
-        var keyBytes     = Encoding.UTF8.GetBytes(secret);
+        var keyBytes = Encoding.UTF8.GetBytes(secret);
         var payloadBytes = Encoding.UTF8.GetBytes(payload);
-        using var hmac   = new HMACSHA256(keyBytes);
-        var hash         = hmac.ComputeHash(payloadBytes);
+        using var hmac = new HMACSHA256(keyBytes);
+        var hash = hmac.ComputeHash(payloadBytes);
         return Convert.ToHexString(hash).ToLowerInvariant();
     }
 }

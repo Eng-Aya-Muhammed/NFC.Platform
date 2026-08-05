@@ -9,8 +9,7 @@ namespace NFC.Platform.Tests.Services
         public EmailServiceTests()
         {
             _messageService = Substitute.For<IMessageService>();
-            
-            // Real Mailtrap credentials provided by the user
+
             _mailSettings = new MailSettings
             {
                 From = "noreply@nfcplatform.com",
@@ -29,15 +28,13 @@ namespace NFC.Platform.Tests.Services
         [Fact(Skip = "Requires external Mailtrap SMTP server connection")]
         public async Task SendEmails_SendsRealEmailsToMailtrapSequentially()
         {
-            // Arrange
             var realEmailService = new EmailService(_mailSettingsOptions, _messageService);
 
-            // Test 1: SendEmailAsync
-            var ex1 = await Record.ExceptionAsync(() => 
+            var ex1 = await Record.ExceptionAsync(() =>
                 realEmailService.SendEmailAsync(
-                    to: "test-receiver@nfcplatform.com", 
-                    subject: "NFC Platform Integration Test - Basic Email", 
-                    body: "<h3>Integration Test Success</h3><p>This is a real basic email sent during the automated test execution.</p>", 
+                    to: "test-receiver@nfcplatform.com",
+                    subject: "NFC Platform Integration Test - Basic Email",
+                    body: "<h3>Integration Test Success</h3><p>This is a real basic email sent during the automated test execution.</p>",
                     isHtml: true
                 )
             );

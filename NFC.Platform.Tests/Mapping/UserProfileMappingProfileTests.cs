@@ -25,7 +25,6 @@ namespace NFC.Platform.Tests.Mapping
         [Fact]
         public void UserProfile_To_EmployeeDetailsDto_MapsAllProfileFields()
         {
-            // Arrange
             var empId = Guid.NewGuid();
             var profile = new UserProfile
             {
@@ -45,10 +44,8 @@ namespace NFC.Platform.Tests.Mapping
                 }
             };
 
-            // Act
             var dto = _mapper.Map<EmployeeDetailsDto>(profile);
 
-            // Assert
             Assert.NotNull(dto);
             Assert.Equal(empId, dto.Id);
             Assert.Equal("Mahmoud Hassan", dto.FullName);
@@ -63,7 +60,6 @@ namespace NFC.Platform.Tests.Mapping
         [Fact]
         public void User_To_EmployeeDetailsDto_ConvertsUsingUserProfile()
         {
-            // Arrange
             var userId = Guid.NewGuid();
             var user = new User
             {
@@ -78,10 +74,8 @@ namespace NFC.Platform.Tests.Mapping
                 }
             };
 
-            // Act
             var dto = _mapper.Map<EmployeeDetailsDto>(user);
 
-            // Assert
             Assert.NotNull(dto);
             Assert.Equal(userId, dto.Id);
             Assert.Equal("user@test.com", dto.Email);
@@ -92,7 +86,6 @@ namespace NFC.Platform.Tests.Mapping
         [Fact]
         public void UpdateEmployeeRequest_To_UserProfile_PreservesJobTitleAndDepartment_WhenNull()
         {
-            // Arrange
             var existingProfile = new UserProfile
             {
                 FullName = "Existing Name",
@@ -107,10 +100,8 @@ namespace NFC.Platform.Tests.Mapping
                 Department = null
             };
 
-            // Act
             _mapper.Map(updateRequest, existingProfile);
 
-            // Assert
             Assert.Equal("Updated Name", existingProfile.FullName);
             Assert.Equal("Senior Developer", existingProfile.JobTitle);
             Assert.Equal("Engineering", existingProfile.Department);

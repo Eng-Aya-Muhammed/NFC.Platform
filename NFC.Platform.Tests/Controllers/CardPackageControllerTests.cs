@@ -14,7 +14,6 @@ public class CardPackageControllerTests
     [Fact]
     public async Task GetActiveCardPackages_ReturnsOkResult_WithActiveCardPackages()
     {
-        // Arrange
         var packages = new List<CardPackageDto>
         {
             new() { Id = Guid.NewGuid(), NumberOfCards = 10, Price = 100 },
@@ -24,10 +23,8 @@ public class CardPackageControllerTests
         var serviceResult = ServiceResult<IReadOnlyList<CardPackageDto>>.Success(packages);
         _cardPackageService.GetActiveCardPackagesAsync("10").Returns(serviceResult);
 
-        // Act
         var result = await _sut.GetActiveCardPackages("10") as OkObjectResult;
 
-        // Assert
         Assert.NotNull(result);
         Assert.Equal(200, result.StatusCode);
         var returnResult = Assert.IsType<ServiceResult<IReadOnlyList<CardPackageDto>>>(result.Value);

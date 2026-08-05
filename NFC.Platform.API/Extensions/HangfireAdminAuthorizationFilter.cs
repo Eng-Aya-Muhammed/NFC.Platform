@@ -8,10 +8,6 @@ using NFC.Platform.Domain.Enums;
 
 namespace NFC.Platform.API.Extensions
 {
-    /// <summary>
-    /// Strict authorization filter for the Hangfire Dashboard.
-    /// Ensures that only authenticated users with the System Admin role can access background job statistics and controls.
-    /// </summary>
     public class HangfireAdminAuthorizationFilter : IDashboardAuthorizationFilter
     {
         public bool Authorize([NotNull] DashboardContext context)
@@ -25,7 +21,6 @@ namespace NFC.Platform.API.Extensions
                 return false;
             }
 
-            // Check for System Admin role in standard or custom claims
             var roles = user.FindAll(ClaimTypes.Role)
                 .Concat(user.FindAll(AppClaims.Role))
                 .Select(c => c.Value);

@@ -24,7 +24,6 @@ namespace NFC.Platform.Tests.Mapping
         [Fact]
         public void CardType_To_CardTypeDto_LocalizesName_ArabicCulture()
         {
-            // Arrange
             var cardType = new CardType
             {
                 Id = Guid.NewGuid(),
@@ -33,11 +32,9 @@ namespace NFC.Platform.Tests.Mapping
                 IsActive = true
             };
 
-            // Act
             CultureInfo.CurrentUICulture = new CultureInfo("ar");
             var dto = _mapper.Map<CardTypeDto>(cardType);
 
-            // Assert
             Assert.NotNull(dto);
             Assert.Equal("خشب بامبو", dto.Name);
             Assert.True(dto.IsActive);
@@ -46,7 +43,6 @@ namespace NFC.Platform.Tests.Mapping
         [Fact]
         public void CardType_To_CardTypeDto_LocalizesName_EnglishCulture()
         {
-            // Arrange
             var cardType = new CardType
             {
                 Id = Guid.NewGuid(),
@@ -55,11 +51,9 @@ namespace NFC.Platform.Tests.Mapping
                 IsActive = true
             };
 
-            // Act
             CultureInfo.CurrentUICulture = new CultureInfo("en");
             var dto = _mapper.Map<CardTypeDto>(cardType);
 
-            // Assert
             Assert.NotNull(dto);
             Assert.Equal("Bamboo Wood", dto.Name);
             Assert.True(dto.IsActive);
@@ -68,7 +62,6 @@ namespace NFC.Platform.Tests.Mapping
         [Fact]
         public void CardType_To_CardTypeAdminDto_PopulatesBothNames()
         {
-            // Arrange
             var cardType = new CardType
             {
                 Id = Guid.NewGuid(),
@@ -77,10 +70,8 @@ namespace NFC.Platform.Tests.Mapping
                 IsActive = true
             };
 
-            // Act
             var dto = _mapper.Map<CardTypeAdminDto>(cardType);
 
-            // Assert
             Assert.NotNull(dto);
             Assert.Equal("معدن أسود", dto.NameAr);
             Assert.Equal("Matte Black Metal", dto.NameEn);

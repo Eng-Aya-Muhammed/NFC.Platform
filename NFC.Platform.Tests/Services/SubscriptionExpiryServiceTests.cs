@@ -36,14 +36,11 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task ProcessExpiredSubscriptionsAsync_ReturnsZero_WhenNoSubscriptionsFound()
         {
-            // Arrange
             var emptyList = new List<UserSubscription>();
             _subRepo.GetQueryable().Returns(emptyList.AsQueryable().BuildMock());
 
-            // Act
             var result = await _sut.ProcessExpiredSubscriptionsAsync(CancellationToken.None);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(0, result.Data);
             await _unitOfWork.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
@@ -52,14 +49,13 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task ProcessExpiredSubscriptionsAsync_DeactivatesExpiredSubscriptions_AndEnqueuesEmails()
         {
-            // Arrange
             var expiredSub = new UserSubscription
             {
                 Id = Guid.NewGuid(),
                 TenantId = Guid.NewGuid(),
                 IsActive = true,
                 StartDate = DateTime.UtcNow.AddDays(-30),
-                EndDate = DateTime.UtcNow.AddDays(-1), // Expired yesterday
+                EndDate = DateTime.UtcNow.AddDays(-1),
                 SubscriptionPlan = new SubscriptionPlan { NameAr = "الباقة الفضية", NameEn = "Silver Plan" },
                 User = new User { Email = "user@tenant.com" }
             };
@@ -70,20 +66,18 @@ namespace NFC.Platform.Tests.Services
                 TenantId = Guid.NewGuid(),
                 IsActive = true,
                 StartDate = DateTime.UtcNow.AddDays(-10),
-                EndDate = DateTime.UtcNow.AddDays(20) // Active for 20 more days
+                EndDate = DateTime.UtcNow.AddDays(20)
             };
 
             var list = new List<UserSubscription> { expiredSub, activeSub };
             _subRepo.GetQueryable().Returns(list.AsQueryable().BuildMock());
 
-            // Act
             var result = await _sut.ProcessExpiredSubscriptionsAsync(CancellationToken.None);
 
-            // Assert
             Assert.True(result.IsSuccess);
-            Assert.Equal(1, result.Data); // Only 1 expired sub processed
-            Assert.False(expiredSub.IsActive); // Deactivated
-            Assert.True(activeSub.IsActive);   // Preserved active
+            Assert.Equal(1, result.Data);
+            Assert.False(expiredSub.IsActive);
+            Assert.True(activeSub.IsActive);
 
             await _unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
 
@@ -97,7 +91,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task ProcessExpiredSubscriptionsAsync_EnqueuesEmailToCompanyAdmin_WhenCompanyExists()
         {
-            // Arrange
             var companyAdminUser = new User { Email = "admin@company.com" };
             var company = new Company { AdminUser = companyAdminUser };
             var tenant = new Tenant { Company = company };
@@ -111,20 +104,17 @@ namespace NFC.Platform.Tests.Services
                 EndDate = DateTime.UtcNow.AddDays(-2),
                 SubscriptionPlan = new SubscriptionPlan { NameAr = "باقة الشركات", NameEn = "Corporate Plan" },
                 Tenant = tenant,
-                User = new User { Email = "regular_employee@company.com" } // Regular user attached to sub
+                User = new User { Email = "regular_employee@company.com" }
             };
 
             var list = new List<UserSubscription> { expiredCompanySub };
             _subRepo.GetQueryable().Returns(list.AsQueryable().BuildMock());
 
-            // Act
             var result = await _sut.ProcessExpiredSubscriptionsAsync(CancellationToken.None);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.False(expiredCompanySub.IsActive);
 
-            // Verify email was sent ONLY to company admin, NOT regular employee
             _backgroundJobClient.Received(1).Create(
                 Arg.Is<Hangfire.Common.Job>(job =>
                     job.Method.Name == nameof(IEmailService.SendSubscriptionExpiredEmailAsync) &&

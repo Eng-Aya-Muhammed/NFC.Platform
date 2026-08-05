@@ -7,10 +7,6 @@ using Twilio.Types;
 
 namespace NFC.Platform.Infrastructure.Services
 {
-    /// <summary>
-    /// Sends WhatsApp messages via the Twilio API.
-    /// Uses the Twilio Sandbox number during development/testing.
-    /// </summary>
     public class WhatsAppService : IWhatsAppService
     {
         private readonly TwilioSettings _settings;
@@ -21,7 +17,6 @@ namespace NFC.Platform.Infrastructure.Services
             TwilioClient.Init(_settings.AccountSid, _settings.AuthToken);
         }
 
-        /// <inheritdoc/>
         public async Task SendWhatsAppMessageAsync(string toPhoneNumber, string message)
         {
             if (string.IsNullOrWhiteSpace(toPhoneNumber))
@@ -44,7 +39,6 @@ namespace NFC.Platform.Infrastructure.Services
                 clean = clean.Substring("whatsapp:".Length).Trim();
             }
 
-            // Remove spaces, dashes, parentheses
             clean = clean.Replace(" ", "").Replace("-", "").Replace("(", "").Replace(")", "");
 
             return clean;

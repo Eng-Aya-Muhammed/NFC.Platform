@@ -7,10 +7,6 @@ using NFC.Platform.Domain.Common;
 
 namespace NFC.Platform.Infrastructure.Interceptors
 {
-    /// <summary>
-    /// EF Core Interceptor that intercepts SaveChanges events to automatically populate auditing properties
-    /// (CreatedAt, CreatedBy, UpdatedAt, UpdatedBy) for entities inheriting from <see cref="BaseEntity"/>.
-    /// </summary>
     public class AuditableEntitySaveChangesInterceptor(
         ICurrentUserService currentUserService,
         IDateTimeProvider dateTimeProvider) : SaveChangesInterceptor
@@ -18,17 +14,15 @@ namespace NFC.Platform.Infrastructure.Interceptors
         private readonly ICurrentUserService _currentUserService = currentUserService;
         private readonly IDateTimeProvider _dateTimeProvider = dateTimeProvider;
 
-        /// <inheritdoc />
         public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
         {
             UpdateEntities(eventData.Context);
             return base.SavingChanges(eventData, result);
         }
 
-        /// <inheritdoc />
         public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
-            DbContextEventData eventData, 
-            InterceptionResult<int> result, 
+            DbContextEventData eventData,
+            InterceptionResult<int> result,
             CancellationToken cancellationToken = default)
         {
             UpdateEntities(eventData.Context);

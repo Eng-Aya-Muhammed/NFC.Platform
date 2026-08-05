@@ -1,20 +1,20 @@
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
 using NFC.Platform.Application.DTOs;
-using NFC.Platform.Application.DTOs.Employee;
 using NFC.Platform.Application.DTOs.CardOrder;
+using NFC.Platform.Application.DTOs.Employee;
 using NFC.Platform.Application.Interfaces.Services;
+using NFC.Platform.BuildingBlocks.Common.Constants;
 using NFC.Platform.BuildingBlocks.Common.Helpers;
 using NFC.Platform.BuildingBlocks.Common.Models;
-using NFC.Platform.BuildingBlocks.Common.Constants;
+using NFC.Platform.BuildingBlocks.Localization;
 using NFC.Platform.Domain.Constants;
 using NFC.Platform.Domain.Enums;
 using NFC.Platform.Infrastructure.Authorization;
-using NFC.Platform.BuildingBlocks.Localization;
 
 namespace NFC.Platform.API.Controllers
 {

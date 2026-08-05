@@ -24,7 +24,6 @@ namespace NFC.Platform.Tests.Mapping
         [Fact]
         public void CardTemplate_To_CardTemplateDto_PopulatesCategoryName_Localized()
         {
-            // Arrange
             var category = new TemplateCategory { NameAr = "تصاميم شخصية", NameEn = "Personal Designs" };
             var template = new CardTemplate
             {
@@ -34,15 +33,12 @@ namespace NFC.Platform.Tests.Mapping
                 Category = category
             };
 
-            // Act - Arabic Culture
             CultureInfo.CurrentUICulture = new CultureInfo("ar");
             var dtoAr = _mapper.Map<CardTemplateDto>(template);
 
-            // Act - English Culture
             CultureInfo.CurrentUICulture = new CultureInfo("en");
             var dtoEn = _mapper.Map<CardTemplateDto>(template);
 
-            // Assert
             Assert.Equal("قالب ذهبي", dtoAr.Name);
             Assert.Equal("تصاميم شخصية", dtoAr.CategoryName);
 
@@ -53,7 +49,6 @@ namespace NFC.Platform.Tests.Mapping
         [Fact]
         public void CardTemplate_To_CardTemplateAdminDto_PopulatesCategoryNameArAndEn()
         {
-            // Arrange
             var category = new TemplateCategory { NameAr = "تصاميم شركات", NameEn = "Corporate Designs" };
             var template = new CardTemplate
             {
@@ -63,10 +58,8 @@ namespace NFC.Platform.Tests.Mapping
                 Category = category
             };
 
-            // Act
             var dto = _mapper.Map<CardTemplateAdminDto>(template);
 
-            // Assert
             Assert.Equal("قالب الأعمال", dto.NameAr);
             Assert.Equal("Business Template", dto.NameEn);
             Assert.Equal("تصاميم شركات", dto.CategoryNameAr);

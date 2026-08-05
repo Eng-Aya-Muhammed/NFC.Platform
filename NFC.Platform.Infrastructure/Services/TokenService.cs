@@ -17,7 +17,7 @@ namespace NFC.Platform.Infrastructure.Services
 
         public string GenerateToken(Guid userId, string email, IEnumerable<string> roles, Guid tenantId, Guid? companyId = null, string? accountType = null)
         {
-            var keyStr = _configuration["JwtSettings:Key"] 
+            var keyStr = _configuration["JwtSettings:Key"]
                 ?? throw new InvalidOperationException("JWT Secret Key 'JwtSettings:Key' is not configured.");
 
             var issuer = _configuration["JwtSettings:Issuer"];

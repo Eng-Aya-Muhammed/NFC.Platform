@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
+using NFC.Platform.Application.DTOs.Card;
 using NFC.Platform.Application.DTOs.CardOrder;
 using NFC.Platform.Application.DTOs.CardPackage;
-using NFC.Platform.Application.DTOs.Card;
 using NFC.Platform.Application.DTOs.CardTemplate;
 using NFC.Platform.Application.DTOs.CardType;
 using NFC.Platform.Application.DTOs.Template;

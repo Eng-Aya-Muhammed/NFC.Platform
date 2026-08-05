@@ -1,5 +1,5 @@
-using Xunit;
 using NFC.Platform.Application.Extensions;
+using Xunit;
 
 namespace NFC.Platform.Tests.Extensions
 {

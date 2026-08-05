@@ -15,7 +15,8 @@ public class DiscountCodeMappingProfile : Profile
             .ForMember(dest => dest.Code, opt => opt.MapFrom(src => src.Code.Trim().ToUpperInvariant()));
 
         CreateMap<UpdateDiscountCodeRequest, DiscountCode>()
-            .ForMember(dest => dest.Code, opt => {
+            .ForMember(dest => dest.Code, opt =>
+            {
                 opt.Condition(src => !string.IsNullOrWhiteSpace(src.Code));
                 opt.MapFrom(src => src.Code!.Trim().ToUpperInvariant());
             })

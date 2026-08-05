@@ -27,7 +27,6 @@ namespace NFC.Platform.Infrastructure.Services
             var departmentCol = -1;
             var whatsappCol = -1;
 
-            // Store column indices and their title for custom & social link headers
             var linkColumns = new Dictionary<int, string>();
 
             if (reader.Read())
@@ -91,7 +90,7 @@ namespace NFC.Platform.Infrastructure.Services
                     }
                 }
 
-                bool isCompletelyEmptyRow = string.IsNullOrWhiteSpace(name) && 
+                bool isCompletelyEmptyRow = string.IsNullOrWhiteSpace(name) &&
                                              string.IsNullOrWhiteSpace(email) &&
                                              string.IsNullOrWhiteSpace(phone) &&
                                              string.IsNullOrWhiteSpace(jobTitle) &&
@@ -99,9 +98,9 @@ namespace NFC.Platform.Infrastructure.Services
                                              string.IsNullOrWhiteSpace(whatsapp) &&
                                              customLinks.Count == 0;
 
-                if (isCompletelyEmptyRow) 
+                if (isCompletelyEmptyRow)
                 {
-                    continue; // Skip completely blank row
+                    continue;
                 }
 
                 rows.Add(new ExcelEmployeeImportDto

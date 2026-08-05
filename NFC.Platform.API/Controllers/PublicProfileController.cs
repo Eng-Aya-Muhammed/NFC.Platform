@@ -20,9 +20,6 @@ namespace NFC.Platform.API.Controllers
         private readonly IQrCodeService _qrCodeService = qrCodeService ?? throw new ArgumentNullException(nameof(qrCodeService));
         private readonly IVCardService _vCardService = vCardService ?? throw new ArgumentNullException(nameof(vCardService));
 
-        /// <summary>
-        /// Resolves a digital profile by its unique Id and returns the public profile data.
-        /// </summary>
         [HttpGet("profile/{id:guid}")]
         [EnableRateLimiting("ResolvePublicProfilePolicy")]
         public async Task<IActionResult> ResolvePublicProfile([FromRoute] Guid id)
@@ -36,11 +33,6 @@ namespace NFC.Platform.API.Controllers
             return Ok(result);
         }
 
-        /// <summary>
-        /// Generates and downloads a vCard (.vcf) contact file for the specified profile GUID.
-        /// Automatically logs a ContactSaved interaction metric.
-        /// GET /api/public/profile/{id:guid}/vcard
-        /// </summary>
         [HttpGet("profile/{id:guid}/vcard")]
         [EnableRateLimiting("ResolvePublicProfilePolicy")]
         public async Task<IActionResult> DownloadVCardById([FromRoute] Guid id)
@@ -53,7 +45,6 @@ namespace NFC.Platform.API.Controllers
 
             var vcardBytes = _vCardService.BuildVCardBytes(profileResult.Data);
 
-            // Fire-and-forget background metric tracking
             _ = _profileMetricService.RecordMetricAsync(id, new RecordMetricRequest
             {
                 InteractionType = NFC.Platform.Domain.Enums.InteractionType.ContactSaved
@@ -66,10 +57,6 @@ namespace NFC.Platform.API.Controllers
             return File(vcardBytes, "text/vcard; charset=utf-8", filename);
         }
 
-        /// <summary>
-        /// Generates a PNG QR Code encoding the profile's public URL by GUID.
-        /// GET /api/public/profile/{id:guid}/qr?download=false
-        /// </summary>
         [HttpGet("profile/{id:guid}/qr")]
         [EnableRateLimiting("ResolvePublicProfilePolicy")]
         [ResponseCache(Duration = 86400, Location = ResponseCacheLocation.Any)]
@@ -98,10 +85,6 @@ namespace NFC.Platform.API.Controllers
             return File(qrBytes, "image/png");
         }
 
-        /// <summary>
-        /// Resolves a digital profile by its human-readable subdomain slug.
-        /// Example: GET /api/public/profile/u/ahmed-ali
-        /// </summary>
         [HttpGet("profile/u/{subdomain}")]
         [EnableRateLimiting("ResolvePublicProfilePolicy")]
         public async Task<IActionResult> ResolvePublicProfileBySubdomain([FromRoute] string subdomain)
@@ -115,11 +98,6 @@ namespace NFC.Platform.API.Controllers
             return Ok(result);
         }
 
-        /// <summary>
-        /// Generates and downloads a vCard (.vcf) contact file for the specified subdomain slug.
-        /// Automatically logs a ContactSaved interaction metric.
-        /// GET /api/public/profile/u/{subdomain}/vcard
-        /// </summary>
         [HttpGet("profile/u/{subdomain}/vcard")]
         [EnableRateLimiting("ResolvePublicProfilePolicy")]
         public async Task<IActionResult> DownloadVCardBySubdomain([FromRoute] string subdomain)
@@ -132,7 +110,6 @@ namespace NFC.Platform.API.Controllers
 
             var vcardBytes = _vCardService.BuildVCardBytes(profileResult.Data);
 
-            // Fire-and-forget background metric tracking
             _ = _profileMetricService.RecordMetricAsync(profileResult.Data.ProfileId, new RecordMetricRequest
             {
                 InteractionType = NFC.Platform.Domain.Enums.InteractionType.ContactSaved
@@ -142,10 +119,6 @@ namespace NFC.Platform.API.Controllers
             return File(vcardBytes, "text/vcard; charset=utf-8", filename);
         }
 
-        /// <summary>
-        /// Generates a PNG QR Code encoding the profile's public URL by subdomain slug.
-        /// GET /api/public/profile/u/{subdomain}/qr?download=false
-        /// </summary>
         [HttpGet("profile/u/{subdomain}/qr")]
         [EnableRateLimiting("ResolvePublicProfilePolicy")]
         [ResponseCache(Duration = 86400, Location = ResponseCacheLocation.Any)]
@@ -170,9 +143,6 @@ namespace NFC.Platform.API.Controllers
             return File(qrBytes, "image/png");
         }
 
-        /// <summary>
-        /// Records an interaction metric (view, save contact, link click) for a user profile anonymously.
-        /// </summary>
         [HttpPost("profiles/{profileId:guid}/metrics")]
         public async Task<IActionResult> RecordMetric([FromRoute] Guid profileId, [FromBody] RecordMetricRequest request)
         {

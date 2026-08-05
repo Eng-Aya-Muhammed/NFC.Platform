@@ -22,9 +22,8 @@ namespace NFC.Platform.Tests.Controllers
         [Fact]
         public void EmployeeController_Methods_ShouldHaveHasPermissionAttribute()
         {
-            // Assert that endpoints are properly secured with specific permissions
             var type = typeof(EmployeeController);
-            
+
             var getPagedMethod = type.GetMethod(nameof(EmployeeController.GetPaged));
             var getPagedAttr = getPagedMethod?.GetCustomAttributes(typeof(HasPermissionAttribute), false).FirstOrDefault() as HasPermissionAttribute;
             Assert.NotNull(getPagedAttr);
@@ -54,15 +53,12 @@ namespace NFC.Platform.Tests.Controllers
         [Fact]
         public async Task Create_ShouldReturnStatusCode_WhenServiceSucceeds()
         {
-            // Arrange
             var request = new CreateEmployeeRequest { Email = "test@onpoint.com" };
             var expectedResult = ServiceResult<EmployeeDetailsDto>.Success(new EmployeeDetailsDto());
             _employeeService.CreateEmployeeAsync(request).Returns(expectedResult);
 
-            // Act
             var result = await _sut.Create(request) as ObjectResult;
 
-            // Assert
             Assert.NotNull(result);
             Assert.Equal(200, result.StatusCode);
             Assert.Equal(expectedResult, result.Value);
@@ -71,15 +67,12 @@ namespace NFC.Platform.Tests.Controllers
         [Fact]
         public async Task Create_ShouldReturnErrorStatusCode_WhenServiceFails()
         {
-            // Arrange
             var request = new CreateEmployeeRequest { Email = "test@onpoint.com" };
             var expectedResult = ServiceResult<EmployeeDetailsDto>.Fail("Some error occurred", 422);
             _employeeService.CreateEmployeeAsync(request).Returns(expectedResult);
 
-            // Act
             var result = await _sut.Create(request) as ObjectResult;
 
-            // Assert
             Assert.NotNull(result);
             Assert.Equal(422, result.StatusCode);
             Assert.Equal(expectedResult, result.Value);
@@ -88,16 +81,13 @@ namespace NFC.Platform.Tests.Controllers
         [Fact]
         public async Task GetPaged_ShouldReturnOk_WithResult()
         {
-            // Arrange
             var request = new PaginationRequest();
             var search = "test";
             var expectedResult = ServiceResult<PagedResult<EmployeeDto>>.Success(PagedResult<EmployeeDto>.Create(new List<EmployeeDto>(), 0, 1, 10));
             _employeeService.GetPagedEmployeesAsync(request, search).Returns(expectedResult);
 
-            // Act
             var result = await _sut.GetPaged(request, search) as OkObjectResult;
 
-            // Assert
             Assert.NotNull(result);
             Assert.Equal(200, result.StatusCode);
             Assert.Equal(expectedResult, result.Value);
@@ -106,15 +96,12 @@ namespace NFC.Platform.Tests.Controllers
         [Fact]
         public async Task GetById_ShouldReturnOk_WhenSuccess()
         {
-            // Arrange
             var id = Guid.NewGuid();
             var expectedResult = ServiceResult<EmployeeDetailsDto>.Success(new EmployeeDetailsDto());
             _employeeService.GetEmployeeDetailsAsync(id).Returns(expectedResult);
 
-            // Act
             var result = await _sut.GetById(id) as OkObjectResult;
 
-            // Assert
             Assert.NotNull(result);
             Assert.Equal(200, result.StatusCode);
             Assert.Equal(expectedResult, result.Value);
@@ -123,15 +110,12 @@ namespace NFC.Platform.Tests.Controllers
         [Fact]
         public async Task GetById_ShouldReturnErrorStatusCode_WhenFailed()
         {
-            // Arrange
             var id = Guid.NewGuid();
             var expectedResult = ServiceResult<EmployeeDetailsDto>.Fail("Not found", 404);
             _employeeService.GetEmployeeDetailsAsync(id).Returns(expectedResult);
 
-            // Act
             var result = await _sut.GetById(id) as ObjectResult;
 
-            // Assert
             Assert.NotNull(result);
             Assert.Equal(404, result.StatusCode);
             Assert.Equal(expectedResult, result.Value);
@@ -140,16 +124,13 @@ namespace NFC.Platform.Tests.Controllers
         [Fact]
         public async Task Update_ShouldReturnOk_WhenSuccess()
         {
-            // Arrange
             var id = Guid.NewGuid();
             var request = new UpdateEmployeeRequest();
             var expectedResult = ServiceResult<EmployeeDetailsDto>.Success(new EmployeeDetailsDto());
             _employeeService.UpdateEmployeeJobDetailsAsync(id, request).Returns(expectedResult);
 
-            // Act
             var result = await _sut.Update(id, request) as OkObjectResult;
 
-            // Assert
             Assert.NotNull(result);
             Assert.Equal(200, result.StatusCode);
             Assert.Equal(expectedResult, result.Value);
@@ -158,16 +139,13 @@ namespace NFC.Platform.Tests.Controllers
         [Fact]
         public async Task Update_ShouldReturnErrorStatusCode_WhenFailed()
         {
-            // Arrange
             var id = Guid.NewGuid();
             var request = new UpdateEmployeeRequest();
             var expectedResult = ServiceResult<EmployeeDetailsDto>.Fail("Validation error", 400);
             _employeeService.UpdateEmployeeJobDetailsAsync(id, request).Returns(expectedResult);
 
-            // Act
             var result = await _sut.Update(id, request) as ObjectResult;
 
-            // Assert
             Assert.NotNull(result);
             Assert.Equal(400, result.StatusCode);
             Assert.Equal(expectedResult, result.Value);
@@ -176,15 +154,12 @@ namespace NFC.Platform.Tests.Controllers
         [Fact]
         public async Task Delete_ShouldReturnOk_WhenSuccess()
         {
-            // Arrange
             var id = Guid.NewGuid();
             var expectedResult = ServiceResult.Success();
             _employeeService.SoftDeleteEmployeeAsync(id).Returns(expectedResult);
 
-            // Act
             var result = await _sut.Delete(id) as OkObjectResult;
 
-            // Assert
             Assert.NotNull(result);
             Assert.Equal(200, result.StatusCode);
             Assert.Equal(expectedResult, result.Value);
@@ -193,15 +168,12 @@ namespace NFC.Platform.Tests.Controllers
         [Fact]
         public async Task Delete_ShouldReturnErrorStatusCode_WhenFailed()
         {
-            // Arrange
             var id = Guid.NewGuid();
             var expectedResult = ServiceResult.Fail("Cannot delete", 403);
             _employeeService.SoftDeleteEmployeeAsync(id).Returns(expectedResult);
 
-            // Act
             var result = await _sut.Delete(id) as ObjectResult;
 
-            // Assert
             Assert.NotNull(result);
             Assert.Equal(403, result.StatusCode);
             Assert.Equal(expectedResult, result.Value);

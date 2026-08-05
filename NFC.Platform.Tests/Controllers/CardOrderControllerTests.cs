@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using NSubstitute;
-using Xunit;
 using NFC.Platform.API.Controllers;
 using NFC.Platform.Application.DTOs;
 using NFC.Platform.Application.DTOs.CardOrder;
@@ -13,6 +11,8 @@ using NFC.Platform.BuildingBlocks.Localization;
 using NFC.Platform.BuildingBlocks.Results;
 using NFC.Platform.Domain.Constants;
 using NFC.Platform.Infrastructure.Authorization;
+using NSubstitute;
+using Xunit;
 
 namespace NFC.Platform.Tests.Controllers
 {
@@ -33,7 +33,7 @@ namespace NFC.Platform.Tests.Controllers
         public void CardOrderController_ShouldHaveApiControllerAndRouteAttributes()
         {
             var type = typeof(CardOrderController);
-            
+
             var apiController = type.GetCustomAttributes(typeof(ApiControllerAttribute), true);
             Assert.NotEmpty(apiController);
 

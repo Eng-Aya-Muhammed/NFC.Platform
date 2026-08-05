@@ -52,40 +52,33 @@ namespace NFC.Platform.Tests.Middlewares
         [Fact]
         public async Task InvokeAsync_CallsNextMiddleware_WhenRequestIsUnauthenticated()
         {
-            // Arrange
             var httpContext = new DefaultHttpContext();
             var currentTenant = Substitute.For<ICurrentTenant>();
             currentTenant.IsAuthenticated.Returns(false);
             var dbContext = CreateMockDbContext(new List<Tenant>());
 
-            // Act
             await _middleware.InvokeAsync(httpContext, currentTenant, dbContext);
 
-            // Assert
             Assert.True(_nextCalled);
         }
 
         [Fact]
         public async Task InvokeAsync_CallsNextMiddleware_WhenUserIsAdmin()
         {
-            // Arrange
             var httpContext = new DefaultHttpContext();
             var currentTenant = Substitute.For<ICurrentTenant>();
             currentTenant.IsAuthenticated.Returns(true);
             currentTenant.IsAdmin.Returns(true);
             var dbContext = CreateMockDbContext(new List<Tenant>());
 
-            // Act
             await _middleware.InvokeAsync(httpContext, currentTenant, dbContext);
 
-            // Assert
             Assert.True(_nextCalled);
         }
 
         [Fact]
         public async Task InvokeAsync_CallsNextMiddleware_WhenTenantIsActiveInDatabase()
         {
-            // Arrange
             var tenantId = Guid.NewGuid();
             var httpContext = new DefaultHttpContext();
             var currentTenant = Substitute.For<ICurrentTenant>();
@@ -104,17 +97,14 @@ namespace NFC.Platform.Tests.Middlewares
             };
             var dbContext = CreateMockDbContext(tenants);
 
-            // Act
             await _middleware.InvokeAsync(httpContext, currentTenant, dbContext);
 
-            // Assert
             Assert.True(_nextCalled);
         }
 
         [Fact]
         public async Task InvokeAsync_ThrowsForbiddenException_TenantNotFound_WhenTenantDoesNotExist()
         {
-            // Arrange
             var tenantId = Guid.NewGuid();
             var httpContext = new DefaultHttpContext();
             var currentTenant = Substitute.For<ICurrentTenant>();
@@ -124,7 +114,6 @@ namespace NFC.Platform.Tests.Middlewares
 
             var dbContext = CreateMockDbContext(new List<Tenant>());
 
-            // Act & Assert
             var ex = await Assert.ThrowsAsync<ForbiddenException>(() =>
                 _middleware.InvokeAsync(httpContext, currentTenant, dbContext));
 
@@ -135,7 +124,6 @@ namespace NFC.Platform.Tests.Middlewares
         [Fact]
         public async Task InvokeAsync_ThrowsForbiddenException_TenantInactive_WhenTenantIsDisabled()
         {
-            // Arrange
             var tenantId = Guid.NewGuid();
             var httpContext = new DefaultHttpContext();
             var currentTenant = Substitute.For<ICurrentTenant>();
@@ -154,7 +142,6 @@ namespace NFC.Platform.Tests.Middlewares
             };
             var dbContext = CreateMockDbContext(tenants);
 
-            // Act & Assert
             var ex = await Assert.ThrowsAsync<ForbiddenException>(() =>
                 _middleware.InvokeAsync(httpContext, currentTenant, dbContext));
 

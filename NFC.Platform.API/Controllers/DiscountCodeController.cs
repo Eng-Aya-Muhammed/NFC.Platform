@@ -14,9 +14,6 @@ public class DiscountCodeController(IDiscountCodeService discountCodeService) : 
 {
     private readonly IDiscountCodeService _discountCodeService = discountCodeService ?? throw new ArgumentNullException(nameof(discountCodeService));
 
-    /// <summary>
-    /// Validates a discount code for customer checkout.
-    /// </summary>
     [HttpPost("validate")]
     public async Task<IActionResult> ValidateDiscountCode([FromBody] ValidateDiscountCodeRequest request)
     {

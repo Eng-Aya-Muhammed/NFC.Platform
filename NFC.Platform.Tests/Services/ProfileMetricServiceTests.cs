@@ -40,20 +40,16 @@ namespace NFC.Platform.Tests.Services
             _sut = new ProfileMetricService(_unitOfWork, _messageService, _mapper, options);
         }
 
-        //  ResolvePublicProfileAsync 
 
         [Fact]
         public async Task ResolvePublicProfileAsync_ReturnsNotFound_WhenProfileDoesNotExist()
         {
-            // Arrange
             var emptyQueryable = new List<UserProfile>().AsQueryable().BuildMock();
             _profileRepo.GetQueryable().Returns(emptyQueryable);
             _messageService.Get("ProfileNotFound").Returns("Profile not found.");
 
-            // Act
             var result = await _sut.ResolvePublicProfileAsync(Guid.NewGuid());
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(404, result.StatusCode);
         }
@@ -61,7 +57,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task ResolvePublicProfileAsync_ReturnsSuccess_WhenProfileExists()
         {
-            // Arrange
             var profileId = Guid.NewGuid();
             var profile = new UserProfile
             {
@@ -83,10 +78,8 @@ namespace NFC.Platform.Tests.Services
             };
             _mapper.Map<EmployeeDetailsDto>(Arg.Any<UserProfile>()).Returns(dto);
 
-            // Act
             var result = await _sut.ResolvePublicProfileAsync(profileId);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(200, result.StatusCode);
             Assert.Equal("Mohamed Ahmed", result.Data!.FullName);
@@ -94,22 +87,18 @@ namespace NFC.Platform.Tests.Services
             Assert.Equal("LinkedIn", result.Data!.Links[0].Title);
         }
 
-        //  RecordMetricAsync 
 
         [Fact]
         public async Task RecordMetricAsync_ReturnsNotFound_WhenProfileDoesNotExist()
         {
-            // Arrange
             var profileId = Guid.NewGuid();
             _profileRepo.GetByIdAsync(profileId).Returns((UserProfile?)null);
             _messageService.Get("RecordNotFound").Returns("Profile not found.");
 
             var request = new RecordMetricRequest { InteractionType = InteractionType.ProfileView };
 
-            // Act
             var result = await _sut.RecordMetricAsync(profileId, request);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(404, result.StatusCode);
         }
@@ -117,7 +106,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task RecordMetricAsync_ReturnsSuccess_AndSavesMetric()
         {
-            // Arrange
             var profileId = Guid.NewGuid();
             var tenantId = Guid.NewGuid();
             var profile = new UserProfile { Id = profileId, TenantId = tenantId };
@@ -130,10 +118,8 @@ namespace NFC.Platform.Tests.Services
                 ProfileLinkId = Guid.NewGuid()
             };
 
-            // Act
             var result = await _sut.RecordMetricAsync(profileId, request);
 
-            // Assert
             Assert.True(result.IsSuccess);
             await _metricRepo.Received(1).AddAsync(Arg.Is<ProfileMetric>(m =>
                 m.UserProfileId == profileId &&
@@ -146,7 +132,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task RecordMetricAsync_ReturnsSuccess_WhenProfileLinkIdIsNull()
         {
-            // Arrange
             var profileId = Guid.NewGuid();
             var profile = new UserProfile { Id = profileId, TenantId = Guid.NewGuid() };
             _profileRepo.GetByIdAsync(profileId).Returns(profile);
@@ -157,10 +142,8 @@ namespace NFC.Platform.Tests.Services
                 ProfileLinkId = null
             };
 
-            // Act
             var result = await _sut.RecordMetricAsync(profileId, request);
 
-            // Assert
             Assert.True(result.IsSuccess);
             await _metricRepo.Received(1).AddAsync(Arg.Is<ProfileMetric>(m => m.ProfileLinkId == null));
         }
@@ -168,7 +151,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task ResolvePublicProfileBySubdomainAsync_ReturnsProfile_WhenSubdomainExists()
         {
-            // Arrange
             var profileId = Guid.NewGuid();
             var profile = new UserProfile
             {
@@ -180,10 +162,8 @@ namespace NFC.Platform.Tests.Services
             _profileRepo.GetQueryable().Returns(queryable);
             _mapper.Map<EmployeeDetailsDto>(Arg.Any<UserProfile>()).Returns(new EmployeeDetailsDto { Id = profileId, FullName = "Ahmed Ali" });
 
-            // Act
             var result = await _sut.ResolvePublicProfileBySubdomainAsync("ahmed-ali");
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal("http://localhost:3000/u/ahmed-ali", result.Data!.ProfileUrl);
         }
@@ -191,15 +171,12 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task ResolvePublicProfileBySubdomainAsync_ReturnsNotFound_WhenSubdomainDoesNotExist()
         {
-            // Arrange
             var queryable = new List<UserProfile>().AsQueryable().BuildMock();
             _profileRepo.GetQueryable().Returns(queryable);
             _messageService.Get("ProfileNotFound").Returns("Profile not found.");
 
-            // Act
             var result = await _sut.ResolvePublicProfileBySubdomainAsync("non-existent");
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(404, result.StatusCode);
         }

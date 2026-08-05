@@ -3,24 +3,15 @@ using System.Security.Cryptography;
 
 namespace NFC.Platform.BuildingBlocks.Common.Helpers
 {
-    /// <summary>
-    /// Helper class providing PBKDF2 password hashing and verification services.
-    /// </summary>
     public static class PasswordHasher
     {
-        private const int SaltSize = 16; // 128-bit salt
-        private const int KeySize = 32;  // 256-bit subkey
+        private const int SaltSize = 16;
+        private const int KeySize = 32;
         private const int Iterations = 100000;
         private static readonly HashAlgorithmName Algorithm = HashAlgorithmName.SHA256;
 
         private const char SegmentDelimiter = ':';
 
-        /// <summary>
-        /// Hashes the provided plain-text password using PBKDF2 with a cryptographically secure random salt.
-        /// </summary>
-        /// <param name="password">The plain-text password to hash.</param>
-        /// <returns>A formatted string containing the iterations, salt, and password hash segments.</returns>
-        /// <exception cref="ArgumentException">Thrown when password is null or empty.</exception>
         public static string HashPassword(string password)
         {
             ArgumentNullException.ThrowIfNullOrWhiteSpace(password, nameof(password));
@@ -42,13 +33,6 @@ namespace NFC.Platform.BuildingBlocks.Common.Helpers
             );
         }
 
-        /// <summary>
-        /// Verifies a plain-text password against a previously generated PBKDF2 password hash.
-        /// </summary>
-        /// <param name="password">The plain-text password to verify.</param>
-        /// <param name="hashedPassword">The formatted hash string containing iterations, salt, and hash segments.</param>
-        /// <returns>True if the password matches the hash; otherwise, false.</returns>
-        /// <exception cref="ArgumentException">Thrown when password or hashedPassword is null or empty.</exception>
         public static bool VerifyPassword(string password, string hashedPassword)
         {
             ArgumentNullException.ThrowIfNullOrWhiteSpace(password, nameof(password));

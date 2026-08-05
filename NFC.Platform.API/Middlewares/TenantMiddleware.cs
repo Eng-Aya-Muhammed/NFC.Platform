@@ -9,9 +9,6 @@ using NFC.Platform.Infrastructure.Contexts;
 
 namespace NFC.Platform.API.Middlewares
 {
-    /// <summary>
-    /// Middleware that validates asynchronously that the active tenant for an authenticated non-admin user is active and exists.
-    /// </summary>
     public class TenantMiddleware(RequestDelegate next)
     {
         private readonly RequestDelegate _next = next ?? throw new ArgumentNullException(nameof(next));

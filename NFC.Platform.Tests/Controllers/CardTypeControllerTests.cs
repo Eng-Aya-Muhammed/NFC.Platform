@@ -14,7 +14,6 @@ public class CardTypeControllerTests
     [Fact]
     public async Task GetActiveCardTypes_ReturnsOkResult_WithActiveCardTypes()
     {
-        // Arrange
         var cardTypes = new List<CardTypeDto>
         {
             new() { Id = Guid.NewGuid(), Name = "Plastic" },
@@ -24,10 +23,8 @@ public class CardTypeControllerTests
         var serviceResult = ServiceResult<IReadOnlyList<CardTypeDto>>.Success(cardTypes);
         _cardTypeService.GetActiveCardTypesAsync("Metal").Returns(serviceResult);
 
-        // Act
         var result = await _sut.GetActiveCardTypes("Metal") as OkObjectResult;
 
-        // Assert
         Assert.NotNull(result);
         Assert.Equal(200, result.StatusCode);
         var returnResult = Assert.IsType<ServiceResult<IReadOnlyList<CardTypeDto>>>(result.Value);

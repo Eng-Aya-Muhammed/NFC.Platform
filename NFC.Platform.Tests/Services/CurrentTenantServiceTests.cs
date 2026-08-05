@@ -25,7 +25,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public void TenantId_ResolvesFromTenantIdClaim_WhenUserIsAuthenticatedNonAdmin()
         {
-            // Arrange
             var expectedTenantId = Guid.NewGuid();
             var expectedUserId = Guid.NewGuid();
 
@@ -41,11 +40,9 @@ namespace NFC.Platform.Tests.Services
             var httpContext = new DefaultHttpContext { User = principal };
             _httpContextAccessor.HttpContext.Returns(httpContext);
 
-            // Act
             var tenantId = _sut.TenantId;
             var userId = _sut.UserId;
 
-            // Assert
             Assert.Equal(expectedTenantId, tenantId);
             Assert.Equal(expectedUserId, userId);
             Assert.True(_sut.IsAuthenticated);
@@ -55,7 +52,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public void UserId_FallbackToNameIdentifierClaim_WhenUserIdClaimIsMissing()
         {
-            // Arrange
             var expectedUserId = Guid.NewGuid();
             var claims = new List<Claim>
             {
@@ -66,17 +62,14 @@ namespace NFC.Platform.Tests.Services
             var httpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) };
             _httpContextAccessor.HttpContext.Returns(httpContext);
 
-            // Act
             var userId = _sut.UserId;
 
-            // Assert
             Assert.Equal(expectedUserId, userId);
         }
 
         [Fact]
         public void Email_ResolvesFromEmailClaim_AndFallbackToClaimTypesEmail()
         {
-            // Arrange
             var claims = new List<Claim>
             {
                 new(ClaimTypes.Email, "user@example.com"),
@@ -86,17 +79,14 @@ namespace NFC.Platform.Tests.Services
             var httpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) };
             _httpContextAccessor.HttpContext.Returns(httpContext);
 
-            // Act
             var email = _sut.Email;
 
-            // Assert
             Assert.Equal("user@example.com", email);
         }
 
         [Fact]
         public void AccountType_ResolvesFromAccountTypeClaim()
         {
-            // Arrange
             var claims = new List<Claim>
             {
                 new(AppClaims.AccountType, AccountType.CompanyAdmin.ToString()),
@@ -106,17 +96,14 @@ namespace NFC.Platform.Tests.Services
             var httpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) };
             _httpContextAccessor.HttpContext.Returns(httpContext);
 
-            // Act
             var accountType = _sut.AccountType;
 
-            // Assert
             Assert.Equal(AccountType.CompanyAdmin, accountType);
         }
 
         [Fact]
         public void IsAdmin_ReturnsTrue_WhenUserHasAdminRole()
         {
-            // Arrange
             var adminTenantId = Guid.NewGuid();
             var claims = new List<Claim>
             {
@@ -127,11 +114,9 @@ namespace NFC.Platform.Tests.Services
             var httpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) };
             _httpContextAccessor.HttpContext.Returns(httpContext);
 
-            // Act
             var isAdmin = _sut.IsAdmin;
             var tenantId = _sut.TenantId;
 
-            // Assert
             Assert.True(isAdmin);
             Assert.Equal(adminTenantId, tenantId);
         }
@@ -139,7 +124,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public void TenantId_ThrowsForbiddenException_WhenNonAdminUserLacksTenantIdClaim()
         {
-            // Arrange
             var claims = new List<Claim>
             {
                 new(AppClaims.UserId, Guid.NewGuid().ToString()),
@@ -149,7 +133,6 @@ namespace NFC.Platform.Tests.Services
             var httpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) };
             _httpContextAccessor.HttpContext.Returns(httpContext);
 
-            // Act & Assert
             var ex = Assert.Throws<ForbiddenException>(() => _sut.TenantId);
             Assert.Equal("InvalidTenantClaim", ex.Message);
         }
@@ -157,14 +140,11 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public void SetCurrentTenant_OverridesClaimsValues()
         {
-            // Arrange
             var tenantOverride = Guid.NewGuid();
             var userOverride = Guid.NewGuid();
 
-            // Act
             _sut.SetCurrentTenant(tenantOverride, userOverride);
 
-            // Assert
             Assert.Equal(tenantOverride, _sut.TenantId);
             Assert.Equal(userOverride, _sut.UserId);
             Assert.True(_sut.IsAuthenticated);
@@ -174,10 +154,8 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public void UnauthenticatedRequest_ReturnsNullValues()
         {
-            // Arrange
             _httpContextAccessor.HttpContext.Returns(new DefaultHttpContext());
 
-            // Act & Assert
             Assert.Null(_sut.TenantId);
             Assert.Null(_sut.UserId);
             Assert.Null(_sut.Email);

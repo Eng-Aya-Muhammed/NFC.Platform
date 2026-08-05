@@ -1,13 +1,9 @@
 using System;
-using QRCoder;
 using NFC.Platform.Application.Interfaces.Services;
+using QRCoder;
 
 namespace NFC.Platform.Infrastructure.Services;
 
-/// <summary>
-/// Infrastructure service for generating QR code PNG byte arrays using QRCoder.
-/// Uses PngByteQRCode for pure C# cross-platform performance (no GDI+/System.Drawing dependencies).
-/// </summary>
 public class QrCodeService : IQrCodeService
 {
     public byte[] GeneratePngQrCode(string content, int pixelsPerModule = 20)

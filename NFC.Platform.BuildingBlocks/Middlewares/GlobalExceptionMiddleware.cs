@@ -1,6 +1,6 @@
 using System;
-using System.Linq;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -29,7 +29,7 @@ namespace NFC.Platform.BuildingBlocks.Middlewares
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "An unhandled exception occurred during request {Method} {Path}", 
+                _logger.LogError(ex, "An unhandled exception occurred during request {Method} {Path}",
                     context.Request.Method, context.Request.Path);
 
                 await HandleExceptionAsync(context, ex);

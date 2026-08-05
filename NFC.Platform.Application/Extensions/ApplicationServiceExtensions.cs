@@ -4,9 +4,6 @@ using NFC.Platform.Application.Services;
 
 namespace NFC.Platform.Application.Extensions
 {
-    /// <summary>
-    /// Service registration extension methods for the Application layer dependencies.
-    /// </summary>
     public static class ApplicationServiceExtensions
     {
         public static IServiceCollection AddApplicationServices(this IServiceCollection services)

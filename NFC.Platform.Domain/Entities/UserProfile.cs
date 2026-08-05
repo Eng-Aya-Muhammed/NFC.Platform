@@ -32,23 +32,12 @@ namespace NFC.Platform.Domain.Entities
         public bool IsVip { get; set; } = false;
         public int VipDisplayOrder { get; set; } = 0;
 
-        //  Digital profile branding (individual accounts only) 
 
-        /// <summary>
-        /// FK to the CardTemplate defining the digital profile layout for this individual account.
-        /// Used only when this profile is not linked to a Company. Set via PATCH /api/user/profile/template.
-        /// </summary>
         public Guid? ProfileTemplateId { get; set; }
         public CardTemplate? ProfileTemplate { get; set; }
 
         public ICollection<ProfileLink> CustomLinks { get; set; } = [];
 
-        /// <summary>
-        /// URL-safe unique slug used to identify this profile publicly.
-        /// Format: lowercase letters, digits, and hyphens only. Max 100 chars.
-        /// Example: "ahmed-ali" → accessible at /u/ahmed-ali
-        /// Generated automatically at profile creation. Can be reassigned by Admin.
-        /// </summary>
         public string? Subdomain { get; set; }
 
 

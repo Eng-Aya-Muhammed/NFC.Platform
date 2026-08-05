@@ -1,21 +1,18 @@
+using Hangfire;
 using NFC.Platform.API.Extensions;
 using NFC.Platform.API.Middlewares;
 using NFC.Platform.API.Services;
 using NFC.Platform.Application.Extensions;
+using NFC.Platform.Application.Interfaces.Services;
 using NFC.Platform.BuildingBlocks.Common.Helpers;
 using NFC.Platform.BuildingBlocks.Extensions;
-using Hangfire;
 using NFC.Platform.Infrastructure.Extensions;
 using Serilog;
 
-using NFC.Platform.Application.Interfaces.Services;
-
 var builder = WebApplication.CreateBuilder(args);
 
-// Configure Serilog structured logging provider
 builder.Host.UseSerilog((context, configuration) => configuration.ReadFrom.Configuration(context.Configuration));
 
-// Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
@@ -33,7 +30,6 @@ builder.Services.AddApplicationServices();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 app.UseCustomMiddlewares();
 app.UseCors("DefaultPolicy");
 
@@ -53,7 +49,6 @@ app.UseHangfireDashboard("/hangfire", new DashboardOptions
     Authorization = new[] { new HangfireAdminAuthorizationFilter() }
 });
 
-// Schedule daily subscription expiry Hangfire job
 RecurringJob.AddOrUpdate<ISubscriptionExpiryService>(
     "subscription-expiry-job",
     service => service.ProcessExpiredSubscriptionsAsync(CancellationToken.None),
@@ -61,7 +56,6 @@ RecurringJob.AddOrUpdate<ISubscriptionExpiryService>(
 
 app.MapControllers();
 
-// Auto-Migrate and Seed Database (Development only)
 await app.MigrateAndSeedDatabaseAsync(app.Environment);
 
 app.Run();

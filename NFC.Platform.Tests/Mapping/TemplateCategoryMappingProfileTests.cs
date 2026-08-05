@@ -24,7 +24,6 @@ namespace NFC.Platform.Tests.Mapping
         [Fact]
         public void TemplateCategory_To_TemplateCategoryDto_LocalizesName_ArabicCulture()
         {
-            // Arrange
             var category = new TemplateCategory
             {
                 Id = Guid.NewGuid(),
@@ -34,11 +33,9 @@ namespace NFC.Platform.Tests.Mapping
                 IsActive = true
             };
 
-            // Act
             CultureInfo.CurrentUICulture = new CultureInfo("ar");
             var dto = _mapper.Map<TemplateCategoryDto>(category);
 
-            // Assert
             Assert.NotNull(dto);
             Assert.Equal("تصاميم فندقية", dto.Name);
             Assert.Equal(2, dto.DisplayOrder);
@@ -48,7 +45,6 @@ namespace NFC.Platform.Tests.Mapping
         [Fact]
         public void TemplateCategory_To_TemplateCategoryDto_LocalizesName_EnglishCulture()
         {
-            // Arrange
             var category = new TemplateCategory
             {
                 Id = Guid.NewGuid(),
@@ -58,11 +54,9 @@ namespace NFC.Platform.Tests.Mapping
                 IsActive = true
             };
 
-            // Act
             CultureInfo.CurrentUICulture = new CultureInfo("en");
             var dto = _mapper.Map<TemplateCategoryDto>(category);
 
-            // Assert
             Assert.NotNull(dto);
             Assert.Equal("Hospitality Designs", dto.Name);
             Assert.Equal(2, dto.DisplayOrder);
@@ -72,7 +66,6 @@ namespace NFC.Platform.Tests.Mapping
         [Fact]
         public void TemplateCategory_To_TemplateCategoryAdminDto_PopulatesBothNames()
         {
-            // Arrange
             var category = new TemplateCategory
             {
                 Id = Guid.NewGuid(),
@@ -82,10 +75,8 @@ namespace NFC.Platform.Tests.Mapping
                 IsActive = true
             };
 
-            // Act
             var dto = _mapper.Map<TemplateCategoryAdminDto>(category);
 
-            // Assert
             Assert.NotNull(dto);
             Assert.Equal("تصاميم طبية", dto.NameAr);
             Assert.Equal("Medical Designs", dto.NameEn);

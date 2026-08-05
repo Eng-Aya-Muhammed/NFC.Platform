@@ -23,7 +23,6 @@ namespace NFC.Platform.Tests.Mapping
         [Fact]
         public void DiscountCode_To_DiscountCodeDto_MapsAllProperties()
         {
-            // Arrange
             var discountCode = new DiscountCode
             {
                 Id = Guid.NewGuid(),
@@ -34,10 +33,8 @@ namespace NFC.Platform.Tests.Mapping
                 CreatedAt = DateTime.UtcNow
             };
 
-            // Act
             var dto = _mapper.Map<DiscountCodeDto>(discountCode);
 
-            // Assert
             Assert.NotNull(dto);
             Assert.Equal("SAVE50", dto.Code);
             Assert.Equal(50m, dto.DiscountValue);
@@ -46,7 +43,6 @@ namespace NFC.Platform.Tests.Mapping
         [Fact]
         public void CreateDiscountCodeRequest_To_DiscountCode_NormalizesCodeToUppercase()
         {
-            // Arrange
             var request = new CreateDiscountCodeRequest
             {
                 Code = "  summer2026  ",
@@ -55,10 +51,8 @@ namespace NFC.Platform.Tests.Mapping
                 EndDate = DateTime.UtcNow.AddDays(14)
             };
 
-            // Act
             var entity = _mapper.Map<DiscountCode>(request);
 
-            // Assert
             Assert.NotNull(entity);
             Assert.Equal("SUMMER2026", entity.Code);
             Assert.Equal(25m, entity.DiscountValue);

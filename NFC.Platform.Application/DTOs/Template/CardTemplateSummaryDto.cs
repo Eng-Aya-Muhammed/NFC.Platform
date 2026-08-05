@@ -2,9 +2,6 @@ using System;
 
 namespace NFC.Platform.Application.DTOs.Template
 {
-    /// <summary>
-    /// Lightweight template projection for embedding inside subscription plan responses.
-    /// </summary>
     public class CardTemplateSummaryDto
     {
         public Guid Id { get; set; }

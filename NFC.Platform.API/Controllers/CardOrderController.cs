@@ -5,16 +5,12 @@ namespace NFC.Platform.API.Controllers;
 [ApiController]
 [Route("api/card-orders")]
 public class CardOrderController(
-    ICardOrderService cardOrderService, 
+    ICardOrderService cardOrderService,
     IMessageService messageService) : ControllerBase
 {
     private readonly ICardOrderService _cardOrderService = cardOrderService ?? throw new ArgumentNullException(nameof(cardOrderService));
     private readonly IMessageService _messageService = messageService ?? throw new ArgumentNullException(nameof(messageService));
 
-    /// <summary>
-    /// Returns a paged list of card orders for the current tenant.
-    /// Optional query params: status (e.g. PendingReview, InPrinting), search.
-    /// </summary>
     [HttpGet]
     [HasPermission(AppPermissions.CardOrders.View)]
     public async Task<IActionResult> GetPaged([FromQuery] PaginationRequest request, [FromQuery] string? status = null, [FromQuery] string? search = null)
@@ -45,9 +41,6 @@ public class CardOrderController(
         return File(result.Data!, "application/pdf", fileName);
     }
 
-    /// <summary>
-    /// Returns a single card order with its items.
-    /// </summary>
     [HttpGet("{id:guid}")]
     [HasPermission(AppPermissions.CardOrders.View)]
     public async Task<IActionResult> GetById([FromRoute] Guid id)
@@ -59,9 +52,6 @@ public class CardOrderController(
         return Ok(result);
     }
 
-    /// <summary>
-    /// Creates a new card order for the authenticated tenant user.
-    /// </summary>
     [HttpPost]
     [HasPermission(AppPermissions.CardOrders.Create)]
     public async Task<IActionResult> Create([FromBody] CreateCardOrderRequest request)
@@ -73,9 +63,6 @@ public class CardOrderController(
         return StatusCode(result.StatusCode, result);
     }
 
-    /// <summary>
-    /// Creates a reorder: new order that reuses the design/template from the parent order.
-    /// </summary>
     [HttpPost("{id:guid}/reorder")]
     [HasPermission(AppPermissions.CardOrders.Create)]
     public async Task<IActionResult> Reorder([FromRoute] Guid id, [FromBody] ReorderRequest request)
@@ -87,9 +74,6 @@ public class CardOrderController(
         return StatusCode(result.StatusCode, result);
     }
 
-    /// <summary>
-    /// Updates an existing card order.
-    /// </summary>
     [HttpPut("{id:guid}")]
     [HasPermission(AppPermissions.CardOrders.Update)]
     public async Task<IActionResult> Update([FromRoute] Guid id, [FromBody] UpdateCardOrderRequest request)
@@ -101,9 +85,6 @@ public class CardOrderController(
         return Ok(result);
     }
 
-    /// <summary>
-    /// Soft-cancels a card order. Only allowed while Status = PendingReview.
-    /// </summary>
     [HttpPut("{id:guid}/cancel")]
     [HasPermission(AppPermissions.CardOrders.Cancel)]
     public async Task<IActionResult> Cancel([FromRoute] Guid id)
@@ -116,10 +97,6 @@ public class CardOrderController(
     }
 
 
-    /// <summary>
-    /// Resends the delivery OTP for an order belonging to the current tenant.
-    /// Generates a new 6-digit OTP, updates expiry (+7 days), enforces a 60-second cooldown, and re-triggers Email & WhatsApp notifications.
-    /// </summary>
     [HttpPost("{id:guid}/resend-otp")]
     [HasPermission(AppPermissions.CardOrders.Update)]
     public async Task<IActionResult> ResendDeliveryOtp([FromRoute] Guid id)

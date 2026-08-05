@@ -55,9 +55,6 @@ public class ProfileMetricService(
         return ServiceResult.Success();
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    // Private helpers
-    // ──────────────────────────────────────────────────────────────────────────
 
     private async Task<UserProfile?> LoadProfileQueryAsync(
         System.Linq.Expressions.Expression<Func<UserProfile, bool>> predicate)
@@ -86,10 +83,6 @@ public class ProfileMetricService(
         return ServiceResult<EmployeeDetailsDto>.Success(dto);
     }
 
-    /// <summary>
-    /// Builds the fully-qualified public URL for a profile slug.
-    /// Returns null when the profile has no subdomain yet.
-    /// </summary>
     private string? BuildProfileUrl(string? subdomain)
     {
         if (string.IsNullOrWhiteSpace(subdomain)) return null;
@@ -97,12 +90,6 @@ public class ProfileMetricService(
         return $"{baseUrl}/{subdomain}";
     }
 
-    /// <summary>
-    /// Resolves branding for the public profile with priority:
-    ///   1. Company (if employee) — uses Resolved Company template
-    ///   2. Individual — uses UserProfile.ProfileTemplate
-    ///   3. Default fallback — neutral colors, no logo, "classic" layout
-    /// </summary>
     private static void ApplyBranding(EmployeeDetailsDto dto, UserProfile profile)
     {
         var company = profile.Employee?.Company;

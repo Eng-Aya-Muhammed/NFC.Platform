@@ -42,15 +42,12 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task CreateEmployeeAsync_ReturnsUnauthorized_WhenTenantNotAuthenticated()
         {
-            // Arrange
             _currentTenant.TenantId.Returns((Guid?)null);
 
             var request = new CreateEmployeeRequest { Email = "test@test.com" };
 
-            // Act
             var result = await _sut.CreateEmployeeAsync(request);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(401, result.StatusCode);
         }
@@ -58,7 +55,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task CreateEmployeeAsync_ReturnsFail_WhenCompanyNotFound()
         {
-            // Arrange
             var tenantId = Guid.NewGuid();
             _currentTenant.TenantId.Returns(tenantId);
 
@@ -68,10 +64,8 @@ namespace NFC.Platform.Tests.Services
             var request = new CreateEmployeeRequest { Email = "test@test.com" };
             _messageService.Get("CompanyNotFound").Returns("Company not found for this tenant.");
 
-            // Act
             var result = await _sut.CreateEmployeeAsync(request);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal("Company not found for this tenant.", result.Message);
         }
@@ -79,7 +73,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task CreateEmployeeAsync_ReturnsFail_WhenSubscriptionExpiredOrMissing()
         {
-            // Arrange
             var tenantId = Guid.NewGuid();
             _currentTenant.TenantId.Returns(tenantId);
 
@@ -87,15 +80,13 @@ namespace NFC.Platform.Tests.Services
             var queryableCompany = new List<Company> { company }.BuildMock();
             _companyRepo.GetQueryable().Returns(queryableCompany);
 
-            var queryableSub = new List<UserSubscription>().BuildMock(); // No active sub
+            var queryableSub = new List<UserSubscription>().BuildMock();
             _subscriptionRepo.GetQueryable().Returns(queryableSub);
 
             var request = new CreateEmployeeRequest { Email = "test@test.com" };
 
-            // Act
             var result = await _sut.CreateEmployeeAsync(request);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal("SubscriptionExpiredOrMissing", result.Message);
         }
@@ -105,7 +96,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task CreateEmployeeAsync_ReturnsFail_WhenEmployeeAlreadyExistsWithEmail()
         {
-            // Arrange
             var tenantId = Guid.NewGuid();
             _currentTenant.TenantId.Returns(tenantId);
 
@@ -120,7 +110,6 @@ namespace NFC.Platform.Tests.Services
 
             _employeeRepo.CountAsync(Arg.Any<Expression<Func<Employee, bool>>>()).Returns(1);
 
-            // Mock that an employee with same email already exists
             var existingEmployee = new Employee { Email = "duplicate@onpoint.com", TenantId = tenantId };
             _employeeRepo.GetQueryable().Returns(new List<Employee> { existingEmployee }.AsQueryable().BuildMock());
 
@@ -128,10 +117,8 @@ namespace NFC.Platform.Tests.Services
 
             var request = new CreateEmployeeRequest { Email = "duplicate@onpoint.com" };
 
-            // Act
             var result = await _sut.CreateEmployeeAsync(request);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(400, result.StatusCode);
             Assert.Equal("User already exists.", result.Message);
@@ -140,7 +127,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task CreateEmployeeAsync_Success_CreatesEmployeeAndProfile()
         {
-            // Arrange
             var tenantId = Guid.NewGuid();
             _currentTenant.TenantId.Returns(tenantId);
 
@@ -156,7 +142,6 @@ namespace NFC.Platform.Tests.Services
             _employeeRepo.CountAsync(Arg.Any<Expression<Func<Employee, bool>>>()).Returns(5);
             _employeeRepo.GetQueryable().Returns(new List<Employee>().AsQueryable().BuildMock());
 
-            // Allow GenerateUniqueAsync to check uniqueness (returns empty = no conflict)
             _userProfileRepo.GetQueryable().Returns(new List<UserProfile>().AsQueryable().BuildMock());
 
             var request = new CreateEmployeeRequest
@@ -197,10 +182,8 @@ namespace NFC.Platform.Tests.Services
             _mapper.Map<EmployeeDetailsDto>(Arg.Any<Employee>()).Returns(mappedDto);
             _messageService.Get("RecordCreated").Returns("Employee created.");
 
-            // Act
             var result = await _sut.CreateEmployeeAsync(request);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(200, result.StatusCode);
 
@@ -228,7 +211,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task CreateEmployeeAsync_WithCloudinaryProfilePicture_MapsUrlCorrectlyToUserProfile()
         {
-            // Arrange
             var tenantId = Guid.NewGuid();
             _currentTenant.TenantId.Returns(tenantId);
 
@@ -244,7 +226,6 @@ namespace NFC.Platform.Tests.Services
             _employeeRepo.CountAsync(Arg.Any<Expression<Func<Employee, bool>>>()).Returns(0);
             _employeeRepo.GetQueryable().Returns(new List<Employee>().AsQueryable().BuildMock());
 
-            // Allow GenerateUniqueAsync to check uniqueness (returns empty = no conflict)
             _userProfileRepo.GetQueryable().Returns(new List<UserProfile>().AsQueryable().BuildMock());
 
             var cloudinaryUrl = "https://res.cloudinary.com/demo/image/upload/v1571218039/nfc-platform/no-tenant/no-user/profile-pics/employee-avatar.png";
@@ -276,10 +257,8 @@ namespace NFC.Platform.Tests.Services
             _mapper.Map<EmployeeDetailsDto>(Arg.Any<Employee>()).Returns(mappedDto);
             _messageService.Get("RecordCreated").Returns("Employee created.");
 
-            // Act
             var result = await _sut.CreateEmployeeAsync(request);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(200, result.StatusCode);
 
@@ -293,7 +272,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task GetPagedEmployeesAsync_ReturnsSuccess_WithPagedEmployees()
         {
-            // Arrange
             var tenantId = Guid.NewGuid();
             var employeeList = new List<Employee>
             {
@@ -307,10 +285,8 @@ namespace NFC.Platform.Tests.Services
             var request = new PaginationRequest { PageNumber = 1, PageSize = 10 };
             _mapper.Map<EmployeeDto>(Arg.Any<Employee>()).Returns(new EmployeeDto());
 
-            // Act
             var result = await _sut.GetPagedEmployeesAsync(request, "Emp");
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.NotNull(result.Data);
             Assert.Equal(2, result.Data.TotalCount);
@@ -319,15 +295,12 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task GetEmployeeDetailsAsync_ReturnsNotFound_WhenEmployeeDoesNotExist()
         {
-            // Arrange
             var queryable = new List<Employee>().BuildMock();
             _employeeRepo.GetQueryable().Returns(queryable);
             _messageService.Get("RecordNotFound").Returns("Record not found.");
 
-            // Act
             var result = await _sut.GetEmployeeDetailsAsync(Guid.NewGuid());
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(404, result.StatusCode);
         }
@@ -335,7 +308,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task GetEmployeeDetailsAsync_ReturnsSuccess_WithEmployeeDetails()
         {
-            // Arrange
             var id = Guid.NewGuid();
             var employee = new Employee { Id = id, FullName = "John Doe" };
             var queryable = new List<Employee> { employee }.BuildMock();
@@ -344,10 +316,8 @@ namespace NFC.Platform.Tests.Services
             var expectedDto = new EmployeeDetailsDto { Id = id, FullName = "John Doe" };
             _mapper.Map<EmployeeDetailsDto>(employee).Returns(expectedDto);
 
-            // Act
             var result = await _sut.GetEmployeeDetailsAsync(id);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(id, result.Data!.Id);
         }
@@ -355,17 +325,14 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task UpdateEmployeeJobDetailsAsync_ReturnsNotFound_WhenEmployeeDoesNotExist()
         {
-            // Arrange
             var queryable = new List<Employee>().BuildMock();
             _employeeRepo.GetQueryable().Returns(queryable);
             _messageService.Get("RecordNotFound").Returns("Record not found.");
 
             var request = new UpdateEmployeeRequest { Status = UserStatus.Suspended };
 
-            // Act
             var result = await _sut.UpdateEmployeeJobDetailsAsync(Guid.NewGuid(), request);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(404, result.StatusCode);
         }
@@ -373,7 +340,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task UpdateEmployeeJobDetailsAsync_Success_UpdatesEmployeeAndUserProfile()
         {
-            // Arrange
             var id = Guid.NewGuid();
             var employee = new Employee
             {
@@ -395,7 +361,8 @@ namespace NFC.Platform.Tests.Services
             };
 
             _mapper.Map<EmployeeDetailsDto>(employee).Returns(new EmployeeDetailsDto { JobTitle = "New Title" });
-            _mapper.Map(request, employee).Returns(x => {
+            _mapper.Map(request, employee).Returns(x =>
+            {
                 employee.FullName = request.FullName ?? employee.FullName;
                 employee.JobTitle = request.JobTitle ?? string.Empty;
                 employee.Department = request.Department ?? string.Empty;
@@ -404,10 +371,8 @@ namespace NFC.Platform.Tests.Services
             });
             _messageService.Get("RecordUpdated").Returns("Updated successfully.");
 
-            // Act
             var result = await _sut.UpdateEmployeeJobDetailsAsync(id, request);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal("New Name", employee.FullName);
             Assert.Equal("New Title", employee.JobTitle);
@@ -418,14 +383,11 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task SoftDeleteEmployeeAsync_ReturnsNotFound_WhenEmployeeDoesNotExist()
         {
-            // Arrange
             _employeeRepo.GetByIdAsync(Arg.Any<Guid>()).Returns((Employee)null!);
             _messageService.Get("RecordNotFound").Returns("Record not found.");
 
-            // Act
             var result = await _sut.SoftDeleteEmployeeAsync(Guid.NewGuid());
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(404, result.StatusCode);
         }
@@ -433,16 +395,13 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task SoftDeleteEmployeeAsync_RemovesEmployeeRecord_WhenValid()
         {
-            // Arrange
             var id = Guid.NewGuid();
             var employee = new Employee { Id = id };
             _employeeRepo.GetByIdAsync(id).Returns(employee);
             _messageService.Get("RecordDeleted").Returns("Record deleted.");
 
-            // Act
             var result = await _sut.SoftDeleteEmployeeAsync(id);
 
-            // Assert
             Assert.True(result.IsSuccess);
             _employeeRepo.Received(1).Remove(employee);
             await _unitOfWork.Received(1).SaveChangesAsync();
@@ -452,20 +411,19 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task GetPagedEmployeesAsync_FiltersByPhoneAndSubdomain()
         {
-            // Arrange
-            var emp1 = new Employee 
-            { 
-                Id = Guid.NewGuid(), 
-                FullName = "Ahmed Soliman", 
-                Email = "ahmed@test.com", 
-                UserProfile = new UserProfile { Phone = "+96590001111", Subdomain = "ahmed-soliman" } 
+            var emp1 = new Employee
+            {
+                Id = Guid.NewGuid(),
+                FullName = "Ahmed Soliman",
+                Email = "ahmed@test.com",
+                UserProfile = new UserProfile { Phone = "+96590001111", Subdomain = "ahmed-soliman" }
             };
-            var emp2 = new Employee 
-            { 
-                Id = Guid.NewGuid(), 
-                FullName = "Mona Ali", 
-                Email = "mona@test.com", 
-                UserProfile = new UserProfile { Phone = "+96590002222", Subdomain = "mona-ali" } 
+            var emp2 = new Employee
+            {
+                Id = Guid.NewGuid(),
+                FullName = "Mona Ali",
+                Email = "mona@test.com",
+                UserProfile = new UserProfile { Phone = "+96590002222", Subdomain = "mona-ali" }
             };
 
             var queryable = new List<Employee> { emp1, emp2 }.AsQueryable().BuildMock();
@@ -474,10 +432,8 @@ namespace NFC.Platform.Tests.Services
 
             var request = new PaginationRequest { PageNumber = 1, PageSize = 10 };
 
-            // Act
             var result = await _sut.GetPagedEmployeesAsync(request, "90001111");
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.NotNull(result.Data);
             Assert.Equal(1, result.Data.TotalCount);
@@ -487,7 +443,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task GetPagedEmployeesAsync_HandlesNullUserProfileAndJobTitle_WithoutCrashing()
         {
-            // Arrange — Employee with null UserProfile, JobTitle, Department
             var empWithNulls = new Employee
             {
                 Id = Guid.NewGuid(),
@@ -504,10 +459,8 @@ namespace NFC.Platform.Tests.Services
 
             var request = new PaginationRequest { PageNumber = 1, PageSize = 10 };
 
-            // Act — Search for non-matching term
             var result = await _sut.GetPagedEmployeesAsync(request, "NonExistentSearchTerm");
 
-            // Assert — Search handled cleanly with 0 matches
             Assert.True(result.IsSuccess);
             Assert.Equal(0, result.Data!.TotalCount);
         }
@@ -515,7 +468,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task GetPagedEmployeesAsync_WhenSearchNullOrEmpty_ReturnsAllEmployees()
         {
-            // Arrange
             var emp1 = new Employee { Id = Guid.NewGuid(), FullName = "Emp 1", Email = "emp1@test.com" };
             var emp2 = new Employee { Id = Guid.NewGuid(), FullName = "Emp 2", Email = "emp2@test.com" };
 
@@ -525,11 +477,9 @@ namespace NFC.Platform.Tests.Services
 
             var request = new PaginationRequest { PageNumber = 1, PageSize = 10 };
 
-            // Act
             var resultWithNull = await _sut.GetPagedEmployeesAsync(request, null);
             var resultWithSpaces = await _sut.GetPagedEmployeesAsync(request, "   ");
 
-            // Assert
             Assert.True(resultWithNull.IsSuccess);
             Assert.Equal(2, resultWithNull.Data!.TotalCount);
             Assert.True(resultWithSpaces.IsSuccess);

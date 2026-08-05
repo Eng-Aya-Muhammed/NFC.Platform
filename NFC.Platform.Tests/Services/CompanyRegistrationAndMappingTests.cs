@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using AutoMapper;
 using Hangfire;
 using MockQueryable.NSubstitute;
-using NSubstitute;
 using NFC.Platform.Application.DTOs.Auth;
 using NFC.Platform.Application.DTOs.Company;
 using NFC.Platform.Application.Interfaces;
@@ -17,6 +16,7 @@ using NFC.Platform.BuildingBlocks.Common;
 using NFC.Platform.BuildingBlocks.Localization;
 using NFC.Platform.Domain.Entities;
 using NFC.Platform.Domain.Enums;
+using NSubstitute;
 using Xunit;
 
 namespace NFC.Platform.Tests.Services
@@ -38,7 +38,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public void AutoMapper_Maps_RegisterRequest_To_Company_With_All_Figma_Fields()
         {
-            // Arrange
             var registerRequest = new RegisterRequest
             {
                 AccountType = AccountType.CompanyAdmin,
@@ -51,10 +50,8 @@ namespace NFC.Platform.Tests.Services
                 Phone = "+96512345678"
             };
 
-            // Act
             var company = _mapper.Map<Company>(registerRequest);
 
-            // Assert
             Assert.NotNull(company);
             Assert.Equal("OnPoint General Trading Co.", company.Name);
             Assert.Equal("Kuwait City, Al-Hamra Tower", company.Address);
@@ -68,7 +65,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public void AutoMapper_Maps_UpdateCompanyProfileRequest_To_Company_Without_Data_Loss()
         {
-            // Arrange
             var existingCompany = new Company
             {
                 Name = "Old Name",
@@ -87,10 +83,8 @@ namespace NFC.Platform.Tests.Services
                 CompanySize = CompanySize.Large
             };
 
-            // Act
             _mapper.Map(updateRequest, existingCompany);
 
-            // Assert
             Assert.Equal("Updated OnPoint Co.", existingCompany.Name);
             Assert.Equal("Software Engineering", existingCompany.Activity);
             Assert.Equal("Software Engineering", existingCompany.IndustryType);
@@ -103,7 +97,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public void AutoMapper_Maps_Company_To_CompanyProfileDto_With_Figma_Aliases()
         {
-            // Arrange
             var company = new Company
             {
                 Id = Guid.NewGuid(),
@@ -119,10 +112,8 @@ namespace NFC.Platform.Tests.Services
                 }
             };
 
-            // Act
             var dto = _mapper.Map<CompanyProfileDto>(company);
 
-            // Assert
             Assert.NotNull(dto);
             Assert.Equal("OnPoint Co.", dto.Name);
             Assert.Equal("Fintech", dto.Activity);
@@ -139,7 +130,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task AuthService_RegisterAsync_CreatesCompany_With_FigmaFields_And_MapsSuccessfully()
         {
-            // Arrange
             var unitOfWork = Substitute.For<IUnitOfWork>();
             var tokenService = Substitute.For<ITokenService>();
             var messageService = Substitute.For<IMessageService>();
@@ -186,10 +176,8 @@ namespace NFC.Platform.Tests.Services
                 Phone = "+96590001111"
             };
 
-            // Act
             var result = await authService.RegisterAsync(registerRequest);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.True(result.Data);
 
@@ -211,7 +199,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task CompanyService_UpdateCompanyProfileAsync_Updates_All_Figma_Fields_And_AdminUser()
         {
-            // Arrange
             var unitOfWork = Substitute.For<IUnitOfWork>();
             var messageService = Substitute.For<IMessageService>();
             var currentTenant = Substitute.For<ICurrentTenant>();
@@ -262,10 +249,8 @@ namespace NFC.Platform.Tests.Services
                 Phone = "+96599998888"
             };
 
-            // Act
             var result = await companyService.UpdateCompanyProfileAsync(updateRequest);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.NotNull(result.Data);
             Assert.Equal("New Figma Company Name", result.Data.Name);

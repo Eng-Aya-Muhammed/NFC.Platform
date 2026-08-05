@@ -17,7 +17,6 @@ namespace NFC.Platform.Domain.Entities
         public string? Bio { get; set; }
         public string? WebsiteUrl { get; set; }
 
-        // Aliases for UI DTO consistency
         public string? IndustryType { get => Activity; set => Activity = value ?? string.Empty; }
         public string? CommercialRegistrationNumber { get => CommercialRegistry; set => CommercialRegistry = value ?? string.Empty; }
         public bool IsVip { get; set; } = false;
@@ -29,12 +28,7 @@ namespace NFC.Platform.Domain.Entities
         public Guid AdminUserId { get; set; }
         public User AdminUser { get; set; } = null!;
 
-        //  Digital profile branding 
 
-        /// <summary>
-        /// FK to the CardTemplate that defines the digital profile layout for all company employees.
-        /// Set automatically when a custom TemplateRequest is completed, or manually via PATCH /api/company/branding.
-        /// </summary>
         public Guid? ProfileTemplateId { get; set; }
         public CardTemplate? ProfileTemplate { get; set; }
 

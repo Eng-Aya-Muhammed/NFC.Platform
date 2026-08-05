@@ -12,7 +12,6 @@ namespace NFC.Platform.Tests.Services
         private static string GetLocalizationFolderPath()
         {
             var baseDir = AppContext.BaseDirectory;
-            // Traverse up to find NFC.Platform solution root directory
             var current = new DirectoryInfo(baseDir);
             while (current != null && !File.Exists(Path.Combine(current.FullName, "NFC.Platform.sln")))
             {

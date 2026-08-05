@@ -11,9 +11,6 @@ using NFC.Platform.Domain.Entities;
 
 namespace NFC.Platform.Application.Services
 {
-    /// <summary>
-    /// Background service to scan, deactivate past-due tenant subscriptions, and send expiration notifications.
-    /// </summary>
     public class SubscriptionExpiryService(
         IUnitOfWork unitOfWork,
         IMessageService messageService,
@@ -27,7 +24,6 @@ namespace NFC.Platform.Application.Services
         {
             var subRepo = _unitOfWork.Repository<UserSubscription>();
 
-            // Query all past-due active subscriptions across tenants (ignoring tenant filters for background job execution)
             var expiredSubs = await subRepo.GetQueryable()
                 .IgnoreQueryFilters()
                 .Include(s => s.SubscriptionPlan)
@@ -49,7 +45,6 @@ namespace NFC.Platform.Application.Services
             {
                 sub.IsActive = false;
 
-                // Identify recipient to notify (Company Admin or Individual User)
                 var recipient = sub.Tenant?.Company?.AdminUser ?? sub.User;
                 if (recipient != null && !string.IsNullOrWhiteSpace(recipient.Email))
                 {

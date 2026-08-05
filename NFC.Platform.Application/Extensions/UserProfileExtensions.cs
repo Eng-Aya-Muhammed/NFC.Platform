@@ -11,9 +11,6 @@ namespace NFC.Platform.Application.Extensions
     {
         private static readonly string[] LineSeparators = ["\r\n", "\n"];
 
-        /// <summary>
-        /// Updates profile links using a collection of CustomLinkInput.
-        /// </summary>
         public static void UpdateCustomLinks(this UserProfile profile, IEnumerable<CustomLinkInput> links)
         {
             if (profile == null)
@@ -23,10 +20,8 @@ namespace NFC.Platform.Application.Extensions
                 .Where(l => !string.IsNullOrWhiteSpace(l.Title) && !string.IsNullOrWhiteSpace(l.Url))
                 .ToList();
 
-            // 1. Remove all old links
             profile.CustomLinks.Clear();
 
-            // 2. Add active links in order
             var displayOrder = 1;
             foreach (var link in activeLinks)
             {
@@ -42,9 +37,6 @@ namespace NFC.Platform.Application.Extensions
             }
         }
 
-        /// <summary>
-        /// Updates profile links using a collection of URLs (used by B2C profile synchronization).
-        /// </summary>
         public static void UpdateCustomLinks(this UserProfile profile, IEnumerable<string> links)
         {
             if (profile == null)
@@ -61,7 +53,6 @@ namespace NFC.Platform.Application.Extensions
             var existingLinksLookup = new Dictionary<string, ProfileLink>(StringComparer.OrdinalIgnoreCase);
             var obsoleteLinks = new List<ProfileLink>();
 
-            // 1. Separate existing links vs obsolete
             foreach (var link in profile.CustomLinks)
             {
                 if (newUrlsSet.Contains(link.Url))
@@ -74,13 +65,11 @@ namespace NFC.Platform.Application.Extensions
                 }
             }
 
-            // 2. Remove obsolete links
             foreach (var obsolete in obsoleteLinks)
             {
                 profile.CustomLinks.Remove(obsolete);
             }
 
-            // 3. Add or update active links in order
             var displayOrder = 1;
             foreach (var url in activeLinks)
             {
@@ -93,7 +82,7 @@ namespace NFC.Platform.Application.Extensions
                     profile.CustomLinks.Add(new ProfileLink
                     {
                         Id = Guid.Empty,
-                        Title = url, // By default we just use URL as title in B2C sync
+                        Title = url,
                         Url = url,
                         DisplayOrder = displayOrder++,
                         TenantId = profile.TenantId,

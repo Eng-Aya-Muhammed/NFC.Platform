@@ -32,7 +32,7 @@ namespace NFC.Platform.Tests.Services
             _currentTenant.UserId.Returns(Guid.NewGuid());
             _currentTenant.TenantId.Returns(Guid.NewGuid());
             _excelParser = Substitute.For<IExcelParser>();
-            
+
             _otpSettingsOptions = Substitute.For<IOptions<OtpSettings>>();
             _otpSettingsOptions.Value.Returns(new OtpSettings { CooldownSeconds = 60, MaxResendAttempts = 5 });
 
@@ -41,7 +41,7 @@ namespace NFC.Platform.Tests.Services
 
             _orderItemRepo = Substitute.For<IGenericRepository<CardOrderItem>>();
             _orderItemRepo.GetQueryable().Returns(new List<CardOrderItem>().AsQueryable().BuildMock());
-            
+
             _jobRepo = Substitute.For<IGenericRepository<EmployeeImportJob>>();
             _userProfileRepo = Substitute.For<IGenericRepository<UserProfile>>();
 
@@ -79,21 +79,17 @@ namespace NFC.Platform.Tests.Services
             _sut = new CardOrderService(_unitOfWork, _mapper, _messageService, _currentTenant, validator, updateValidator, _backgroundJobClient, _employeeService, _otpSettingsOptions);
         }
 
-        //  GetByIdAsync 
 
         [Fact]
         public async Task GetByIdAsync_ReturnsNotFound_WhenOrderDoesNotExist()
         {
-            // Arrange
             var id = Guid.NewGuid();
             var emptyQueryable = new List<CardOrder>().AsQueryable().BuildMock();
             _orderRepo.GetQueryable().Returns(emptyQueryable);
             _messageService.Get("RecordNotFound").Returns("Record not found.");
 
-            // Act
             var result = await _sut.GetOrderByIdAsync(id);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(404, result.StatusCode);
         }
@@ -101,7 +97,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task GetByIdAsync_ReturnsSuccess_WhenOrderExists()
         {
-            // Arrange
             var id = Guid.NewGuid();
             var order = new CardOrder { Id = id, Items = [] };
             var queryable = new List<CardOrder> { order }.AsQueryable().BuildMock();
@@ -109,10 +104,8 @@ namespace NFC.Platform.Tests.Services
             var dto = new CardOrderDto { Id = id };
 
 
-            // Act
             var result = await _sut.GetOrderByIdAsync(id);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(200, result.StatusCode);
             Assert.Equal(id, result.Data!.Id);
@@ -121,7 +114,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task GetPagedAsync_ReturnsSuccess_WithPagedOrders()
         {
-            // Arrange
             var orders = new List<CardOrder>
             {
                 new CardOrder { Id = Guid.NewGuid(), CreatedAt = DateTime.UtcNow.AddMinutes(-5), Items = [] },
@@ -132,10 +124,8 @@ namespace NFC.Platform.Tests.Services
             var request = new PaginationRequest { PageNumber = 1, PageSize = 10 };
 
 
-            // Act
             var result = await _sut.GetPagedOrdersAsync(request, null);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.NotNull(result.Data);
             Assert.Equal(2, result.Data.TotalCount);
@@ -144,7 +134,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task GetPagedAsync_FiltersByStatus_WhenStatusFilterPassed()
         {
-            // Arrange
             var orderId = Guid.NewGuid();
             var orders = new List<CardOrder>
             {
@@ -156,28 +145,22 @@ namespace NFC.Platform.Tests.Services
             var request = new PaginationRequest { PageNumber = 1, PageSize = 10 };
 
 
-            // Act
             var result = await _sut.GetPagedOrdersAsync(request, "Encoding");
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.NotNull(result.Data);
             Assert.Equal(1, result.Data.TotalCount);
         }
 
-        //  CreateAsync 
 
         [Fact]
         public async Task CreateAsync_ReturnsUnauthorized_WhenUserNotAuthenticated()
         {
-            // Arrange
             _currentTenant.UserId.Returns((Guid?)null);
             var request = new CreateCardOrderRequest { CardDesignId = Guid.NewGuid(), Quantity = 1 };
 
-            // Act
             var result = await _sut.CreateOrderAsync(request);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(401, result.StatusCode);
         }
@@ -185,7 +168,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task CreateAsync_CalculatesPricing_WhenCardTypeIsProvided()
         {
-            // Arrange
             var userId = Guid.NewGuid();
             _currentTenant.UserId.Returns(userId);
             _currentTenant.TenantId.Returns(Guid.NewGuid());
@@ -220,10 +202,8 @@ namespace NFC.Platform.Tests.Services
             CardOrder? addedOrder = null;
             await _orderRepo.AddAsync(Arg.Do<CardOrder>(o => addedOrder = o));
 
-            // Act
             var result = await _sut.CreateOrderAsync(request);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(200, result.StatusCode);
             Assert.NotNull(addedOrder);
@@ -234,7 +214,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task CreateAsync_Returns422_WhenCompanyOrderMissingAssignmentScope()
         {
-            // Arrange
             var userId = Guid.NewGuid();
             var tenantId = Guid.NewGuid();
             var designId = Guid.NewGuid();
@@ -250,37 +229,31 @@ namespace NFC.Platform.Tests.Services
             userRepo.GetQueryable().Returns(new List<User> { new User { Id = userId, AccountType = AccountType.CompanyAdmin } }.AsQueryable().BuildMock());
             _unitOfWork.Repository<User>().Returns(userRepo);
 
-            var request = new CreateCardOrderRequest 
-            { 
+            var request = new CreateCardOrderRequest
+            {
                 CardDesignId = designId,
                 AssignmentScope = null
             };
 
-            // Act
             var result = await _sut.CreateOrderAsync(request);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(422, result.StatusCode);
         }
 
 
-        //  CancelOrderAsync 
 
         [Fact]
         public async Task CancelOrderAsync_ReturnsNotFound_WhenOrderDoesNotExist()
         {
-            // Arrange
             var id = Guid.NewGuid();
             var tenantId = Guid.NewGuid();
             _currentTenant.TenantId.Returns((Guid?)tenantId);
             _orderRepo.GetByIdAsync(id).Returns((CardOrder?)null);
             _messageService.Get("RecordNotFound").Returns("Record not found.");
 
-            // Act
             var result = await _sut.CancelOrderAsync(id);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(404, result.StatusCode);
         }
@@ -288,7 +261,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task CancelOrderAsync_ReturnsBadRequest_WhenStatusIsNotPendingReview()
         {
-            // Arrange
             var id = Guid.NewGuid();
             var tenantId = Guid.NewGuid();
             _currentTenant.TenantId.Returns((Guid?)tenantId);
@@ -296,10 +268,8 @@ namespace NFC.Platform.Tests.Services
             _orderRepo.GetByIdAsync(id).Returns(order);
             _messageService.Get("OrderCannotBeCancelled").Returns("Order cannot be cancelled.");
 
-            // Act
             var result = await _sut.CancelOrderAsync(id);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(400, result.StatusCode);
         }
@@ -307,29 +277,24 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task CancelOrderAsync_SuccessfullyCancelsOrder_WhenStatusIsPendingReview()
         {
-            // Arrange
             var id = Guid.NewGuid();
             var tenantId = Guid.NewGuid();
             _currentTenant.TenantId.Returns((Guid?)tenantId);
             var order = new CardOrder { Id = id, TenantId = tenantId, Status = OrderStatus.PendingReview };
             _orderRepo.GetByIdAsync(id).Returns(order);
 
-            // Act
             var result = await _sut.CancelOrderAsync(id);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(200, result.StatusCode);
             Assert.Equal(OrderStatus.Cancelled, order.Status);
             await _unitOfWork.Received(1).SaveChangesAsync();
         }
 
-        // UpdateOrderAsync
 
         [Fact]
         public async Task UpdateOrderAsync_ReturnsNotFound_WhenOrderDoesNotExist()
         {
-            // Arrange
             var id = Guid.NewGuid();
             var tenantId = Guid.NewGuid();
             _currentTenant.TenantId.Returns((Guid?)tenantId);
@@ -338,10 +303,8 @@ namespace NFC.Platform.Tests.Services
 
             var request = new UpdateCardOrderRequest { Notes = "New Notes" };
 
-            // Act
             var result = await _sut.UpdateOrderAsync(id, request);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(404, result.StatusCode);
         }
@@ -349,7 +312,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task UpdateOrderAsync_ReturnsBadRequest_WhenStatusIsNotPendingReview()
         {
-            // Arrange
             var id = Guid.NewGuid();
             var tenantId = Guid.NewGuid();
             _currentTenant.TenantId.Returns((Guid?)tenantId);
@@ -359,10 +321,8 @@ namespace NFC.Platform.Tests.Services
 
             var request = new UpdateCardOrderRequest { Notes = "New Notes" };
 
-            // Act
             var result = await _sut.UpdateOrderAsync(id, request);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(400, result.StatusCode);
             Assert.Contains("updated", result.Message);
@@ -371,12 +331,12 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task UpdateOrderAsync_UpdatesFields_WithoutRecalculatingPricing_WhenQuantityAndTypeUnchanged()
         {
-            // Arrange
             var id = Guid.NewGuid();
             var tenantId = Guid.NewGuid();
             _currentTenant.TenantId.Returns((Guid?)tenantId);
-            var order = new CardOrder { 
-                Id = id, 
+            var order = new CardOrder
+            {
+                Id = id,
                 TenantId = tenantId,
                 Status = OrderStatus.PendingReview,
                 Quantity = 5,
@@ -387,14 +347,12 @@ namespace NFC.Platform.Tests.Services
 
             var request = new UpdateCardOrderRequest { Notes = "New Notes" };
 
-            // Act
             var result = await _sut.UpdateOrderAsync(id, request);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal("New Notes", order.Notes);
             Assert.Equal(5, order.Quantity);
-            Assert.Equal(22.5m, order.TotalPrice); // Unchanged
+            Assert.Equal(22.5m, order.TotalPrice);
             await _unitOfWork.Received(1).SaveChangesAsync();
             await _unitOfWork.Received(1).BeginTransactionAsync();
             await _unitOfWork.Received(1).CommitTransactionAsync();
@@ -403,7 +361,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task UpdateOrderAsync_ThrowsEmployeeCountMismatch_WhenQuantityBypassed()
         {
-            // Arrange
             var id = Guid.NewGuid();
             var tenantId = Guid.NewGuid();
             _currentTenant.TenantId.Returns((Guid?)tenantId);
@@ -427,7 +384,7 @@ namespace NFC.Platform.Tests.Services
             var request = new UpdateCardOrderRequest
             {
                 AssignmentScope = AssignmentScope.SpecificEmployees,
-                EmployeeIds = new List<Guid> { Guid.NewGuid(), Guid.NewGuid() } // Only 2 employees provided but Quantity is 10
+                EmployeeIds = new List<Guid> { Guid.NewGuid(), Guid.NewGuid() }
             };
 
             var empRepo = Substitute.For<IGenericRepository<Employee>>();
@@ -437,10 +394,8 @@ namespace NFC.Platform.Tests.Services
             var queryable = new List<CardOrder> { order }.AsQueryable().BuildMock();
             _orderRepo.GetQueryable().Returns(queryable);
 
-            // Act
             var result = await _sut.UpdateOrderAsync(id, request);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(422, result.StatusCode);
             await _unitOfWork.DidNotReceive().SaveChangesAsync();
@@ -469,13 +424,10 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task CreateReorderAsync_ReturnsUnauthorized_WhenUserIdIsNull()
         {
-            // Arrange
             _currentTenant.UserId.Returns((Guid?)null);
 
-            // Act
             var result = await _sut.CreateReorderAsync(Guid.NewGuid(), new ReorderRequest { AssignmentScope = AssignmentScope.Individual });
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(401, result.StatusCode);
         }
@@ -483,14 +435,11 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task CreateReorderAsync_ReturnsNotFound_WhenParentOrderDoesNotExist()
         {
-            // Arrange
             _currentTenant.UserId.Returns(Guid.NewGuid());
             _orderRepo.GetQueryable().Returns(new List<CardOrder>().AsQueryable().BuildMock());
 
-            // Act
             var result = await _sut.CreateReorderAsync(Guid.NewGuid(), new ReorderRequest { AssignmentScope = AssignmentScope.Individual });
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(404, result.StatusCode);
         }
@@ -498,7 +447,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task CreateReorderAsync_Returns422_WhenEmployeeCountMismatch()
         {
-            // Arrange
             var parentId = Guid.NewGuid();
             _currentTenant.UserId.Returns(Guid.NewGuid());
             var parentOrder = new CardOrder { Id = parentId };
@@ -514,10 +462,8 @@ namespace NFC.Platform.Tests.Services
                 EmployeeIds = new List<Guid> { Guid.NewGuid() }
             };
 
-            // Act
             var result = await _sut.CreateReorderAsync(parentId, request);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(422, result.StatusCode);
         }
@@ -527,7 +473,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task CreateReorderAsync_ReturnsSuccess_WhenReorderIsValid()
         {
-            // Arrange
             var parentId = Guid.NewGuid();
             _currentTenant.UserId.Returns(Guid.NewGuid());
             var parentOrder = new CardOrder { Id = parentId };
@@ -535,10 +480,8 @@ namespace NFC.Platform.Tests.Services
 
             var request = new ReorderRequest { AssignmentScope = AssignmentScope.Individual };
 
-            // Act
             var result = await _sut.CreateReorderAsync(parentId, request);
 
-            // Assert
             Assert.True(result.IsSuccess);
             await _orderRepo.Received(1).AddAsync(Arg.Is<CardOrder>(o => o.ParentOrderId == parentId));
             await _unitOfWork.Received(1).SaveChangesAsync();
@@ -547,7 +490,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task CreateReorderAsync_ReturnsSuccess_WithItems_WhenAssignmentScopeIsSpecificEmployees()
         {
-            // Arrange
             var parentId = Guid.NewGuid();
             var userId = Guid.NewGuid();
             _currentTenant.UserId.Returns(userId);
@@ -574,10 +516,8 @@ namespace NFC.Platform.Tests.Services
             employeeRepo.GetQueryable().Returns(mockEmployees.AsQueryable().BuildMock());
             _unitOfWork.Repository<Employee>().Returns(employeeRepo);
 
-            // Act
             var result = await _sut.CreateReorderAsync(parentId, request);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(200, result.StatusCode);
             await _orderRepo.Received(1).AddAsync(Arg.Is<CardOrder>(o =>
@@ -591,7 +531,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task CreateReorderAsync_Returns422_WhenSpecificEmployeeNotFound()
         {
-            // Arrange
             var parentId = Guid.NewGuid();
             _currentTenant.UserId.Returns(Guid.NewGuid());
             var parentOrder = new CardOrder { Id = parentId };
@@ -608,10 +547,8 @@ namespace NFC.Platform.Tests.Services
             employeeRepo.GetQueryable().Returns(new List<Employee>().AsQueryable().BuildMock());
             _unitOfWork.Repository<Employee>().Returns(employeeRepo);
 
-            // Act
             var result = await _sut.CreateReorderAsync(parentId, request);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(422, result.StatusCode);
             Assert.Contains("EmployeesNotFound", result.Message);
@@ -620,7 +557,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task CreateReorderAsync_Returns422_WhenSpecificEmployeeMissingProfile()
         {
-            // Arrange
             var parentId = Guid.NewGuid();
             _currentTenant.UserId.Returns(Guid.NewGuid());
             var parentOrder = new CardOrder { Id = parentId };
@@ -642,10 +578,8 @@ namespace NFC.Platform.Tests.Services
             employeeRepo.GetQueryable().Returns(employees.AsQueryable().BuildMock());
             _unitOfWork.Repository<Employee>().Returns(employeeRepo);
 
-            // Act
             var result = await _sut.CreateReorderAsync(parentId, request);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(422, result.StatusCode);
             Assert.Contains("EmployeesMissingProfile", result.Message);
@@ -654,7 +588,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task CreateReorderAsync_ReturnsSuccess_WithItems_WhenAssignmentScopeIsAllEmployees()
         {
-            // Arrange
             var parentId = Guid.NewGuid();
             _currentTenant.UserId.Returns(Guid.NewGuid());
             var parentOrder = new CardOrder { Id = parentId };
@@ -677,10 +610,8 @@ namespace NFC.Platform.Tests.Services
             employeeRepo.GetQueryable().Returns(employees.AsQueryable().BuildMock());
             _unitOfWork.Repository<Employee>().Returns(employeeRepo);
 
-            // Act
             var result = await _sut.CreateReorderAsync(parentId, request);
 
-            // Assert
             Assert.True(result.IsSuccess);
             await _orderRepo.Received(1).AddAsync(Arg.Is<CardOrder>(o =>
                 o.ParentOrderId == parentId &&
@@ -703,7 +634,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task CreateReorderAsync_RegressionTest_UsesSharedHelperToBuildItems()
         {
-            // Arrange
             var parentId = Guid.NewGuid();
             _currentTenant.UserId.Returns(Guid.NewGuid());
             var parentOrder = new CardOrder { Id = parentId };
@@ -727,31 +657,25 @@ namespace NFC.Platform.Tests.Services
             CardOrder? addedReorder = null;
             await _orderRepo.AddAsync(Arg.Do<CardOrder>(o => addedReorder = o));
 
-            // Act
             var result = await _sut.CreateReorderAsync(parentId, request);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(200, result.StatusCode);
             Assert.NotNull(addedReorder);
             Assert.Single(addedReorder.Items);
         }
 
-        //  OTP Resend Unit Tests 
 
         [Fact]
         public async Task ResendDeliveryOtpAsync_ReturnsNotFound_WhenOrderDoesNotExist()
         {
-            // Arrange
             var tenantId = Guid.NewGuid();
             _currentTenant.TenantId.Returns(tenantId);
             _orderRepo.GetQueryable().Returns(new List<CardOrder>().AsQueryable().BuildMock());
             _messageService.Get("RecordNotFound").Returns("Record not found.");
 
-            // Act
             var result = await _sut.ResendOrderOtpAsync(Guid.NewGuid());
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(404, result.StatusCode);
         }
@@ -759,24 +683,21 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task ResendDeliveryOtpAsync_ReturnsNotFound_WhenOrderBelongsToDifferentTenant()
         {
-            // Arrange — Security Tenant Isolation check
             var currentTenantId = Guid.NewGuid();
             var differentTenantId = Guid.NewGuid();
             _currentTenant.TenantId.Returns(currentTenantId);
 
             var order = new CardOrder
             {
-                Id       = Guid.NewGuid(),
-                TenantId = differentTenantId, // Different tenant
-                Status   = OrderStatus.ReadyForDelivery
+                Id = Guid.NewGuid(),
+                TenantId = differentTenantId,
+                Status = OrderStatus.ReadyForDelivery
             };
             _orderRepo.GetQueryable().Returns(new List<CardOrder> { order }.AsQueryable().BuildMock());
             _messageService.Get("RecordNotFound").Returns("Record not found.");
 
-            // Act
             var result = await _sut.ResendOrderOtpAsync(order.Id);
 
-            // Assert — Must return 404 Not Found to prevent cross-tenant enumeration
             Assert.False(result.IsSuccess);
             Assert.Equal(404, result.StatusCode);
         }
@@ -784,23 +705,20 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task ResendDeliveryOtpAsync_ReturnsFail_WhenOrderNotReadyForDelivery()
         {
-            // Arrange
             var tenantId = Guid.NewGuid();
             _currentTenant.TenantId.Returns(tenantId);
 
             var order = new CardOrder
             {
-                Id       = Guid.NewGuid(),
+                Id = Guid.NewGuid(),
                 TenantId = tenantId,
-                Status   = OrderStatus.InPrinting // Not ReadyForDelivery
+                Status = OrderStatus.InPrinting
             };
             _orderRepo.GetQueryable().Returns(new List<CardOrder> { order }.AsQueryable().BuildMock());
             _messageService.Get("OrderNotReadyForDelivery").Returns("Order not ready.");
 
-            // Act
             var result = await _sut.ResendOrderOtpAsync(order.Id);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(422, result.StatusCode);
         }
@@ -808,24 +726,21 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task ResendDeliveryOtpAsync_ReturnsFail_WhenCooldownActive()
         {
-            // Arrange
             var tenantId = Guid.NewGuid();
             _currentTenant.TenantId.Returns(tenantId);
 
             var order = new CardOrder
             {
-                Id                    = Guid.NewGuid(),
-                TenantId              = tenantId,
-                Status                = OrderStatus.ReadyForDelivery,
-                DeliveryOtpLastSentAt = DateTime.UtcNow.AddSeconds(-20) // Sent 20s ago (< 60s)
+                Id = Guid.NewGuid(),
+                TenantId = tenantId,
+                Status = OrderStatus.ReadyForDelivery,
+                DeliveryOtpLastSentAt = DateTime.UtcNow.AddSeconds(-20)
             };
             _orderRepo.GetQueryable().Returns(new List<CardOrder> { order }.AsQueryable().BuildMock());
             _messageService.Get("OtpCooldownActive").Returns("Please wait 60 seconds.");
 
-            // Act
             var result = await _sut.ResendOrderOtpAsync(order.Id);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(422, result.StatusCode);
         }
@@ -833,25 +748,22 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task ResendDeliveryOtpAsync_ReturnsFail_WhenResendLimitReached()
         {
-            // Arrange
             var tenantId = Guid.NewGuid();
             _currentTenant.TenantId.Returns(tenantId);
 
             var order = new CardOrder
             {
-                Id                    = Guid.NewGuid(),
-                TenantId              = tenantId,
-                Status                = OrderStatus.ReadyForDelivery,
+                Id = Guid.NewGuid(),
+                TenantId = tenantId,
+                Status = OrderStatus.ReadyForDelivery,
                 DeliveryOtpLastSentAt = DateTime.UtcNow.AddMinutes(-5),
-                DeliveryOtpResendCount = 5 // Max limit (5) reached
+                DeliveryOtpResendCount = 5
             };
             _orderRepo.GetQueryable().Returns(new List<CardOrder> { order }.AsQueryable().BuildMock());
             _messageService.Get("OtpResendLimitReached").Returns("Limit reached.");
 
-            // Act
             var result = await _sut.ResendOrderOtpAsync(order.Id);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(422, result.StatusCode);
         }
@@ -859,7 +771,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task ResendDeliveryOtpAsync_Succeeds_GeneratesNewOtp_UpdatesState_AndEnqueuesJobs()
         {
-            // Arrange
             var tenantId = Guid.NewGuid();
             _currentTenant.TenantId.Returns(tenantId);
 
@@ -870,33 +781,30 @@ namespace NFC.Platform.Tests.Services
             };
             var order = new CardOrder
             {
-                Id                    = Guid.NewGuid(),
-                TenantId              = tenantId,
-                Status                = OrderStatus.ReadyForDelivery,
-                DeliveryOtpHash      = NFC.Platform.BuildingBlocks.Common.Helpers.OtpHasher.HashOtp("111111"),
+                Id = Guid.NewGuid(),
+                TenantId = tenantId,
+                Status = OrderStatus.ReadyForDelivery,
+                DeliveryOtpHash = NFC.Platform.BuildingBlocks.Common.Helpers.OtpHasher.HashOtp("111111"),
                 DeliveryOtpLastSentAt = DateTime.UtcNow.AddMinutes(-3),
                 DeliveryOtpResendCount = 1,
-                Tenant                = new Tenant { Company = null },
-                User                  = user
+                Tenant = new Tenant { Company = null },
+                User = user
             };
             _orderRepo.GetQueryable().Returns(new List<CardOrder> { order }.AsQueryable().BuildMock());
             _messageService.Get("OtpResent").Returns("OTP code has been resent successfully.");
             _messageService.Get("WhatsAppNewOtp", Arg.Any<object[]>()).Returns("New pickup code!");
 
-            // Act
             var result = await _sut.ResendOrderOtpAsync(order.Id);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal("OTP code has been resent successfully.", result.Message);
-            Assert.NotEqual(NFC.Platform.BuildingBlocks.Common.Helpers.OtpHasher.HashOtp("111111"), order.DeliveryOtpHash); // New OTP hash generated
+            Assert.NotEqual(NFC.Platform.BuildingBlocks.Common.Helpers.OtpHasher.HashOtp("111111"), order.DeliveryOtpHash);
             Assert.NotNull(order.DeliveryOtpHash);
-            Assert.Equal(2, order.DeliveryOtpResendCount); // Incremented
+            Assert.Equal(2, order.DeliveryOtpResendCount);
             Assert.NotNull(order.DeliveryOtpExpiresAt);
 
             await _unitOfWork.Received(1).SaveChangesAsync();
 
-            // Background jobs enqueued
             _backgroundJobClient.Received(1).Create(
                 Arg.Is<Hangfire.Common.Job>(j =>
                     j.Method.Name == nameof(IEmailService.SendOrderReadyOtpEmailAsync)),
@@ -910,7 +818,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task CreateDesignAsync_Returns400_WhenExcelParsingFails()
         {
-            // Arrange
             var userId = Guid.NewGuid();
             var tenantId = Guid.NewGuid();
             _currentTenant.UserId.Returns(userId);
@@ -952,22 +859,18 @@ namespace NFC.Platform.Tests.Services
                 ExcelDataUrl = "https://example.com/invalid-file.xlsx"
             };
 
-            // Act
             var result = await cardDesignService.CreateDesignAsync(request);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(400, result.StatusCode);
             Assert.Contains("FailedToParseExcel", result.Message);
-            
-            // Ensure no design was saved
+
             await _unitOfWork.DidNotReceive().SaveChangesAsync();
         }
 
         [Fact]
         public async Task GetPagedOrdersAsync_FiltersBySearch_MatchesItemEmployeeName()
         {
-            // Arrange
             var order1 = new CardOrder
             {
                 Id = Guid.NewGuid(),
@@ -986,10 +889,8 @@ namespace NFC.Platform.Tests.Services
 
             var request = new PaginationRequest { PageNumber = 1, PageSize = 10 };
 
-            // Act
             var result = await _sut.GetPagedOrdersAsync(request, null, "Ziad");
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.NotNull(result.Data);
             Assert.Equal(1, result.Data.TotalCount);
@@ -999,7 +900,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task GetPagedOrdersAsync_HandlesNullNavigationProperties_WithoutCrashing()
         {
-            // Arrange — Order with null TrackingNumber, null Notes, null CardDesign, null Item Email/Phone
             var orderWithNulls = new CardOrder
             {
                 Id = Guid.NewGuid(),
@@ -1014,10 +914,8 @@ namespace NFC.Platform.Tests.Services
 
             var request = new PaginationRequest { PageNumber = 1, PageSize = 10 };
 
-            // Act — Search for term that doesn't match
             var result = await _sut.GetPagedOrdersAsync(request, null, "NonExistentSearchTerm");
 
-            // Assert — Must return 0 count without throwing NullReferenceException
             Assert.True(result.IsSuccess);
             Assert.NotNull(result.Data);
             Assert.Equal(0, result.Data.TotalCount);
@@ -1026,7 +924,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task GetPagedOrdersAsync_WhenSearchNullOrEmpty_ReturnsAllRecords()
         {
-            // Arrange
             var o1 = new CardOrder { Id = Guid.NewGuid() };
             var o2 = new CardOrder { Id = Guid.NewGuid() };
 
@@ -1035,11 +932,9 @@ namespace NFC.Platform.Tests.Services
 
             var request = new PaginationRequest { PageNumber = 1, PageSize = 10 };
 
-            // Act
             var resultWithNull = await _sut.GetPagedOrdersAsync(request, null, null);
             var resultWithWhitespace = await _sut.GetPagedOrdersAsync(request, null, "   ");
 
-            // Assert — Search ignored, returns all records
             Assert.True(resultWithNull.IsSuccess);
             Assert.Equal(2, resultWithNull.Data!.TotalCount);
             Assert.True(resultWithWhitespace.IsSuccess);

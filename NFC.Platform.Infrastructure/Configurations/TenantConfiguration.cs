@@ -19,13 +19,11 @@ namespace NFC.Platform.Infrastructure.Configurations
                 .IsRequired()
                 .HasDefaultValue(true);
 
-            // One-to-One: Tenant <-> Company (Company has TenantId)
             builder.HasOne(t => t.Company)
                 .WithOne(c => c.Tenant)
                 .HasForeignKey<Company>(c => c.TenantId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // One-to-Many: Tenant -> Users
             builder.HasMany(t => t.Users)
                 .WithOne(u => u.Tenant)
                 .HasForeignKey(u => u.TenantId)

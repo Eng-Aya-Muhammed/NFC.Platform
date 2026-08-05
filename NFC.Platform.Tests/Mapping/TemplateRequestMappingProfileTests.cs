@@ -24,7 +24,6 @@ namespace NFC.Platform.Tests.Mapping
         [Fact]
         public void TemplateRequest_To_TemplateRequestDto_PopulatesFullNameEmailAndTenantName()
         {
-            // Arrange
             var tenantId = Guid.NewGuid();
             var userId = Guid.NewGuid();
 
@@ -44,10 +43,8 @@ namespace NFC.Platform.Tests.Mapping
                 }
             };
 
-            // Act
             var dto = _mapper.Map<TemplateRequestDto>(request);
 
-            // Assert
             Assert.NotNull(dto);
             Assert.Equal("Johnathan Doe", dto.RequestedByUsername);
             Assert.Equal("john@acme.com", dto.RequestedByEmail);
@@ -59,7 +56,6 @@ namespace NFC.Platform.Tests.Mapping
         [Fact]
         public void TemplateRequest_To_TemplateRequestDto_FallsBackToUsername_WhenFullNameEmpty()
         {
-            // Arrange
             var request = new TemplateRequest
             {
                 Id = Guid.NewGuid(),
@@ -72,10 +68,8 @@ namespace NFC.Platform.Tests.Mapping
                 }
             };
 
-            // Act
             var dto = _mapper.Map<TemplateRequestDto>(request);
 
-            // Assert
             Assert.Equal("fallback_user", dto.RequestedByUsername);
             Assert.Equal("user@test.com", dto.RequestedByEmail);
         }

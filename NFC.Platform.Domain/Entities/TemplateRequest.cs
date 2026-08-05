@@ -18,9 +18,6 @@ namespace NFC.Platform.Domain.Entities
 
         public TemplateRequestType RequestType { get; set; } = TemplateRequestType.ProfileTemplate;
 
-        /// <summary>
-        /// Filled when the design team delivers: the template produced for this request.
-        /// </summary>
         public Guid? ProducedTemplateId { get; set; }
         public CardTemplate? ProducedTemplate { get; set; }
     }

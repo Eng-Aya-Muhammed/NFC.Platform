@@ -29,7 +29,6 @@ public class CardPackageServiceTests
     [Fact]
     public async Task GetActiveCardPackagesAsync_ReturnsOnlyActivePackagesOrderedByCardCount()
     {
-        // Arrange
         var packages = new List<CardPackage>
         {
             new() { Id = Guid.NewGuid(), NumberOfCards = 10, Price = 100, IsActive = true },
@@ -39,10 +38,8 @@ public class CardPackageServiceTests
 
         _packageRepo.GetQueryable().Returns(packages.AsQueryable().BuildMock());
 
-        // Act
         var result = await _service.GetActiveCardPackagesAsync();
 
-        // Assert
         Assert.True(result.IsSuccess);
         Assert.Equal(2, result.Data!.Count);
         Assert.Equal(5, result.Data[0].NumberOfCards);
@@ -52,7 +49,6 @@ public class CardPackageServiceTests
     [Fact]
     public async Task GetAllAdminCardPackagesAsync_ReturnsPagedAdminDtos()
     {
-        // Arrange
         var packages = new List<CardPackage>
         {
             new() { Id = Guid.NewGuid(), NumberOfCards = 10, Price = 100, IsActive = true }
@@ -62,10 +58,8 @@ public class CardPackageServiceTests
 
         var paginationRequest = new PaginationRequest { PageNumber = 1, PageSize = 10 };
 
-        // Act
         var result = await _service.GetAllAdminCardPackagesAsync(paginationRequest);
 
-        // Assert
         Assert.True(result.IsSuccess);
         Assert.Equal(1, result.Data!.TotalCount);
         Assert.Single(result.Data.Items);
@@ -75,15 +69,12 @@ public class CardPackageServiceTests
     [Fact]
     public async Task GetByIdAsync_ReturnsSuccess_WhenPackageExists()
     {
-        // Arrange
         var id = Guid.NewGuid();
         var package = new CardPackage { Id = id, NumberOfCards = 10, Price = 100 };
         _packageRepo.GetByIdAsync(id).Returns(package);
 
-        // Act
         var result = await _service.GetByIdAsync(id);
 
-        // Assert
         Assert.True(result.IsSuccess);
         Assert.NotNull(result.Data);
         Assert.Equal(10, result.Data.NumberOfCards);
@@ -93,14 +84,11 @@ public class CardPackageServiceTests
     [Fact]
     public async Task GetByIdAsync_ReturnsNotFound_WhenPackageDoesNotExist()
     {
-        // Arrange
         var id = Guid.NewGuid();
         _packageRepo.GetByIdAsync(id).Returns((CardPackage?)null);
 
-        // Act
         var result = await _service.GetByIdAsync(id);
 
-        // Assert
         Assert.False(result.IsSuccess);
         Assert.Equal(404, result.StatusCode);
     }
@@ -108,14 +96,11 @@ public class CardPackageServiceTests
     [Fact]
     public async Task CreateAsync_ReturnsSuccess_WhenRequestIsValid()
     {
-        // Arrange
         _packageRepo.GetQueryable().Returns(new List<CardPackage>().AsQueryable().BuildMock());
         var request = new CreateCardPackageRequest { NumberOfCards = 15, Price = 120, IsActive = true };
 
-        // Act
         var result = await _service.CreateAsync(request);
 
-        // Assert
         Assert.True(result.IsSuccess);
         await _packageRepo.Received(1).AddAsync(Arg.Any<CardPackage>());
         await _unitOfWork.Received(1).SaveChangesAsync();
@@ -124,16 +109,13 @@ public class CardPackageServiceTests
     [Fact]
     public async Task CreateAsync_Fails_WhenNumberOfCardsAlreadyExists()
     {
-        // Arrange
         var existing = new List<CardPackage> { new() { Id = Guid.NewGuid(), NumberOfCards = 10, Price = 100 } };
         _packageRepo.GetQueryable().Returns(existing.AsQueryable().BuildMock());
 
         var request = new CreateCardPackageRequest { NumberOfCards = 10, Price = 150 };
 
-        // Act
         var result = await _service.CreateAsync(request);
 
-        // Assert
         Assert.False(result.IsSuccess);
         Assert.Equal(400, result.StatusCode);
         Assert.Equal("DuplicatePackageNumberOfCards", result.Message);
@@ -143,7 +125,6 @@ public class CardPackageServiceTests
     [Fact]
     public async Task UpdateAsync_ReturnsSuccess_WhenUpdateIsValid()
     {
-        // Arrange
         var id = Guid.NewGuid();
         var existing = new CardPackage { Id = id, NumberOfCards = 10, Price = 100 };
         _packageRepo.GetByIdAsync(id).Returns(existing);
@@ -151,10 +132,8 @@ public class CardPackageServiceTests
 
         var request = new UpdateCardPackageRequest { Price = 110 };
 
-        // Act
         var result = await _service.UpdateAsync(id, request);
 
-        // Assert
         Assert.True(result.IsSuccess);
         _packageRepo.Received(1).Update(existing);
         await _unitOfWork.Received(1).SaveChangesAsync();
@@ -163,16 +142,13 @@ public class CardPackageServiceTests
     [Fact]
     public async Task UpdateAsync_Fails_WhenPackageNotFound()
     {
-        // Arrange
         var id = Guid.NewGuid();
         _packageRepo.GetByIdAsync(id).Returns((CardPackage?)null);
 
         var request = new UpdateCardPackageRequest { Price = 120 };
 
-        // Act
         var result = await _service.UpdateAsync(id, request);
 
-        // Assert
         Assert.False(result.IsSuccess);
         Assert.Equal(404, result.StatusCode);
     }
@@ -180,7 +156,6 @@ public class CardPackageServiceTests
     [Fact]
     public async Task UpdateAsync_Fails_WhenDuplicateNumberOfCardsProvided()
     {
-        // Arrange
         var id = Guid.NewGuid();
         var existingPackage = new CardPackage { Id = id, NumberOfCards = 10, Price = 100 };
         var otherPackage = new CardPackage { Id = Guid.NewGuid(), NumberOfCards = 20, Price = 180 };
@@ -190,10 +165,8 @@ public class CardPackageServiceTests
 
         var request = new UpdateCardPackageRequest { NumberOfCards = 20 };
 
-        // Act
         var result = await _service.UpdateAsync(id, request);
 
-        // Assert
         Assert.False(result.IsSuccess);
         Assert.Equal(400, result.StatusCode);
         Assert.Equal("DuplicatePackageNumberOfCards", result.Message);
@@ -202,15 +175,12 @@ public class CardPackageServiceTests
     [Fact]
     public async Task DeleteAsync_ReturnsSuccess_WhenPackageExists()
     {
-        // Arrange
         var id = Guid.NewGuid();
         var existing = new CardPackage { Id = id, NumberOfCards = 10, Price = 100 };
         _packageRepo.GetByIdAsync(id).Returns(existing);
 
-        // Act
         var result = await _service.DeleteAsync(id);
 
-        // Assert
         Assert.True(result.IsSuccess);
         _packageRepo.Received(1).Remove(existing);
         await _unitOfWork.Received(1).SaveChangesAsync();
@@ -219,14 +189,11 @@ public class CardPackageServiceTests
     [Fact]
     public async Task DeleteAsync_Fails_WhenPackageNotFound()
     {
-        // Arrange
         var id = Guid.NewGuid();
         _packageRepo.GetByIdAsync(id).Returns((CardPackage?)null);
 
-        // Act
         var result = await _service.DeleteAsync(id);
 
-        // Assert
         Assert.False(result.IsSuccess);
         Assert.Equal(404, result.StatusCode);
     }
@@ -234,7 +201,6 @@ public class CardPackageServiceTests
     [Fact]
     public async Task GetActiveCardPackagesAsync_FiltersBySearch()
     {
-        // Arrange
         var packages = new List<CardPackage>
         {
             new() { Id = Guid.NewGuid(), NumberOfCards = 10, Price = 100, IsActive = true },
@@ -243,10 +209,8 @@ public class CardPackageServiceTests
 
         _packageRepo.GetQueryable().Returns(packages.AsQueryable().BuildMock());
 
-        // Act
         var result = await _service.GetActiveCardPackagesAsync("50");
 
-        // Assert
         Assert.True(result.IsSuccess);
         Assert.Single(result.Data!);
         Assert.Equal(50, result.Data![0].NumberOfCards);
@@ -255,7 +219,6 @@ public class CardPackageServiceTests
     [Fact]
     public async Task GetAllAdminCardPackagesAsync_FiltersBySearch()
     {
-        // Arrange
         var packages = new List<CardPackage>
         {
             new() { Id = Guid.NewGuid(), NumberOfCards = 10, Price = 100, IsActive = true },
@@ -265,10 +228,8 @@ public class CardPackageServiceTests
         _packageRepo.GetQueryable().Returns(packages.AsQueryable().BuildMock());
         var paginationRequest = new PaginationRequest { PageNumber = 1, PageSize = 10 };
 
-        // Act
         var result = await _service.GetAllAdminCardPackagesAsync(paginationRequest, "450");
 
-        // Assert
         Assert.True(result.IsSuccess);
         Assert.Equal(1, result.Data!.TotalCount);
         Assert.Equal(50, result.Data.Items[0].NumberOfCards);

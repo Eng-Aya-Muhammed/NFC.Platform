@@ -40,7 +40,8 @@ public class UpdateEmployeeRequestValidator : AbstractValidator<UpdateEmployeeRe
             .MustBeValidPhoneNumber()
             .WithMessage(_ => messageService.Get("InvalidPhoneFormat", messageService.Get("WhatsApp")));
 
-        RuleForEach(x => x.Links).ChildRules(link => {
+        RuleForEach(x => x.Links).ChildRules(link =>
+        {
             link.RuleFor(l => l.Url)
                 .MustBeValidUrl()
                 .WithMessage(x => messageService.Get("InvalidUrlFormat", messageService.Get("WebsiteUrl")));

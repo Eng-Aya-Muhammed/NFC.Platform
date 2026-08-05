@@ -29,7 +29,6 @@ namespace NFC.Platform.Tests.Mapping
         [Fact]
         public void CardOrder_To_AdminOrderSummaryDto_PopulatesCardNameAndIds()
         {
-            // Arrange
             var typeId = Guid.NewGuid();
             var packageId = Guid.NewGuid();
             var tenantId = Guid.NewGuid();
@@ -52,10 +51,8 @@ namespace NFC.Platform.Tests.Mapping
                 }
             };
 
-            // Act
             var dto = _mapper.Map<AdminOrderSummaryDto>(order);
 
-            // Assert
             Assert.NotNull(dto);
             Assert.Equal(order.Id, dto.Id);
             Assert.Equal("Test Tenant", dto.TenantName);
@@ -68,7 +65,6 @@ namespace NFC.Platform.Tests.Mapping
         [Fact]
         public void CardOrder_To_AdminOrderDetailDto_PopulatesAllDesignUrlsAndDetails()
         {
-            // Arrange
             var typeId = Guid.NewGuid();
             var packageId = Guid.NewGuid();
             var tenantId = Guid.NewGuid();
@@ -104,10 +100,8 @@ namespace NFC.Platform.Tests.Mapping
                 }
             };
 
-            // Act
             var dto = _mapper.Map<AdminOrderDetailDto>(order);
 
-            // Assert
             Assert.NotNull(dto);
             Assert.Equal(order.Id, dto.Id);
             Assert.Equal("Company ABC", dto.TenantName);
@@ -129,7 +123,6 @@ namespace NFC.Platform.Tests.Mapping
         [Fact]
         public void CardOrder_To_CardOrderDto_LocalizesCardNameBasedOnCulture()
         {
-            // Arrange
             var typeId = Guid.NewGuid();
             var order = new CardOrder
             {
@@ -141,15 +134,12 @@ namespace NFC.Platform.Tests.Mapping
                 }
             };
 
-            // Act - Arabic Culture
             CultureInfo.CurrentUICulture = new CultureInfo("ar");
             var dtoAr = _mapper.Map<CardOrderDto>(order);
 
-            // Act - English Culture
             CultureInfo.CurrentUICulture = new CultureInfo("en");
             var dtoEn = _mapper.Map<CardOrderDto>(order);
 
-            // Assert
             Assert.Equal("معدن فاخر", dtoAr.CardName);
             Assert.Equal("Premium Metal", dtoEn.CardName);
         }

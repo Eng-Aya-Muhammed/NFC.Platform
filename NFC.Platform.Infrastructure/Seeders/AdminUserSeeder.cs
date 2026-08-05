@@ -30,7 +30,6 @@ namespace NFC.Platform.Infrastructure.Seeders
             var adminExists = await _context.Users.IgnoreQueryFilters().AnyAsync(u => u.Email == email);
             if (!adminExists)
             {
-                // Create a system/admin Tenant
                 var tenant = new Tenant
                 {
                     Name = "System",

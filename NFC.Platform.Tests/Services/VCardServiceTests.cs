@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
-using Xunit;
 using NFC.Platform.Application.DTOs.Employee;
 using NFC.Platform.Infrastructure.Services;
+using Xunit;
 
 namespace NFC.Platform.Tests.Services;
 
@@ -14,7 +14,6 @@ public class VCardServiceTests
     [Fact]
     public void BuildVCardString_ReturnsValidVCard3Format_WhenDtoIsValid()
     {
-        // Arrange
         var dto = new EmployeeDetailsDto
         {
             FullName = "Ahmed Ali",
@@ -34,10 +33,8 @@ public class VCardServiceTests
             }
         };
 
-        // Act
         var result = _sut.BuildVCardString(dto);
 
-        // Assert
         Assert.NotNull(result);
         Assert.Contains("BEGIN:VCARD", result);
         Assert.Contains("VERSION:3.0", result);
@@ -59,14 +56,11 @@ public class VCardServiceTests
     [Fact]
     public void BuildVCardBytes_ReturnsUtf8EncodedBytes()
     {
-        // Arrange
         var dto = new EmployeeDetailsDto { FullName = "أحمد علي" };
 
-        // Act
         var bytes = _sut.BuildVCardBytes(dto);
         var decodedString = Encoding.UTF8.GetString(bytes);
 
-        // Assert
         Assert.NotNull(bytes);
         Assert.True(bytes.Length > 0);
         Assert.Contains("FN:أحمد علي", decodedString);
@@ -84,13 +78,10 @@ public class VCardServiceTests
     [InlineData("Ahmed Mohamed Hassan Ali", "Ali;Ahmed;Mohamed Hassan;;")]
     public void BuildVCardString_HandlesSingleAndMultiWordNamesCorrectly(string inputName, string expectedNTag)
     {
-        // Arrange
         var dto = new EmployeeDetailsDto { FullName = inputName };
 
-        // Act
         var result = _sut.BuildVCardString(dto);
 
-        // Assert
         Assert.Contains($"FN:{inputName}", result);
         Assert.Contains($"N:{expectedNTag}", result);
     }
@@ -98,7 +89,6 @@ public class VCardServiceTests
     [Fact]
     public void BuildVCardString_EscapesSpecialCharacters_CommasSemicolonsNewlines()
     {
-        // Arrange
         var dto = new EmployeeDetailsDto
         {
             FullName = "Ali, Jr.; C#",
@@ -107,10 +97,8 @@ public class VCardServiceTests
             Address = "Street 1, Apt 2; City"
         };
 
-        // Act
         var result = _sut.BuildVCardString(dto);
 
-        // Assert
         Assert.Contains("FN:Ali\\, Jr.\\; C#", result);
         Assert.Contains("TITLE:Tech Lead\\; Architect", result);
         Assert.Contains("NOTE:Line 1\\nLine 2\\nLine 3", result);
@@ -120,7 +108,6 @@ public class VCardServiceTests
     [Fact]
     public void BuildVCardString_HandlesMinimalDtoWithNullOptionalFieldsWithoutCrashing()
     {
-        // Arrange
         var dto = new EmployeeDetailsDto
         {
             FullName = "Simple User",
@@ -137,10 +124,8 @@ public class VCardServiceTests
             Links = null!
         };
 
-        // Act
         var result = _sut.BuildVCardString(dto);
 
-        // Assert
         Assert.NotNull(result);
         Assert.Contains("BEGIN:VCARD", result);
         Assert.Contains("VERSION:3.0", result);

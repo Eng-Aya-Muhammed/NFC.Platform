@@ -2,9 +2,6 @@ using System.Collections.Generic;
 
 namespace NFC.Platform.Application.DTOs.Company;
 
-/// <summary>
-/// Data transfer object containing the dashboard statistics for a company.
-/// </summary>
 public class CompanyDashboardDto
 {
     public int ContactSavesCount { get; set; }
@@ -14,7 +11,6 @@ public class CompanyDashboardDto
     public Analytics.TopEmployeeDto? TopPerformingEmployee { get; set; }
     public List<MonthlyMetricDto> MonthlyMetrics { get; set; } = [];
 
-    // Aliases for Figma UI compatibility
     public int TotalCompanyEmployees { get => TotalEmployeesCount; set => TotalEmployeesCount = value; }
     public int TotalEmployeesContactSaves { get => ContactSavesCount; set => ContactSavesCount = value; }
     public List<MonthlyMetricDto> YearlyEmployeesViewsTrend { get => MonthlyMetrics; set => MonthlyMetrics = value; }

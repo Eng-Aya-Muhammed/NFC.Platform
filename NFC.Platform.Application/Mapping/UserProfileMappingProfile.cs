@@ -20,7 +20,6 @@ public class UserProfileMappingProfile : Profile
             .ForMember(dest => dest.ProfileId, opt => opt.MapFrom(src => src.Id))
             .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Employee != null ? src.Employee.Status.ToString() : (src.User != null ? src.User.Status.ToString() : UserStatus.Active.ToString())))
             .ForMember(dest => dest.Links, opt => opt.MapFrom(src => src.CustomLinks.OrderBy(l => l.DisplayOrder)))
-            // Branding fields are resolved manually in ProfileMetricService.ApplyBranding — not mapped from entity
             .ForMember(dest => dest.LogoUrl, opt => opt.Ignore())
             .ForMember(dest => dest.Layout, opt => opt.Ignore())
             .ForMember(dest => dest.StyleConfigJson, opt => opt.Ignore())
@@ -48,15 +47,18 @@ public class UserProfileMappingProfile : Profile
         CreateMap<UpdateMyProfileRequest, UserProfile>();
 
         CreateMap<UpdateEmployeeRequest, UserProfile>()
-            .ForMember(dest => dest.JobTitle, opt => {
+            .ForMember(dest => dest.JobTitle, opt =>
+            {
                 opt.Condition(src => src.JobTitle != null);
                 opt.MapFrom(src => src.JobTitle);
             })
-            .ForMember(dest => dest.Department, opt => {
+            .ForMember(dest => dest.Department, opt =>
+            {
                 opt.Condition(src => src.Department != null);
                 opt.MapFrom(src => src.Department);
             })
-            .ForMember(dest => dest.FullName, opt => {
+            .ForMember(dest => dest.FullName, opt =>
+            {
                 opt.Condition(src => src.FullName != null);
                 opt.MapFrom(src => src.FullName);
             })

@@ -1,4 +1,4 @@
-﻿using NFC.Platform.Domain.Enums;
+using NFC.Platform.Domain.Enums;
 
 namespace NFC.Platform.Application.DTOs.Admin
 {
@@ -8,9 +8,6 @@ namespace NFC.Platform.Application.DTOs.Admin
 
         public string? TrackingNumber { get; set; }
 
-        /// <summary>
-        /// Mandatory when transitioning to Rejected.
-        /// </summary>
         public string? RejectionReason { get; set; }
     }
 }

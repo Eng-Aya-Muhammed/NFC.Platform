@@ -6,10 +6,10 @@ using NFC.Platform.Application.DTOs.Role;
 using NFC.Platform.Application.Interfaces.Repositories;
 using NFC.Platform.Application.Interfaces.Services;
 using NFC.Platform.BuildingBlocks.Common.Helpers;
+using NFC.Platform.BuildingBlocks.Localization;
 using NFC.Platform.BuildingBlocks.Results;
 using NFC.Platform.Domain.Constants;
 using NFC.Platform.Domain.Entities;
-using NFC.Platform.BuildingBlocks.Localization;
 
 namespace NFC.Platform.Application.Services
 {

@@ -19,13 +19,11 @@ namespace NFC.Platform.Infrastructure.Authorization
 
         public static string CacheKey(Guid userId) => $"permissions_{userId}";
 
-        /// <inheritdoc/>
         public void InvalidateUser(Guid userId)
         {
             _cache.Remove(CacheKey(userId));
         }
 
-        /// <inheritdoc/>
         public async Task InvalidateRoleUsersAsync(Guid roleId)
         {
             var userRoles = await _unitOfWork.Repository<UserRole>()

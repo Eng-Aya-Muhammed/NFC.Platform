@@ -4,7 +4,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using MockQueryable.NSubstitute;
-using NSubstitute;
 using NFC.Platform.Application.Interfaces;
 using NFC.Platform.Application.Interfaces.Services;
 using NFC.Platform.Application.Services;
@@ -12,6 +11,7 @@ using NFC.Platform.BuildingBlocks.Common;
 using NFC.Platform.BuildingBlocks.Localization;
 using NFC.Platform.Domain.Entities;
 using NFC.Platform.Domain.Enums;
+using NSubstitute;
 using Xunit;
 
 namespace NFC.Platform.Tests.Services
@@ -34,7 +34,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task GetEmployeeDashboardAnalyticsAsync_ReturnsNotFound_WhenEmployeeDoesNotExist()
         {
-            // Arrange
             var employeeId = Guid.NewGuid();
             _messageService.Get("EmployeeNotFound").Returns("Employee not found.");
 
@@ -42,10 +41,8 @@ namespace NFC.Platform.Tests.Services
             empRepo.GetQueryable().Returns(new List<Employee>().BuildMock());
             _unitOfWork.Repository<Employee>().Returns(empRepo);
 
-            // Act
             var result = await _sut.GetEmployeeDashboardAnalyticsAsync(employeeId);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(404, result.StatusCode);
         }
@@ -53,7 +50,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task GetEmployeeDashboardAnalyticsAsync_ReturnsNotFound_WhenProfileDoesNotExist()
         {
-            // Arrange
             var tenantId = Guid.NewGuid();
             var employeeId = Guid.NewGuid();
             _currentTenant.TenantId.Returns(tenantId);
@@ -68,10 +64,8 @@ namespace NFC.Platform.Tests.Services
             profileRepo.GetQueryable().Returns(new List<UserProfile>().BuildMock());
             _unitOfWork.Repository<UserProfile>().Returns(profileRepo);
 
-            // Act
             var result = await _sut.GetEmployeeDashboardAnalyticsAsync(employeeId);
 
-            // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(404, result.StatusCode);
         }
@@ -79,7 +73,6 @@ namespace NFC.Platform.Tests.Services
         [Fact]
         public async Task GetEmployeeDashboardAnalyticsAsync_Returns_Exact_Figma_Metrics_Calculations()
         {
-            // Arrange
             var tenantId = Guid.NewGuid();
             var employeeId = Guid.NewGuid();
             var profileId = Guid.NewGuid();
@@ -118,7 +111,6 @@ namespace NFC.Platform.Tests.Services
 
             var metricsList = new List<ProfileMetric>();
 
-            // Add 500 profile views in the last 30 days
             for (int i = 0; i < 500; i++)
             {
                 metricsList.Add(new ProfileMetric
@@ -130,7 +122,6 @@ namespace NFC.Platform.Tests.Services
                 });
             }
 
-            // Add 352 contact saves in the last 30 days
             for (int i = 0; i < 352; i++)
             {
                 metricsList.Add(new ProfileMetric
@@ -148,10 +139,8 @@ namespace NFC.Platform.Tests.Services
 
             _messageService.Get("ViewsLabel").Returns("زيارات");
 
-            // Act
             var result = await _sut.GetEmployeeDashboardAnalyticsAsync(employeeId);
 
-            // Assert
             Assert.True(result.IsSuccess);
             Assert.NotNull(result.Data);
 
@@ -160,9 +149,9 @@ namespace NFC.Platform.Tests.Services
             Assert.Equal(500, result.Data.MonthlyViews);
             Assert.Equal(352, result.Data.ContactSavesCount);
             Assert.Equal(12, result.Data.YearlyViewsTrend.Count);
-            Assert.Equal(70.4, result.Data.ContactSaveRate); // (352 / 500) * 100 = 70.4%
+            Assert.Equal(70.4, result.Data.ContactSaveRate);
             Assert.Equal(500, result.Data.TotalYearlyViews);
-            Assert.Equal(1.4, result.Data.AverageDailyViews); // 500 / 365 = 1.369 -> 1.4
+            Assert.Equal(1.4, result.Data.AverageDailyViews);
             Assert.Equal(500, result.Data.PeakMonth.ViewsCount);
             Assert.Contains("500", result.Data.PeakMonth.FormattedText);
         }

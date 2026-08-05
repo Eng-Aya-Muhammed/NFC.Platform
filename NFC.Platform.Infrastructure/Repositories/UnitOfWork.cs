@@ -9,16 +9,12 @@ using NFC.Platform.Infrastructure.Contexts;
 
 namespace NFC.Platform.Infrastructure.Repositories
 {
-    /// <summary>
-    /// EF Core implementation of <see cref="IUnitOfWork"/> managing repositories and transaction boundaries.
-    /// </summary>
     public class UnitOfWork(ApplicationDbContext context) : IUnitOfWork
     {
         private readonly ApplicationDbContext _context = context ?? throw new ArgumentNullException(nameof(context));
         private Hashtable? _repositories;
         private IDbContextTransaction? _transaction;
 
-        /// <inheritdoc />
         public IGenericRepository<T> Repository<T>() where T : BaseEntity
         {
             _repositories ??= [];
@@ -29,28 +25,25 @@ namespace NFC.Platform.Infrastructure.Repositories
             {
                 var repositoryType = typeof(GenericRepository<>);
                 var repositoryInstance = Activator.CreateInstance(
-                    repositoryType.MakeGenericType(typeof(T)), 
+                    repositoryType.MakeGenericType(typeof(T)),
                     _context);
-                
+
                 _repositories.Add(type, repositoryInstance);
             }
 
             return (IGenericRepository<T>)_repositories[type]!;
         }
 
-        /// <inheritdoc />
         public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
             return await _context.SaveChangesAsync(cancellationToken);
         }
 
-        /// <inheritdoc />
         public async Task BeginTransactionAsync()
         {
             _transaction = await _context.Database.BeginTransactionAsync();
         }
 
-        /// <inheritdoc />
         public async Task CommitTransactionAsync()
         {
             if (_transaction != null)
@@ -61,7 +54,6 @@ namespace NFC.Platform.Infrastructure.Repositories
             }
         }
 
-        /// <inheritdoc />
         public async Task RollbackTransactionAsync()
         {
             if (_transaction != null)
@@ -72,9 +64,6 @@ namespace NFC.Platform.Infrastructure.Repositories
             }
         }
 
-        /// <summary>
-        /// Disposes the underlying DbContext and transaction resources.
-        /// </summary>
         public void Dispose()
         {
             _context.Dispose();
