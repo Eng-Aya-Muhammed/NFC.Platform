@@ -18,9 +18,9 @@ namespace NFC.Platform.API.Controllers
         private readonly ISubscriptionService _subscriptionService = subscriptionService ?? throw new ArgumentNullException(nameof(subscriptionService));
 
         [HttpGet("plans")]
-        public async Task<IActionResult> GetPlans()
+        public async Task<IActionResult> GetPlans([FromQuery] string? search = null)
         {
-            var result = await _subscriptionService.GetPlansAsync();
+            var result = await _subscriptionService.GetPlansAsync(search);
             return Ok(result);
         }
 
@@ -38,9 +38,9 @@ namespace NFC.Platform.API.Controllers
 
         [HttpGet("history")]
         [HasPermission(AppPermissions.Subscriptions.View)]
-        public async Task<IActionResult> GetHistory()
+        public async Task<IActionResult> GetHistory([FromQuery] string? search = null)
         {
-            var result = await _subscriptionService.GetSubscriptionHistoryAsync();
+            var result = await _subscriptionService.GetSubscriptionHistoryAsync(search);
             if (!result.IsSuccess)
             {
                 return StatusCode(result.StatusCode, result);

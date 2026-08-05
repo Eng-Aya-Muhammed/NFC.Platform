@@ -15,13 +15,13 @@ namespace NFC.Platform.Tests.Controllers
         public async Task GetActiveTemplates_CallsCardTemplateService_AndReturnsOk()
         {
             var dtos = new List<CardTemplateDto>();
-            _cardTemplateService.GetActiveTemplatesAsync().Returns(ServiceResult<IReadOnlyList<CardTemplateDto>>.Success(dtos));
+            _cardTemplateService.GetActiveTemplatesAsync("Business").Returns(ServiceResult<IReadOnlyList<CardTemplateDto>>.Success(dtos));
 
-            var result = await _sut.GetActiveTemplates() as OkObjectResult;
+            var result = await _sut.GetActiveTemplates("Business") as OkObjectResult;
 
             Assert.NotNull(result);
             Assert.Equal(200, result.StatusCode);
-            await _cardTemplateService.Received(1).GetActiveTemplatesAsync();
+            await _cardTemplateService.Received(1).GetActiveTemplatesAsync("Business");
         }
     }
 }

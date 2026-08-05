@@ -15,9 +15,9 @@ public class CardTemplateController(ICardTemplateService cardTemplateService) : 
     /// Returns all active, localized card templates for user selection.
     /// </summary>
     [HttpGet]
-    public async Task<IActionResult> GetActiveTemplates()
+    public async Task<IActionResult> GetActiveTemplates([FromQuery] string? search = null)
     {
-        var result = await _cardTemplateService.GetActiveTemplatesAsync();
+        var result = await _cardTemplateService.GetActiveTemplatesAsync(search);
         return Ok(result);
     }
 }

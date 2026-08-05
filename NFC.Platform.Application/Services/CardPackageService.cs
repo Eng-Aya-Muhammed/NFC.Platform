@@ -34,40 +34,62 @@ public class CardPackageService(
     private readonly IExcelExportService? _excelExportService = excelExportService;
     private readonly IPdfExportService? _pdfExportService = pdfExportService;
 
-    public async Task<ServiceResult<IReadOnlyList<CardPackageDto>>> GetActiveCardPackagesAsync()
-    {
-        var entities = await _unitOfWork.Repository<CardPackage>()
-            .GetQueryable()
-            .AsNoTracking()
-            .Where(p => p.IsActive)
-            .OrderBy(p => p.NumberOfCards)
-            .ToListAsync();
-
-        var dtos = _mapper.Map<IReadOnlyList<CardPackageDto>>(entities);
-        return ServiceResult<IReadOnlyList<CardPackageDto>>.Success(dtos);
-    }
-
-    public async Task<ServiceResult<PagedResult<CardPackageAdminDto>>> GetAllAdminCardPackagesAsync(PaginationRequest request)
+    public async Task<ServiceResult<IReadOnlyList<CardPackageDto>>> GetActiveCardPackagesAsync(string? search = null)
     {
         var query = _unitOfWork.Repository<CardPackage>()
             .GetQueryable()
             .AsNoTracking()
-            .OrderBy(p => p.NumberOfCards);
+            .Where(p => p.IsActive);
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            search = search.Trim();
+            query = query.Where(p => p.NumberOfCards.ToString().Contains(search) || p.Price.ToString().Contains(search));
+        }
+
+        var entities = await query.OrderBy(p => p.NumberOfCards).ToListAsync();
+        var dtos = _mapper.Map<IReadOnlyList<CardPackageDto>>(entities);
+        return ServiceResult<IReadOnlyList<CardPackageDto>>.Success(dtos);
+    }
+
+    public async Task<ServiceResult<PagedResult<CardPackageAdminDto>>> GetAllAdminCardPackagesAsync(PaginationRequest request, string? search = null)
+    {
+        var query = _unitOfWork.Repository<CardPackage>()
+            .GetQueryable()
+            .AsNoTracking()
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            search = search.Trim();
+            query = query.Where(p => p.NumberOfCards.ToString().Contains(search) || p.Price.ToString().Contains(search));
+        }
+
+        query = query.OrderBy(p => p.NumberOfCards);
 
         var pagedResult = await query.ToPagedResultAsync(request, p => _mapper.Map<CardPackageAdminDto>(p));
         return ServiceResult<PagedResult<CardPackageAdminDto>>.Success(pagedResult);
     }
 
-    public async Task<ServiceResult<byte[]>> ExportCardPackagesAsync(ExportFormat format)
+    public async Task<ServiceResult<byte[]>> ExportCardPackagesAsync(ExportFormat format, string? search = null)
     {
         if (_exportBuilder == null || _excelExportService == null || _pdfExportService == null)
         {
             return ServiceResult<byte[]>.Fail(_messageService.Get("RecordNotFound"), 500);
         }
 
-        var packages = await _unitOfWork.Repository<CardPackage>()
+        var query = _unitOfWork.Repository<CardPackage>()
             .GetQueryable()
             .AsNoTracking()
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            search = search.Trim();
+            query = query.Where(p => p.NumberOfCards.ToString().Contains(search) || p.Price.ToString().Contains(search));
+        }
+
+        var packages = await query
             .OrderBy(p => p.NumberOfCards)
             .ToListAsync();
 

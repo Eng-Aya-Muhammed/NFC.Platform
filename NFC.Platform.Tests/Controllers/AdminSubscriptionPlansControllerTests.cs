@@ -65,9 +65,10 @@ public class AdminSubscriptionPlansControllerTests
     {
         var request = new PaginationRequest();
         var pagedResult = PagedResult<SubscriptionPlanAdminDto>.Create(new List<SubscriptionPlanAdminDto>(), 0, 1, 10);
-        _adminService.GetAllAdminPlansAsync(request).Returns(ServiceResult<PagedResult<SubscriptionPlanAdminDto>>.Success(pagedResult));
+        _adminService.GetAllAdminPlansAsync(request, "search-term", Arg.Any<System.Threading.CancellationToken>())
+            .Returns(ServiceResult<PagedResult<SubscriptionPlanAdminDto>>.Success(pagedResult));
 
-        var result = await _sut.GetAllAdminPlans(request) as OkObjectResult;
+        var result = await _sut.GetAllAdminPlans(request, "search-term") as OkObjectResult;
 
         Assert.NotNull(result);
         Assert.Equal(200, result.StatusCode);

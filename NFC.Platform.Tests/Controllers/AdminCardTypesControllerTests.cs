@@ -61,13 +61,13 @@ public class AdminCardTypesControllerTests
     {
         var request = new PaginationRequest();
         var pagedResult = PagedResult<CardTypeAdminDto>.Create(new List<CardTypeAdminDto>(), 0, 1, 10);
-        _cardTypeService.GetAllAdminCardTypesAsync(request).Returns(ServiceResult<PagedResult<CardTypeAdminDto>>.Success(pagedResult));
+        _cardTypeService.GetAllAdminCardTypesAsync(request, "Wood").Returns(ServiceResult<PagedResult<CardTypeAdminDto>>.Success(pagedResult));
 
-        var result = await _sut.GetAllAdminCardTypes(request) as OkObjectResult;
+        var result = await _sut.GetAllAdminCardTypes(request, "Wood") as OkObjectResult;
 
         Assert.NotNull(result);
         Assert.Equal(200, result.StatusCode);
-        await _cardTypeService.Received(1).GetAllAdminCardTypesAsync(request);
+        await _cardTypeService.Received(1).GetAllAdminCardTypesAsync(request, "Wood");
     }
 
     [Fact]

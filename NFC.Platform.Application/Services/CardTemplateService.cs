@@ -34,15 +34,23 @@ public class CardTemplateService(
     private readonly IExcelExportService? _excelExportService = excelExportService;
     private readonly IPdfExportService? _pdfExportService = pdfExportService;
 
-    public async Task<ServiceResult<IReadOnlyList<CardTemplateDto>>> GetActiveTemplatesAsync()
+    public async Task<ServiceResult<IReadOnlyList<CardTemplateDto>>> GetActiveTemplatesAsync(string? search = null)
     {
-        var entities = await _unitOfWork.Repository<CardTemplate>()
+        var query = _unitOfWork.Repository<CardTemplate>()
             .GetQueryable()
             .AsNoTracking()
             .Include(t => t.Category)
-            .Where(t => t.IsActive)
-            .OrderBy(t => t.DisplayOrder)
-            .ToListAsync();
+            .Where(t => t.IsActive);
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            search = search.Trim();
+            query = query.Where(t => (t.NameAr != null && t.NameAr.Contains(search)) ||
+                                     (t.NameEn != null && t.NameEn.Contains(search)) ||
+                                     (t.Category != null && (t.Category.NameAr.Contains(search) || t.Category.NameEn.Contains(search))));
+        }
+
+        var entities = await query.OrderBy(t => t.DisplayOrder).ToListAsync();
 
         var dtos = _mapper.Map<IReadOnlyList<CardTemplateDto>>(entities);
         return ServiceResult<IReadOnlyList<CardTemplateDto>>.Success(dtos);

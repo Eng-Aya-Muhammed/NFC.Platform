@@ -34,39 +34,65 @@ public class CardTypeService(
     private readonly IExcelExportService? _excelExportService = excelExportService;
     private readonly IPdfExportService? _pdfExportService = pdfExportService;
 
-    public async Task<ServiceResult<IReadOnlyList<CardTypeDto>>> GetActiveCardTypesAsync()
-    {
-        var entities = await _unitOfWork.Repository<CardType>()
-            .GetQueryable()
-            .AsNoTracking()
-            .Where(t => t.IsActive)
-            .ToListAsync();
-
-        var dtos = _mapper.Map<IReadOnlyList<CardTypeDto>>(entities);
-        return ServiceResult<IReadOnlyList<CardTypeDto>>.Success(dtos);
-    }
-
-    public async Task<ServiceResult<PagedResult<CardTypeAdminDto>>> GetAllAdminCardTypesAsync(PaginationRequest request)
+    public async Task<ServiceResult<IReadOnlyList<CardTypeDto>>> GetActiveCardTypesAsync(string? search = null)
     {
         var query = _unitOfWork.Repository<CardType>()
             .GetQueryable()
             .AsNoTracking()
-            .OrderByDescending(t => t.CreatedAt);
+            .Where(t => t.IsActive);
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            search = search.Trim();
+            query = query.Where(t => (t.NameAr != null && t.NameAr.Contains(search)) ||
+                                     (t.NameEn != null && t.NameEn.Contains(search)));
+        }
+
+        var entities = await query.ToListAsync();
+        var dtos = _mapper.Map<IReadOnlyList<CardTypeDto>>(entities);
+        return ServiceResult<IReadOnlyList<CardTypeDto>>.Success(dtos);
+    }
+
+    public async Task<ServiceResult<PagedResult<CardTypeAdminDto>>> GetAllAdminCardTypesAsync(PaginationRequest request, string? search = null)
+    {
+        var query = _unitOfWork.Repository<CardType>()
+            .GetQueryable()
+            .AsNoTracking()
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            search = search.Trim();
+            query = query.Where(t => (t.NameAr != null && t.NameAr.Contains(search)) ||
+                                     (t.NameEn != null && t.NameEn.Contains(search)));
+        }
+
+        query = query.OrderByDescending(t => t.CreatedAt);
 
         var pagedResult = await query.ToPagedResultAsync(request, t => _mapper.Map<CardTypeAdminDto>(t));
         return ServiceResult<PagedResult<CardTypeAdminDto>>.Success(pagedResult);
     }
 
-    public async Task<ServiceResult<byte[]>> ExportCardTypesAsync(ExportFormat format)
+    public async Task<ServiceResult<byte[]>> ExportCardTypesAsync(ExportFormat format, string? search = null)
     {
         if (_exportBuilder == null || _excelExportService == null || _pdfExportService == null)
         {
             return ServiceResult<byte[]>.Fail(_messageService.Get("RecordNotFound"), 500);
         }
 
-        var cardTypes = await _unitOfWork.Repository<CardType>()
+        var query = _unitOfWork.Repository<CardType>()
             .GetQueryable()
             .AsNoTracking()
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            search = search.Trim();
+            query = query.Where(t => (t.NameAr != null && t.NameAr.Contains(search)) ||
+                                     (t.NameEn != null && t.NameEn.Contains(search)));
+        }
+
+        var cardTypes = await query
             .OrderByDescending(t => t.CreatedAt)
             .ToListAsync();
 

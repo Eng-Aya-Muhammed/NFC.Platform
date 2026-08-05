@@ -19,9 +19,9 @@ namespace NFC.Platform.API.Controllers
 
         [HttpGet]
         [HasPermission(AppPermissions.Platform.Roles.View)]
-        public async Task<IActionResult> GetRoles()
+        public async Task<IActionResult> GetRoles([FromQuery] string? search = null)
         {
-            var result = await _roleService.GetRolesAsync();
+            var result = await _roleService.GetRolesAsync(search);
             return Ok(result);
         }
 

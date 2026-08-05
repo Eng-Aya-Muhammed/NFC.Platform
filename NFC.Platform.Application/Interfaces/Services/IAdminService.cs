@@ -35,7 +35,7 @@ public interface IAdminService
     Task<ServiceResult<EmployeeDetailsDto>> GetTenantEmployeeDetailsAsync(Guid tenantId, Guid employeeId);
 
     // Subscription Plan Management (Super Admin)
-    Task<ServiceResult<PagedResult<SubscriptionPlanAdminDto>>> GetAllAdminPlansAsync(PaginationRequest request, CancellationToken cancellationToken = default);
+    Task<ServiceResult<PagedResult<SubscriptionPlanAdminDto>>> GetAllAdminPlansAsync(PaginationRequest request, string? search = null, CancellationToken cancellationToken = default);
     Task<ServiceResult<SubscriptionPlanAdminDto>> GetPlanByIdAsync(Guid id);
     Task<ServiceResult<SubscriptionPlanAdminDto>> CreatePlanAsync(CreateSubscriptionPlanRequest request);
     Task<ServiceResult<SubscriptionPlanAdminDto>> UpdatePlanAsync(Guid planId, UpdateSubscriptionPlanRequest request);
@@ -50,6 +50,6 @@ public interface IAdminService
     Task<ServiceResult<byte[]>> ExportTenantsAsync(ExportFormat format, string? search = null, CancellationToken cancellationToken = default);
     
     // Subdomain Management (Super Admin)
-    Task<ServiceResult<PagedResult<ProfileSubdomainSummaryDto>>> GetSubdomainsPagedAsync(PaginationRequest request, CancellationToken cancellationToken = default);
+    Task<ServiceResult<PagedResult<ProfileSubdomainSummaryDto>>> GetSubdomainsPagedAsync(PaginationRequest request, string? search = null, CancellationToken cancellationToken = default);
     Task<ServiceResult> ReassignSubdomainAsync(Guid profileId, ReassignSubdomainDto dto);
 }

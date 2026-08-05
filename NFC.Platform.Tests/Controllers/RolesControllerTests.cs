@@ -61,13 +61,13 @@ namespace NFC.Platform.Tests.Controllers
         public async Task GetRoles_CallsService_AndReturnsOk()
         {
             var roles = new List<RoleDto>();
-            _roleService.GetRolesAsync().Returns(ServiceResult<IReadOnlyList<RoleDto>>.Success(roles));
+            _roleService.GetRolesAsync("Admin").Returns(ServiceResult<IReadOnlyList<RoleDto>>.Success(roles));
 
-            var result = await _sut.GetRoles() as OkObjectResult;
+            var result = await _sut.GetRoles("Admin") as OkObjectResult;
 
             Assert.NotNull(result);
             Assert.Equal(200, result.StatusCode);
-            await _roleService.Received(1).GetRolesAsync();
+            await _roleService.Received(1).GetRolesAsync("Admin");
         }
 
         [Fact]

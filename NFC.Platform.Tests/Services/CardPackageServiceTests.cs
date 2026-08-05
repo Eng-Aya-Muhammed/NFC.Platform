@@ -230,4 +230,47 @@ public class CardPackageServiceTests
         Assert.False(result.IsSuccess);
         Assert.Equal(404, result.StatusCode);
     }
+
+    [Fact]
+    public async Task GetActiveCardPackagesAsync_FiltersBySearch()
+    {
+        // Arrange
+        var packages = new List<CardPackage>
+        {
+            new() { Id = Guid.NewGuid(), NumberOfCards = 10, Price = 100, IsActive = true },
+            new() { Id = Guid.NewGuid(), NumberOfCards = 50, Price = 450, IsActive = true }
+        };
+
+        _packageRepo.GetQueryable().Returns(packages.AsQueryable().BuildMock());
+
+        // Act
+        var result = await _service.GetActiveCardPackagesAsync("50");
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.Single(result.Data!);
+        Assert.Equal(50, result.Data![0].NumberOfCards);
+    }
+
+    [Fact]
+    public async Task GetAllAdminCardPackagesAsync_FiltersBySearch()
+    {
+        // Arrange
+        var packages = new List<CardPackage>
+        {
+            new() { Id = Guid.NewGuid(), NumberOfCards = 10, Price = 100, IsActive = true },
+            new() { Id = Guid.NewGuid(), NumberOfCards = 50, Price = 450, IsActive = true }
+        };
+
+        _packageRepo.GetQueryable().Returns(packages.AsQueryable().BuildMock());
+        var paginationRequest = new PaginationRequest { PageNumber = 1, PageSize = 10 };
+
+        // Act
+        var result = await _service.GetAllAdminCardPackagesAsync(paginationRequest, "450");
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.Equal(1, result.Data!.TotalCount);
+        Assert.Equal(50, result.Data.Items[0].NumberOfCards);
+    }
 }

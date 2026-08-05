@@ -61,10 +61,10 @@ public class AdminSubdomainsControllerTests
     {
         var request = new PaginationRequest();
         var pagedResult = PagedResult<ProfileSubdomainSummaryDto>.Create(new List<ProfileSubdomainSummaryDto>(), 0, 1, 10);
-        _adminService.GetSubdomainsPagedAsync(request, Arg.Any<CancellationToken>())
+        _adminService.GetSubdomainsPagedAsync(request, Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .Returns(ServiceResult<PagedResult<ProfileSubdomainSummaryDto>>.Success(pagedResult));
 
-        var result = await _sut.GetSubdomains(request, CancellationToken.None) as OkObjectResult;
+        var result = await _sut.GetSubdomains(request, null, CancellationToken.None) as OkObjectResult;
 
         Assert.NotNull(result);
         Assert.Equal(200, result.StatusCode);
@@ -74,10 +74,10 @@ public class AdminSubdomainsControllerTests
     public async Task GetSubdomains_ReturnsStatusCode_OnFailure()
     {
         var request = new PaginationRequest();
-        _adminService.GetSubdomainsPagedAsync(request, Arg.Any<CancellationToken>())
+        _adminService.GetSubdomainsPagedAsync(request, Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .Returns(ServiceResult<PagedResult<ProfileSubdomainSummaryDto>>.Fail("Error", 500));
 
-        var result = await _sut.GetSubdomains(request, CancellationToken.None) as ObjectResult;
+        var result = await _sut.GetSubdomains(request, null, CancellationToken.None) as ObjectResult;
 
         Assert.NotNull(result);
         Assert.Equal(500, result.StatusCode);

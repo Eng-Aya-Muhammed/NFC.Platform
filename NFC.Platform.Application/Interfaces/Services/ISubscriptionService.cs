@@ -8,9 +8,9 @@ namespace NFC.Platform.Application.Interfaces.Services
 {
     public interface ISubscriptionService
     {
-        Task<ServiceResult<IReadOnlyList<SubscriptionPlanDto>>> GetPlansAsync();
+        Task<ServiceResult<IReadOnlyList<SubscriptionPlanDto>>> GetPlansAsync(string? search = null);
         Task<ServiceResult<UserSubscriptionDto>> GetCurrentSubscriptionAsync();
-        Task<ServiceResult<IReadOnlyList<UserSubscriptionDto>>> GetSubscriptionHistoryAsync();
+        Task<ServiceResult<IReadOnlyList<UserSubscriptionDto>>> GetSubscriptionHistoryAsync(string? search = null);
         Task<ServiceResult<UserSubscriptionDto>> SubscribeAsync(SubscribeRequest request);
         Task<ServiceResult<UserSubscriptionDto>> RenewSubscriptionAsync(RenewSubscriptionRequest request);
         Task<ServiceResult<UserSubscriptionDto>> AdminExtendSubscriptionAsync(Guid tenantId, DTOs.Subscription.ExtendSubscriptionRequest request);

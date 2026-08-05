@@ -22,10 +22,10 @@ public class CardTypeControllerTests
         };
 
         var serviceResult = ServiceResult<IReadOnlyList<CardTypeDto>>.Success(cardTypes);
-        _cardTypeService.GetActiveCardTypesAsync().Returns(serviceResult);
+        _cardTypeService.GetActiveCardTypesAsync("Metal").Returns(serviceResult);
 
         // Act
-        var result = await _sut.GetActiveCardTypes() as OkObjectResult;
+        var result = await _sut.GetActiveCardTypes("Metal") as OkObjectResult;
 
         // Assert
         Assert.NotNull(result);
@@ -33,6 +33,6 @@ public class CardTypeControllerTests
         var returnResult = Assert.IsType<ServiceResult<IReadOnlyList<CardTypeDto>>>(result.Value);
         Assert.True(returnResult.IsSuccess);
         Assert.Equal(2, returnResult.Data!.Count);
-        await _cardTypeService.Received(1).GetActiveCardTypesAsync();
+        await _cardTypeService.Received(1).GetActiveCardTypesAsync("Metal");
     }
 }

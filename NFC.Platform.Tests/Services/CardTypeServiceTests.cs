@@ -224,4 +224,47 @@ public class CardTypeServiceTests
         Assert.False(result.IsSuccess);
         Assert.Equal(404, result.StatusCode);
     }
+
+    [Fact]
+    public async Task GetActiveCardTypesAsync_FiltersBySearch()
+    {
+        // Arrange
+        var cardTypes = new List<CardType>
+        {
+            new() { Id = Guid.NewGuid(), NameAr = "خشب", NameEn = "Wood", IsActive = true },
+            new() { Id = Guid.NewGuid(), NameAr = "معدن", NameEn = "Metal", IsActive = true }
+        };
+
+        _cardTypeRepo.GetQueryable().Returns(cardTypes.AsQueryable().BuildMock());
+
+        // Act
+        var result = await _service.GetActiveCardTypesAsync("Metal");
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.Single(result.Data!);
+        Assert.Equal("Metal", result.Data![0].Name);
+    }
+
+    [Fact]
+    public async Task GetAllAdminCardTypesAsync_FiltersBySearch()
+    {
+        // Arrange
+        var cardTypes = new List<CardType>
+        {
+            new() { Id = Guid.NewGuid(), NameAr = "خشب", NameEn = "Wood", IsActive = true },
+            new() { Id = Guid.NewGuid(), NameAr = "بلاستيك", NameEn = "Plastic", IsActive = true }
+        };
+
+        _cardTypeRepo.GetQueryable().Returns(cardTypes.AsQueryable().BuildMock());
+        var request = new PaginationRequest { PageNumber = 1, PageSize = 10 };
+
+        // Act
+        var result = await _service.GetAllAdminCardTypesAsync(request, "خشب");
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.Equal(1, result.Data!.TotalCount);
+        Assert.Equal("خشب", result.Data.Items[0].NameAr);
+    }
 }

@@ -576,5 +576,57 @@ namespace NFC.Platform.Tests.Services
             Assert.False(result.IsSuccess);
             Assert.Equal(400, result.StatusCode);
         }
+
+        [Fact]
+        public async Task GetPlansAsync_FiltersBySearch()
+        {
+            // Arrange
+            var plans = new List<SubscriptionPlan>
+            {
+                new() { Id = Guid.NewGuid(), NameAr = "سنوي", NameEn = "Annual" },
+                new() { Id = Guid.NewGuid(), NameAr = "شهري", NameEn = "Monthly" }
+            };
+
+            _planRepo.GetQueryable().Returns(plans.AsQueryable().BuildMock());
+            _mapper.Map<IReadOnlyList<SubscriptionPlanDto>>(Arg.Any<List<SubscriptionPlan>>())
+                .Returns(x => ((List<SubscriptionPlan>)x[0]).Select(p => new SubscriptionPlanDto { Name = p.NameEn }).ToList());
+
+            // Act
+            var result = await _sut.GetPlansAsync("Monthly");
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Single(result.Data!);
+            Assert.Equal("Monthly", result.Data![0].Name);
+        }
+
+        [Fact]
+        public async Task GetSubscriptionHistoryAsync_FiltersBySearch()
+        {
+            // Arrange
+            var tenantId = Guid.NewGuid();
+            _currentTenant.TenantId.Returns(tenantId);
+
+            var plan1 = new SubscriptionPlan { NameAr = "سنوي", NameEn = "Annual" };
+            var plan2 = new SubscriptionPlan { NameAr = "شهري", NameEn = "Monthly" };
+
+            var history = new List<UserSubscription>
+            {
+                new() { TenantId = tenantId, SubscriptionPlan = plan1 },
+                new() { TenantId = tenantId, SubscriptionPlan = plan2 }
+            };
+
+            _subscriptionRepo.GetQueryable().Returns(history.AsQueryable().BuildMock());
+            _mapper.Map<IReadOnlyList<UserSubscriptionDto>>(Arg.Any<List<UserSubscription>>())
+                .Returns(x => ((List<UserSubscription>)x[0]).Select(s => new UserSubscriptionDto { PlanName = s.SubscriptionPlan.NameEn }).ToList());
+
+            // Act
+            var result = await _sut.GetSubscriptionHistoryAsync("Annual");
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Single(result.Data!);
+            Assert.Equal("Annual", result.Data![0].PlanName);
+        }
     }
 }

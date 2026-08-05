@@ -11,9 +11,9 @@ public class CardPackageController(ICardPackageService cardPackageService) : Con
     /// Returns all active card packages for user selection.
     /// </summary>
     [HttpGet]
-    public async Task<IActionResult> GetActiveCardPackages()
+    public async Task<IActionResult> GetActiveCardPackages([FromQuery] string? search = null)
     {
-        var result = await _cardPackageService.GetActiveCardPackagesAsync();
+        var result = await _cardPackageService.GetActiveCardPackagesAsync(search);
         return Ok(result);
     }
 }

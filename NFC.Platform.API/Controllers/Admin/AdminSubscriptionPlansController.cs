@@ -20,9 +20,9 @@ public class AdminSubscriptionPlansController(IAdminService adminService) : Cont
 
     [HttpGet]
     [HasPermission(AppPermissions.Platform.SubscriptionPlans.View)]
-    public async Task<IActionResult> GetAllAdminPlans([FromQuery] PaginationRequest request)
+    public async Task<IActionResult> GetAllAdminPlans([FromQuery] PaginationRequest request, [FromQuery] string? search = null, CancellationToken cancellationToken = default)
     {
-        var result = await _adminService.GetAllAdminPlansAsync(request);
+        var result = await _adminService.GetAllAdminPlansAsync(request, search, cancellationToken);
         return Ok(result);
     }
 

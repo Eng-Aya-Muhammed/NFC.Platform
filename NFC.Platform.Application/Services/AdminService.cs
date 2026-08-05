@@ -849,14 +849,23 @@ public class AdminService : IAdminService
     }
 
     public async Task<ServiceResult<PagedResult<SubscriptionPlanAdminDto>>> GetAllAdminPlansAsync(
-        PaginationRequest request, CancellationToken cancellationToken = default)
+        PaginationRequest request, string? search = null, CancellationToken cancellationToken = default)
     {
         var query = _unitOfWork.Repository<SubscriptionPlan>()
             .GetQueryable()
             .AsNoTracking()
             .Include(p => p.PlanTemplates)
                 .ThenInclude(pt => pt.CardTemplate)
-            .OrderByDescending(p => p.CreatedAt);
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            search = search.Trim();
+            query = query.Where(p => (p.NameAr != null && p.NameAr.Contains(search)) ||
+                                     (p.NameEn != null && p.NameEn.Contains(search)));
+        }
+
+        query = query.OrderByDescending(p => p.CreatedAt);
 
         var pagedResult = await query.ToPagedResultAsync(request, p => _mapper.Map<SubscriptionPlanAdminDto>(p), cancellationToken);
         return ServiceResult<PagedResult<SubscriptionPlanAdminDto>>.Success(pagedResult);
@@ -1112,7 +1121,7 @@ public class AdminService : IAdminService
     /// Returns a paged list of all user profile subdomains for Super Admin oversight.
     /// </summary>
     public async Task<ServiceResult<PagedResult<ProfileSubdomainSummaryDto>>> GetSubdomainsPagedAsync(
-        PaginationRequest request, CancellationToken cancellationToken = default)
+        PaginationRequest request, string? search = null, CancellationToken cancellationToken = default)
     {
         var query = _unitOfWork.Repository<UserProfile>()
             .GetQueryable()
@@ -1121,9 +1130,20 @@ public class AdminService : IAdminService
             .Where(p => !p.IsDeleted)
             .Include(p => p.Employee)
                 .ThenInclude(e => e!.Company)
-            .OrderBy(p => p.FullName);
+            .AsQueryable();
 
-        var paged = await query.ToPagedResultAsync(request, p => _mapper.Map<ProfileSubdomainSummaryDto>(p));
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            search = search.Trim();
+            query = query.Where(p => (p.Subdomain != null && p.Subdomain.Contains(search)) ||
+                                     (p.FullName != null && p.FullName.Contains(search)) ||
+                                     (p.ContactEmail != null && p.ContactEmail.Contains(search)) ||
+                                     (p.Employee != null && (p.Employee.Email.Contains(search) || (p.Employee.Company != null && p.Employee.Company.Name.Contains(search)))));
+        }
+
+        query = query.OrderBy(p => p.FullName);
+
+        var paged = await query.ToPagedResultAsync(request, p => _mapper.Map<ProfileSubdomainSummaryDto>(p), cancellationToken);
         return ServiceResult<PagedResult<ProfileSubdomainSummaryDto>>.Success(paged);
     }
 

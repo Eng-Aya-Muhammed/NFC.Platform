@@ -119,5 +119,35 @@ namespace NFC.Platform.Tests.Services
             await _unitOfWork.Received(1).SaveChangesAsync();
             _permissionCache.Received(1).InvalidateUser(userId);
         }
+
+        [Fact]
+        public async Task GetRolesAsync_FiltersBySearch()
+        {
+            // Arrange
+            var tenantId = Guid.NewGuid();
+            _currentTenant.TenantId.Returns(tenantId);
+
+            var roles = new List<Role>
+            {
+                new() { Id = Guid.NewGuid(), Name = "Manager", TenantId = tenantId },
+                new() { Id = Guid.NewGuid(), Name = "Viewer", TenantId = tenantId }
+            };
+
+            var roleRepo = Substitute.For<IGenericRepository<Role>>();
+            roleRepo.GetQueryable().Returns(roles.AsQueryable().BuildMock());
+            _unitOfWork.Repository<Role>().Returns(roleRepo);
+
+            var permRepo = Substitute.For<IGenericRepository<RolePermission>>();
+            permRepo.FindAsync(Arg.Any<Expression<Func<RolePermission, bool>>>()).Returns(new List<RolePermission>());
+            _unitOfWork.Repository<RolePermission>().Returns(permRepo);
+
+            // Act
+            var result = await _sut.GetRolesAsync("Manager");
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Single(result.Data!);
+            Assert.Equal("Manager", result.Data![0].Name);
+        }
     }
 }

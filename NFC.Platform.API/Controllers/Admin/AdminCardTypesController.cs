@@ -22,17 +22,17 @@ public class AdminCardTypesController(ICardTypeService cardTypeService) : Contro
 
     [HttpGet]
     [HasPermission(AppPermissions.Platform.CardTypes.View)]
-    public async Task<IActionResult> GetAllAdminCardTypes([FromQuery] PaginationRequest request)
+    public async Task<IActionResult> GetAllAdminCardTypes([FromQuery] PaginationRequest request, [FromQuery] string? search = null)
     {
-        var result = await _cardTypeService.GetAllAdminCardTypesAsync(request);
+        var result = await _cardTypeService.GetAllAdminCardTypesAsync(request, search);
         return Ok(result);
     }
 
     [HttpGet("export/excel")]
     [HasPermission(AppPermissions.Platform.CardTypes.View)]
-    public async Task<IActionResult> ExportExcel()
+    public async Task<IActionResult> ExportExcel([FromQuery] string? search = null)
     {
-        var result = await _cardTypeService.ExportCardTypesAsync(ExportFormat.Excel);
+        var result = await _cardTypeService.ExportCardTypesAsync(ExportFormat.Excel, search);
         if (!result.IsSuccess) return StatusCode(result.StatusCode, result);
 
         var fileName = $"CardTypes_{DateTime.Now:yyyy-MM-dd_HH-mm}.xlsx";
@@ -41,9 +41,9 @@ public class AdminCardTypesController(ICardTypeService cardTypeService) : Contro
 
     [HttpGet("export/pdf")]
     [HasPermission(AppPermissions.Platform.CardTypes.View)]
-    public async Task<IActionResult> ExportPdf()
+    public async Task<IActionResult> ExportPdf([FromQuery] string? search = null)
     {
-        var result = await _cardTypeService.ExportCardTypesAsync(ExportFormat.Pdf);
+        var result = await _cardTypeService.ExportCardTypesAsync(ExportFormat.Pdf, search);
         if (!result.IsSuccess) return StatusCode(result.StatusCode, result);
 
         var fileName = $"CardTypes_{DateTime.Now:yyyy-MM-dd_HH-mm}.pdf";

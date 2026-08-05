@@ -24,13 +24,13 @@ namespace NFC.Platform.Tests.Controllers
         public async Task GetPlans_CallsService_AndReturnsOk()
         {
             var plans = new List<SubscriptionPlanDto>();
-            _subscriptionService.GetPlansAsync().Returns(ServiceResult<IReadOnlyList<SubscriptionPlanDto>>.Success(plans));
+            _subscriptionService.GetPlansAsync("Annual").Returns(ServiceResult<IReadOnlyList<SubscriptionPlanDto>>.Success(plans));
 
-            var result = await _sut.GetPlans() as OkObjectResult;
+            var result = await _sut.GetPlans("Annual") as OkObjectResult;
 
             Assert.NotNull(result);
             Assert.Equal(200, result.StatusCode);
-            await _subscriptionService.Received(1).GetPlansAsync();
+            await _subscriptionService.Received(1).GetPlansAsync("Annual");
         }
 
         [Fact]
@@ -61,21 +61,21 @@ namespace NFC.Platform.Tests.Controllers
         public async Task GetHistory_CallsService_AndReturnsOk_OnSuccess()
         {
             var list = new List<UserSubscriptionDto>();
-            _subscriptionService.GetSubscriptionHistoryAsync().Returns(ServiceResult<IReadOnlyList<UserSubscriptionDto>>.Success(list));
+            _subscriptionService.GetSubscriptionHistoryAsync("Annual").Returns(ServiceResult<IReadOnlyList<UserSubscriptionDto>>.Success(list));
 
-            var result = await _sut.GetHistory() as OkObjectResult;
+            var result = await _sut.GetHistory("Annual") as OkObjectResult;
 
             Assert.NotNull(result);
             Assert.Equal(200, result.StatusCode);
-            await _subscriptionService.Received(1).GetSubscriptionHistoryAsync();
+            await _subscriptionService.Received(1).GetSubscriptionHistoryAsync("Annual");
         }
 
         [Fact]
         public async Task GetHistory_ReturnsError_OnFailure()
         {
-            _subscriptionService.GetSubscriptionHistoryAsync().Returns(ServiceResult<IReadOnlyList<UserSubscriptionDto>>.Fail("Error", 400));
+            _subscriptionService.GetSubscriptionHistoryAsync(Arg.Any<string?>()).Returns(ServiceResult<IReadOnlyList<UserSubscriptionDto>>.Fail("Error", 400));
 
-            var result = await _sut.GetHistory() as ObjectResult;
+            var result = await _sut.GetHistory(null) as ObjectResult;
 
             Assert.NotNull(result);
             Assert.Equal(400, result.StatusCode);

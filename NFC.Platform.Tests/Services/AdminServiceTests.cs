@@ -1247,5 +1247,49 @@ namespace NFC.Platform.Tests.Services
             Assert.True(resultWithSpaces.IsSuccess);
             Assert.Equal(2, resultWithSpaces.Data!.TotalCount);
         }
+
+        [Fact]
+        public async Task GetSubdomainsPagedAsync_FiltersBySearch()
+        {
+            // Arrange
+            var profile1 = new UserProfile { Id = Guid.NewGuid(), Subdomain = "alpha-slug", FullName = "Alpha User", IsDeleted = false };
+            var profile2 = new UserProfile { Id = Guid.NewGuid(), Subdomain = "beta-slug", FullName = "Beta User", IsDeleted = false };
+
+            var query = new List<UserProfile> { profile1, profile2 }.AsQueryable().BuildMock();
+            _unitOfWork.Repository<UserProfile>().GetQueryable().Returns(query);
+            _mapper.Map<ProfileSubdomainSummaryDto>(Arg.Any<UserProfile>()).Returns(x => new ProfileSubdomainSummaryDto { Subdomain = ((UserProfile)x[0]).Subdomain });
+
+            var request = new PaginationRequest { PageNumber = 1, PageSize = 10 };
+
+            // Act
+            var result = await _sut.GetSubdomainsPagedAsync(request, "alpha");
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(1, result.Data!.TotalCount);
+            Assert.Equal("alpha-slug", result.Data.Items.First().Subdomain);
+        }
+
+        [Fact]
+        public async Task GetAllAdminPlansAsync_FiltersBySearch()
+        {
+            // Arrange
+            var plan1 = new SubscriptionPlan { Id = Guid.NewGuid(), NameAr = "خطة البداية", NameEn = "Starter Plan" };
+            var plan2 = new SubscriptionPlan { Id = Guid.NewGuid(), NameAr = "خطة الشركات", NameEn = "Enterprise Plan" };
+
+            var query = new List<SubscriptionPlan> { plan1, plan2 }.AsQueryable().BuildMock();
+            _unitOfWork.Repository<SubscriptionPlan>().GetQueryable().Returns(query);
+            _mapper.Map<SubscriptionPlanAdminDto>(Arg.Any<SubscriptionPlan>()).Returns(x => new SubscriptionPlanAdminDto { NameEn = ((SubscriptionPlan)x[0]).NameEn });
+
+            var request = new PaginationRequest { PageNumber = 1, PageSize = 10 };
+
+            // Act
+            var result = await _sut.GetAllAdminPlansAsync(request, "Enterprise");
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(1, result.Data!.TotalCount);
+            Assert.Equal("Enterprise Plan", result.Data.Items.First().NameEn);
+        }
     }
 }

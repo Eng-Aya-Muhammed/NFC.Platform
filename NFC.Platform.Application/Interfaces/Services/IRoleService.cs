@@ -10,7 +10,7 @@ namespace NFC.Platform.Application.Interfaces.Services
     {
         Task<ServiceResult<RoleDto>> CreateRoleAsync(CreateRoleRequest request);
 
-        Task<ServiceResult<IReadOnlyList<RoleDto>>> GetRolesAsync();
+        Task<ServiceResult<IReadOnlyList<RoleDto>>> GetRolesAsync(string? search = null);
 
         Task<ServiceResult<RoleDto>> GetRoleByIdAsync(Guid roleId);
 

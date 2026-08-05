@@ -61,9 +61,9 @@ public class AdminCardPackagesControllerTests
     {
         var request = new PaginationRequest();
         var pagedResult = PagedResult<CardPackageAdminDto>.Create(new List<CardPackageAdminDto>(), 0, 1, 10);
-        _cardPackageService.GetAllAdminCardPackagesAsync(request).Returns(ServiceResult<PagedResult<CardPackageAdminDto>>.Success(pagedResult));
+        _cardPackageService.GetAllAdminCardPackagesAsync(request, "50").Returns(ServiceResult<PagedResult<CardPackageAdminDto>>.Success(pagedResult));
 
-        var result = await _sut.GetAllAdminCardPackages(request) as OkObjectResult;
+        var result = await _sut.GetAllAdminCardPackages(request, "50") as OkObjectResult;
 
         Assert.NotNull(result);
         Assert.Equal(200, result.StatusCode);

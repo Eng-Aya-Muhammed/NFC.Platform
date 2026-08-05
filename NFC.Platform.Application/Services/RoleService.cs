@@ -57,12 +57,22 @@ namespace NFC.Platform.Application.Services
             return ServiceResult<RoleDto>.Success(MapToDto(role));
         }
 
-        public async Task<ServiceResult<IReadOnlyList<RoleDto>>> GetRolesAsync()
+        public async Task<ServiceResult<IReadOnlyList<RoleDto>>> GetRolesAsync(string? search = null)
         {
             var tenantId = _currentTenant.TenantId;
 
-            var roles = await _unitOfWork.Repository<Role>()
-                .FindAsync(r => r.TenantId == null || r.TenantId == tenantId);
+            var query = _unitOfWork.Repository<Role>()
+                .GetQueryable()
+                .AsNoTracking()
+                .Where(r => r.TenantId == null || r.TenantId == tenantId);
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                search = search.Trim();
+                query = query.Where(r => r.Name != null && r.Name.Contains(search));
+            }
+
+            var roles = await query.ToListAsync();
 
             var roleIds = roles.Select(r => r.Id).ToList();
             var allPermissions = await _unitOfWork.Repository<RolePermission>()

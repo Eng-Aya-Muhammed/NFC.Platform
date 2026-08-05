@@ -264,4 +264,24 @@ public class CardTemplateServiceTests
         Assert.False(result.IsSuccess);
         Assert.Equal(404, result.StatusCode);
     }
+
+    [Fact]
+    public async Task GetActiveTemplatesAsync_FiltersBySearch()
+    {
+        // Arrange
+        var templates = new List<CardTemplate>
+        {
+            new() { Id = Guid.NewGuid(), NameAr = "قالب الأعمال", NameEn = "Business Template", IsActive = true, DisplayOrder = 1 },
+            new() { Id = Guid.NewGuid(), NameAr = "قالب الإبداع", NameEn = "Creative Template", IsActive = true, DisplayOrder = 2 }
+        };
+        _templateRepo.GetQueryable().Returns(templates.AsQueryable().BuildMock());
+
+        // Act
+        var result = await _sut.GetActiveTemplatesAsync("Business");
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.Single(result.Data!);
+        Assert.Equal("Business Template", result.Data[0].Name);
+    }
 }

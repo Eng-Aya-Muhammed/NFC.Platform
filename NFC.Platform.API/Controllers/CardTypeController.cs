@@ -11,9 +11,9 @@ public class CardTypeController(ICardTypeService cardTypeService) : ControllerBa
     /// Returns all active, localized card types for user selection.
     /// </summary>
     [HttpGet]
-    public async Task<IActionResult> GetActiveCardTypes()
+    public async Task<IActionResult> GetActiveCardTypes([FromQuery] string? search = null)
     {
-        var result = await _cardTypeService.GetActiveCardTypesAsync();
+        var result = await _cardTypeService.GetActiveCardTypesAsync(search);
         return Ok(result);
     }
 }

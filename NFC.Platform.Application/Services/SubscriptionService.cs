@@ -13,18 +13,25 @@ public class SubscriptionService(
     private readonly IMessageService _messageService = messageService ?? throw new ArgumentNullException(nameof(messageService));
     private readonly ICurrentTenant _currentTenant = currentTenant ?? throw new ArgumentNullException(nameof(currentTenant));
 
-    public async Task<ServiceResult<IReadOnlyList<SubscriptionPlanDto>>> GetPlansAsync()
+    public async Task<ServiceResult<IReadOnlyList<SubscriptionPlanDto>>> GetPlansAsync(string? search = null)
     {
-        var plans = await _unitOfWork.Repository<SubscriptionPlan>()
+        var query = _unitOfWork.Repository<SubscriptionPlan>()
             .GetQueryable()
             .IgnoreQueryFilters()
             .AsNoTracking()
             .Where(p => !p.IsDeleted)
             .Include(p => p.PlanTemplates)
                 .ThenInclude(pt => pt.CardTemplate)
-            .OrderBy(p => p.DurationInDays)
-            .ToListAsync();
+            .AsQueryable();
 
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            search = search.Trim();
+            query = query.Where(p => (p.NameAr != null && p.NameAr.Contains(search)) ||
+                                     (p.NameEn != null && p.NameEn.Contains(search)));
+        }
+
+        var plans = await query.OrderBy(p => p.DurationInDays).ToListAsync();
         var dtos = _mapper.Map<IReadOnlyList<SubscriptionPlanDto>>(plans);
 
         return ServiceResult<IReadOnlyList<SubscriptionPlanDto>>.Success(dtos);
@@ -52,20 +59,26 @@ public class SubscriptionService(
         return ServiceResult<UserSubscriptionDto>.Success(dto);
     }
 
-    public async Task<ServiceResult<IReadOnlyList<UserSubscriptionDto>>> GetSubscriptionHistoryAsync()
+    public async Task<ServiceResult<IReadOnlyList<UserSubscriptionDto>>> GetSubscriptionHistoryAsync(string? search = null)
     {
         var tenantId = _currentTenant.TenantId;
         if (!tenantId.HasValue)
             return ServiceResult<IReadOnlyList<UserSubscriptionDto>>.Unauthorized(_messageService.Get("Unauthorized"));
 
-        var history = await _unitOfWork.Repository<UserSubscription>()
+        var query = _unitOfWork.Repository<UserSubscription>()
             .GetQueryable()
             .AsNoTracking()
             .Include(s => s.SubscriptionPlan)
             .Where(s => s.TenantId == tenantId.Value)
-            .OrderByDescending(s => s.CreatedAt)
-            .ToListAsync();
+            .AsQueryable();
 
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            search = search.Trim();
+            query = query.Where(s => s.SubscriptionPlan != null && ((s.SubscriptionPlan.NameAr != null && s.SubscriptionPlan.NameAr.Contains(search)) || (s.SubscriptionPlan.NameEn != null && s.SubscriptionPlan.NameEn.Contains(search))));
+        }
+
+        var history = await query.OrderByDescending(s => s.CreatedAt).ToListAsync();
         var dtos = _mapper.Map<IReadOnlyList<UserSubscriptionDto>>(history);
 
         return ServiceResult<IReadOnlyList<UserSubscriptionDto>>.Success(dtos);

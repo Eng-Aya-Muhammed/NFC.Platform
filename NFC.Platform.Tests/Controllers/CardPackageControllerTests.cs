@@ -22,10 +22,10 @@ public class CardPackageControllerTests
         };
 
         var serviceResult = ServiceResult<IReadOnlyList<CardPackageDto>>.Success(packages);
-        _cardPackageService.GetActiveCardPackagesAsync().Returns(serviceResult);
+        _cardPackageService.GetActiveCardPackagesAsync("10").Returns(serviceResult);
 
         // Act
-        var result = await _sut.GetActiveCardPackages() as OkObjectResult;
+        var result = await _sut.GetActiveCardPackages("10") as OkObjectResult;
 
         // Assert
         Assert.NotNull(result);
@@ -33,6 +33,6 @@ public class CardPackageControllerTests
         var returnResult = Assert.IsType<ServiceResult<IReadOnlyList<CardPackageDto>>>(result.Value);
         Assert.True(returnResult.IsSuccess);
         Assert.Equal(2, returnResult.Data!.Count);
-        await _cardPackageService.Received(1).GetActiveCardPackagesAsync();
+        await _cardPackageService.Received(1).GetActiveCardPackagesAsync("10");
     }
 }

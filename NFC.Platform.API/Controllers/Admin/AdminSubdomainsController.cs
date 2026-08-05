@@ -28,9 +28,10 @@ public class AdminSubdomainsController(IAdminService adminService, IMessageServi
     [HasPermission(AppPermissions.Platform.Subdomains.View)]
     public async Task<IActionResult> GetSubdomains(
         [FromQuery] PaginationRequest request,
-        CancellationToken cancellationToken)
+        [FromQuery] string? search = null,
+        CancellationToken cancellationToken = default)
     {
-        var result = await _adminService.GetSubdomainsPagedAsync(request, cancellationToken);
+        var result = await _adminService.GetSubdomainsPagedAsync(request, search, cancellationToken);
         if (!result.IsSuccess) return StatusCode(result.StatusCode, result);
         return Ok(result);
     }
