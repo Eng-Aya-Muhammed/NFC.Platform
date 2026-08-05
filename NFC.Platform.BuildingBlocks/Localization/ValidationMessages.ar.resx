@@ -361,4 +361,77 @@
   <data name="EmailOtpVerificationFooter" xml:space="preserve">
     <value>منصة NFC - جميع الحقوق محفوظة.</value>
   </data>
+
+  <data name="Category" xml:space="preserve">
+    <value>الفئة</value>
+  </data>
+  <data name="StyleConfig" xml:space="preserve">
+    <value>إعدادات التنسيق</value>
+  </data>
+  <data name="Thumbnail URL" xml:space="preserve">
+    <value>رابط الصورة المصغرة</value>
+  </data>
+  <data name="TrackingNumber" xml:space="preserve">
+    <value>رقم التتبع</value>
+  </data>
+  <data name="InvalidRole" xml:space="preserve">
+    <value>الدور المحدد غير صالح.</value>
+  </data>
+  <data name="Password" xml:space="preserve">
+    <value>كلمة المرور</value>
+  </data>
+  <data name="IdToken" xml:space="preserve">
+    <value>رمز الهوية</value>
+  </data>
+  <data name="AccountType" xml:space="preserve">
+    <value>نوع الحساب</value>
+  </data>
+  <data name="CompanyName" xml:space="preserve">
+    <value>اسم الشركة</value>
+  </data>
+  <data name="ConfirmPassword" xml:space="preserve">
+    <value>تأكيد كلمة المرور</value>
+  </data>
+  <data name="CompanySize" xml:space="preserve">
+    <value>حجم الشركة</value>
+  </data>
+  <data name="Token" xml:space="preserve">
+    <value>الرمز</value>
+  </data>
+  <data name="NewPassword" xml:space="preserve">
+    <value>كلمة المرور الجديدة</value>
+  </data>
+  <data name="ConfirmNewPassword" xml:space="preserve">
+    <value>تأكيد كلمة المرور الجديدة</value>
+  </data>
+  <data name="OtpCode" xml:space="preserve">
+    <value>رمز التحقق (OTP)</value>
+  </data>
+  <data name="Front Design URL" xml:space="preserve">
+    <value>رابط التصميم الأمامي</value>
+  </data>
+  <data name="Back Design URL" xml:space="preserve">
+    <value>رابط التصميم الخلفي</value>
+  </data>
+  <data name="Excel Data URL" xml:space="preserve">
+    <value>رابط ملف البيانات Excel</value>
+  </data>
+  <data name="EmployeesRequired" xml:space="preserve">
+    <value>يجب تحديد موظف واحد على الأقل.</value>
+  </data>
+  <data name="Quantity" xml:space="preserve">
+    <value>الكمية</value>
+  </data>
+  <data name="InvalidOrInactiveCardPackage" xml:space="preserve">
+    <value>باقة الكروت المحددة غير صالحة أو غير نشطة.</value>
+  </data>
+  <data name="OldPassword" xml:space="preserve">
+    <value>كلمة المرور القديمة</value>
+  </data>
+  <data name="InvalidExtensionDays" xml:space="preserve">
+    <value>يجب أن يكون عدد أيام التمديد عدداً موجباً.</value>
+  </data>
+  <data name="SubscriptionPlanId" xml:space="preserve">
+    <value>خطة الاشتراك</value>
+  </data>
 </root>

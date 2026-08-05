@@ -361,4 +361,77 @@
   <data name="EmailOtpVerificationFooter" xml:space="preserve">
     <value>NFC Platform - All rights reserved.</value>
   </data>
+
+  <data name="Category" xml:space="preserve">
+    <value>Category</value>
+  </data>
+  <data name="StyleConfig" xml:space="preserve">
+    <value>Style Configuration</value>
+  </data>
+  <data name="Thumbnail URL" xml:space="preserve">
+    <value>Thumbnail URL</value>
+  </data>
+  <data name="TrackingNumber" xml:space="preserve">
+    <value>Tracking Number</value>
+  </data>
+  <data name="InvalidRole" xml:space="preserve">
+    <value>The specified role is invalid.</value>
+  </data>
+  <data name="Password" xml:space="preserve">
+    <value>Password</value>
+  </data>
+  <data name="IdToken" xml:space="preserve">
+    <value>ID Token</value>
+  </data>
+  <data name="AccountType" xml:space="preserve">
+    <value>Account Type</value>
+  </data>
+  <data name="CompanyName" xml:space="preserve">
+    <value>Company Name</value>
+  </data>
+  <data name="ConfirmPassword" xml:space="preserve">
+    <value>Confirm Password</value>
+  </data>
+  <data name="CompanySize" xml:space="preserve">
+    <value>Company Size</value>
+  </data>
+  <data name="Token" xml:space="preserve">
+    <value>Token</value>
+  </data>
+  <data name="NewPassword" xml:space="preserve">
+    <value>New Password</value>
+  </data>
+  <data name="ConfirmNewPassword" xml:space="preserve">
+    <value>Confirm New Password</value>
+  </data>
+  <data name="OtpCode" xml:space="preserve">
+    <value>OTP Code</value>
+  </data>
+  <data name="Front Design URL" xml:space="preserve">
+    <value>Front Design URL</value>
+  </data>
+  <data name="Back Design URL" xml:space="preserve">
+    <value>Back Design URL</value>
+  </data>
+  <data name="Excel Data URL" xml:space="preserve">
+    <value>Excel Data URL</value>
+  </data>
+  <data name="EmployeesRequired" xml:space="preserve">
+    <value>At least one employee must be selected.</value>
+  </data>
+  <data name="Quantity" xml:space="preserve">
+    <value>Quantity</value>
+  </data>
+  <data name="InvalidOrInactiveCardPackage" xml:space="preserve">
+    <value>The selected card package is invalid or inactive.</value>
+  </data>
+  <data name="OldPassword" xml:space="preserve">
+    <value>Old Password</value>
+  </data>
+  <data name="InvalidExtensionDays" xml:space="preserve">
+    <value>Extension days must be a positive number.</value>
+  </data>
+  <data name="SubscriptionPlanId" xml:space="preserve">
+    <value>Subscription Plan</value>
+  </data>
 </root>
